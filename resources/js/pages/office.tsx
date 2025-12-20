@@ -54,18 +54,7 @@ export default function Office() {
         return end.getTime() >= now.getTime();
     });
 
-    const pastEvents = eventItemsRaw
-        .filter((e: any) => {
-            if (!e.end_sell_date) return false;
-            const end = new Date(e.end_sell_date);
-            if (isNaN(end.getTime())) return false;
-            return end.getTime() < now.getTime();
-        })
-        .sort(
-            (a: any, b: any) =>
-                new Date(b.end_sell_date).getTime() -
-                new Date(a.end_sell_date).getTime(),
-        );
+    // pastEvents intentionally omitted when not used to avoid unused-variable lint errors
 
     const activeEvents = eventItems
         .filter((e: any) => {

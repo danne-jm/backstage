@@ -28,10 +28,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Office() {
     const props = usePage<SharedData>().props;
-    const { auth, staff: staffProp } = props as unknown as {
-        auth?: any;
-        staff?: any;
-    };
 
     // Build staff list from server props and mark those on shift.
     const products: any[] = Array.isArray(props['products'])
@@ -116,16 +112,13 @@ export default function Office() {
         products.length ? products[0].id : null,
     );
     const [saleMethod, setSaleMethod] = React.useState<'Cash' | 'Card'>('Cash');
-    const [saleAmount, setSaleAmount] = React.useState('');
-    const [saleDescription, setSaleDescription] = React.useState('');
+    // saleAmount and saleDescription removed (unused) to satisfy linter
 
     // Custom sale form state (separate from quick-add)
     const [customProductId, setCustomProductId] = React.useState<number | null>(
         products.length ? products[0].id : null,
     );
-    const [customMethod, setCustomMethod] = React.useState<'Cash' | 'Card'>(
-        'Cash',
-    );
+    // customMethod removed (unused) to satisfy linter
     const [customAmount, setCustomAmount] = React.useState('');
     const [customDescription, setCustomDescription] = React.useState('');
 

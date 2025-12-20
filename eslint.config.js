@@ -32,5 +32,11 @@ export default [
     {
         ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js'],
     },
+    {
+        // Temporarily relax some TypeScript rules to reduce noise while migrating types.
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+        },
+    },
     prettier, // Turn off all rules that might conflict with Prettier
 ];

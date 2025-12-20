@@ -167,7 +167,9 @@ export default function Warehouse() {
                 try {
                     if (createFileInputRef.current)
                         createFileInputRef.current.value = '';
-                } catch (e) {}
+                } catch (e) {
+                    void e;
+                }
                 createForm.setData('image', null);
             },
         });
@@ -238,7 +240,9 @@ export default function Warehouse() {
                     try {
                         if (editFileInputRef.current)
                             editFileInputRef.current.value = '';
-                    } catch (e) {}
+                    } catch (e) {
+                        void e;
+                    }
                 },
             });
         } else {
@@ -253,7 +257,9 @@ export default function Warehouse() {
                     try {
                         if (editFileInputRef.current)
                             editFileInputRef.current.value = '';
-                    } catch (e) {}
+                    } catch (e) {
+                        void e;
+                    }
                 },
             });
         }

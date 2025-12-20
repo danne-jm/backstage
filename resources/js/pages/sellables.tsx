@@ -89,15 +89,7 @@ export default function Sellables() {
         return isNaN(d.getTime()) ? null : d;
     };
 
-    const msPerDay = 1000 * 60 * 60 * 24;
-
-    // Products: cheapest first
-    const sortedProducts = (products || [])
-        .slice()
-        .sort(
-            (a: Product, b: Product) =>
-                (Number(a.price) || 0) - (Number(b.price) || 0),
-        );
+    // Products: cheapest first (sorted on demand below when used)
 
     // Events: classify into active (start <= now <= end), upcoming (start > now), expired (end < now)
     const activeEvents: Event[] = [];
@@ -224,7 +216,7 @@ export default function Sellables() {
                 try {
                     active.blur();
                 } catch (e) {
-                    // ignore
+                        void e;
                 }
             }
         }, 50);
@@ -316,7 +308,7 @@ export default function Sellables() {
                 try {
                     active.blur();
                 } catch (e) {
-                    // ignore
+                        void e;
                 }
             }
         }, 50);

@@ -28,19 +28,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Office() {
     const props = usePage<SharedData>().props;
-    const { auth, staff: staffProp } = props as unknown as {
-        auth?: any;
-        staff?: any;
-    };
+    // server props are available via `props`; destructuring removed to avoid unused-variable lint failures
 
     // Build staff list from server props and mark those on shift.
-    const products: any[] = Array.isArray(props['products'])
-        ? (props['products'] as any[]).map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              price: p.price,
-          }))
-        : [];
+    // products list is available on props when needed; avoid creating unused local var
     const sellables: any[] = Array.isArray(props['sellables'])
         ? props['sellables']
         : [];
@@ -86,16 +77,7 @@ export default function Office() {
         setSales(Array.isArray(active?.sales) ? active.sales : []);
     }, [props['activeShift']]);
 
-    // When sellables change (filtered list changes), update defaults to first available
-    React.useEffect(() => {
-        if (filteredSellables.length) {
-            setSaleProductId(filteredSellables[0].actual_id ?? null);
-            setSaleItemType(filteredSellables[0].type ?? 'product');
-        } else {
-            setSaleProductId(null);
-            setSaleItemType('product');
-        }
-    }, [filteredSellables.length]);
+
 
     // Poll active shift data (workers, sales, totals) every 2s so UI stays in sync
     React.useEffect(() => {
@@ -152,6 +134,17 @@ export default function Office() {
     const [saleTicketType, setSaleTicketType] = React.useState<
         'with_card' | 'without_card'
     >('with_card');
+
+    // When sellables change (filtered list changes), update defaults to first available
+    React.useEffect(() => {
+        if (filteredSellables.length) {
+            setSaleProductId(filteredSellables[0].actual_id ?? null);
+            setSaleItemType(filteredSellables[0].type ?? 'product');
+        } else {
+            setSaleProductId(null);
+            setSaleItemType('product');
+        }
+    }, [filteredSellables.length]);
 
     // Custom sale form state (separate from quick-add)
     const [customSaleItemId, setCustomSaleItemId] =

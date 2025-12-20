@@ -76,7 +76,9 @@ export default function TicketScanner() {
         if (scanning) {
             try {
                 await stopCamera();
-            } catch (e) {}
+            } catch (e) {
+                void e;
+            }
         }
 
         // Load available tickets (scan_count = 0)
