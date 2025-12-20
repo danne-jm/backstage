@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             if (! Schema::hasColumn('users', 'remember_token')) {
-                $table->rememberToken()->nullable()->after('password');
+                // place after password_hash since users table stores password_hash
+                $table->rememberToken()->nullable()->after('password_hash');
             }
 
             if (! Schema::hasColumn('users', 'roles')) {

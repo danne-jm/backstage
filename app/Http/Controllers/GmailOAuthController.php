@@ -22,7 +22,7 @@ class GmailOAuthController extends Controller
                     'https://www.googleapis.com/auth/userinfo.profile',
                     'https://www.googleapis.com/auth/userinfo.email',
                 ])
-                ->with(['access_type' => 'offline', 'prompt' => 'consent'])
+                ->with(['access_type' => 'offline'])
                 ->redirect();
 
             // Socialite's redirect returns a RedirectResponse

@@ -107,6 +107,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Backwards-compatible accessor for `password` so older tests and code
+     * that expect `$user->password` to contain the hashed password continue
+     * to work. Returns the underlying `password_hash`.
+     */
+    public function getPasswordAttribute()
+    {
+        return $this->password_hash;
+    }
+
+    /**
      * Provide a `name` accessor combining first and last name for compatibility.
      */
     public function getNameAttribute(): string

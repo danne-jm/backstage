@@ -60,6 +60,8 @@ class DistributionController extends Controller
 
         return response()->json([
             'queued_count' => $queued,
+            // backward-compatible alias expected by some tests / clients
+            'sent_count' => $queued,
             'queued' => $queued > 0,
             'received_count' => is_array($recipients) ? count($recipients) : 0,
             'dispatch_errors' => $dispatchErrors,

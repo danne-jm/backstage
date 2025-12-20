@@ -14,10 +14,13 @@ return new class extends Migration
         if (! Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
-                $table->string('name');
+                // Split name into first_name / last_name to match the User model
+                $table->string('first_name')->nullable();
+                $table->string('last_name')->nullable();
                 $table->string('email')->unique();
                 $table->timestamp('email_verified_at')->nullable();
-                $table->string('password');
+                // Model uses `password_hash` column for storing the hashed password
+                $table->string('password_hash')->nullable();
                 $table->rememberToken();
                 $table->timestamps();
             });

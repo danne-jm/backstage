@@ -1,22 +1,20 @@
-import * as React from 'react';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogTrigger,
-    DialogContent,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-    DialogClose,
-} from '@/components/ui/dialog';
+import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -27,14 +25,42 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // Small sample dataset embedded in the page for quick testing / mapping
 
-
 const sampleData = [
-
-    { first_name: 'Daniel', last_name: 'Meyer', nationality: 'DE', esn_card: true, email: 'danieljaurell@gmail.com' },
-    { first_name: 'Daniel', last_name: 'Mevo', nationality: 'DE', esn_card: true, email: 'danieljaurell@gmail.com' },
-    { first_name: 'Daniel', last_name: 'Meyer', nationality: 'DE', esn_card: true, email: 'danieljaurell@gmail.com' },
-    { first_name: 'Daniel', last_name: 'Ahmad', nationality: 'DE', esn_card: true, email: 'danieljaurell@gmail.com' },
-    { first_name: 'Daniel', last_name: 'Meyer', nationality: 'DE', esn_card: true, email: 'danieljaurell@gmail.com' },
+    {
+        first_name: 'Daniel',
+        last_name: 'Meyer',
+        nationality: 'DE',
+        esn_card: true,
+        email: 'danieljaurell@gmail.com',
+    },
+    {
+        first_name: 'Daniel',
+        last_name: 'Mevo',
+        nationality: 'DE',
+        esn_card: true,
+        email: 'danieljaurell@gmail.com',
+    },
+    {
+        first_name: 'Daniel',
+        last_name: 'Meyer',
+        nationality: 'DE',
+        esn_card: true,
+        email: 'danieljaurell@gmail.com',
+    },
+    {
+        first_name: 'Daniel',
+        last_name: 'Ahmad',
+        nationality: 'DE',
+        esn_card: true,
+        email: 'danieljaurell@gmail.com',
+    },
+    {
+        first_name: 'Daniel',
+        last_name: 'Meyer',
+        nationality: 'DE',
+        esn_card: true,
+        email: 'danieljaurell@gmail.com',
+    },
 ];
 /*
 const sampleData = [
@@ -88,25 +114,37 @@ const sampleData = [
 ];
 */
 
-
 export default function Ticketing() {
     const props = usePage<SharedData>().props;
     const events: any[] = Array.isArray(props['events']) ? props['events'] : [];
 
-    const fields = React.useMemo(() => (sampleData.length ? Object.keys(sampleData[0]) : []), []);
+    const fields = React.useMemo(
+        () => (sampleData.length ? Object.keys(sampleData[0]) : []),
+        [],
+    );
 
     // Mapping dropdowns
-    const [firstNameField, setFirstNameField] = React.useState<string>(fields[0] ?? 'first_name');
-    const [lastNameField, setLastNameField] = React.useState<string>(fields[1] ?? 'last_name');
-    const [emailField, setEmailField] = React.useState<string>(fields[4] ?? 'email');
+    const [firstNameField, setFirstNameField] = React.useState<string>(
+        fields[0] ?? 'first_name',
+    );
+    const [lastNameField, setLastNameField] = React.useState<string>(
+        fields[1] ?? 'last_name',
+    );
+    const [emailField, setEmailField] = React.useState<string>(
+        fields[4] ?? 'email',
+    );
 
     // Mail information (normal | qr embedding)
     const [mailMode, setMailMode] = React.useState<'normal' | 'qr'>('normal');
     const [qrEventName, setQrEventName] = React.useState<string>('');
     const [qrEventDate, setQrEventDate] = React.useState<string>('');
-    const [nullableFields, setNullableFields] = React.useState<Record<string, boolean>>(() => {
+    const [nullableFields, setNullableFields] = React.useState<
+        Record<string, boolean>
+    >(() => {
         const m: Record<string, boolean> = {};
-        fields.forEach((f) => { m[f] = false; });
+        fields.forEach((f) => {
+            m[f] = false;
+        });
         return m;
     });
 
@@ -114,22 +152,30 @@ export default function Ticketing() {
     React.useEffect(() => {
         setNullableFields((prev) => {
             const next: Record<string, boolean> = {};
-            fields.forEach((f) => { next[f] = prev[f] ?? false; });
+            fields.forEach((f) => {
+                next[f] = prev[f] ?? false;
+            });
             return next;
         });
     }, [fields]);
 
     // Email composition
-    const [subject, setSubject] = React.useState<string>('Your ticket information');
+    const [subject, setSubject] = React.useState<string>(
+        'Your ticket information',
+    );
     const bodyRef = React.useRef<HTMLDivElement | null>(null);
 
     // Selected event id — default to none so the placeholder shows
-    const [selectedEvent, setSelectedEvent] = React.useState<number | null>(null);
+    const [selectedEvent, setSelectedEvent] = React.useState<number | null>(
+        null,
+    );
 
     // Preview / generated payload
     const [generated, setGenerated] = React.useState<any[] | null>(null);
     const [showRendered, setShowRendered] = React.useState(true);
-    const [selectedSampleIndex, setSelectedSampleIndex] = React.useState<number | null>(0);
+    const [selectedSampleIndex, setSelectedSampleIndex] = React.useState<
+        number | null
+    >(0);
 
     // Default email template (initial editor content)
     const defaultBodyTemplate = React.useMemo(() => {
@@ -148,7 +194,11 @@ export default function Ticketing() {
 
     // initialize editor with default template if empty
     React.useEffect(() => {
-        if (bodyRef.current && (!bodyRef.current.innerHTML || bodyRef.current.innerHTML.trim() === '')) {
+        if (
+            bodyRef.current &&
+            (!bodyRef.current.innerHTML ||
+                bodyRef.current.innerHTML.trim() === '')
+        ) {
             bodyRef.current.innerHTML = defaultBodyTemplate;
         }
     }, [bodyRef, defaultBodyTemplate]);
@@ -176,10 +226,17 @@ export default function Ticketing() {
             const range = sel.getRangeAt(0);
 
             // Only operate inside the editor
-            if (bodyRef.current && bodyRef.current.contains(range.commonAncestorContainer)) {
+            if (
+                bodyRef.current &&
+                bodyRef.current.contains(range.commonAncestorContainer)
+            ) {
                 try {
                     // Try native command first
-                    const success = document.execCommand('createLink', false, url);
+                    const success = document.execCommand(
+                        'createLink',
+                        false,
+                        url,
+                    );
 
                     // If execCommand didn't create a link (or to ensure attributes), fallback to manual insertion
                     setTimeout(() => {
@@ -193,13 +250,15 @@ export default function Ticketing() {
                         });
 
                         // If execCommand returned false or selection wasn't wrapped, create link manually
-                        const hasLinkInSelection = Array.from(links).some((a) => {
-                            try {
-                                return sel.getRangeAt(0).intersectsNode(a);
-                            } catch (e) {
-                                return false;
-                            }
-                        });
+                        const hasLinkInSelection = Array.from(links).some(
+                            (a) => {
+                                try {
+                                    return sel.getRangeAt(0).intersectsNode(a);
+                                } catch (e) {
+                                    return false;
+                                }
+                            },
+                        );
 
                         if (!hasLinkInSelection && !range.collapsed) {
                             try {
@@ -310,11 +369,20 @@ export default function Ticketing() {
         const bodyHtml = bodyRef.current ? bodyRef.current.innerHTML : '';
 
         // Find selected event metadata to enrich the generated payload and the template
-        const eventObj = events.find((ev: any) => ev.id === selectedEvent) ?? null;
+        const eventObj =
+            events.find((ev: any) => ev.id === selectedEvent) ?? null;
 
         const buildEmailHtml = (innerHtml: string, ev: any | null) => {
             const eventTitle = ev ? `${ev.name}` : '';
-            const eventDate = ev && ev.event_date ? new Date(ev.event_date).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '';
+            const eventDate =
+                ev && ev.event_date
+                    ? new Date(ev.event_date).toLocaleDateString('en-GB', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                      })
+                    : '';
 
             // Minimalist email template inspired by NIMAH design
             return `
@@ -371,14 +439,18 @@ export default function Ticketing() {
 
     // Helper to read a cookie value
     const getCookie = (name: string): string | null => {
-        const match = document.cookie.split('; ').find((row) => row.startsWith(name + '='));
-        return match ? match.split('=')[1] ?? null : null;
+        const match = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith(name + '='));
+        return match ? (match.split('=')[1] ?? null) : null;
     };
 
     const sendDistribution = async () => {
         if (mailMode !== 'normal') {
             // Only normal mail is supported at this time
-            window.alert('Only Normal mail distribution is supported right now. Switch to "Normal mail" and try again.');
+            window.alert(
+                'Only Normal mail distribution is supported right now. Switch to "Normal mail" and try again.',
+            );
             return;
         }
 
@@ -390,7 +462,9 @@ export default function Ticketing() {
         const payload = generated ?? [];
 
         if (!payload.length) {
-            window.alert('No recipients found to distribute to. Generate preview first.');
+            window.alert(
+                'No recipients found to distribute to. Generate preview first.',
+            );
             return;
         }
 
@@ -404,7 +478,10 @@ export default function Ticketing() {
         setSending(true);
 
         try {
-            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+            const token =
+                document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute('content') ?? '';
             // Laravel sets XSRF-TOKEN cookie (URL encoded). Send it as X-XSRF-TOKEN header.
             const xsrfCookie = getCookie('XSRF-TOKEN');
             const xsrf = xsrfCookie ? decodeURIComponent(xsrfCookie) : '';
@@ -416,15 +493,21 @@ export default function Ticketing() {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': token,
                     'X-XSRF-TOKEN': xsrf,
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                 },
                 body: JSON.stringify({ recipients: generated ?? [] }),
             });
 
             if (resp.status === 419) {
                 let json = {} as any;
-                try { json = await resp.json(); } catch (_) { /* ignore */ }
-                throw new Error(`CSRF token mismatch (419). ${json.message ?? ''} Please refresh the page and try again.`);
+                try {
+                    json = await resp.json();
+                } catch (_) {
+                    /* ignore */
+                }
+                throw new Error(
+                    `CSRF token mismatch (419). ${json.message ?? ''} Please refresh the page and try again.`,
+                );
             }
 
             if (!resp.ok) {
@@ -433,7 +516,9 @@ export default function Ticketing() {
             }
 
             const data = await resp.json();
-            window.alert(`Distribution queued. Jobs created: ${data.queued_count ?? 0}`);
+            window.alert(
+                `Distribution queued. Jobs created: ${data.queued_count ?? 0}`,
+            );
         } catch (e: any) {
             console.error(e);
             window.alert('Distribution failed: ' + (e.message ?? String(e)));
@@ -448,90 +533,231 @@ export default function Ticketing() {
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div className="md:col-span-2 space-y-3">
+                    <div className="space-y-3 md:col-span-2">
                         <div>
                             <Label>Subject</Label>
-                            <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+                            <Input
+                                value={subject}
+                                onChange={(e) => setSubject(e.target.value)}
+                            />
                         </div>
 
                         <div>
                             <Label>Message</Label>
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <Button onClick={() => applyFormat('bold')} size="sm" variant="outline" aria-label="Bold">B</Button>
-                                <Button onClick={() => applyFormat('italic')} size="sm" variant="outline" aria-label="Italic">I</Button>
-                                <Button onClick={() => applyFormat('underline')} size="sm" variant="outline" aria-label="Underline">U</Button>
-                                <Button onClick={insertBulletList} size="sm" variant="outline" aria-label="Insert list">•</Button>
-                                <Button onClick={insertLink} size="sm" variant="outline" aria-label="Insert link">🔗</Button>
-                                <Button onClick={removeLink} size="sm" variant="outline" aria-label="Remove link">⛔</Button>
-                                <Button onClick={setTextColor} size="sm" variant="outline" aria-label="Text color" style={{ color: '#d97706' }}>A</Button>
-                                <Button onClick={setBgColor} size="sm" variant="outline" aria-label="Background color" style={{ background: '#fde68a', color: '#222' }}>Bg</Button>
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <Button
+                                    onClick={() => applyFormat('bold')}
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label="Bold"
+                                >
+                                    B
+                                </Button>
+                                <Button
+                                    onClick={() => applyFormat('italic')}
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label="Italic"
+                                >
+                                    I
+                                </Button>
+                                <Button
+                                    onClick={() => applyFormat('underline')}
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label="Underline"
+                                >
+                                    U
+                                </Button>
+                                <Button
+                                    onClick={insertBulletList}
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label="Insert list"
+                                >
+                                    •
+                                </Button>
+                                <Button
+                                    onClick={insertLink}
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label="Insert link"
+                                >
+                                    🔗
+                                </Button>
+                                <Button
+                                    onClick={removeLink}
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label="Remove link"
+                                >
+                                    ⛔
+                                </Button>
+                                <Button
+                                    onClick={setTextColor}
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label="Text color"
+                                    style={{ color: '#d97706' }}
+                                >
+                                    A
+                                </Button>
+                                <Button
+                                    onClick={setBgColor}
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label="Background color"
+                                    style={{
+                                        background: '#fde68a',
+                                        color: '#222',
+                                    }}
+                                >
+                                    Bg
+                                </Button>
                             </div>
                             <div
                                 ref={bodyRef}
                                 contentEditable
                                 suppressContentEditableWarning
-                                className="min-h-[180px] w-full rounded-md border p-3 bg-black text-sm text-foreground"
+                                className="min-h-[180px] w-full rounded-md border bg-black p-3 text-sm text-foreground"
                                 style={{ overflowY: 'auto' }}
                             >
                                 <p>Dear {'{{first_name}}'},</p>
                                 <br></br>
-                                <p>The Welcome Weekend is finally here 🎊 This is your chance to join us for an unforgettable getaway in Durbuy, where endless fun awaits you!</p>
+                                <p>
+                                    The Welcome Weekend is finally here 🎊 This
+                                    is your chance to join us for an
+                                    unforgettable getaway in Durbuy, where
+                                    endless fun awaits you!
+                                </p>
                                 <br></br>
-                                
+
                                 <h2>What we will do:</h2>
                                 <ul>
-                                    <li>🏡 Enjoy a cozy stay in one big house with everyone!</li>
-                                    <li>🏛 Indulge in a delicious brunch, explore nature on a walk, and challenge each other during quiz night!</li>
-                                    <li>🎤 Get ready for a lively cantus with the theme <strong>Brat vs. Demure</strong> - show us your wild or classy side! Plus, we’re having an epic pyjama party, so bring your comfiest, craziest PJs! We’ll also enjoy karaoke, game night, and so much more!</li>
-                                    <li>🍔 We’ve got the food and drinks covered - just bring your boundless energy!</li>
+                                    <li>
+                                        🏡 Enjoy a cozy stay in one big house
+                                        with everyone!
+                                    </li>
+                                    <li>
+                                        🏛 Indulge in a delicious brunch,
+                                        explore nature on a walk, and challenge
+                                        each other during quiz night!
+                                    </li>
+                                    <li>
+                                        🎤 Get ready for a lively cantus with
+                                        the theme{' '}
+                                        <strong>Brat vs. Demure</strong> - show
+                                        us your wild or classy side! Plus, we’re
+                                        having an epic pyjama party, so bring
+                                        your comfiest, craziest PJs! We’ll also
+                                        enjoy karaoke, game night, and so much
+                                        more!
+                                    </li>
+                                    <li>
+                                        🍔 We’ve got the food and drinks covered
+                                        - just bring your boundless energy!
+                                    </li>
                                 </ul>
                                 <br></br>
-                                
+
                                 <h2>What to bring:</h2>
                                 <ul>
-                                    <li>🧳 Clothes for the Brat vs. Demure cantus and your best outfit for the pyjama party!</li>
-                                    <li>🛏 Bed linen (for over the mattress), pillowcases, towels and sleeping bag (optional).</li>
-                                    <li>🧥 Rain jacket - just in case the weather decides to play tricks on us!</li>
-                                    <li>🎟️ And of course, don’t forget to keep your QR-ticket handy when you approach the bus.</li>
+                                    <li>
+                                        🧳 Clothes for the Brat vs. Demure
+                                        cantus and your best outfit for the
+                                        pyjama party!
+                                    </li>
+                                    <li>
+                                        🛏 Bed linen (for over the mattress),
+                                        pillowcases, towels and sleeping bag
+                                        (optional).
+                                    </li>
+                                    <li>
+                                        🧥 Rain jacket - just in case the
+                                        weather decides to play tricks on us!
+                                    </li>
+                                    <li>
+                                        🎟️ And of course, don’t forget to keep
+                                        your QR-ticket handy when you approach
+                                        the bus.
+                                    </li>
                                 </ul>
-                                
+
                                 <br></br>
-                                <p>🗓 <strong>When:</strong> Friday, October 18, 14:00 – Sunday, October 20, 18:00</p>
-                                <p>🚌 <strong>Meeting Point:</strong> Parking Bodart (14:00 at the latest)</p>
-                                <p>📍 <strong>Destination:</strong> Durbuy</p>
+                                <p>
+                                    🗓 <strong>When:</strong> Friday, October
+                                    18, 14:00 – Sunday, October 20, 18:00
+                                </p>
+                                <p>
+                                    🚌 <strong>Meeting Point:</strong> Parking
+                                    Bodart (14:00 at the latest)
+                                </p>
+                                <p>
+                                    📍 <strong>Destination:</strong> Durbuy
+                                </p>
                                 <br></br>
-                                
-                                <p>You can find the room allocation plan through the following link. You may start planning your next sleep (fill it in) 💤:<br />
-                                <a href="https://docs.google.com/spreadsheets/d/1kSL913cMP2S2Y798Z-Fijill4aZNGbkrRhj7-aTlBWI/edit?usp=sharing" target="_blank">Room Allocation Plan Link</a></p>
+
+                                <p>
+                                    You can find the room allocation plan
+                                    through the following link. You may start
+                                    planning your next sleep (fill it in) 💤:
+                                    <br />
+                                    <a
+                                        href="https://docs.google.com/spreadsheets/d/1kSL913cMP2S2Y798Z-Fijill4aZNGbkrRhj7-aTlBWI/edit?usp=sharing"
+                                        target="_blank"
+                                    >
+                                        Room Allocation Plan Link
+                                    </a>
+                                </p>
                                 <br></br>
-                                
-                                <p>Get ready for an epic adventure filled with laughter and great memories! We can’t wait to see you all there!</p>
+
+                                <p>
+                                    Get ready for an epic adventure filled with
+                                    laughter and great memories! We can’t wait
+                                    to see you all there!
+                                </p>
                                 <br></br>
-                                
-                                <p>Best wishes,<br />
-                                Daniel</p>
+
+                                <p>
+                                    Best wishes,
+                                    <br />
+                                    Daniel
+                                </p>
                             </div>
                         </div>
 
                         {/* Responsive event/sample selector and event info section */}
                         <div className="mt-4 flex flex-wrap items-end gap-4 md:gap-6">
-
-                            <div className="flex flex-col min-w-[220px] max-w-[320px] flex-1 mt-2 space-y-2">
+                            <div className="mt-2 flex max-w-[320px] min-w-[220px] flex-1 flex-col space-y-2">
                                 <div>
                                     <Label htmlFor="event-select">Event</Label>
                                     <select
                                         id="event-select"
                                         value={String(selectedEvent ?? '')}
-                                        onChange={(e) => setSelectedEvent(Number(e.target.value) || null)}
-                                        className="rounded-md border p-2 w-full min-w-[180px] max-w-full"
+                                        onChange={(e) =>
+                                            setSelectedEvent(
+                                                Number(e.target.value) || null,
+                                            )
+                                        }
+                                        className="w-full max-w-full min-w-[180px] rounded-md border p-2"
                                     >
-                                        <option value="">-- Select event --</option>
+                                        <option value="">
+                                            -- Select event --
+                                        </option>
                                         {events.length === 0 ? (
-                                            <option value="">No events available</option>
+                                            <option value="">
+                                                No events available
+                                            </option>
                                         ) : (
                                             events.map((ev: any) => (
-                                                <option key={ev.id} value={ev.id}>
-                                                    {ev.name} {ev.event_date ? `(${new Date(ev.event_date).toLocaleDateString()})` : ''}
+                                                <option
+                                                    key={ev.id}
+                                                    value={ev.id}
+                                                >
+                                                    {ev.name}{' '}
+                                                    {ev.event_date
+                                                        ? `(${new Date(ev.event_date).toLocaleDateString()})`
+                                                        : ''}
                                                 </option>
                                             ))
                                         )}
@@ -539,17 +765,30 @@ export default function Ticketing() {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col min-w-[220px] max-w-[320px] flex-1 mt-2 space-y-2">
+                            <div className="mt-2 flex max-w-[320px] min-w-[220px] flex-1 flex-col space-y-2">
                                 <div>
-                                    <Label htmlFor="sample-user-select">Sample user</Label>
+                                    <Label htmlFor="sample-user-select">
+                                        Sample user
+                                    </Label>
                                     <select
                                         id="sample-user-select"
-                                        value={String(selectedSampleIndex ?? '')}
-                                        onChange={(e) => setSelectedSampleIndex(e.target.value === '' ? null : Number(e.target.value))}
-                                        className="rounded-md border p-2 w-full min-w-[180px] max-w-full text-sm"
+                                        value={String(
+                                            selectedSampleIndex ?? '',
+                                        )}
+                                        onChange={(e) =>
+                                            setSelectedSampleIndex(
+                                                e.target.value === ''
+                                                    ? null
+                                                    : Number(e.target.value),
+                                            )
+                                        }
+                                        className="w-full max-w-full min-w-[180px] rounded-md border p-2 text-sm"
                                     >
                                         {sampleData.map((s, i) => (
-                                            <option key={i} value={i}>{s.first_name} {s.last_name} — {s.email}</option>
+                                            <option key={i} value={i}>
+                                                {s.first_name} {s.last_name} —{' '}
+                                                {s.email}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
@@ -557,58 +796,191 @@ export default function Ticketing() {
 
                             <div className="flex flex-col justify-end">
                                 <div className="flex gap-2">
-                                    <Button onClick={generateTickets} className="w-full md:w-auto">Generate Preview</Button>
-                                    <Button onClick={sendDistribution} className="w-full md:w-auto" disabled={sending} variant="destructive">{sending ? 'Sending…' : 'Distribute (real)'}</Button>
+                                    <Button
+                                        onClick={generateTickets}
+                                        className="w-full md:w-auto"
+                                    >
+                                        Generate Preview
+                                    </Button>
+                                    <Button
+                                        onClick={sendDistribution}
+                                        className="w-full md:w-auto"
+                                        disabled={sending}
+                                        variant="destructive"
+                                    >
+                                        {sending
+                                            ? 'Sending…'
+                                            : 'Distribute (real)'}
+                                    </Button>
                                 </div>
                                 {/* Confirmation dialog for distribution */}
-                                <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                                    <DialogContent className="!w-[95vw] max-h-[80vh] !max-w-md p-4">
-                                        <DialogTitle>Confirm distribution</DialogTitle>
+                                <Dialog
+                                    open={confirmOpen}
+                                    onOpenChange={setConfirmOpen}
+                                >
+                                    <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                                        <DialogTitle>
+                                            Confirm distribution
+                                        </DialogTitle>
                                         <DialogDescription>
-                                            You are about to distribute the prepared email to <strong>{(generated ?? []).length}</strong> recipients. This will enqueue background jobs to send the messages. Do you want to proceed?
+                                            You are about to distribute the
+                                            prepared email to{' '}
+                                            <strong>
+                                                {(generated ?? []).length}
+                                            </strong>{' '}
+                                            recipients. This will enqueue
+                                            background jobs to send the
+                                            messages. Do you want to proceed?
                                         </DialogDescription>
 
-                                        <div className="mt-4 text-xs text-muted-foreground">Queued sending is recommended for large recipient lists and will run in the background (run <code>php artisan queue:work</code> to process).</div>
+                                        <div className="mt-4 text-xs text-muted-foreground">
+                                            Queued sending is recommended for
+                                            large recipient lists and will run
+                                            in the background (run{' '}
+                                            <code>php artisan queue:work</code>{' '}
+                                            to process).
+                                        </div>
 
                                         <DialogFooter>
                                             <DialogClose asChild>
-                                                <Button variant="ghost">Cancel</Button>
+                                                <Button variant="ghost">
+                                                    Cancel
+                                                </Button>
                                             </DialogClose>
-                                            <Button onClick={proceedSendDistribution} className="ml-2">Confirm & Queue</Button>
+                                            <Button
+                                                onClick={
+                                                    proceedSendDistribution
+                                                }
+                                                className="ml-2"
+                                            >
+                                                Confirm & Queue
+                                            </Button>
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
                             </div>
 
                             {/* Event details area (always rendered below selectors) */}
-                            <div className="w-full basis-full mt-4">
+                            <div className="mt-4 w-full basis-full">
                                 {(() => {
                                     if (selectedEvent === null) {
-                                        return <div className="text-sm text-muted-foreground">No event selected</div>;
+                                        return (
+                                            <div className="text-sm text-muted-foreground">
+                                                No event selected
+                                            </div>
+                                        );
                                     }
-                                    const ev = events.find((x: any) => x.id === selectedEvent) ?? null;
-                                    if (!ev) return <div className="text-sm text-muted-foreground">Event not found</div>;
+                                    const ev =
+                                        events.find(
+                                            (x: any) => x.id === selectedEvent,
+                                        ) ?? null;
+                                    if (!ev)
+                                        return (
+                                            <div className="text-sm text-muted-foreground">
+                                                Event not found
+                                            </div>
+                                        );
 
-                                    const rows: Array<{label: string; value: string}> = [];
-                                    if (ev.name) rows.push({ label: 'Name', value: String(ev.name) });
-                                    if (ev.event_date) rows.push({ label: 'Event date', value: new Date(ev.event_date).toLocaleString() });
-                                    if (ev.start_sell_date) rows.push({ label: 'Start selling', value: new Date(ev.start_sell_date).toLocaleString() });
-                                    if (ev.end_sell_date) rows.push({ label: 'End selling', value: new Date(ev.end_sell_date).toLocaleString() });
-                                    if (ev.price_with_card !== undefined) rows.push({ label: 'Price (with ESN card)', value: `€${Number(ev.price_with_card).toFixed(2)}` });
-                                    if (ev.price_without_card !== undefined) rows.push({ label: 'Price (without ESN card)', value: `€${Number(ev.price_without_card).toFixed(2)}` });
-                                    if (ev.variable_amount) rows.push({ label: 'Variable amount', value: ev.variable_amount ? 'Yes' : 'No' });
-                                    if (ev.quantity !== undefined && ev.quantity !== null) rows.push({ label: 'Quantity', value: String(ev.quantity) });
-                                    if (ev.quantity_with_card !== undefined && ev.quantity_with_card !== null) rows.push({ label: 'Quantity (with card)', value: String(ev.quantity_with_card) });
-                                    if (ev.quantity_without_card !== undefined && ev.quantity_without_card !== null) rows.push({ label: 'Quantity (without card)', value: String(ev.quantity_without_card) });
-                                    if (ev.responsibleUser) rows.push({ label: 'Responsible', value: `${ev.responsibleUser.first_name} ${ev.responsibleUser.last_name}` });
-                                    if (ev.notes) rows.push({ label: 'Notes', value: String(ev.notes) });
+                                    const rows: Array<{
+                                        label: string;
+                                        value: string;
+                                    }> = [];
+                                    if (ev.name)
+                                        rows.push({
+                                            label: 'Name',
+                                            value: String(ev.name),
+                                        });
+                                    if (ev.event_date)
+                                        rows.push({
+                                            label: 'Event date',
+                                            value: new Date(
+                                                ev.event_date,
+                                            ).toLocaleString(),
+                                        });
+                                    if (ev.start_sell_date)
+                                        rows.push({
+                                            label: 'Start selling',
+                                            value: new Date(
+                                                ev.start_sell_date,
+                                            ).toLocaleString(),
+                                        });
+                                    if (ev.end_sell_date)
+                                        rows.push({
+                                            label: 'End selling',
+                                            value: new Date(
+                                                ev.end_sell_date,
+                                            ).toLocaleString(),
+                                        });
+                                    if (ev.price_with_card !== undefined)
+                                        rows.push({
+                                            label: 'Price (with ESN card)',
+                                            value: `€${Number(ev.price_with_card).toFixed(2)}`,
+                                        });
+                                    if (ev.price_without_card !== undefined)
+                                        rows.push({
+                                            label: 'Price (without ESN card)',
+                                            value: `€${Number(ev.price_without_card).toFixed(2)}`,
+                                        });
+                                    if (ev.variable_amount)
+                                        rows.push({
+                                            label: 'Variable amount',
+                                            value: ev.variable_amount
+                                                ? 'Yes'
+                                                : 'No',
+                                        });
+                                    if (
+                                        ev.quantity !== undefined &&
+                                        ev.quantity !== null
+                                    )
+                                        rows.push({
+                                            label: 'Quantity',
+                                            value: String(ev.quantity),
+                                        });
+                                    if (
+                                        ev.quantity_with_card !== undefined &&
+                                        ev.quantity_with_card !== null
+                                    )
+                                        rows.push({
+                                            label: 'Quantity (with card)',
+                                            value: String(
+                                                ev.quantity_with_card,
+                                            ),
+                                        });
+                                    if (
+                                        ev.quantity_without_card !==
+                                            undefined &&
+                                        ev.quantity_without_card !== null
+                                    )
+                                        rows.push({
+                                            label: 'Quantity (without card)',
+                                            value: String(
+                                                ev.quantity_without_card,
+                                            ),
+                                        });
+                                    if (ev.responsibleUser)
+                                        rows.push({
+                                            label: 'Responsible',
+                                            value: `${ev.responsibleUser.first_name} ${ev.responsibleUser.last_name}`,
+                                        });
+                                    if (ev.notes)
+                                        rows.push({
+                                            label: 'Notes',
+                                            value: String(ev.notes),
+                                        });
 
                                     return (
-                                        <div className="bg-muted/40 rounded p-3 mt-2 text-sm w-full max-w-xl">
-                                            <Label className="mb-1">Event details</Label>
+                                        <div className="mt-2 w-full max-w-xl rounded bg-muted/40 p-3 text-sm">
+                                            <Label className="mb-1">
+                                                Event details
+                                            </Label>
                                             <ul className="list-disc pl-5 text-sm">
                                                 {rows.map((r) => (
-                                                    <li key={r.label}><strong>{r.label}:</strong> {r.value}</li>
+                                                    <li key={r.label}>
+                                                        <strong>
+                                                            {r.label}:
+                                                        </strong>{' '}
+                                                        {r.value}
+                                                    </li>
                                                 ))}
                                             </ul>
                                         </div>
@@ -620,338 +992,738 @@ export default function Ticketing() {
 
                     <aside className="">
                         <div>
-                            <h4 className="text-sm font-semibold">Field Mapping</h4>
-                                    <div className="mt-2 space-y-2">
-                                        <div>
-                                            <Label>First name source</Label>
-                                            <select value={firstNameField} onChange={(e) => setFirstNameField(e.target.value)} className="rounded-md border p-2 w-full">
-                                                <option value="">— No mapping available —</option>
-                                                {fields.map((f) => <option key={f} value={f}>{f}</option>)}
-                                            </select>
-                                        </div>
+                            <h4 className="text-sm font-semibold">
+                                Field Mapping
+                            </h4>
+                            <div className="mt-2 space-y-2">
+                                <div>
+                                    <Label>First name source</Label>
+                                    <select
+                                        value={firstNameField}
+                                        onChange={(e) =>
+                                            setFirstNameField(e.target.value)
+                                        }
+                                        className="w-full rounded-md border p-2"
+                                    >
+                                        <option value="">
+                                            — No mapping available —
+                                        </option>
+                                        {fields.map((f) => (
+                                            <option key={f} value={f}>
+                                                {f}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
                                 <div>
                                     <Label>Last name source</Label>
-                                    <select value={lastNameField} onChange={(e) => setLastNameField(e.target.value)} className="rounded-md border p-2 w-full">
-                                        <option value="">— No mapping available —</option>
-                                        {fields.map((f) => <option key={f} value={f}>{f}</option>)}
+                                    <select
+                                        value={lastNameField}
+                                        onChange={(e) =>
+                                            setLastNameField(e.target.value)
+                                        }
+                                        className="w-full rounded-md border p-2"
+                                    >
+                                        <option value="">
+                                            — No mapping available —
+                                        </option>
+                                        {fields.map((f) => (
+                                            <option key={f} value={f}>
+                                                {f}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
 
                                 <div>
                                     <Label>Email source</Label>
-                                    <select value={emailField} onChange={(e) => setEmailField(e.target.value)} className="rounded-md border p-2 w-full">
-                                        <option value="">— No mapping available —</option>
-                                        {fields.map((f) => <option key={f} value={f}>{f}</option>)}
+                                    <select
+                                        value={emailField}
+                                        onChange={(e) =>
+                                            setEmailField(e.target.value)
+                                        }
+                                        className="w-full rounded-md border p-2"
+                                    >
+                                        <option value="">
+                                            — No mapping available —
+                                        </option>
+                                        {fields.map((f) => (
+                                            <option key={f} value={f}>
+                                                {f}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
 
-                        {/* Mail information section: choose normal mail or mail with QR embedding. If QR selected show event name/date inputs and per-column nullable radios */}
-                        <div className="mt-10">
-                            <h4 className="text-sm font-semibold">Mail information</h4>
-                            <div className="mt-2 space-y-3">
-                                <div>
-                                    <Label>Mail type</Label>
-                                    <div className="flex gap-4 mt-1">
-                                        <label className="inline-flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                name="mailMode"
-                                                value="normal"
-                                                checked={mailMode === 'normal'}
-                                                onChange={() => setMailMode('normal')}
-                                            />
-                                            <span className="ml-1">Normal mail</span>
-                                        </label>
+                            {/* Mail information section: choose normal mail or mail with QR embedding. If QR selected show event name/date inputs and per-column nullable radios */}
+                            <div className="mt-10">
+                                <h4 className="text-sm font-semibold">
+                                    Mail information
+                                </h4>
+                                <div className="mt-2 space-y-3">
+                                    <div>
+                                        <Label>Mail type</Label>
+                                        <div className="mt-1 flex gap-4">
+                                            <label className="inline-flex items-center gap-2">
+                                                <input
+                                                    type="radio"
+                                                    name="mailMode"
+                                                    value="normal"
+                                                    checked={
+                                                        mailMode === 'normal'
+                                                    }
+                                                    onChange={() =>
+                                                        setMailMode('normal')
+                                                    }
+                                                />
+                                                <span className="ml-1">
+                                                    Normal mail
+                                                </span>
+                                            </label>
 
-                                        <label className="inline-flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                name="mailMode"
-                                                value="qr"
-                                                checked={mailMode === 'qr'}
-                                                onChange={() => setMailMode('qr')}
-                                            />
-                                            <span className="ml-1">Mail with QR embedding</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                {/* QR-specific inputs (only shown when QR mail selected) */}
-                                {mailMode === 'qr' && (
-                                    <div className="space-y-3">
-                                        <div>
-                                            <Label>QR: Event name</Label>
-                                            <Input value={qrEventName} onChange={(e) => setQrEventName(e.target.value)} placeholder="Optional event name" />
+                                            <label className="inline-flex items-center gap-2">
+                                                <input
+                                                    type="radio"
+                                                    name="mailMode"
+                                                    value="qr"
+                                                    checked={mailMode === 'qr'}
+                                                    onChange={() =>
+                                                        setMailMode('qr')
+                                                    }
+                                                />
+                                                <span className="ml-1">
+                                                    Mail with QR embedding
+                                                </span>
+                                            </label>
                                         </div>
-
-                                        <div>
-                                            <Label>QR: Event date</Label>
-                                            <Input value={qrEventDate} onChange={(e) => setQrEventDate(e.target.value)} placeholder="Optional event date" />
-                                        </div>
                                     </div>
-                                )}
-
-                                {/* Column nullable controls — visible regardless of mail mode */}
-                                <div>
-                                    <Label>Skippable columns: can undefined user values be gracefully skipped?</Label>
-                                    <div className="mt-2 space-y-2 text-sm">
-                                        {fields.map((f) => (
-                                            <div key={f} className="flex items-center gap-4">
-                                                <div className="w-36 text-xs text-muted-foreground">{`{{${f}}}`}</div>
-                                                <label className="inline-flex items-center gap-2">
-                                                    <input
-                                                        type="radio"
-                                                        name={`nullable-${f}`}
-                                                        checked={!nullableFields[f]}
-                                                        onChange={() => setNullableFields((prev) => ({ ...prev, [f]: false }))}
-                                                    />
-                                                    <span className="ml-1">Required [appear as "undefined"]</span>
-                                                </label>
-
-                                                <label className="inline-flex items-center gap-2">
-                                                    <input
-                                                        type="radio"
-                                                        name={`nullable-${f}`}
-                                                        checked={Boolean(nullableFields[f])}
-                                                        onChange={() => setNullableFields((prev) => ({ ...prev, [f]: true }))}
-                                                    />
-                                                    <span className="ml-1">Skippable</span>
-                                                </label>
+                                    {/* QR-specific inputs (only shown when QR mail selected) */}
+                                    {mailMode === 'qr' && (
+                                        <div className="space-y-3">
+                                            <div>
+                                                <Label>QR: Event name</Label>
+                                                <Input
+                                                    value={qrEventName}
+                                                    onChange={(e) =>
+                                                        setQrEventName(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Optional event name"
+                                                />
                                             </div>
-                                        ))}
+
+                                            <div>
+                                                <Label>QR: Event date</Label>
+                                                <Input
+                                                    value={qrEventDate}
+                                                    onChange={(e) =>
+                                                        setQrEventDate(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Optional event date"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Column nullable controls — visible regardless of mail mode */}
+                                    <div>
+                                        <Label>
+                                            Skippable columns: can undefined
+                                            user values be gracefully skipped?
+                                        </Label>
+                                        <div className="mt-2 space-y-2 text-sm">
+                                            {fields.map((f) => (
+                                                <div
+                                                    key={f}
+                                                    className="flex items-center gap-4"
+                                                >
+                                                    <div className="w-36 text-xs text-muted-foreground">{`{{${f}}}`}</div>
+                                                    <label className="inline-flex items-center gap-2">
+                                                        <input
+                                                            type="radio"
+                                                            name={`nullable-${f}`}
+                                                            checked={
+                                                                !nullableFields[
+                                                                    f
+                                                                ]
+                                                            }
+                                                            onChange={() =>
+                                                                setNullableFields(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        [f]: false,
+                                                                    }),
+                                                                )
+                                                            }
+                                                        />
+                                                        <span className="ml-1">
+                                                            Required [appear as
+                                                            "undefined"]
+                                                        </span>
+                                                    </label>
+
+                                                    <label className="inline-flex items-center gap-2">
+                                                        <input
+                                                            type="radio"
+                                                            name={`nullable-${f}`}
+                                                            checked={Boolean(
+                                                                nullableFields[
+                                                                    f
+                                                                ],
+                                                            )}
+                                                            onChange={() =>
+                                                                setNullableFields(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        [f]: true,
+                                                                    }),
+                                                                )
+                                                            }
+                                                        />
+                                                        <span className="ml-1">
+                                                            Skippable
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        </div>
 
                         <div className="mt-10">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-semibold"> Data Source Preview...</h4>
+                                <h4 className="text-sm font-semibold">
+                                    {' '}
+                                    Data Source Preview...
+                                </h4>
                                 <Dialog>
                                     <DialogTrigger asChild>
-                                        <Button size="sm" variant="ghost">Manage</Button>
+                                        <Button size="sm" variant="ghost">
+                                            Manage
+                                        </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="!w-[95vw] !max-w-[95vw] h-[90vh] sm:!max-w-[95vw] p-4 flex flex-col overflow-hidden">
-                                            <DialogTitle>Sample Data Source</DialogTitle>
-                                            <DialogDescription>
-                                                <div className="text-xs text-muted-foreground">Total entries: {sampleData.length}</div>
-                                            </DialogDescription>
+                                    <DialogContent className="flex h-[90vh] !w-[95vw] !max-w-[95vw] flex-col overflow-hidden p-4 sm:!max-w-[95vw]">
+                                        <DialogTitle>
+                                            Sample Data Source
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            <div className="text-xs text-muted-foreground">
+                                                Total entries:{' '}
+                                                {sampleData.length}
+                                            </div>
+                                        </DialogDescription>
 
-                                            {/* content area grows and allows internal panes to scroll independently */}
-                                            <div className="mt-4 flex-1 min-h-0 overflow-hidden">
-                                                <div className="grid grid-cols-3 gap-4 h-full min-h-0">
-                                                    {/* Full data table with vertical scroll */}
-                                                    <div className="col-span-2 min-h-0">
-                                                        <div className="h-full max-h-[75vh] overflow-y-auto rounded border">
-                                                            <table className="w-full text-xs table-fixed">
-                                                                <thead>
-                                                                    <tr>
-                                                                        {fields.map((f) => (
+                                        {/* content area grows and allows internal panes to scroll independently */}
+                                        <div className="mt-4 min-h-0 flex-1 overflow-hidden">
+                                            <div className="grid h-full min-h-0 grid-cols-3 gap-4">
+                                                {/* Full data table with vertical scroll */}
+                                                <div className="col-span-2 min-h-0">
+                                                    <div className="h-full max-h-[75vh] overflow-y-auto rounded border">
+                                                        <table className="w-full table-fixed text-xs">
+                                                            <thead>
+                                                                <tr>
+                                                                    {fields.map(
+                                                                        (f) => (
                                                                             <th
-                                                                                key={f}
-                                                                                className="text-left pr-2 text-xs sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b"
+                                                                                key={
+                                                                                    f
+                                                                                }
+                                                                                className="sticky top-0 z-10 border-b bg-background/95 pr-2 text-left text-xs backdrop-blur-sm"
                                                                             >
-                                                                                {f}
+                                                                                {
+                                                                                    f
+                                                                                }
                                                                             </th>
-                                                                        ))}
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {sampleData.map((r, idx) => (
-                                                                        <tr key={idx} className="border-t">
-                                                                            {fields.map((f) => (
-                                                                                <td key={f} className="py-1 pr-2 align-top text-xs">
-                                                                                    <span className="inline-block w-full truncate" title={String((r as any)[f] ?? '')}>{String((r as any)[f] ?? '')}</span>
-                                                                                </td>
-                                                                            ))}
+                                                                        ),
+                                                                    )}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {sampleData.map(
+                                                                    (
+                                                                        r,
+                                                                        idx,
+                                                                    ) => (
+                                                                        <tr
+                                                                            key={
+                                                                                idx
+                                                                            }
+                                                                            className="border-t"
+                                                                        >
+                                                                            {fields.map(
+                                                                                (
+                                                                                    f,
+                                                                                ) => (
+                                                                                    <td
+                                                                                        key={
+                                                                                            f
+                                                                                        }
+                                                                                        className="py-1 pr-2 align-top text-xs"
+                                                                                    >
+                                                                                        <span
+                                                                                            className="inline-block w-full truncate"
+                                                                                            title={String(
+                                                                                                (
+                                                                                                    r as any
+                                                                                                )[
+                                                                                                    f
+                                                                                                ] ??
+                                                                                                    '',
+                                                                                            )}
+                                                                                        >
+                                                                                            {String(
+                                                                                                (
+                                                                                                    r as any
+                                                                                                )[
+                                                                                                    f
+                                                                                                ] ??
+                                                                                                    '',
+                                                                                            )}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                ),
+                                                                            )}
                                                                         </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
+                                                                    ),
+                                                                )}
+                                                            </tbody>
+                                                        </table>
                                                     </div>
+                                                </div>
 
-                                                    {/* Recipient summary with vertical scroll */}
-                                                    <div className="col-span-1 min-h-0">
-                                                        <div className="border rounded-md p-4 bg-background h-full max-h-[75vh] overflow-y-auto flex flex-col">
-                                                            <div className="flex-shrink-0">
-                                                                <h4 className="text-sm font-semibold">Recipients summary</h4>
-                                                                <p className="text-xs text-muted-foreground mt-1">Summary of destination domains and potential typos</p>
-                                                            </div>
-                                                            <div className="mt-3">
-                                                                {/* compute domain summary client-side from sampleData */}
-                                                                {(() => {
-                                                                const emails: string[] = sampleData.map((s) => String((s as any).email ?? '').trim()).filter(Boolean);
-                                                                const domains: string[] = emails.map((e) => (e.includes('@') ? e.split('@')[1].toLowerCase() : ''));
-                                                                const domainCounts: Record<string, number> = {};
-                                                                domains.forEach((d) => { if (d) domainCounts[d] = (domainCounts[d] || 0) + 1; });
+                                                {/* Recipient summary with vertical scroll */}
+                                                <div className="col-span-1 min-h-0">
+                                                    <div className="flex h-full max-h-[75vh] flex-col overflow-y-auto rounded-md border bg-background p-4">
+                                                        <div className="flex-shrink-0">
+                                                            <h4 className="text-sm font-semibold">
+                                                                Recipients
+                                                                summary
+                                                            </h4>
+                                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                                Summary of
+                                                                destination
+                                                                domains and
+                                                                potential typos
+                                                            </p>
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            {/* compute domain summary client-side from sampleData */}
+                                                            {(() => {
+                                                                const emails: string[] =
+                                                                    sampleData
+                                                                        .map(
+                                                                            (
+                                                                                s,
+                                                                            ) =>
+                                                                                String(
+                                                                                    (
+                                                                                        s as any
+                                                                                    )
+                                                                                        .email ??
+                                                                                        '',
+                                                                                ).trim(),
+                                                                        )
+                                                                        .filter(
+                                                                            Boolean,
+                                                                        );
+                                                                const domains: string[] =
+                                                                    emails.map(
+                                                                        (e) =>
+                                                                            e.includes(
+                                                                                '@',
+                                                                            )
+                                                                                ? e
+                                                                                      .split(
+                                                                                          '@',
+                                                                                      )[1]
+                                                                                      .toLowerCase()
+                                                                                : '',
+                                                                    );
+                                                                const domainCounts: Record<
+                                                                    string,
+                                                                    number
+                                                                > = {};
+                                                                domains.forEach(
+                                                                    (d) => {
+                                                                        if (d)
+                                                                            domainCounts[
+                                                                                d
+                                                                            ] =
+                                                                                (domainCounts[
+                                                                                    d
+                                                                                ] ||
+                                                                                    0) +
+                                                                                1;
+                                                                    },
+                                                                );
 
-                                                                const knownDomains = [
-                                                                    'gmail.com',
-                                                                    'hotmail.com',
-                                                                    'yahoo.com',
-                                                                    'outlook.com',
-                                                                    'live.com',
-                                                                    'icloud.com',
-                                                                    'student.kuleuven.be',
-                                                                    'kuleuven.be',
-                                                                    'hotmail.co.uk',
-                                                                    'yahoo.co.uk',
-                                                                    'protonmail.com',
-                                                                    'telenet.be',
-                                                                    'skynet.be',
-                                                                    'ucll.be',
-                                                                    'esnleuven.be',
-                                                                    'example.com', // sample data
-                                                                ];
+                                                                const knownDomains =
+                                                                    [
+                                                                        'gmail.com',
+                                                                        'hotmail.com',
+                                                                        'yahoo.com',
+                                                                        'outlook.com',
+                                                                        'live.com',
+                                                                        'icloud.com',
+                                                                        'student.kuleuven.be',
+                                                                        'kuleuven.be',
+                                                                        'hotmail.co.uk',
+                                                                        'yahoo.co.uk',
+                                                                        'protonmail.com',
+                                                                        'telenet.be',
+                                                                        'skynet.be',
+                                                                        'ucll.be',
+                                                                        'esnleuven.be',
+                                                                        'example.com', // sample data
+                                                                    ];
 
-                                                                const domainEntries = Object.entries(domainCounts).sort((a, b) => b[1] - a[1]);
-                                                                const suspicious = domainEntries.filter(([d]) => !knownDomains.includes(d));
+                                                                const domainEntries =
+                                                                    Object.entries(
+                                                                        domainCounts,
+                                                                    ).sort(
+                                                                        (
+                                                                            a,
+                                                                            b,
+                                                                        ) =>
+                                                                            b[1] -
+                                                                            a[1],
+                                                                    );
+                                                                const suspicious =
+                                                                    domainEntries.filter(
+                                                                        ([d]) =>
+                                                                            !knownDomains.includes(
+                                                                                d,
+                                                                            ),
+                                                                    );
 
                                                                 return (
-                                                                    <div className="text-xs space-y-3">
+                                                                    <div className="space-y-3 text-xs">
                                                                         <div>
-                                                                            <div className="text-xs font-medium">Known domains</div>
+                                                                            <div className="text-xs font-medium">
+                                                                                Known
+                                                                                domains
+                                                                            </div>
                                                                             <div className="mt-1 text-xs text-muted-foreground">
-                                                                                {knownDomains.join(', ')}
+                                                                                {knownDomains.join(
+                                                                                    ', ',
+                                                                                )}
                                                                             </div>
                                                                         </div>
 
                                                                         <div>
-                                                                            <div className="text-xs font-medium">Domain counts</div>
+                                                                            <div className="text-xs font-medium">
+                                                                                Domain
+                                                                                counts
+                                                                            </div>
                                                                             <ul className="mt-1 list-disc pl-5">
-                                                                                {domainEntries.length === 0 ? (
-                                                                                    <li className="text-muted-foreground">No recipient emails found</li>
+                                                                                {domainEntries.length ===
+                                                                                0 ? (
+                                                                                    <li className="text-muted-foreground">
+                                                                                        No
+                                                                                        recipient
+                                                                                        emails
+                                                                                        found
+                                                                                    </li>
                                                                                 ) : (
-                                                                                    domainEntries.map(([d, c]) => (
-                                                                                        <li key={d} className={"flex items-center justify-between " + (knownDomains.includes(d) ? '' : 'text-red-600')}>
-                                                                                            <span className="mr-2">{d}</span>
-                                                                                            <span className="text-muted-foreground">{c}</span>
-                                                                                        </li>
-                                                                                    ))
+                                                                                    domainEntries.map(
+                                                                                        ([
+                                                                                            d,
+                                                                                            c,
+                                                                                        ]) => (
+                                                                                            <li
+                                                                                                key={
+                                                                                                    d
+                                                                                                }
+                                                                                                className={
+                                                                                                    'flex items-center justify-between ' +
+                                                                                                    (knownDomains.includes(
+                                                                                                        d,
+                                                                                                    )
+                                                                                                        ? ''
+                                                                                                        : 'text-red-600')
+                                                                                                }
+                                                                                            >
+                                                                                                <span className="mr-2">
+                                                                                                    {
+                                                                                                        d
+                                                                                                    }
+                                                                                                </span>
+                                                                                                <span className="text-muted-foreground">
+                                                                                                    {
+                                                                                                        c
+                                                                                                    }
+                                                                                                </span>
+                                                                                            </li>
+                                                                                        ),
+                                                                                    )
                                                                                 )}
                                                                             </ul>
                                                                         </div>
 
-
-                                                                        {suspicious.length > 0 && (
+                                                                        {suspicious.length >
+                                                                            0 && (
                                                                             <div>
-                                                                                <div className="text-xs font-medium text-red-600">Potential typos</div>
+                                                                                <div className="text-xs font-medium text-red-600">
+                                                                                    Potential
+                                                                                    typos
+                                                                                </div>
                                                                                 <div className="mt-1 text-xs">
-                                                                                    {suspicious.map(([d]) => (
-                                                                                        <div key={d} className="mb-1">
-                                                                                            <div className="font-medium">{d}</div>
-                                                                                            <div className="text-muted-foreground">Addresses:</div>
-                                                                                            <ul className="list-disc pl-5 text-xs mt-1">
-                                                                                                {emails.filter((e) => e.endsWith(`@${d}`)).slice(0,5).map((e) => <li key={e}>{e}</li>)}
-                                                                                            </ul>
-                                                                                        </div>
-                                                                                    ))}
+                                                                                    {suspicious.map(
+                                                                                        ([
+                                                                                            d,
+                                                                                        ]) => (
+                                                                                            <div
+                                                                                                key={
+                                                                                                    d
+                                                                                                }
+                                                                                                className="mb-1"
+                                                                                            >
+                                                                                                <div className="font-medium">
+                                                                                                    {
+                                                                                                        d
+                                                                                                    }
+                                                                                                </div>
+                                                                                                <div className="text-muted-foreground">
+                                                                                                    Addresses:
+                                                                                                </div>
+                                                                                                <ul className="mt-1 list-disc pl-5 text-xs">
+                                                                                                    {emails
+                                                                                                        .filter(
+                                                                                                            (
+                                                                                                                e,
+                                                                                                            ) =>
+                                                                                                                e.endsWith(
+                                                                                                                    `@${d}`,
+                                                                                                                ),
+                                                                                                        )
+                                                                                                        .slice(
+                                                                                                            0,
+                                                                                                            5,
+                                                                                                        )
+                                                                                                        .map(
+                                                                                                            (
+                                                                                                                e,
+                                                                                                            ) => (
+                                                                                                                <li
+                                                                                                                    key={
+                                                                                                                        e
+                                                                                                                    }
+                                                                                                                >
+                                                                                                                    {
+                                                                                                                        e
+                                                                                                                    }
+                                                                                                                </li>
+                                                                                                            ),
+                                                                                                        )}
+                                                                                                </ul>
+                                                                                            </div>
+                                                                                        ),
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
                                                                         )}
                                                                     </div>
                                                                 );
                                                             })()}
-                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            <DialogFooter>
-                                                <DialogClose asChild>
-                                                    <Button>Close</Button>
-                                                </DialogClose>
-                                            </DialogFooter>
-                                        </DialogContent>
+                                        <DialogFooter>
+                                            <DialogClose asChild>
+                                                <Button>Close</Button>
+                                            </DialogClose>
+                                        </DialogFooter>
+                                    </DialogContent>
                                 </Dialog>
                             </div>
 
                             <div className="mt-3 text-xs">
-                                <table className="w-full text-xs table-fixed">
+                                <table className="w-full table-fixed text-xs">
                                     <thead>
                                         <tr>
-                                            <th className="text-left pr-2 w-[6.5rem] min-w-[6.5rem]">{firstNameField}</th>
-                                            <th className="text-left pr-2 w-[6.5rem] min-w-[6.5rem]">{lastNameField}</th>
-                                            <th className="text-left pr-2">{emailField}</th>
+                                            <th className="w-[6.5rem] min-w-[6.5rem] pr-2 text-left">
+                                                {firstNameField}
+                                            </th>
+                                            <th className="w-[6.5rem] min-w-[6.5rem] pr-2 text-left">
+                                                {lastNameField}
+                                            </th>
+                                            <th className="pr-2 text-left">
+                                                {emailField}
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {sampleData.slice(0, 10).map((r, idx) => (
-                                            <tr key={idx} className="border-t">
-                                                <td className="py-1 pr-2"><span title={String((r as any)[firstNameField] ?? '')} className="inline-block w-full truncate">{String((r as any)[firstNameField] ?? '')}</span></td>
-                                                <td className="py-1 pr-2"><span title={String((r as any)[lastNameField] ?? '')} className="inline-block w-full truncate">{String((r as any)[lastNameField] ?? '')}</span></td>
-                                                <td className="py-1 pr-2"><span title={String((r as any)[emailField] ?? '')} className="inline-block w-full truncate">{String((r as any)[emailField] ?? '')}</span></td>
-                                            </tr>
-                                        ))}
+                                        {sampleData
+                                            .slice(0, 10)
+                                            .map((r, idx) => (
+                                                <tr
+                                                    key={idx}
+                                                    className="border-t"
+                                                >
+                                                    <td className="py-1 pr-2">
+                                                        <span
+                                                            title={String(
+                                                                (r as any)[
+                                                                    firstNameField
+                                                                ] ?? '',
+                                                            )}
+                                                            className="inline-block w-full truncate"
+                                                        >
+                                                            {String(
+                                                                (r as any)[
+                                                                    firstNameField
+                                                                ] ?? '',
+                                                            )}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-1 pr-2">
+                                                        <span
+                                                            title={String(
+                                                                (r as any)[
+                                                                    lastNameField
+                                                                ] ?? '',
+                                                            )}
+                                                            className="inline-block w-full truncate"
+                                                        >
+                                                            {String(
+                                                                (r as any)[
+                                                                    lastNameField
+                                                                ] ?? '',
+                                                            )}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-1 pr-2">
+                                                        <span
+                                                            title={String(
+                                                                (r as any)[
+                                                                    emailField
+                                                                ] ?? '',
+                                                            )}
+                                                            className="inline-block w-full truncate"
+                                                        >
+                                                            {String(
+                                                                (r as any)[
+                                                                    emailField
+                                                                ] ?? '',
+                                                            )}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </aside>
                 </div>
-                                {/* Removed duplicate event details rendering */}
-                </div>
+                {/* Removed duplicate event details rendering */}
+            </div>
 
-                <div>
-                    <div className="px-4 pb-4">
-                        <h4 className="text-sm font-semibold">Generated Payload Preview</h4>
-                        <div className="pt-2">
-                                <div className="text-sm mb-1">Render format</div>
-                                <div role="tablist" aria-orientation="horizontal" className="bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]">
-                                    <button
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={!showRendered}
-                                        onClick={() => setShowRendered(false)}
-                                        className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 ${!showRendered ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30' : 'text-foreground dark:text-muted-foreground'}`}
-                                    >
-                                        Json
-                                    </button>
-                                    <button
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={showRendered}
-                                        onClick={() => setShowRendered(true)}
-                                        className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 ${showRendered ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30' : 'text-foreground dark:text-muted-foreground'}`}
-                                    >
-                                        HTML (Email Preview)
-                                    </button>
-                                </div>
-                            </div>
+            <div>
+                <div className="px-4 pb-4">
+                    <h4 className="text-sm font-semibold">
+                        Generated Payload Preview
+                    </h4>
+                    <div className="pt-2">
+                        <div className="mb-1 text-sm">Render format</div>
+                        <div
+                            role="tablist"
+                            aria-orientation="horizontal"
+                            className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground"
+                        >
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={!showRendered}
+                                onClick={() => setShowRendered(false)}
+                                className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 ${!showRendered ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30' : 'text-foreground dark:text-muted-foreground'}`}
+                            >
+                                Json
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={showRendered}
+                                onClick={() => setShowRendered(true)}
+                                className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 ${showRendered ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30' : 'text-foreground dark:text-muted-foreground'}`}
+                            >
+                                HTML (Email Preview)
+                            </button>
+                        </div>
+                    </div>
                     <div className="mt-2">
                         {generated ? (
                             <div>
                                 {!showRendered && (
-                                    <pre className="text-xs bg-muted p-3 rounded">{JSON.stringify(generated, null, 2)}</pre>
+                                    <pre className="rounded bg-muted p-3 text-xs">
+                                        {JSON.stringify(generated, null, 2)}
+                                    </pre>
                                 )}
 
                                 {showRendered && (
-                                    <div className="border rounded p-3 bg-white">
-                                        <h5 className="text-sm font-medium mb-2">Rendered HTML Preview</h5>
+                                    <div className="rounded border bg-white p-3">
+                                        <h5 className="mb-2 text-sm font-medium">
+                                            Rendered HTML Preview
+                                        </h5>
                                         {selectedSampleIndex === null ? (
-                                            <div className="text-sm text-muted-foreground">Select a sample user to preview rendered email.</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                Select a sample user to preview
+                                                rendered email.
+                                            </div>
                                         ) : (
-                                            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: (() => {
-                                                const user = sampleData[selectedSampleIndex as number];
-                                                // simple token replacement for {{field}}
-                                                const html = generated[Number(selectedSampleIndex as number)]?.body ?? '';
-                                                return html.replace(/{{\s*(\w+)\s*}}/g, (_m: string, p1: string) => String((user as any)[p1] ?? ''));
-                                            })() }} />
+                                            <div
+                                                className="prose max-w-none"
+                                                dangerouslySetInnerHTML={{
+                                                    __html: (() => {
+                                                        const user =
+                                                            sampleData[
+                                                                selectedSampleIndex as number
+                                                            ];
+                                                        // simple token replacement for {{field}}
+                                                        const html =
+                                                            generated[
+                                                                Number(
+                                                                    selectedSampleIndex as number,
+                                                                )
+                                                            ]?.body ?? '';
+                                                        return html.replace(
+                                                            /{{\s*(\w+)\s*}}/g,
+                                                            (
+                                                                _m: string,
+                                                                p1: string,
+                                                            ) =>
+                                                                String(
+                                                                    (
+                                                                        user as any
+                                                                    )[p1] ?? '',
+                                                                ),
+                                                        );
+                                                    })(),
+                                                }}
+                                            />
                                         )}
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="text-sm text-muted-foreground">No preview generated yet. Click Generate Preview.</div>
+                            <div className="text-sm text-muted-foreground">
+                                No preview generated yet. Click Generate
+                                Preview.
+                            </div>
                         )}
                     </div>
-                    </div>
                 </div>
-            
+            </div>
         </AppLayout>
     );
 }

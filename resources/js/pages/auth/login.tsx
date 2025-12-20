@@ -97,7 +97,15 @@ export default function Login({
                                 Log in
                             </Button>
                             <div className="mt-2">
-                                <div className="social" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                                <div
+                                    className="social"
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                    }}
+                                >
                                     <a
                                         href="/auth/google/redirect"
                                         className="gg"
@@ -114,10 +122,15 @@ export default function Login({
                                             gap: '8px',
                                             justifyContent: 'center',
                                             textDecoration: 'none',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                                            boxShadow:
+                                                '0 1px 2px rgba(0,0,0,0.06)',
                                         }}
                                     >
-                                        <i className="bi bi-google" aria-hidden="true" style={{ fontSize: '18px' }} />
+                                        <i
+                                            className="bi bi-google"
+                                            aria-hidden="true"
+                                            style={{ fontSize: '18px' }}
+                                        />
                                         {/* <span style={{ fontSize: '14px', fontWeight: 600 }}>Sign in with Google</span> */}
                                     </a>
                                 </div>

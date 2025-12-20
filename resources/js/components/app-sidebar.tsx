@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -11,12 +10,39 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard, office, warehouse, storeManager, ticketing, ticketScanner, sellables } from '@/routes';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
-import { BookOpen, Building2, Container, Folder, Globe, LayoutGrid, Mail, PackageOpen, ScanText, ShoppingBag, Store, Ticket, Warehouse, Link as LinkIcon, ExternalLink, Github, Twitter, Instagram, ChevronDown, TreeDeciduous } from 'lucide-react';
-import { usePage } from '@inertiajs/react';
-import { type SharedData } from '@/types';
+import {
+    dashboard,
+    office,
+    sellables,
+    storeManager,
+    ticketing,
+    ticketScanner,
+    warehouse,
+} from '@/routes';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import {
+    BookOpen,
+    Building2,
+    ChevronDown,
+    Container,
+    ExternalLink,
+    Github,
+    Globe,
+    Instagram,
+    LayoutGrid,
+    Link as LinkIcon,
+    Mail,
+    PackageOpen,
+    ScanText,
+    ShoppingBag,
+    Store,
+    Ticket,
+    TreeDeciduous,
+    Twitter,
+    Warehouse,
+} from 'lucide-react';
+import * as React from 'react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -25,28 +51,28 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
-        {
-            title: 'Office Shifts',
-            href: office(),
-            icon: Building2,
-        },
-        {
-            title: 'Sellables',
-            href: sellables(),
-            icon: ShoppingBag,
-        },
-        {
-            title: 'Ticket Scanner',
-            href: ticketScanner(),
-            icon: ScanText,
-        },
-        {
+    {
+        title: 'Office Shifts',
+        href: office(),
+        icon: Building2,
+    },
+    {
+        title: 'Sellables',
+        href: sellables(),
+        icon: ShoppingBag,
+    },
+    {
+        title: 'Ticket Scanner',
+        href: ticketScanner(),
+        icon: ScanText,
+    },
+    {
         title: 'Ticketing Distributor',
         href: ticketing(),
         icon: Ticket,
     },
     {
-        title: "Basement Inventory",
+        title: 'Basement Inventory',
         href: warehouse(),
         icon: Warehouse,
     },
@@ -88,7 +114,9 @@ export function AppSidebar() {
         Store,
     };
 
-    const userPinned = Array.isArray(auth?.user?.pinned) ? auth.user.pinned : [];
+    const userPinned = Array.isArray(auth?.user?.pinned)
+        ? auth.user.pinned
+        : [];
 
     // Normalize footer nav items into NavItem[] shape expected by NavFooter
     const footerNavItems: NavItem[] = userPinned.map((it: any) => ({
@@ -117,27 +145,32 @@ export function AppSidebar() {
 
             <SidebarFooter>
                 {/* Desktop / md+ footer (always visible) */}
-                <div className="hidden md:block mt-auto">
+                <div className="mt-auto hidden md:block">
                     <NavFooter items={footerNavItems} />
                     <NavUser />
                 </div>
 
                 {/* Mobile footer: collapsed by default, expandable via button or 'q' key */}
-                <div className="md:hidden mt-auto w-full">
+                <div className="mt-auto w-full md:hidden">
                     <div className="flex items-center justify-between px-3 py-2">
                         <button
                             type="button"
                             aria-expanded={footerExpanded}
                             aria-controls="sidebar-quicklinks"
                             onClick={() => setFooterExpanded((v) => !v)}
-                            className="text-sm font-medium flex items-center gap-2"
+                            className="flex items-center gap-2 text-sm font-medium"
                         >
                             Quick links
-                            <ChevronDown className={`h-4 w-4 transition-transform ${footerExpanded ? 'rotate-180' : ''}`} />
+                            <ChevronDown
+                                className={`h-4 w-4 transition-transform ${footerExpanded ? 'rotate-180' : ''}`}
+                            />
                         </button>
                     </div>
 
-                    <div id="sidebar-quicklinks" className={`${footerExpanded ? 'block' : 'hidden'} px-3`}>
+                    <div
+                        id="sidebar-quicklinks"
+                        className={`${footerExpanded ? 'block' : 'hidden'} px-3`}
+                    >
                         <NavFooter items={footerNavItems} />
                     </div>
 

@@ -1,21 +1,16 @@
-import * as React from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
-    DialogTrigger,
+    DialogClose,
     DialogContent,
-    DialogTitle,
     DialogDescription,
     DialogFooter,
-    DialogClose,
+    DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -23,8 +18,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertTitle } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
+import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -72,9 +71,15 @@ export default function Sellables() {
     // (no manual scroll save/restore) rely on dialog library's default behaviour
     const props = usePage<SharedData>().props;
 
-    const products: Product[] = Array.isArray(props['products']) ? props['products'] : [];
-    const events: Event[] = Array.isArray(props['events']) ? props['events'] : [];
-    const boardUsers: BoardUser[] = Array.isArray(props['boardUsers']) ? props['boardUsers'] : [];
+    const products: Product[] = Array.isArray(props['products'])
+        ? props['products']
+        : [];
+    const events: Event[] = Array.isArray(props['events'])
+        ? props['events']
+        : [];
+    const boardUsers: BoardUser[] = Array.isArray(props['boardUsers'])
+        ? props['boardUsers']
+        : [];
 
     const now = new Date();
 
@@ -87,7 +92,12 @@ export default function Sellables() {
     const msPerDay = 1000 * 60 * 60 * 24;
 
     // Products: cheapest first
-    const sortedProducts = (products || []).slice().sort((a: Product, b: Product) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    const sortedProducts = (products || [])
+        .slice()
+        .sort(
+            (a: Product, b: Product) =>
+                (Number(a.price) || 0) - (Number(b.price) || 0),
+        );
 
     // Events: classify into active (start <= now <= end), upcoming (start > now), expired (end < now)
     const activeEvents: Event[] = [];
@@ -103,7 +113,10 @@ export default function Sellables() {
             return;
         }
 
-        if (now.getTime() >= start.getTime() && now.getTime() <= end.getTime()) {
+        if (
+            now.getTime() >= start.getTime() &&
+            now.getTime() <= end.getTime()
+        ) {
             activeEvents.push(ev);
         } else if (now.getTime() < start.getTime()) {
             upcomingEvents.push(ev);
@@ -116,16 +129,34 @@ export default function Sellables() {
     activeEvents.sort((a: Event, b: Event) => {
         const aEnd = parseDate(a.end_sell_date) as Date;
         const bEnd = parseDate(b.end_sell_date) as Date;
-        return (aEnd.getTime() - now.getTime()) - (bEnd.getTime() - now.getTime());
+        return (
+            aEnd.getTime() - now.getTime() - (bEnd.getTime() - now.getTime())
+        );
     });
 
     // Upcoming: sort by soonest start date
-    upcomingEvents.sort((a: Event, b: Event) => (parseDate(a.start_sell_date) as Date).getTime() - (parseDate(b.start_sell_date) as Date).getTime());
+    upcomingEvents.sort(
+        (a: Event, b: Event) =>
+            (parseDate(a.start_sell_date) as Date).getTime() -
+            (parseDate(b.start_sell_date) as Date).getTime(),
+    );
 
     // Expired: order by event_date (earliest first)
-    expiredEvents.sort((a: Event, b: Event) => (parseDate(a.event_date) ? (parseDate(a.event_date) as Date).getTime() : 0) - (parseDate(b.event_date) ? (parseDate(b.event_date) as Date).getTime() : 0));
+    expiredEvents.sort(
+        (a: Event, b: Event) =>
+            (parseDate(a.event_date)
+                ? (parseDate(a.event_date) as Date).getTime()
+                : 0) -
+            (parseDate(b.event_date)
+                ? (parseDate(b.event_date) as Date).getTime()
+                : 0),
+    );
 
-    const orderedEvents = [...activeEvents, ...upcomingEvents, ...expiredEvents];
+    const orderedEvents = [
+        ...activeEvents,
+        ...upcomingEvents,
+        ...expiredEvents,
+    ];
 
     // Notification state
     const [message, setMessage] = React.useState('');
@@ -139,7 +170,9 @@ export default function Sellables() {
 
     // Product form state
     const [productDialogOpen, setProductDialogOpen] = React.useState(false);
-    const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
+    const [editingProduct, setEditingProduct] = React.useState<Product | null>(
+        null,
+    );
     const [productName, setProductName] = React.useState('');
     const [productPrice, setProductPrice] = React.useState('');
     const [productDescription, setProductDescription] = React.useState('');
@@ -184,7 +217,10 @@ export default function Sellables() {
         // We use a short timeout to let the Dialog mount and run its own focus logic first.
         setTimeout(() => {
             const active = document.activeElement as HTMLElement | null;
-            if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+            if (
+                active &&
+                (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+            ) {
                 try {
                     active.blur();
                 } catch (e) {
@@ -218,7 +254,9 @@ export default function Sellables() {
         }
     };
 
-    const [productToDelete, setProductToDelete] = React.useState<number | null>(null);
+    const [productToDelete, setProductToDelete] = React.useState<number | null>(
+        null,
+    );
 
     const deleteProduct = (productId: number) => {
         router.delete(`/sellables/products/${productId}`, {
@@ -246,7 +284,9 @@ export default function Sellables() {
             setNotes(event.notes || '');
             setVariableAmount(event.variable_amount);
             setQuantityWithCard(event.quantity_with_card?.toString() || '');
-            setQuantityWithoutCard(event.quantity_without_card?.toString() || '');
+            setQuantityWithoutCard(
+                event.quantity_without_card?.toString() || '',
+            );
         } else {
             setEditingEvent(null);
             setEventName('');
@@ -269,7 +309,10 @@ export default function Sellables() {
         // on desktop and keyboard on mobile). Blur any focused input shortly after opening.
         setTimeout(() => {
             const active = document.activeElement as HTMLElement | null;
-            if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+            if (
+                active &&
+                (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+            ) {
                 try {
                     active.blur();
                 } catch (e) {
@@ -288,12 +331,22 @@ export default function Sellables() {
             end_sell_date: endSellDate,
             price_with_card: parseFloat(priceWithCard),
             price_without_card: parseFloat(priceWithoutCard),
-            quantity: variableAmount ? null : (quantity ? parseInt(quantity) : null),
+            quantity: variableAmount
+                ? null
+                : quantity
+                  ? parseInt(quantity)
+                  : null,
             responsible_user_id: parseInt(responsibleUserId),
             notes: notes || null,
             variable_amount: variableAmount,
-            quantity_with_card: variableAmount && quantityWithCard ? parseInt(quantityWithCard) : null,
-            quantity_without_card: variableAmount && quantityWithoutCard ? parseInt(quantityWithoutCard) : null,
+            quantity_with_card:
+                variableAmount && quantityWithCard
+                    ? parseInt(quantityWithCard)
+                    : null,
+            quantity_without_card:
+                variableAmount && quantityWithoutCard
+                    ? parseInt(quantityWithoutCard)
+                    : null,
         };
 
         if (editingEvent) {
@@ -313,7 +366,9 @@ export default function Sellables() {
         }
     };
 
-    const [eventToDelete, setEventToDelete] = React.useState<number | null>(null);
+    const [eventToDelete, setEventToDelete] = React.useState<number | null>(
+        null,
+    );
 
     const deleteEvent = (eventId: number) => {
         router.delete(`/sellables/events/${eventId}`, {
@@ -374,19 +429,26 @@ export default function Sellables() {
             {/* Floating notification (matches /office page) */}
 
             {/* Match other pages' padding and container style (same as /office) */}
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 space-y-8">
+            <div className="flex h-full flex-1 flex-col gap-4 space-y-8 overflow-x-auto rounded-xl p-4">
                 {/* Products Section */}
                 <div>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4 flex items-center justify-between">
                         <h2 className="text-2xl font-semibold">Products</h2>
-                        <Button onClick={() => openProductDialog()}>Add Product</Button>
+                        <Button onClick={() => openProductDialog()}>
+                            Add Product
+                        </Button>
                     </div>
 
-                    <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
-                        <DialogContent
-                            className="w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl max-h-[90vh] overflow-y-auto px-2 sm:px-6"
-                        >
-                            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add Product'}</DialogTitle>
+                    <Dialog
+                        open={productDialogOpen}
+                        onOpenChange={setProductDialogOpen}
+                    >
+                        <DialogContent className="max-h-[90vh] w-full max-w-lg overflow-y-auto px-2 sm:max-w-xl sm:px-6 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl">
+                            <DialogTitle>
+                                {editingProduct
+                                    ? 'Edit Product'
+                                    : 'Add Product'}
+                            </DialogTitle>
                             <DialogDescription>
                                 {editingProduct
                                     ? 'Update the product details below.'
@@ -398,25 +460,37 @@ export default function Sellables() {
                                     <Input
                                         id="product-name"
                                         value={productName}
-                                        onChange={(e) => setProductName(e.target.value)}
+                                        onChange={(e) =>
+                                            setProductName(e.target.value)
+                                        }
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="product-description">Description (optional)</Label>
+                                    <Label htmlFor="product-description">
+                                        Description (optional)
+                                    </Label>
                                     <Textarea
                                         id="product-description"
                                         value={productDescription}
-                                        onChange={(e) => setProductDescription(e.target.value)}
+                                        onChange={(e) =>
+                                            setProductDescription(
+                                                e.target.value,
+                                            )
+                                        }
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="product-price">Price (€)</Label>
+                                    <Label htmlFor="product-price">
+                                        Price (€)
+                                    </Label>
                                     <Input
                                         id="product-price"
                                         type="number"
                                         step="0.01"
                                         value={productPrice}
-                                        onChange={(e) => setProductPrice(e.target.value)}
+                                        onChange={(e) =>
+                                            setProductPrice(e.target.value)
+                                        }
                                     />
                                 </div>
                             </div>
@@ -425,33 +499,45 @@ export default function Sellables() {
                                     <Button variant="ghost">Cancel</Button>
                                 </DialogClose>
                                 <Button onClick={submitProduct}>
-                                    {editingProduct ? 'Update Product' : 'Create Product'}
+                                    {editingProduct
+                                        ? 'Update Product'
+                                        : 'Create Product'}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
 
                     {products.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">No products available</div>
+                        <div className="py-8 text-center text-muted-foreground">
+                            No products available
+                        </div>
                     ) : (
                         <div className="grid gap-4">
                             {products.map((product) => (
                                 <div
                                     key={product.id}
-                                    className="flex items-center justify-between p-4 border rounded-lg"
+                                    className="flex items-center justify-between rounded-lg border p-4"
                                 >
                                     <div>
-                                        <h3 className="font-medium">{product.name}</h3>
+                                        <h3 className="font-medium">
+                                            {product.name}
+                                        </h3>
                                         {product.description && (
-                                            <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                {product.description}
+                                            </p>
                                         )}
-                                        <p className="text-sm text-muted-foreground mt-1">€{product.price}</p>
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            €{product.price}
+                                        </p>
                                     </div>
                                     <div className="flex gap-2">
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            onClick={() => openProductDialog(product)}
+                                            onClick={() =>
+                                                openProductDialog(product)
+                                            }
                                         >
                                             Edit
                                         </Button>
@@ -460,22 +546,49 @@ export default function Sellables() {
                                                 size="sm"
                                                 variant="ghost"
                                                 className="text-muted-foreground hover:bg-muted/30"
-                                                onClick={() => setProductToDelete(product.id)}
+                                                onClick={() =>
+                                                    setProductToDelete(
+                                                        product.id,
+                                                    )
+                                                }
                                             >
                                                 Remove
                                             </Button>
 
-                                            <Dialog open={productToDelete === product.id} onOpenChange={(open) => !open && setProductToDelete(null)}>
-                                                <DialogContent className="!w-[95vw] max-h-[80vh] !max-w-md p-4">
-                                                    <DialogTitle>Delete Product</DialogTitle>
+                                            <Dialog
+                                                open={
+                                                    productToDelete ===
+                                                    product.id
+                                                }
+                                                onOpenChange={(open) =>
+                                                    !open &&
+                                                    setProductToDelete(null)
+                                                }
+                                            >
+                                                <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                                                    <DialogTitle>
+                                                        Delete Product
+                                                    </DialogTitle>
                                                     <DialogDescription>
-                                                        Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                                                        Are you sure you want to
+                                                        delete "{product.name}"?
+                                                        This action cannot be
+                                                        undone.
                                                     </DialogDescription>
                                                     <DialogFooter>
                                                         <DialogClose asChild>
-                                                            <Button variant="ghost">Cancel</Button>
+                                                            <Button variant="ghost">
+                                                                Cancel
+                                                            </Button>
                                                         </DialogClose>
-                                                        <Button variant="destructive" onClick={() => deleteProduct(product.id)}>
+                                                        <Button
+                                                            variant="destructive"
+                                                            onClick={() =>
+                                                                deleteProduct(
+                                                                    product.id,
+                                                                )
+                                                            }
+                                                        >
                                                             Delete
                                                         </Button>
                                                     </DialogFooter>
@@ -491,243 +604,377 @@ export default function Sellables() {
 
                 {/* Events Section */}
                 <div>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4 flex items-center justify-between">
                         <h2 className="text-2xl font-semibold">Events</h2>
-                        <Button onClick={() => openEventDialog()}>Add Event</Button>
+                        <Button onClick={() => openEventDialog()}>
+                            Add Event
+                        </Button>
                     </div>
 
-                    <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
-                        <DialogContent
-                            className="w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl max-h-[80vh] overflow-y-auto px-2 sm:px-6"
-                        >
-                                <DialogTitle>{editingEvent ? 'Edit Event' : 'Add Event'}</DialogTitle>
-                                <DialogDescription>
-                                    {editingEvent
-                                        ? 'Update the event details below.'
-                                        : 'Enter the details for the new event.'}
-                                </DialogDescription>
-                                <div className="space-y-4">
+                    <Dialog
+                        open={eventDialogOpen}
+                        onOpenChange={setEventDialogOpen}
+                    >
+                        <DialogContent className="max-h-[80vh] w-full max-w-lg overflow-y-auto px-2 sm:max-w-xl sm:px-6 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl">
+                            <DialogTitle>
+                                {editingEvent ? 'Edit Event' : 'Add Event'}
+                            </DialogTitle>
+                            <DialogDescription>
+                                {editingEvent
+                                    ? 'Update the event details below.'
+                                    : 'Enter the details for the new event.'}
+                            </DialogDescription>
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="event-name">Name</Label>
+                                    <Input
+                                        id="event-name"
+                                        value={eventName}
+                                        onChange={(e) =>
+                                            setEventName(e.target.value)
+                                        }
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="event-description">
+                                        Description (optional)
+                                    </Label>
+                                    <Textarea
+                                        id="event-description"
+                                        value={eventDescription}
+                                        onChange={(e) =>
+                                            setEventDescription(e.target.value)
+                                        }
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="event-date">
+                                        Event Date
+                                    </Label>
+                                    <Input
+                                        id="event-date"
+                                        type="date"
+                                        value={eventDate}
+                                        onChange={(e) =>
+                                            setEventDate(e.target.value)
+                                        }
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <Label htmlFor="event-name">Name</Label>
-                                        <Input
-                                            id="event-name"
-                                            value={eventName}
-                                            onChange={(e) => setEventName(e.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="event-description">Description (optional)</Label>
-                                        <Textarea
-                                            id="event-description"
-                                            value={eventDescription}
-                                            onChange={(e) => setEventDescription(e.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="event-date">Event Date</Label>
-                                        <Input
-                                            id="event-date"
-                                            type="date"
-                                            value={eventDate}
-                                            onChange={(e) => setEventDate(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="start-sell-date">Start Sell Date</Label>
-                                            <Input
-                                                id="start-sell-date"
-                                                type="date"
-                                                value={startSellDate}
-                                                onChange={(e) => setStartSellDate(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="end-sell-date">End Sell Date</Label>
-                                            <Input
-                                                id="end-sell-date"
-                                                type="date"
-                                                value={endSellDate}
-                                                onChange={(e) => setEndSellDate(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="price-with-card">Price with ESN Card (€)</Label>
-                                            <Input
-                                                id="price-with-card"
-                                                type="number"
-                                                step="0.01"
-                                                value={priceWithCard}
-                                                onChange={(e) => setPriceWithCard(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="price-without-card">Price without ESN Card (€)</Label>
-                                            <Input
-                                                id="price-without-card"
-                                                type="number"
-                                                step="0.01"
-                                                value={priceWithoutCard}
-                                                onChange={(e) => setPriceWithoutCard(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="responsible-user">Responsible User (Board)</Label>
-                                        <Select value={responsibleUserId} onValueChange={setResponsibleUserId}>
-                                            <SelectTrigger id="responsible-user">
-                                                <SelectValue placeholder="Select a board member" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {boardUsers.map((user) => (
-                                                    <SelectItem key={user.id} value={user.id.toString()}>
-                                                        {user.name} ({user.email})
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                            id="variable-amount"
-                                            checked={variableAmount}
-                                            onCheckedChange={(checked) => setVariableAmount(checked === true)}
-                                        />
-                                        <Label htmlFor="variable-amount" className="cursor-pointer">
-                                            Variable Amount (separate quantities for with/without card)
+                                        <Label htmlFor="start-sell-date">
+                                            Start Sell Date
                                         </Label>
+                                        <Input
+                                            id="start-sell-date"
+                                            type="date"
+                                            value={startSellDate}
+                                            onChange={(e) =>
+                                                setStartSellDate(e.target.value)
+                                            }
+                                        />
                                     </div>
-                                    {variableAmount ? (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label htmlFor="quantity-with-card">Quantity with Card</Label>
-                                                <Input
-                                                    id="quantity-with-card"
-                                                    type="number"
-                                                    value={quantityWithCard}
-                                                    onChange={(e) => setQuantityWithCard(e.target.value)}
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="quantity-without-card">Quantity without Card</Label>
-                                                <Input
-                                                    id="quantity-without-card"
-                                                    type="number"
-                                                    value={quantityWithoutCard}
-                                                    onChange={(e) => setQuantityWithoutCard(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <Label htmlFor="quantity">Quantity (optional)</Label>
-                                            <Input
-                                                id="quantity"
-                                                type="number"
-                                                value={quantity}
-                                                onChange={(e) => setQuantity(e.target.value)}
-                                            />
-                                        </div>
-                                    )}
                                     <div>
-                                        <Label htmlFor="notes">Notes (optional)</Label>
-                                        <Textarea
-                                            id="notes"
-                                            value={notes}
-                                            onChange={(e) => setNotes(e.target.value)}
+                                        <Label htmlFor="end-sell-date">
+                                            End Sell Date
+                                        </Label>
+                                        <Input
+                                            id="end-sell-date"
+                                            type="date"
+                                            value={endSellDate}
+                                            onChange={(e) =>
+                                                setEndSellDate(e.target.value)
+                                            }
                                         />
                                     </div>
                                 </div>
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button variant="ghost">Cancel</Button>
-                                    </DialogClose>
-                                    <Button onClick={submitEvent}>
-                                        {editingEvent ? 'Update Event' : 'Create Event'}
-                                    </Button>
-                                </DialogFooter>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="price-with-card">
+                                            Price with ESN Card (€)
+                                        </Label>
+                                        <Input
+                                            id="price-with-card"
+                                            type="number"
+                                            step="0.01"
+                                            value={priceWithCard}
+                                            onChange={(e) =>
+                                                setPriceWithCard(e.target.value)
+                                            }
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="price-without-card">
+                                            Price without ESN Card (€)
+                                        </Label>
+                                        <Input
+                                            id="price-without-card"
+                                            type="number"
+                                            step="0.01"
+                                            value={priceWithoutCard}
+                                            onChange={(e) =>
+                                                setPriceWithoutCard(
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label htmlFor="responsible-user">
+                                        Responsible User (Board)
+                                    </Label>
+                                    <Select
+                                        value={responsibleUserId}
+                                        onValueChange={setResponsibleUserId}
+                                    >
+                                        <SelectTrigger id="responsible-user">
+                                            <SelectValue placeholder="Select a board member" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {boardUsers.map((user) => (
+                                                <SelectItem
+                                                    key={user.id}
+                                                    value={user.id.toString()}
+                                                >
+                                                    {user.name} ({user.email})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="variable-amount"
+                                        checked={variableAmount}
+                                        onCheckedChange={(checked) =>
+                                            setVariableAmount(checked === true)
+                                        }
+                                    />
+                                    <Label
+                                        htmlFor="variable-amount"
+                                        className="cursor-pointer"
+                                    >
+                                        Variable Amount (separate quantities for
+                                        with/without card)
+                                    </Label>
+                                </div>
+                                {variableAmount ? (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label htmlFor="quantity-with-card">
+                                                Quantity with Card
+                                            </Label>
+                                            <Input
+                                                id="quantity-with-card"
+                                                type="number"
+                                                value={quantityWithCard}
+                                                onChange={(e) =>
+                                                    setQuantityWithCard(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="quantity-without-card">
+                                                Quantity without Card
+                                            </Label>
+                                            <Input
+                                                id="quantity-without-card"
+                                                type="number"
+                                                value={quantityWithoutCard}
+                                                onChange={(e) =>
+                                                    setQuantityWithoutCard(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <Label htmlFor="quantity">
+                                            Quantity (optional)
+                                        </Label>
+                                        <Input
+                                            id="quantity"
+                                            type="number"
+                                            value={quantity}
+                                            onChange={(e) =>
+                                                setQuantity(e.target.value)
+                                            }
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <Label htmlFor="notes">
+                                        Notes (optional)
+                                    </Label>
+                                    <Textarea
+                                        id="notes"
+                                        value={notes}
+                                        onChange={(e) =>
+                                            setNotes(e.target.value)
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="ghost">Cancel</Button>
+                                </DialogClose>
+                                <Button onClick={submitEvent}>
+                                    {editingEvent
+                                        ? 'Update Event'
+                                        : 'Create Event'}
+                                </Button>
+                            </DialogFooter>
                         </DialogContent>
                     </Dialog>
 
                     {orderedEvents.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">No events available</div>
+                        <div className="py-8 text-center text-muted-foreground">
+                            No events available
+                        </div>
                     ) : (
                         <div className="grid gap-4">
                             {orderedEvents.map((event, idx) => {
                                 const evDate = parseDate(event.event_date);
-                                const isPastEvent = evDate ? evDate.getTime() < now.getTime() : false;
-                                const prevEvDate = idx > 0 ? parseDate(orderedEvents[idx - 1].event_date) : null;
-                                const prevIsPast = prevEvDate ? prevEvDate.getTime() < now.getTime() : false;
+                                const isPastEvent = evDate
+                                    ? evDate.getTime() < now.getTime()
+                                    : false;
+                                const prevEvDate =
+                                    idx > 0
+                                        ? parseDate(
+                                              orderedEvents[idx - 1].event_date,
+                                          )
+                                        : null;
+                                const prevIsPast = prevEvDate
+                                    ? prevEvDate.getTime() < now.getTime()
+                                    : false;
 
                                 return (
-                                    <React.Fragment key={`event-${event.id}-wrapper`}>
+                                    <React.Fragment
+                                        key={`event-${event.id}-wrapper`}
+                                    >
                                         {!prevIsPast && isPastEvent && (
                                             <div className="my-4 py-6">
                                                 <div className="w-full border-t-2 border-dashed border-muted-foreground" />
-                                                
                                             </div>
                                         )}
 
-                                        <div key={event.id} className="p-4 border rounded-lg">
+                                        <div
+                                            key={event.id}
+                                            className="rounded-lg border p-4"
+                                        >
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
-                                                    <h3 className="font-medium">{event.name}</h3>
+                                                    <h3 className="font-medium">
+                                                        {event.name}
+                                                    </h3>
                                                     {event.description && (
-                                                        <p className="text-sm text-muted-foreground mt-1">
+                                                        <p className="mt-1 text-sm text-muted-foreground">
                                                             {event.description}
                                                         </p>
                                                     )}
                                                     <div className="mt-2 space-y-1 text-sm">
                                                         <p>
-                                                            <span className="text-muted-foreground">Event Date:</span>{' '}
-                                                            {formatDate(event.event_date)}
+                                                            <span className="text-muted-foreground">
+                                                                Event Date:
+                                                            </span>{' '}
+                                                            {formatDate(
+                                                                event.event_date,
+                                                            )}
                                                         </p>
                                                         <p>
-                                                            <span className="text-muted-foreground">Sell Period:</span>{' '}
-                                                            {formatDate(event.start_sell_date)} -{' '}
-                                                            {formatDate(event.end_sell_date)}
-                                                            <span className="text-muted-foreground ml-2">| {sellPeriodMessage(event.start_sell_date, event.end_sell_date)}</span>
+                                                            <span className="text-muted-foreground">
+                                                                Sell Period:
+                                                            </span>{' '}
+                                                            {formatDate(
+                                                                event.start_sell_date,
+                                                            )}{' '}
+                                                            -{' '}
+                                                            {formatDate(
+                                                                event.end_sell_date,
+                                                            )}
+                                                            <span className="ml-2 text-muted-foreground">
+                                                                |{' '}
+                                                                {sellPeriodMessage(
+                                                                    event.start_sell_date,
+                                                                    event.end_sell_date,
+                                                                )}
+                                                            </span>
                                                         </p>
                                                         <p>
-                                                            <span className="text-muted-foreground">Price with Card:</span> €
-                                                            {event.price_with_card} |{' '}
-                                                            <span className="text-muted-foreground">without Card:</span> €
-                                                            {event.price_without_card}
+                                                            <span className="text-muted-foreground">
+                                                                Price with Card:
+                                                            </span>{' '}
+                                                            €
+                                                            {
+                                                                event.price_with_card
+                                                            }{' '}
+                                                            |{' '}
+                                                            <span className="text-muted-foreground">
+                                                                without Card:
+                                                            </span>{' '}
+                                                            €
+                                                            {
+                                                                event.price_without_card
+                                                            }
                                                         </p>
                                                         {event.variable_amount ? (
                                                             <p>
-                                                                <span className="text-muted-foreground">Qty with Card:</span>{' '}
-                                                                {event.quantity_with_card ?? 'N/A'} |{' '}
-                                                                <span className="text-muted-foreground">without Card:</span>{' '}
-                                                                {event.quantity_without_card ?? 'N/A'}
+                                                                <span className="text-muted-foreground">
+                                                                    Qty with
+                                                                    Card:
+                                                                </span>{' '}
+                                                                {event.quantity_with_card ??
+                                                                    'N/A'}{' '}
+                                                                |{' '}
+                                                                <span className="text-muted-foreground">
+                                                                    without
+                                                                    Card:
+                                                                </span>{' '}
+                                                                {event.quantity_without_card ??
+                                                                    'N/A'}
                                                             </p>
                                                         ) : (
                                                             <p>
-                                                                <span className="text-muted-foreground">Quantity:</span>{' '}
-                                                                {event.quantity ?? 'Unlimited'}
+                                                                <span className="text-muted-foreground">
+                                                                    Quantity:
+                                                                </span>{' '}
+                                                                {event.quantity ??
+                                                                    'Unlimited'}
                                                             </p>
                                                         )}
                                                         <p>
-                                                            <span className="text-muted-foreground">Responsible:</span>{' '}
+                                                            <span className="text-muted-foreground">
+                                                                Responsible:
+                                                            </span>{' '}
                                                             {event.responsibleUser
                                                                 ? `${event.responsibleUser.first_name} ${event.responsibleUser.last_name}`
                                                                 : 'N/A'}
                                                         </p>
                                                         {event.notes && (
                                                             <p>
-                                                                <span className="text-muted-foreground">Notes:</span>{' '}
+                                                                <span className="text-muted-foreground">
+                                                                    Notes:
+                                                                </span>{' '}
                                                                 {event.notes}
                                                             </p>
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-2 ml-4">
+                                                <div className="ml-4 flex gap-2">
                                                     <Button
                                                         size="sm"
                                                         variant="ghost"
-                                                        onClick={() => openEventDialog(event)}
+                                                        onClick={() =>
+                                                            openEventDialog(
+                                                                event,
+                                                            )
+                                                        }
                                                     >
                                                         Edit
                                                     </Button>
@@ -736,22 +983,59 @@ export default function Sellables() {
                                                             size="sm"
                                                             variant="ghost"
                                                             className="text-muted-foreground hover:bg-muted/30"
-                                                            onClick={() => setEventToDelete(event.id)}
+                                                            onClick={() =>
+                                                                setEventToDelete(
+                                                                    event.id,
+                                                                )
+                                                            }
                                                         >
                                                             Remove
                                                         </Button>
 
-                                                        <Dialog open={eventToDelete === event.id} onOpenChange={(open) => !open && setEventToDelete(null)}>
-                                                            <DialogContent className="!w-[95vw] max-h-[80vh] !max-w-md p-4">
-                                                                <DialogTitle>Delete Event</DialogTitle>
+                                                        <Dialog
+                                                            open={
+                                                                eventToDelete ===
+                                                                event.id
+                                                            }
+                                                            onOpenChange={(
+                                                                open,
+                                                            ) =>
+                                                                !open &&
+                                                                setEventToDelete(
+                                                                    null,
+                                                                )
+                                                            }
+                                                        >
+                                                            <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                                                                <DialogTitle>
+                                                                    Delete Event
+                                                                </DialogTitle>
                                                                 <DialogDescription>
-                                                                    Are you sure you want to delete "{event.name}"? This action cannot be undone.
+                                                                    Are you sure
+                                                                    you want to
+                                                                    delete "
+                                                                    {event.name}
+                                                                    "? This
+                                                                    action
+                                                                    cannot be
+                                                                    undone.
                                                                 </DialogDescription>
                                                                 <DialogFooter>
-                                                                    <DialogClose asChild>
-                                                                        <Button variant="ghost">Cancel</Button>
+                                                                    <DialogClose
+                                                                        asChild
+                                                                    >
+                                                                        <Button variant="ghost">
+                                                                            Cancel
+                                                                        </Button>
                                                                     </DialogClose>
-                                                                    <Button variant="destructive" onClick={() => deleteEvent(event.id)}>
+                                                                    <Button
+                                                                        variant="destructive"
+                                                                        onClick={() =>
+                                                                            deleteEvent(
+                                                                                event.id,
+                                                                            )
+                                                                        }
+                                                                    >
                                                                         Delete
                                                                     </Button>
                                                                 </DialogFooter>
@@ -770,7 +1054,7 @@ export default function Sellables() {
             </div>
 
             {message && (
-                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-[min(90%,40rem)]">
+                <div className="fixed top-4 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
                     <Alert>
                         <Check />
                         <AlertTitle>{message}</AlertTitle>

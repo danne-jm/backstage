@@ -4,15 +4,15 @@ import { Separator } from '@/components/ui/separator';
 import { cn, isSameUrl, resolveUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
-// Use a static path for the Google settings link to avoid a runtime helper collision
-const googlePath = '/settings/google';
-// footer settings page uses a static path; the route helper may not exist in all environments
-const editFooterPath = '/settings/footer';
 import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
+// Use a static path for the Google settings link to avoid a runtime helper collision
+const googlePath = '/settings/google';
+// footer settings page uses a static path; the route helper may not exist in all environments
+const editFooterPath = '/settings/footer';
 
 const sidebarNavItems: NavItem[] = [
     {
