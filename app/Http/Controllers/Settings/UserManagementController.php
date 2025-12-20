@@ -34,7 +34,8 @@ class UserManagementController extends Controller implements HasMiddleware
     {
         $user = $request->user();
         $permissions = $user ? $user->permissions : [];
-        if (!$user || !in_array('admin', $permissions ?? [])) {
+        // Allow access for 'admin' or 'manage_users' permission
+        if (!$user || (!in_array('admin', $permissions) && !in_array('manage_users', $permissions))) {
             abort(403, 'Unauthorized');
         }
         $users = User::all()->map(function ($u) {
@@ -43,19 +44,16 @@ class UserManagementController extends Controller implements HasMiddleware
                 'first_name' => $u->first_name ?? '',
                 'last_name' => $u->last_name ?? '',
                 'email' => $u->email ?? '',
-                'role' => $u->role ?? '',
+                'role' => $u->role ?? 'Guest',
                 'permissions' => $u->permissions ?? [],
-                // Never send password hash to frontend
             ];
         });
-        // Only allow 'admin', 'board', and 'guest' permissions
-        $limitedPermissions = array_filter(
-            UserPermission::allWithLabels(),
-            fn($perm) => in_array($perm['value'], ['admin', 'board', 'guest'])
-        );
         return Inertia::render('settings/users', [
             'users' => $users,
-            'availablePermissions' => array_values($limitedPermissions),
+            // Pass all granular permissions
+            'availablePermissions' => UserPermission::allWithLabels(),
+            // Pass the presets so frontend can auto-fill checkboxes
+            'rolePresets' => UserPermission::rolePresets(),
         ]);
     }
 

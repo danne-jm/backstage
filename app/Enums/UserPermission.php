@@ -50,4 +50,31 @@ enum UserPermission: string
             self::cases()
         );
     }
+    /**
+     * Define Pre-configured Role Presets
+     */
+    public static function rolePresets(): array
+    {
+        return [
+            'Admin' => [
+                self::ADMIN->value,
+                self::MANAGE_EVENTS->value,
+                self::MANAGE_TICKETS->value,
+                self::MANAGE_INVENTORY->value,
+                self::MANAGE_SALES->value,
+                self::SCAN_TICKETS->value,
+                self::VIEW_REPORTS->value,
+            ],
+            'Board' => [
+                self::BOARD->value,
+                self::MANAGE_EVENTS->value,
+                self::MANAGE_TICKETS->value,
+                self::SCAN_TICKETS->value,
+                self::VIEW_REPORTS->value,
+            ],
+            'Guest' => [
+                self::GUEST->value,
+            ],
+        ];
+    }
 }
