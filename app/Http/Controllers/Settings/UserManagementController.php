@@ -33,11 +33,17 @@ class UserManagementController extends Controller
                 'email' => $u->email ?? '',
                 'role' => $u->role ?? '',
                 'permissions' => $u->permissions ?? [],
+                // Never send password hash to frontend
             ];
         });
+        // Only allow 'admin', 'board', and 'guest' permissions
+        $limitedPermissions = array_filter(
+            UserPermission::allWithLabels(),
+            fn($perm) => in_array($perm['value'], ['admin', 'board', 'guest'])
+        );
         return Inertia::render('settings/users', [
             'users' => $users,
-            'availablePermissions' => UserPermission::allWithLabels(),
+            'availablePermissions' => array_values($limitedPermissions),
         ]);
     }
 
@@ -69,7 +75,9 @@ class UserManagementController extends Controller
         }
         
         $user = User::create($data);
-        return response()->json(['user' => $user], 201);
+        
+        // Return without password hash
+        return back();
     }
 
     /**
@@ -103,7 +111,9 @@ class UserManagementController extends Controller
         }
         
         $target->update($data);
-        return response()->json(['user' => $target]);
+        
+        // Return without password hash
+        return back();
     }
 
     /**
@@ -118,6 +128,6 @@ class UserManagementController extends Controller
         }
         $target = User::findOrFail($id);
         $target->delete();
-        return response()->json(['success' => true]);
+        return back();
     }
 }

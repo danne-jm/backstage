@@ -17,6 +17,7 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import HeadingSmall from '@/components/heading-small';
+import { router } from '@inertiajs/react';
 
 export default function Users() {
     const { users, auth, availablePermissions } = usePage().props as any;
@@ -41,6 +42,7 @@ export default function Users() {
     }
 
     const openAddModal = () => {
+        setSelectedUser(null);
         setForm({ first_name: '', last_name: '', email: '', role: '', password: '', permissions: [] });
         setAddModalOpen(true);
     };
@@ -63,51 +65,46 @@ export default function Users() {
         setDeleteModalOpen(true);
     };
 
-    const getCsrfToken = () => {
-        const meta = document.querySelector('meta[name="csrf-token"]');
-        return meta ? meta.getAttribute('content') || '' : '';
-    };
-
-    const handleSubmit = async (e: any) => {
+    const handleSubmit = (e: any) => {
         e.preventDefault();
         const isEdit = !!selectedUser;
-        const method = isEdit ? 'PATCH' : 'POST';
-        const url = isEdit ? `/settings/users/${selectedUser.id}` : '/settings/users';
         
-        const res = await fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': getCsrfToken(),
-            },
-            body: JSON.stringify(form),
-        });
-        
-        if (res.ok) {
-            window.location.reload();
+        // Ensure guest permission is always included
+        const payload = {
+            ...form,
+            permissions: Array.from(new Set([...(form.permissions || []), 'guest'])),
+        };
+
+        if (isEdit) {
+            router.patch(`/settings/users/${selectedUser.id}`, payload, {
+                onSuccess: () => {
+                    setEditModalOpen(false);
+                    setSelectedUser(null);
+                },
+            });
         } else {
-            alert('Failed to save user');
+            router.post('/settings/users', payload, {
+                onSuccess: () => {
+                    setAddModalOpen(false);
+                    setSelectedUser(null);
+                },
+            });
         }
     };
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (!selectedUser) return;
         
-        const res = await fetch(`/settings/users/${selectedUser.id}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': getCsrfToken(),
+        router.delete(`/settings/users/${selectedUser.id}`, {
+            onSuccess: () => {
+                setDeleteModalOpen(false);
+                setSelectedUser(null);
             },
         });
-        
-        if (res.ok) {
-            window.location.reload();
-        } else {
-            alert('Failed to delete user');
-        }
     };
 
     const togglePermission = (permission: string) => {
+        if (permission === 'guest') return; // Prevent toggling guest
         setForm(prev => ({
             ...prev,
             permissions: prev.permissions.includes(permission)
@@ -188,6 +185,7 @@ export default function Users() {
                                         value={form.first_name}
                                         onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
                                         required
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -197,6 +195,7 @@ export default function Users() {
                                         value={form.last_name}
                                         onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
                                         required
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -207,6 +206,7 @@ export default function Users() {
                                         value={form.email}
                                         onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                                         required
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -216,6 +216,7 @@ export default function Users() {
                                         value={form.role}
                                         onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                                         required
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -227,6 +228,7 @@ export default function Users() {
                                         onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                                         required
                                         minLength={8}
+                                        autoComplete="new-password"
                                     />
                                 </div>
                                 <div className="space-y-3">
@@ -236,8 +238,9 @@ export default function Users() {
                                             <div key={perm.value} className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id={`add-perm-${perm.value}`}
-                                                    checked={form.permissions.includes(perm.value)}
+                                                    checked={perm.value === 'guest' ? true : form.permissions.includes(perm.value)}
                                                     onCheckedChange={() => togglePermission(perm.value)}
+                                                    disabled={perm.value === 'guest'}
                                                 />
                                                 <label
                                                     htmlFor={`add-perm-${perm.value}`}
@@ -278,6 +281,7 @@ export default function Users() {
                                         value={form.first_name}
                                         onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
                                         required
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -287,6 +291,7 @@ export default function Users() {
                                         value={form.last_name}
                                         onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
                                         required
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -297,6 +302,7 @@ export default function Users() {
                                         value={form.email}
                                         onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                                         required
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -306,6 +312,7 @@ export default function Users() {
                                         value={form.role}
                                         onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                                         required
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -316,6 +323,7 @@ export default function Users() {
                                         value={form.password}
                                         onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                                         minLength={8}
+                                        autoComplete="new-password"
                                     />
                                 </div>
                                 <div className="space-y-3">
@@ -325,8 +333,9 @@ export default function Users() {
                                             <div key={perm.value} className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id={`edit-perm-${perm.value}`}
-                                                    checked={form.permissions.includes(perm.value)}
+                                                    checked={perm.value === 'guest' ? true : form.permissions.includes(perm.value)}
                                                     onCheckedChange={() => togglePermission(perm.value)}
+                                                    disabled={perm.value === 'guest'}
                                                 />
                                                 <label
                                                     htmlFor={`edit-perm-${perm.value}`}
