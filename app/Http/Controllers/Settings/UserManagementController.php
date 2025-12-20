@@ -34,26 +34,59 @@ class UserManagementController extends Controller implements HasMiddleware
     {
         $user = $request->user();
         $permissions = $user ? $user->permissions : [];
-        // Allow access for 'admin' or 'manage_users' permission
+
+        // Check for 'admin' OR 'manage_users'
         if (!$user || (!in_array('admin', $permissions) && !in_array('manage_users', $permissions))) {
             abort(403, 'Unauthorized');
         }
-        $users = User::all()->map(function ($u) {
+
+        $presets = UserPermission::rolePresets();
+
+        $users = User::all()->map(function ($u) use ($presets) {
+            // Determine permission display label
+            $currentPerms = $u->permissions ?? [];
+            sort($currentPerms);
+            
+            $permissionDisplay = null;
+
+            // Check against Admin/Board exact matches
+            foreach (['Administrator', 'Board'] as $presetName) {
+                $presetPerms = $presets[$presetName] ?? [];
+                sort($presetPerms);
+                if ($currentPerms == $presetPerms) {
+                    $permissionDisplay = $presetName;
+                    break;
+                }
+            }
+
+            // If no match (or Guest), build the custom string
+            if (!$permissionDisplay) {
+                // Filter out the 'guest' and 'view_dashboard' tags to just show the "extra" stuff
+                $extras = array_filter($currentPerms, fn($p) => !in_array($p, ['guest', 'view_dashboard']));
+                
+                // Human readable labels for extras
+                $extraLabels = array_map(function($val) {
+                    return UserPermission::tryFrom($val)?->label() ?? $val;
+                }, $extras);
+
+                $permissionDisplay = '[Guest] ' . (empty($extraLabels) ? '' : implode(', ', $extraLabels));
+            }
+
             return [
                 'id' => $u->id,
                 'first_name' => $u->first_name ?? '',
                 'last_name' => $u->last_name ?? '',
                 'email' => $u->email ?? '',
-                'role' => $u->role ?? 'Guest',
+                'role' => $u->role ?? '', // Use as Job Title/Description
                 'permissions' => $u->permissions ?? [],
+                'permission_display' => $permissionDisplay,
             ];
         });
+
         return Inertia::render('settings/users', [
             'users' => $users,
-            // Pass all granular permissions
-            'availablePermissions' => UserPermission::allWithLabels(),
-            // Pass the presets so frontend can auto-fill checkboxes
-            'rolePresets' => UserPermission::rolePresets(),
+            'availablePermissions' => UserPermission::allWithLabels(), 
+            'rolePresets' => $presets,
         ]);
     }
 
@@ -62,31 +95,30 @@ class UserManagementController extends Controller implements HasMiddleware
      */
     public function store(Request $request)
     {
-        $user = $request->user();
-        $permissions = $user ? $user->permissions : [];
-        if (!$user || !in_array('admin', $permissions ?? [])) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizeAdmin($request);
+
         $data = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'role' => 'required|string',
+            'role' => 'nullable|string|max:100', // Job title
             'password' => 'required|string|min:8',
-            'permissions' => 'nullable|array',
+            'permissions' => 'array',
             'permissions.*' => 'string',
         ]);
+
         $data['password_hash'] = Hash::make($data['password']);
         unset($data['password']);
         
-        // Ensure permissions is always an array
-        if (!isset($data['permissions'])) {
-            $data['permissions'] = [];
+        $data['permissions'] = $data['permissions'] ?? [];
+
+        // Ensure a default role label is present for newly created users
+        $role = isset($data['role']) ? trim((string) $data['role']) : '';
+        if ($role === '') {
+            $data['role'] = 'Anonymous';
         }
-        
-        $user = User::create($data);
-        
-        // Return without password hash
+
+        User::create($data);
         return back();
     }
 
@@ -95,34 +127,29 @@ class UserManagementController extends Controller implements HasMiddleware
      */
     public function update(Request $request, $id)
     {
-        $user = $request->user();
-        $permissions = $user ? $user->permissions : [];
-        if (!$user || !in_array('admin', $permissions ?? [])) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizeAdmin($request);
+
         $target = User::findOrFail($id);
         $data = $request->validate([
             'first_name' => 'sometimes|required|string|max:255',
             'last_name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:users,email,' . $id,
-            'role' => 'sometimes|required|string',
+            'role' => 'nullable|string|max:100',
             'password' => 'nullable|string|min:8',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string',
         ]);
+
         if (!empty($data['password'])) {
             $data['password_hash'] = Hash::make($data['password']);
             unset($data['password']);
         }
-        
-        // Ensure permissions is always an array
+
         if (isset($data['permissions'])) {
             $data['permissions'] = $data['permissions'];
         }
-        
+
         $target->update($data);
-        
-        // Return without password hash
         return back();
     }
 
@@ -131,13 +158,18 @@ class UserManagementController extends Controller implements HasMiddleware
      */
     public function destroy(Request $request, $id)
     {
-        $user = $request->user();
-        $permissions = $user ? $user->permissions : [];
-        if (!$user || !in_array('admin', $permissions ?? [])) {
-            abort(403, 'Unauthorized');
-        }
+        $this->authorizeAdmin($request);
         $target = User::findOrFail($id);
         $target->delete();
         return back();
+    }
+
+    private function authorizeAdmin($request)
+    {
+        $user = $request->user();
+        $permissions = $user ? $user->permissions : [];
+        if (!$user || (!in_array('admin', $permissions) && !in_array('manage_users', $permissions))) {
+            abort(403, 'Unauthorized');
+        }
     }
 }

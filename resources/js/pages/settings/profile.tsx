@@ -28,7 +28,7 @@ export default function Profile({
     mustVerifyEmail: boolean;
     status?: string;
 }) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, permission_display } = usePage<SharedData>().props as any;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -101,17 +101,13 @@ export default function Profile({
                                         tabIndex={-1}
                                     >
                                         <span className="truncate">
-                                            {Array.isArray(
-                                                auth.user.permissions,
-                                            )
-                                                ? auth.user.permissions.join(
-                                                      ', ',
-                                                  )
-                                                : typeof auth.user
-                                                        .permissions ===
-                                                    'string'
-                                                  ? auth.user.permissions
-                                                  : ''}
+                                            {permission_display ?? (
+                                                Array.isArray(auth.user.permissions)
+                                                    ? auth.user.permissions.join(', ')
+                                                    : typeof auth.user.permissions === 'string'
+                                                    ? auth.user.permissions
+                                                    : ''
+                                            )}
                                         </span>
 
                                         <Lock

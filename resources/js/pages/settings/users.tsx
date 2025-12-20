@@ -25,24 +25,28 @@ import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import HeadingSmall from '@/components/heading-small';
 import { router } from '@inertiajs/react';
+import { cn } from '@/lib/utils';
 
 export default function Users() {
-    // rolePresets passed from controller
     const { users, auth, availablePermissions, rolePresets } = usePage().props as any;
+    
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any | null>(null);
+    
+    // Permission Template State ('Administrator' | 'Board' | 'Guest')
+    const [permissionLevel, setPermissionLevel] = useState<string>('Guest');
+
     const [form, setForm] = useState({
         first_name: '',
         last_name: '',
         email: '',
-        role: 'Guest',
+        role: '', // This is now Job Title / Description only
         password: '',
         permissions: [] as string[],
     });
 
-    // Permission check for current user viewing the page
     const myPermissions = auth?.user?.permissions || [];
     const hasAdminPermission = Array.isArray(myPermissions) && 
         (myPermissions.includes('admin') || myPermissions.includes('manage_users'));
@@ -51,18 +55,18 @@ export default function Users() {
         return <div className="p-8">Unauthorized</div>;
     }
 
-    // --- Logic: Handle Role Presets ---
-    const handleRoleChange = (newRole: string) => {
-        const presetPermissions = rolePresets[newRole] || [];
-        setForm(prev => ({
-            ...prev,
-            role: newRole,
-            // Overwrite permissions with the preset defaults
-            permissions: presetPermissions
-        }));
+    // --- Logic: Handle Permission Level Toggle ---
+    const handleLevelChange = (level: string) => {
+        setPermissionLevel(level);
+        const preset = rolePresets[level] || [];
+        // Apply the preset permissions immediately
+        setForm(prev => ({ ...prev, permissions: preset }));
     };
 
+    // Toggle individual permissions (Only for Guest)
     const togglePermission = (permissionValue: string) => {
+        if (permissionLevel !== 'Guest') return; // Locked for others
+
         setForm(prev => {
             const hasIt = prev.permissions.includes(permissionValue);
             return {
@@ -73,16 +77,30 @@ export default function Users() {
             };
         });
     };
-    // ----------------------------------
+
+    // Determine initial level based on user permissions
+    const determineLevel = (userPermissions: string[]) => {
+        const adminSet = rolePresets['Administrator'] || [];
+        const boardSet = rolePresets['Board'] || [];
+        
+        // Simple array comparison logic
+        const sortAndStr = (arr: string[]) => [...arr].sort().join(',');
+        const userStr = sortAndStr(userPermissions);
+
+        if (userStr === sortAndStr(adminSet)) return 'Administrator';
+        if (userStr === sortAndStr(boardSet)) return 'Board';
+        return 'Guest';
+    };
+
 
     const openAddModal = () => {
         setSelectedUser(null);
-        // Default to Guest preset
+        setPermissionLevel('Guest');
         setForm({ 
             first_name: '', 
             last_name: '', 
             email: '', 
-            role: 'Guest', 
+            role: 'Anonymous', 
             password: '', 
             permissions: rolePresets['Guest'] || [] 
         });
@@ -91,12 +109,14 @@ export default function Users() {
 
     const openEditModal = (user: any) => {
         setSelectedUser(user);
+        const level = determineLevel(user.permissions || []);
+        setPermissionLevel(level);
         setForm({
             first_name: user.first_name || '',
             last_name: user.last_name || '',
             email: user.email || '',
-            role: user.role || 'Guest',
-            password: '', // blank implies no change
+            role: user.role || '',
+            password: '', 
             permissions: user.permissions || [],
         });
         setEditModalOpen(true);
@@ -110,7 +130,6 @@ export default function Users() {
     const handleSubmit = (e: any) => {
         e.preventDefault();
         const isEdit = !!selectedUser;
-
         const payload = { ...form };
 
         if (isEdit) {
@@ -132,7 +151,6 @@ export default function Users() {
 
     const handleDelete = () => {
         if (!selectedUser) return;
-        
         router.delete(`/settings/users/${selectedUser.id}`, {
             onSuccess: () => {
                 setDeleteModalOpen(false);
@@ -141,8 +159,6 @@ export default function Users() {
         });
     };
 
-
-    // Helper to render the form content (shared between Add/Edit)
     const renderUserForm = () => (
         <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -178,23 +194,78 @@ export default function Users() {
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="role">Role Preset</Label>
-                <Select value={form.role} onValueChange={handleRoleChange}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {Object.keys(rolePresets).map((roleKey) => (
-                            <SelectItem key={roleKey} value={roleKey}>
-                                {roleKey}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                    Selecting a role resets permissions to the default for that role. You can customize them below.
+                <Label htmlFor="role-desc">Role</Label>
+                <Input
+                    id="role-desc"
+                    placeholder="e.g. President, Trips Coordinator, Useless"
+                    // default value/default initialized value 'Anonymous'
+                    value={form.role}
+                    onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                />
+            </div>
+
+            <div className="space-y-3">
+                <Label>Permission Level</Label>
+                {/* Custom Toggle Group mimicking the camera toggle style */}
+                <div className="flex items-center">
+                    <div className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground sm:w-auto">
+                        {['Administrator', 'Board', 'Guest'].map((level) => {
+                            const isActive = permissionLevel === level;
+                            return (
+                                <button
+                                    key={level}
+                                    type="button"
+                                    onClick={() => handleLevelChange(level)}
+                                    className={cn(
+                                        "inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                                        isActive 
+                                            ? "bg-background text-foreground shadow-sm" 
+                                            : "hover:bg-background/50 hover:text-foreground"
+                                    )}
+                                >
+                                    {level}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                    {permissionLevel === 'Administrator' && "Full access to all system resources."}
+                    {permissionLevel === 'Board' && "Access to Board resources."}
+                    {permissionLevel === 'Guest' && "Limited access. Select specific permissions below."}
                 </p>
             </div>
+
+            {/* Granular Permissions - Only show if Guest is selected */}
+            {permissionLevel === 'Guest' && (
+                <div className="space-y-3 rounded-md border p-3 bg-muted/20 animate-in fade-in zoom-in-95 duration-200">
+                    <Label className="text-xs uppercase text-muted-foreground">Additional Permissions</Label>
+                    <div className="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+                        {availablePermissions.map((perm: any) => {
+                            // Hide "core" guest permissions and role identity permissions to avoid confusion
+                            if (['guest', 'view_dashboard', 'admin', 'board'].includes(perm.value)) return null;
+
+                            return (
+                                <div key={perm.value} className="flex items-start space-x-2">
+                                    <Checkbox
+                                        id={`perm-${perm.value}`}
+                                        checked={form.permissions.includes(perm.value)}
+                                        onCheckedChange={() => togglePermission(perm.value)}
+                                    />
+                                    <div className="grid gap-1.5 leading-none">
+                                        <label
+                                            htmlFor={`perm-${perm.value}`}
+                                            className="text-sm font-medium leading-none cursor-pointer"
+                                        >
+                                            {perm.label}
+                                        </label>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-2">
                 <Label htmlFor="password">
@@ -210,32 +281,6 @@ export default function Users() {
                     autoComplete="new-password"
                 />
             </div>
-
-            <div className="space-y-3 pt-2">
-                <Label>Effective Permissions</Label>
-                <div className="grid max-h-60 grid-cols-1 gap-2 overflow-y-auto rounded-md border p-3 sm:grid-cols-2">
-                    {availablePermissions.map((perm: any) => (
-                        <div key={perm.value} className="flex items-start space-x-2">
-                            <Checkbox
-                                id={`perm-${perm.value}`}
-                                checked={form.permissions.includes(perm.value)}
-                                onCheckedChange={() => togglePermission(perm.value)}
-                            />
-                            <div className="grid gap-1.5 leading-none">
-                                <label
-                                    htmlFor={`perm-${perm.value}`}
-                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                    {perm.label}
-                                </label>
-                                <span className="text-[10px] text-muted-foreground">
-                                    {perm.value}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 
@@ -245,7 +290,7 @@ export default function Users() {
                 <div className="space-y-6">
                     <HeadingSmall
                         title="User Management"
-                        description="Manage users, roles, and granular permissions."
+                        description="Manage users, define job titles, and assign system permissions."
                     />
                     
                     <Button onClick={openAddModal}>Add User</Button>
@@ -271,24 +316,18 @@ export default function Users() {
                                                 </div>
                                             </td>
                                             <td className="p-3 text-sm">
-                                                <Badge variant="outline">{u.role}</Badge>
+                                                {u.role ? (
+                                                    <span className="font-medium text-muted-foreground">{u.role}</span>
+                                                ) : (
+                                                    <span className="text-muted-foreground italic">-</span>
+                                                )}
                                             </td>
                                             <td className="p-3">
-                                                <div className="flex flex-wrap gap-1">
-                                                    {u.permissions.length > 5 ? (
-                                                        <>
-                                                            <span className="rounded bg-muted px-2 py-0.5 text-xs font-mono">
-                                                                {u.permissions.length} active permissions
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        u.permissions.map((p: string) => (
-                                                            <span key={p} className="rounded bg-muted px-2 py-0.5 text-xs font-mono">
-                                                                {p}
-                                                            </span>
-                                                        ))
-                                                    )}
-                                                </div>
+                                                <Badge variant="outline" className={cn(
+                                                    "font-normal bg-primary/10 border-primary/30"
+                                                )}>
+                                                    {u.permission_display}
+                                                </Badge>
                                             </td>
                                             <td className="p-3">
                                                 <div className="flex gap-2">

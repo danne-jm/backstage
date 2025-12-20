@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Enums\UserPermission;
 
 class ProfileController extends Controller
 {
@@ -18,9 +19,38 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $presets = UserPermission::rolePresets();
+
+        $currentPerms = $user->permissions ?? [];
+        sort($currentPerms);
+
+        $permissionDisplay = null;
+        foreach (['Administrator', 'Board'] as $presetName) {
+            $presetPerms = $presets[$presetName] ?? [];
+            sort($presetPerms);
+            if ($currentPerms == $presetPerms) {
+                $permissionDisplay = $presetName;
+                break;
+            }
+        }
+
+        if (!$permissionDisplay) {
+            $extras = array_filter($currentPerms, fn($p) => !in_array($p, ['guest', 'view_dashboard']));
+            $extraLabels = array_map(function($val) {
+                return UserPermission::tryFrom($val)?->label() ?? $val;
+            }, $extras);
+
+            $permissionDisplay = '[Guest] ' . (empty($extraLabels) ? '' : implode(', ', $extraLabels));
+        }
+
         return Inertia::render('settings/profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            // Pass available permissions and presets so the frontend can render the same preview string
+            'availablePermissions' => UserPermission::allWithLabels(),
+            'rolePresets' => $presets,
+            'permission_display' => $permissionDisplay,
         ]);
     }
 
