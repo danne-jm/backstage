@@ -38,4 +38,12 @@ Route::middleware('auth')->group(function () {
     Route::put('settings/profile/pinned', [ProfileController::class, 'updatePinned'])->name('profile.pinned.update');
     // Edit footer quick links page
     Route::get('settings/footer', [ProfileController::class, 'editPinned'])->name('profile.footer.edit');
+
+    // Admin-only user management
+    Route::middleware('can:isAdmin')->group(function () {
+        Route::get('settings/users', [\App\Http\Controllers\Settings\UserManagementController::class, 'index'])->name('settings.users');
+        Route::post('settings/users', [\App\Http\Controllers\Settings\UserManagementController::class, 'store'])->name('settings.users.store');
+        Route::patch('settings/users/{id}', [\App\Http\Controllers\Settings\UserManagementController::class, 'update'])->name('settings.users.update');
+        Route::delete('settings/users/{id}', [\App\Http\Controllers\Settings\UserManagementController::class, 'destroy'])->name('settings.users.destroy');
+    });
 });
