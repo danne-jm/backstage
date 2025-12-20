@@ -37,6 +37,10 @@ interface Product {
     name: string;
     description: string | null;
     price: number;
+    quantity?: number | null;
+    variable_amount?: boolean;
+    quantity_with_card?: number | null;
+    quantity_without_card?: number | null;
 }
 
 interface Event {
@@ -77,6 +81,7 @@ export default function Sellables() {
     const events: Event[] = Array.isArray(props['events'])
         ? props['events']
         : [];
+    const expiredPaginationProp: any = props['expired_pagination'] ?? null;
     const boardUsers: BoardUser[] = Array.isArray(props['boardUsers'])
         ? props['boardUsers']
         : [];
@@ -92,32 +97,54 @@ export default function Sellables() {
     // Products: cheapest first (sorted on demand below when used)
 
     // Events: classify into active (start <= now <= end), upcoming (start > now), expired (end < now)
-    const activeEvents: Event[] = [];
-    const upcomingEvents: Event[] = [];
-    const expiredEvents: Event[] = [];
+    // Split initial events into live/upcoming and the (first page) expired events.
+    const initialActiveEvents: Event[] = [];
+    const initialUpcomingEvents: Event[] = [];
+    const initialExpiredEvents: Event[] = [];
 
     (events || []).forEach((ev) => {
+        const eventDate = parseDate(ev.event_date);
         const start = parseDate(ev.start_sell_date);
         const end = parseDate(ev.end_sell_date);
-        if (!start || !end) {
+        if (!eventDate || !start || !end) {
             // treat malformed dates as expired to avoid showing as sellable
-            expiredEvents.push(ev);
+            initialExpiredEvents.push(ev);
             return;
         }
 
-        if (
+        if (eventDate.getTime() < now.getTime()) {
+            initialExpiredEvents.push(ev);
+        } else if (
             now.getTime() >= start.getTime() &&
             now.getTime() <= end.getTime()
         ) {
-            activeEvents.push(ev);
-        } else if (now.getTime() < start.getTime()) {
-            upcomingEvents.push(ev);
+            initialActiveEvents.push(ev);
         } else {
-            expiredEvents.push(ev);
+            initialUpcomingEvents.push(ev);
         }
     });
 
+    // Keep expired events in state so we can append additional pages
+    const [expiredEventsState, setExpiredEventsState] = React.useState<
+        Event[]
+    >(() => initialExpiredEvents);
+
+    const [expiredPagination, setExpiredPagination] = React.useState<any>(
+        expiredPaginationProp ?? {
+            current_page: 1,
+            last_page: 1,
+            per_page: 10,
+            total: initialExpiredEvents.length,
+            has_more: false,
+        },
+    );
+
+    const [loadingExpired, setLoadingExpired] = React.useState(false);
+
     // Active: sort by fewest sellable days left (end - now) ascending
+    const activeEvents = initialActiveEvents.slice();
+    const upcomingEvents = initialUpcomingEvents.slice();
+
     activeEvents.sort((a: Event, b: Event) => {
         const aEnd = parseDate(a.end_sell_date) as Date;
         const bEnd = parseDate(b.end_sell_date) as Date;
@@ -133,22 +160,33 @@ export default function Sellables() {
             (parseDate(b.start_sell_date) as Date).getTime(),
     );
 
-    // Expired: order by event_date (earliest first)
-    expiredEvents.sort(
-        (a: Event, b: Event) =>
-            (parseDate(a.event_date)
-                ? (parseDate(a.event_date) as Date).getTime()
-                : 0) -
-            (parseDate(b.event_date)
-                ? (parseDate(b.event_date) as Date).getTime()
-                : 0),
-    );
-
     const orderedEvents = [
         ...activeEvents,
         ...upcomingEvents,
-        ...expiredEvents,
+        ...expiredEventsState,
     ];
+
+    async function loadMoreExpired() {
+        if (!expiredPagination?.has_more || loadingExpired) return;
+        const nextPage = (expiredPagination.current_page || 1) + 1;
+        setLoadingExpired(true);
+        try {
+            const res = await fetch(
+                `/sellables/expired?page=${nextPage}&per_page=${expiredPagination.per_page}`,
+                { credentials: 'same-origin' },
+            );
+            if (!res.ok) throw new Error('Failed to load');
+            const json = await res.json();
+            const newItems: Event[] = Array.isArray(json.data) ? json.data : [];
+            setExpiredEventsState((prev) => [...prev, ...newItems]);
+            setExpiredPagination(json.pagination ?? { has_more: false });
+        } catch (e) {
+            // swallow for now or show a message
+            console.error(e);
+        } finally {
+            setLoadingExpired(false);
+        }
+    }
 
     // Notification state
     const [message, setMessage] = React.useState('');
@@ -168,6 +206,10 @@ export default function Sellables() {
     const [productName, setProductName] = React.useState('');
     const [productPrice, setProductPrice] = React.useState('');
     const [productDescription, setProductDescription] = React.useState('');
+    const [productQuantity, setProductQuantity] = React.useState('');
+    const [productVariableAmount, setProductVariableAmount] = React.useState(false);
+    const [productQuantityWithCard, setProductQuantityWithCard] = React.useState('');
+    const [productQuantityWithoutCard, setProductQuantityWithoutCard] = React.useState('');
 
     // Event form state
     const [eventDialogOpen, setEventDialogOpen] = React.useState(false);
@@ -194,11 +236,19 @@ export default function Sellables() {
             setProductName(product.name);
             setProductPrice(product.price.toString());
             setProductDescription(product.description || '');
+            setProductQuantity(product.quantity?.toString() || '');
+            setProductVariableAmount(Boolean(product.variable_amount));
+            setProductQuantityWithCard(product.quantity_with_card?.toString() || '');
+            setProductQuantityWithoutCard(product.quantity_without_card?.toString() || '');
         } else {
             setEditingProduct(null);
             setProductName('');
             setProductPrice('');
             setProductDescription('');
+            setProductQuantity('');
+            setProductVariableAmount(false);
+            setProductQuantityWithCard('');
+            setProductQuantityWithoutCard('');
         }
         setProductDialogOpen(true);
 
@@ -223,10 +273,14 @@ export default function Sellables() {
     };
 
     const submitProduct = () => {
-        const data = {
+        const data: any = {
             name: productName,
             price: parseFloat(productPrice),
             description: productDescription || null,
+            variable_amount: productVariableAmount,
+            quantity: productVariableAmount ? null : (productQuantity ? parseInt(productQuantity) : null),
+            quantity_with_card: productVariableAmount && productQuantityWithCard ? parseInt(productQuantityWithCard) : null,
+            quantity_without_card: productVariableAmount && productQuantityWithoutCard ? parseInt(productQuantityWithoutCard) : null,
         };
 
         if (editingProduct) {
@@ -485,6 +539,69 @@ export default function Sellables() {
                                         }
                                     />
                                 </div>
+                                <div>
+                                    <Label htmlFor="product-quantity">
+                                        Quantity (optional)
+                                    </Label>
+                                    <Input
+                                        id="product-quantity"
+                                        type="number"
+                                        value={productQuantity}
+                                        onChange={(e) =>
+                                            setProductQuantity(e.target.value)
+                                        }
+                                    />
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="product-variable-amount"
+                                        checked={productVariableAmount}
+                                        onCheckedChange={(checked) =>
+                                            setProductVariableAmount(checked === true)
+                                        }
+                                    />
+                                    <Label
+                                        htmlFor="product-variable-amount"
+                                        className="cursor-pointer"
+                                    >
+                                        Variable Amount (separate quantities for
+                                        with/without card)
+                                    </Label>
+                                </div>
+                                {productVariableAmount && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label htmlFor="product-quantity-with-card">
+                                                Quantity with Card
+                                            </Label>
+                                            <Input
+                                                id="product-quantity-with-card"
+                                                type="number"
+                                                value={productQuantityWithCard}
+                                                onChange={(e) =>
+                                                    setProductQuantityWithCard(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="product-quantity-without-card">
+                                                Quantity without Card
+                                            </Label>
+                                            <Input
+                                                id="product-quantity-without-card"
+                                                type="number"
+                                                value={productQuantityWithoutCard}
+                                                onChange={(e) =>
+                                                    setProductQuantityWithoutCard(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <DialogFooter>
                                 <DialogClose asChild>
@@ -522,6 +639,17 @@ export default function Sellables() {
                                         <p className="mt-1 text-sm text-muted-foreground">
                                             €{product.price}
                                         </p>
+                                        <div className="mt-1 text-sm text-muted-foreground">
+                                            {product.variable_amount ? (
+                                                <>
+                                                    Qty w/ Card: {product.quantity_with_card ?? 'N/A'} | w/o Card: {product.quantity_without_card ?? 'N/A'}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Quantity: {product.quantity ?? 'Unlimited'}
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex gap-2">
                                         <Button
@@ -1041,9 +1169,18 @@ export default function Sellables() {
                                 );
                             })}
                         </div>
+                        
                     )}
                 </div>
             </div>
+
+            {expiredPagination?.has_more && (
+                <div className="flex justify-center mt-2">
+                    <Button onClick={loadMoreExpired} disabled={loadingExpired}>
+                        {loadingExpired ? 'Loading...' : 'Load more expired events'}
+                    </Button>
+                </div>
+            )}
 
             {message && (
                 <div className="fixed top-4 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">

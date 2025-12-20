@@ -10,42 +10,105 @@ use Inertia\Inertia;
 
 class SellablesController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         $products = Product::orderBy('name')->get();
-        $events = Event::with('responsibleUser')->orderBy('event_date', 'desc')->get()->map(function ($event) {
-            return [
-                'id' => $event->id,
-                'name' => $event->name,
-                'description' => $event->description,
-                'event_date' => $event->event_date->toISOString(),
-                'start_sell_date' => $event->start_sell_date->toISOString(),
-                'end_sell_date' => $event->end_sell_date->toISOString(),
-                'price_with_card' => $event->price_with_card,
-                'price_without_card' => $event->price_without_card,
-                'quantity' => $event->quantity,
-                'responsible_user_id' => $event->responsible_user_id,
-                'notes' => $event->notes,
-                'variable_amount' => $event->variable_amount,
-                'quantity_with_card' => $event->quantity_with_card,
-                'quantity_without_card' => $event->quantity_without_card,
-                'responsibleUser' => $event->responsibleUser ? [
-                    'id' => $event->responsibleUser->id,
-                    'first_name' => $event->responsibleUser->first_name,
-                    'last_name' => $event->responsibleUser->last_name,
-                ] : null,
-            ];
-        });
+        $now = now();
+        // Fetch all live/upcoming events (event_date >= now)
+        $liveEvents = Event::with('responsibleUser')
+            ->where('event_date', '>=', $now)
+            ->orderBy('event_date', 'asc')
+            ->get()
+            ->map(fn($event) => $this->formatEvent($event));
+
+        // Paginate expired events (event_date < now). Return first page in index.
+        $expiredPage = max(1, (int) $request->query('expired_page', 1));
+        $expiredPerPage = max(1, (int) $request->query('expired_per_page', 10));
+
+        $expiredQuery = Event::with('responsibleUser')
+            ->where('event_date', '<', $now)
+            ->orderBy('event_date', 'desc');
+
+        $expiredPaginator = $expiredQuery->paginate($expiredPerPage, ['*'], 'expired_page', $expiredPage);
+
+        $expiredEvents = collect($expiredPaginator->items())->map(fn($event) => $this->formatEvent($event));
+
+        // Combine live/upcoming (all) then the first page of expired events
+        $events = $liveEvents->concat($expiredEvents)->values();
         $boardUsers = User::where('permissions', 'like', '%board%')->orderBy('first_name')->get(['id', 'first_name', 'last_name', 'email']);
 
         return Inertia::render('sellables', [
             'products' => $products,
             'events' => $events,
+            'expired_pagination' => [
+                'current_page' => $expiredPaginator->currentPage(),
+                'last_page' => $expiredPaginator->lastPage(),
+                'per_page' => $expiredPaginator->perPage(),
+                'total' => $expiredPaginator->total(),
+                'has_more' => $expiredPaginator->hasMorePages(),
+            ],
             'boardUsers' => $boardUsers->map(fn ($u) => [
                 'id' => $u->id,
                 'name' => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
                 'email' => $u->email,
             ]),
+        ]);
+    }
+
+    /**
+     * Serialize an Event model into the shape expected by the front-end.
+     */
+    protected function formatEvent(Event $event)
+    {
+        return [
+            'id' => $event->id,
+            'name' => $event->name,
+            'description' => $event->description,
+            'event_date' => $event->event_date->toISOString(),
+            'start_sell_date' => $event->start_sell_date->toISOString(),
+            'end_sell_date' => $event->end_sell_date->toISOString(),
+            'price_with_card' => $event->price_with_card,
+            'price_without_card' => $event->price_without_card,
+            'quantity' => $event->quantity,
+            'responsible_user_id' => $event->responsible_user_id,
+            'notes' => $event->notes,
+            'variable_amount' => $event->variable_amount,
+            'quantity_with_card' => $event->quantity_with_card,
+            'quantity_without_card' => $event->quantity_without_card,
+            'responsibleUser' => $event->responsibleUser ? [
+                'id' => $event->responsibleUser->id,
+                'first_name' => $event->responsibleUser->first_name,
+                'last_name' => $event->responsibleUser->last_name,
+            ] : null,
+        ];
+    }
+
+    /**
+     * JSON endpoint to fetch paginated expired events (server-side pagination).
+     */
+    public function expired(Request $request)
+    {
+        $now = now();
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = max(1, (int) $request->query('per_page', 10));
+
+        $query = Event::with('responsibleUser')
+            ->where('event_date', '<', $now)
+            ->orderBy('event_date', 'desc');
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        $items = collect($paginator->items())->map(fn($e) => $this->formatEvent($e));
+
+        return response()->json([
+            'data' => $items,
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'has_more' => $paginator->hasMorePages(),
+            ],
         ]);
     }
 
@@ -55,7 +118,20 @@ class SellablesController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['nullable', 'integer', 'min:0'],
+            'variable_amount' => ['required', 'boolean'],
+            'quantity_with_card' => ['nullable', 'integer', 'min:0'],
+            'quantity_without_card' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        // If variable_amount is true, set quantity to null
+        if ($validated['variable_amount']) {
+            $validated['quantity'] = null;
+        } else {
+            // If not variable, clear the separate quantities
+            $validated['quantity_with_card'] = null;
+            $validated['quantity_without_card'] = null;
+        }
 
         Product::create($validated);
 
@@ -68,7 +144,20 @@ class SellablesController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['nullable', 'integer', 'min:0'],
+            'variable_amount' => ['required', 'boolean'],
+            'quantity_with_card' => ['nullable', 'integer', 'min:0'],
+            'quantity_without_card' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        // If variable_amount is true, set quantity to null
+        if ($validated['variable_amount']) {
+            $validated['quantity'] = null;
+        } else {
+            // If not variable, clear the separate quantities
+            $validated['quantity_with_card'] = null;
+            $validated['quantity_without_card'] = null;
+        }
 
         $product->update($validated);
 

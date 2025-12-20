@@ -42,6 +42,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Sellables management (products and events)
     Route::get('sellables', [App\Http\Controllers\SellablesController::class, 'index'])->name('sellables');
+    // Endpoint to fetch further pages of expired events (server-side pagination)
+    Route::get('sellables/expired', [App\Http\Controllers\SellablesController::class, 'expired'])->name('sellables.expired');
     Route::post('sellables/products', [App\Http\Controllers\SellablesController::class, 'storeProduct'])->name('sellables.products.store');
     Route::put('sellables/products/{product}', [App\Http\Controllers\SellablesController::class, 'updateProduct'])->name('sellables.products.update');
     Route::delete('sellables/products/{product}', [App\Http\Controllers\SellablesController::class, 'destroyProduct'])->name('sellables.products.destroy');
