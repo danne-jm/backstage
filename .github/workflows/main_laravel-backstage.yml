@@ -23,6 +23,12 @@ jobs:
         with:
           php-version: '8.4'
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
       - name: Check if composer.json exists
         id: check_files
         uses: andstor/file-existence-action@v1
@@ -31,8 +37,22 @@ jobs:
 
       - name: Run composer install if composer.json exists
         if: steps.check_files.outputs.files_exists == 'true'
-        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
+        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress --optimize-autoloader --no-dev
 
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Copy production environment file
+        run: cp .env.production .env
+
+      - name: Generate application key
+        run: php artisan key:generate --force
+
+      - name: Run tests
+        run: ./vendor/bin/pest
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
