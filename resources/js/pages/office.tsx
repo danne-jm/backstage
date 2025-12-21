@@ -6,6 +6,7 @@ import {
     DialogContent,
     DialogDescription,
     DialogFooter,
+    DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
@@ -33,6 +34,12 @@ export default function Office() {
         : [];
     const sellables: any[] = Array.isArray(props['sellables'])
         ? props['sellables']
+        : [];
+    const pastShifts: any[] = Array.isArray(props['pastShifts'])
+        ? props['pastShifts']
+        : [];
+    const denominations: string[] = Array.isArray(props['denominations'])
+        ? props['denominations']
         : [];
     const now = new Date();
 
@@ -126,9 +133,6 @@ export default function Office() {
 
         return 'Sale ended';
     };
-    const pastShifts: any[] = Array.isArray(props['pastShifts'])
-        ? props['pastShifts']
-        : [];
 
     const [message, setMessage] = React.useState('');
     const [isSaleEditOpen, setIsSaleEditOpen] = React.useState(false);
@@ -152,21 +156,31 @@ export default function Office() {
         React.useState(false);
     const [isPollingPaused, setIsPollingPaused] = React.useState(false);
 
+    // Edit cash breakdown modal state
+    const [isEditCashBreakdownOpen, setIsEditCashBreakdownOpen] = React.useState(false);
+    const [selectedShift, setSelectedShift] = React.useState<any | null>(null);
+    const [breakdownForm, setBreakdownForm] = React.useState<Record<string, number>>({});
+
     const computeBreakdownTotal = (
         bd?: Record<string, number> | null,
     ): number => {
         if (!bd) return 0;
         const map: Record<string, number> = {
-            '50': 50,
-            '20': 20,
-            '10': 10,
-            '5': 5,
-            '2': 2,
-            '1': 1,
-            '0_50': 0.5,
-            '0_20': 0.2,
-            '0_10': 0.1,
-            token: 0,
+            '500e': 500,
+            '200e': 200,
+            '100e': 100,
+            '50e': 50,
+            '20e': 20,
+            '10e': 10,
+            '5e': 5,
+            '2e': 2,
+            '1e': 1,
+            '50c': 0.50,
+            '20c': 0.20,
+            '10c': 0.10,
+            '5c': 0.05,
+            '2c': 0.02,
+            '1c': 0.01,
         };
         return Object.keys(bd).reduce(
             (sum: number, k: string) =>
@@ -174,6 +188,54 @@ export default function Office() {
             0,
         );
     };
+
+    const handleEditClick = (shift: any) => {
+        setSelectedShift(shift);
+        setIsEditCashBreakdownOpen(true);
+    };
+
+    const handleBreakdownInputChange = (key: string, value: string) => {
+        setBreakdownForm(prev => ({
+            ...prev,
+            [key]: parseInt(value) || 0
+        }));
+    };
+
+    const handleBreakdownSave = () => {
+        if (!selectedShift) return;
+
+        router.post(`/office/${selectedShift.id}/update-cash-breakdown`, {
+            breakdown: breakdownForm
+        }, {
+            onSuccess: () => setIsEditCashBreakdownOpen(false)
+        });
+    };
+
+    const formatLabel = (key: string) => {
+        if (key.endsWith('e')) return `€${key.slice(0, -1)}`;
+        if (key.endsWith('c')) return `${key.slice(0, -1)}¢`;
+        return key;
+    };
+
+    // When a shift is selected, populate the form with its existing data
+    React.useEffect(() => {
+        if (selectedShift) {
+            const initialData: Record<string, number> = {};
+            
+            // Initialize all keys to 0
+            denominations.forEach((key: string) => {
+                initialData[key] = 0;
+            });
+
+            // Merge actual values from DB (handle missing keys gracefully)
+            const dbData = selectedShift.cash_breakdown || {};
+            Object.keys(dbData).forEach(key => {
+                initialData[key] = dbData[key] ?? 0;
+            });
+
+            setBreakdownForm(initialData);
+        }
+    }, [selectedShift, denominations]);
 
     const openSaleEditModal = (sale: any) => {
         setEditingSale(sale);
@@ -1172,6 +1234,15 @@ export default function Office() {
                                             ).toFixed(2)}
                                         </div>
 
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            onClick={() => handleEditClick(s)}
+                                        >
+                                            <Pencil className="mr-1 h-3 w-3" />
+                                            Edit Cash
+                                        </Button>
+
                                         <Link href={`/office/${s.id}`}>
                                             <Button size="sm" variant="ghost">
                                                 Review
@@ -1262,6 +1333,51 @@ export default function Office() {
                         </div>
                     )}
                 </div>
+
+                {/* Edit Cash Breakdown Modal */}
+                <Dialog open={isEditCashBreakdownOpen} onOpenChange={setIsEditCashBreakdownOpen}>
+                    <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>Edit Cash Distribution</DialogTitle>
+                            <DialogDescription>
+                                Update the cash breakdown for this shift. The total will be calculated automatically.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="grid grid-cols-2 gap-4 py-4">
+                            {denominations.map((key: string) => (
+                                <div key={key} className="flex items-center space-x-2">
+                                    <label className="w-16 text-right text-sm font-medium">
+                                        {formatLabel(key)}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={breakdownForm[key] || ''}
+                                        onChange={(e) => handleBreakdownInputChange(key, e.target.value)}
+                                        className="h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center justify-between border-t pt-4">
+                            <div className="text-sm font-medium">Calculated Total:</div>
+                            <div className="text-lg font-semibold">
+                                €{computeBreakdownTotal(breakdownForm).toFixed(2)}
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsEditCashBreakdownOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleBreakdownSave}>
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppLayout>
     );

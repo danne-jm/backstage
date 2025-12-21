@@ -284,6 +284,68 @@ export default function Office() {
         '0_10': 0,
         token: 0,
     });
+
+    // Keep start-cash modal inputs in sync with server-provided activeShift.start_cash_breakdown
+    React.useEffect(() => {
+        // Don't overwrite user edits while the modal is open
+        if (isCashModalOpen) return;
+
+        if (
+            activeShift &&
+            (activeShift.start_cash_breakdown || activeShift.start_cash_breakdown === null)
+        ) {
+            const existing = activeShift.start_cash_breakdown ?? null;
+            const init: Record<string, number> = {
+                '50': 0,
+                '20': 0,
+                '10': 0,
+                '5': 0,
+                '2': 0,
+                '1': 0,
+                '0_50': 0,
+                '0_20': 0,
+                '0_10': 0,
+                token: 0,
+            };
+            if (existing && typeof existing === 'object') {
+                for (const k of Object.keys(init)) {
+                    init[k] = Number(existing[k] ?? 0);
+                }
+            }
+            setCashBreakdown(init);
+        }
+    }, [activeShift?.start_cash_breakdown, isCashModalOpen]);
+
+    // Keep current/end-cash modal inputs in sync with server-provided activeShift.cash_breakdown
+    React.useEffect(() => {
+        // Don't overwrite user edits while the custom/current modal is open
+        if (isCustomCashModalOpen) return;
+
+        if (
+            activeShift &&
+            (activeShift.cash_breakdown || activeShift.cash_breakdown === null)
+        ) {
+            const existing = activeShift.cash_breakdown ?? null;
+            const init: Record<string, number> = {
+                '50': 0,
+                '20': 0,
+                '10': 0,
+                '5': 0,
+                '2': 0,
+                '1': 0,
+                '0_50': 0,
+                '0_20': 0,
+                '0_10': 0,
+                token: 0,
+            };
+            if (existing && typeof existing === 'object') {
+                for (const k of Object.keys(init)) {
+                    init[k] = Number(existing[k] ?? 0);
+                }
+            }
+            setCustomCashBreakdown(init);
+        }
+    }, [activeShift?.cash_breakdown, isCustomCashModalOpen]);
     // If a quick-add sale opened the modal, store its context here so Save can record the correct sale
     const [quickSaleContext, setQuickSaleContext] = React.useState<any | null>(
         null,

@@ -82,7 +82,9 @@ class OfficeController extends Controller
                 'id' => $s->id,
                 'started_at' => $s->started_at,
                 'ended_at' => $s->ended_at,
+                'status' => $s->status,
                 'workers' => $s->workers ?? [],
+                'cash_breakdown' => $s->cash_breakdown ?? [],
                 'total_cash' => $s->total_cash ?? ($s->start_cash + ($s->cash_total ?? 0)),
                 'total_card' => $s->total_card ?? ($s->start_card + ($s->card_total ?? 0)),
             ];
@@ -94,6 +96,7 @@ class OfficeController extends Controller
             'products' => $products,
             'sellables' => $sellables,
             'pastShifts' => $pastShifts,
+            'denominations' => OfficeShift::DENOMINATIONS,
         ]);
     }
 
@@ -419,11 +422,12 @@ class OfficeController extends Controller
     public function updateCashBreakdown(Request $request, OfficeShift $office)
     {
         $validated = $request->validate([
-            'target' => ['required', 'string', 'in:start,current'],
+            'target' => ['nullable', 'string', 'in:start,current'],
             'breakdown' => ['required', 'array'],
         ]);
 
-        $allowedKeys = ['50', '20', '10', '5', '2', '1', '0_50', '0_20', '0_10', 'token'];
+        // Use the canonical list from the model
+        $allowedKeys = OfficeShift::DENOMINATIONS;
 
         $breakdown = [];
         foreach ($allowedKeys as $k) {
@@ -433,26 +437,13 @@ class OfficeController extends Controller
             }
         }
 
-        // compute total in euros (tokens counted separately as 0 value)
-        $total = 0.0;
-        $values = [
-            '50' => 50.0,
-            '20' => 20.0,
-            '10' => 10.0,
-            '5' => 5.0,
-            '2' => 2.0,
-            '1' => 1.0,
-            '0_50' => 0.5,
-            '0_20' => 0.2,
-            '0_10' => 0.1,
-            'token' => 0.0,
-        ];
+        // compute total in euros using the model helper
+        $total = $office->totalFromBreakdown($breakdown);
 
-        foreach ($values as $k => $v) {
-            $total += ($breakdown[$k] ?? 0) * $v;
-        }
+        // Default to 'current' if target not provided
+        $target = $validated['target'] ?? 'current';
 
-        if ($validated['target'] === 'start') {
+        if ($target === 'start') {
             $office->start_cash = round($total, 2);
             $office->start_cash_breakdown = $breakdown;
             $office->total_cash = $office->start_cash + ($office->cash_total ?? 0);
@@ -565,7 +556,7 @@ class OfficeController extends Controller
         // If a breakdown is provided for a cash sale, apply the diff to the
         // office's cash_breakdown so aggregated counts remain accurate.
         if (strtolower($sale->method) === 'cash' && isset($validated['breakdown']) && is_array($validated['breakdown'])) {
-            $allowedKeys = ['50', '20', '10', '5', '2', '1', '0_50', '0_20', '0_10', 'token'];
+            $allowedKeys = OfficeShift::DENOMINATIONS;
 
             // normalize incoming breakdown
             $newBreakdown = [];

@@ -9,6 +9,12 @@ class OfficeShift extends Model
 {
     use HasFactory;
 
+    // Define the canonical list of denominations (notes first, then coins)
+    public const DENOMINATIONS = [
+        '500e', '200e', '100e', '50e', '20e', '10e', '5e', // Notes
+        '2e', '1e', '50c', '20c', '10c', '5c', '2c', '1c'  // Coins
+    ];
+
     protected $fillable = [
         'started_by',
         'started_at',
@@ -34,7 +40,7 @@ class OfficeShift extends Model
 
     /**
      * Compute total amount (in euros) from a breakdown array keyed by denomination keys.
-     * Accepts keys: 50,20,10,5,2,1,0_50,0_20,0_10,token
+     * Accepts keys from DENOMINATIONS constant: 500e, 200e, 100e, 50e, 20e, 10e, 5e, 2e, 1e, 50c, 20c, 10c, 5c, 2c, 1c
      */
     public function totalFromBreakdown(?array $breakdown): float
     {
@@ -43,16 +49,21 @@ class OfficeShift extends Model
         }
 
         $map = [
-            '50' => 50.0,
-            '20' => 20.0,
-            '10' => 10.0,
-            '5' => 5.0,
-            '2' => 2.0,
-            '1' => 1.0,
-            '0_50' => 0.5,
-            '0_20' => 0.2,
-            '0_10' => 0.1,
-            'token' => 0.0, // token has no euro value (it's a jeton), keep separate if needed
+            '500e' => 500.0,
+            '200e' => 200.0,
+            '100e' => 100.0,
+            '50e' => 50.0,
+            '20e' => 20.0,
+            '10e' => 10.0,
+            '5e' => 5.0,
+            '2e' => 2.0,
+            '1e' => 1.0,
+            '50c' => 0.50,
+            '20c' => 0.20,
+            '10c' => 0.10,
+            '5c' => 0.05,
+            '2c' => 0.02,
+            '1c' => 0.01,
         ];
 
         $total = 0.0;
