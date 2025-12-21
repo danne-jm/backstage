@@ -35,15 +35,9 @@ jobs:
         with:
           files: 'composer.json'
 
-      - name: Run composer install if composer.json exists
+      - name: Run composer install with dev dependencies for testing
         if: steps.check_files.outputs.files_exists == 'true'
-        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress --optimize-autoloader --no-dev
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Build frontend assets
-        run: npm run build
+        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
 
       - name: Copy production environment file
         run: cp .env.production .env
@@ -53,6 +47,15 @@ jobs:
 
       - name: Run tests
         run: ./vendor/bin/pest
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Remove dev dependencies for deployment
+        run: composer install --prefer-dist --no-progress --optimize-autoloader --no-dev
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
