@@ -64,6 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('attendees/config', [App\Http\Controllers\EventAttendeeController::class, 'updateConfiguration'])->name('events.attendees.config');
         Route::post('attendees/sync', [App\Http\Controllers\EventAttendeeController::class, 'sync'])->name('events.attendees.sync');
         Route::get('sheets', [App\Http\Controllers\EventAttendeeController::class, 'listSheets'])->name('events.sheets');
+        Route::get('sheet-data', [App\Http\Controllers\EventAttendeeController::class, 'getSheetData'])->name('events.sheet-data');
     });
 
     // Warehouse inventory pages & API
@@ -102,18 +103,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $generated = \App\Models\EventAttendee::generateTableName($event);
 
             // If the expected table doesn't exist, try to find any existing table ending with _{event_id}
-            if (!\Illuminate\Support\Facades\Schema::connection('attendees')->hasTable($generated)) {
+            if (! \Illuminate\Support\Facades\Schema::connection('attendees')->hasTable($generated)) {
                 $conn = \Illuminate\Support\Facades\DB::connection('attendees');
                 $dbName = config('database.connections.attendees.database');
-                $like = '%_' . $event->id;
+                $like = '%_'.$event->id;
                 $rows = $conn->select('SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = ? AND TABLE_NAME LIKE ? LIMIT 1', [$dbName, $like]);
-                if (!empty($rows) && isset($rows[0]->TABLE_NAME)) {
+                if (! empty($rows) && isset($rows[0]->TABLE_NAME)) {
                     $generated = $rows[0]->TABLE_NAME;
                 }
             }
 
             // Use the resolved table name on the EventAttendee model instance
-            $model = new \App\Models\EventAttendee();
+            $model = new \App\Models\EventAttendee;
             $model->setTable($generated);
             $attendees = $model->get();
 

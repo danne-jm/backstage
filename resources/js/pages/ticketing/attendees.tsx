@@ -9,7 +9,7 @@ import axios from 'axios';
 import { Loader2, Save, RefreshCw } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
-import { route } from 'ziggy-js';
+
 
 export default function EventAttendees({ event, attendees }: { event: any, attendees: any[] }) {
     const [spreadsheetId, setSpreadsheetId] = React.useState(event.google_spreadsheet_id || '');
@@ -23,29 +23,100 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
         if (!spreadsheetId) return;
         setLoadingSheets(true);
         try {
-            const res = await axios.get(route('events.sheets', event.id), {
+            // Use direct URL instead of route()
+            const res = await axios.get(`/ticketing/events/${event.id}/sheets`, {
                 params: { spreadsheet_id: spreadsheetId }
             });
-            
-            const sheets = res.data.sheets || [];
-            setAvailableSheets(sheets);
-
-            // AUTO-SELECT LOGIC:
-            // If we have sheets, and NO sheet is currently selected, pick the first one.
-            if (sheets.length > 0 && !sheetName) {
-                setSheetName(sheets[0]);
+            // Validate response
+            if (res.data && Array.isArray(res.data.sheets)) {
+                setAvailableSheets(res.data.sheets);
+                
+                // If no sheets found, clear the sheet name in state and database
+                if (res.data.sheets.length === 0) {
+                    setSheetName('');
+                    // Clear the sheet name in database
+                    router.post(`/ticketing/events/${event.id}/attendees/config`, {
+                        google_spreadsheet_id: spreadsheetId,
+                        google_sheet_name: ''
+                    }, {
+                        preserveState: true,
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            if (!silent) toast.error('No sheets found in spreadsheet');
+                        }
+                    });
+                } else {
+                    // Determine which sheet to use
+                    let selectedSheet: string;
+                    
+                    // If current sheetName is still in the available sheets, keep it
+                    if (sheetName && res.data.sheets.includes(sheetName)) {
+                        selectedSheet = sheetName;
+                    } else {
+                        // Otherwise, use the first available sheet and update state
+                        selectedSheet = res.data.sheets[0];
+                        setSheetName(selectedSheet);
+                        
+                        // Update database with the new sheet name
+                        router.post(`/ticketing/events/${event.id}/attendees/config`, {
+                            google_spreadsheet_id: spreadsheetId,
+                            google_sheet_name: selectedSheet
+                        }, {
+                            preserveState: true,
+                            preserveScroll: true
+                        });
+                    }
+                    
+                    if (!silent) {
+                        toast.success('Sheets loaded');
+                    }
+                    
+                    // Fetch and log sheet data with the correct sheet name
+                    fetchSheetData(selectedSheet);
+                }
+            } else {
+                throw new Error("Invalid response format from server");
             }
-
-            if (!silent) toast.success('Sheets loaded');
         } catch (e) {
-            if (!silent) toast.error('Failed to load sheets. Check ID and Permissions.');
+            console.error(e);
+            let msg = "Unknown error";
+            if (typeof e === 'object' && e !== null) {
+                // @ts-ignore
+                msg = e.response?.data?.error || e.message || msg;
+            }
+            // Clear state and database on error
+            setAvailableSheets([]);
+            setSheetName('');
+            router.post(`/ticketing/events/${event.id}/attendees/config`, {
+                google_spreadsheet_id: spreadsheetId,
+                google_sheet_name: ''
+            }, {
+                preserveState: true,
+                preserveScroll: true
+            });
+            if (!silent) toast.error(`Failed to load sheets: ${msg}`);
         } finally {
             setLoadingSheets(false);
         }
     };
 
+    // Fetch and log sheet data
+    const fetchSheetData = async (selectedSheet: string) => {
+        try {
+            const res = await axios.get(`/ticketing/events/${event.id}/sheet-data`, {
+                params: { 
+                    spreadsheet_id: spreadsheetId,
+                    sheet_name: selectedSheet
+                }
+            });
+            console.log('Sheet Data:', res.data);
+        } catch (e) {
+            console.error('Failed to fetch sheet data:', e);
+        }
+    };
+
     const saveConfig = () => {
-        router.post(route('events.attendees.config', event.id), {
+        router.post(`/ticketing/events/${event.id}/attendees/config`, {
             google_spreadsheet_id: spreadsheetId,
             google_sheet_name: sheetName
         }, {
@@ -55,24 +126,29 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
 
     const syncAttendees = () => {
         setSyncing(true);
-        // Ensure we save config first or send params, but typically we rely on saved DB state for sync
-        // Ideally, we save the current selection before syncing to be safe
-        router.post(route('events.attendees.config', event.id), {
+        // Save first, then Sync
+        router.post(`/ticketing/events/${event.id}/attendees/config`, {
              google_spreadsheet_id: spreadsheetId,
              google_sheet_name: sheetName
         }, {
             onSuccess: () => {
-                // Once saved, trigger the sync
-                router.post(route('events.attendees.sync', event.id), {}, {
+                // Now trigger sync
+                router.post(`/ticketing/events/${event.id}/attendees/sync`, {}, {
                     onSuccess: () => {
-                        toast.success('Attendees synced successfully');
-                        setSyncing(false);
+                        toast.success('Sync started/completed');
+                        setSyncing(false); // Stop spinner
                     },
-                    onError: () => {
-                        toast.error('Sync failed');
-                        setSyncing(false);
-                    }
+                    onError: (errors) => {
+                        console.error(errors);
+                        toast.error('Sync failed. Check logs.');
+                        setSyncing(false); // Stop spinner on error
+                    },
+                    onFinish: () => setSyncing(false) // Safety net
                 });
+            },
+            onError: () => {
+                toast.error('Failed to save configuration');
+                setSyncing(false);
             }
         });
     };
@@ -126,13 +202,21 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
                                 <select 
                                     className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                                     value={sheetName}
-                                    onChange={(e) => setSheetName(e.target.value)}
+                                    onChange={(e) => {
+                                        const newSheet = e.target.value;
+                                        setSheetName(newSheet);
+                                        if (newSheet) {
+                                            fetchSheetData(newSheet);
+                                        }
+                                    }}
                                 >
-                                    <option value="" disabled>Select a sheet...</option>
                                     {availableSheets.length > 0 ? (
-                                        availableSheets.map(s => <option key={s} value={s}>{s}</option>)
+                                        <>
+                                            <option value="" disabled>Select a sheet...</option>
+                                            {availableSheets.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </>
                                     ) : (
-                                        <option value={sheetName}>{sheetName || 'No sheets found'}</option>
+                                        <option value="">No sheets found</option>
                                     )}
                                 </select>
                             </div>

@@ -2,40 +2,53 @@
 
 namespace App\Services;
 
+use Exception;
 use Google\Client;
 use Google\Service\Sheets;
 use Illuminate\Support\Facades\Auth;
-use Exception;
+use Illuminate\Support\Facades\Log;
 
 class GoogleSheetsService
 {
     protected $client;
+
     protected $service;
 
     public function __construct()
     {
         $user = Auth::user();
-        
-        if (!$user || !$user->gmail_refresh_token) {
-            throw new Exception('User not connected to Google.');
+
+        if (! $user || ! $user->gmail_refresh_token) {
+            throw new Exception('User is not connected to Google.');
         }
 
-        $this->client = new Client();
-        $this->client->setClientId(config('services.google.client_id'));
-        $this->client->setClientSecret(config('services.google.client_secret'));
-        
-        // FIX 1: Decrypt the token stored in the database
+        $clientId = config('services.google.client_id');
+        $clientSecret = config('services.google.client_secret');
+
+        if (empty($clientId) || empty($clientSecret)) {
+            throw new Exception('Google API Configuration is missing (CLIENT_ID or CLIENT_SECRET).');
+        }
+
+        $this->client = new Client;
+        $this->client->setClientId($clientId);
+        $this->client->setClientSecret($clientSecret);
+
         try {
             $refreshToken = decrypt($user->gmail_refresh_token);
         } catch (\Throwable $e) {
-            // If decryption fails (e.g., old data), force a reconnect
-            throw new Exception('Invalid Google Token. Please disconnect and reconnect your account in Settings.');
+            // Log the specific error for debugging
+            Log::error('Google Token Decrypt Error: '.$e->getMessage());
+            throw new Exception('Your Google connection is invalid. Please disconnect and reconnect in Settings.');
         }
 
-        // FIX 2: Explicitly exchange the refresh token for a usable Access Token
-        // This sets the OAuth headers for subsequent requests
-        $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
-        
+        try {
+            // This might throw if the token was revoked by the user externally
+            $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
+        } catch (\Throwable $e) {
+            Log::error('Google Refresh Token Error: '.$e->getMessage());
+            throw new Exception('Failed to authenticate with Google. Token may be expired.');
+        }
+
         $this->service = new Sheets($this->client);
     }
 
@@ -47,10 +60,13 @@ class GoogleSheetsService
             foreach ($spreadsheet->getSheets() as $sheet) {
                 $sheets[] = $sheet->getProperties()->getTitle();
             }
+
             return $sheets;
         } catch (\Throwable $e) {
-            // Include specific error message for debugging
-            throw new Exception('Failed to fetch sheets: ' . $e->getMessage());
+            Log::error('Google Sheets Fetch Error: '.$e->getMessage());
+            // Extract the actual message from Google's JSON error if possible
+            $msg = json_decode($e->getMessage(), true)['error']['message'] ?? $e->getMessage();
+            throw new Exception('Google Error: '.$msg);
         }
     }
 
@@ -58,9 +74,11 @@ class GoogleSheetsService
     {
         try {
             $response = $this->service->spreadsheets_values->get($spreadsheetId, $range);
+
             return $response->getValues() ?? [];
         } catch (\Throwable $e) {
-            throw new Exception('Failed to fetch data: ' . $e->getMessage());
+            Log::error('Google Data Fetch Error: '.$e->getMessage());
+            throw new Exception('Failed to read sheet data: '.$e->getMessage());
         }
     }
 }
