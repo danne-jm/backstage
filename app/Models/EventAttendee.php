@@ -3,44 +3,45 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class EventAttendee extends Model
 {
     protected $connection = 'attendees';
+    protected $guarded = [];
 
-    protected $fillable = [
-        'first_name',
-        'last_name',
-        'nationality',
-        'esn_card',
-        'email',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'esn_card' => 'boolean',
-        ];
-    }
-
-    public function setTableForEvent(Event $event): self
-    {
-        $tableName = $this->generateTableName($event);
-        $this->setTable($tableName);
-
-        return $this;
-    }
-
-    public static function forEvent(Event $event): self
-    {
-        return (new static())->setTableForEvent($event);
-    }
-
+    // Helper to generate the dynamic table name safely
     public static function generateTableName(Event $event): string
     {
-        $name = preg_replace('/[^a-zA-Z0-9_]/', '_', $event->name);
-        $date = $event->event_date ? $event->event_date->format('Y_m_d') : 'no_date';
+        // Use a slug of the event name and a sensible date fallback
+        $slug = Str::slug($event->name, '_');
+        $date = 'nodate';
 
-        return strtolower("{$name}_{$date}_{$event->id}");
+        // Prefer start_date, fall back to event_date if available
+        $dateValue = null;
+        if (property_exists($event, 'start_date') && $event->start_date) {
+            $dateValue = $event->start_date;
+        } elseif (property_exists($event, 'event_date') && $event->event_date) {
+            $dateValue = $event->event_date;
+        }
+
+        if ($dateValue) {
+            try {
+                $dt = new \DateTime($dateValue);
+                $date = $dt->format('Y_m_d');
+            } catch (\Throwable $e) {
+                $date = 'nodate';
+            }
+        }
+
+        return strtolower("{$slug}_{$date}_{$event->id}");
+    }
+
+    // Helper to get an instance pointing to the correct table
+    public static function forEvent(Event $event): self
+    {
+        $instance = new self;
+        $instance->setTable(self::generateTableName($event));
+        return $instance;
     }
 }

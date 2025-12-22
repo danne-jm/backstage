@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema; // Import Schema
 use Illuminate\Database\Schema\Blueprint; // Import Blueprint
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB; // Import DB
 use Inertia\Inertia;
 
 class EventAttendeeController extends Controller
@@ -91,9 +92,11 @@ class EventAttendeeController extends Controller
             }
 
             $count = 0;
-            
-            // 2. Use the dynamic model
-            $model = EventAttendee::forEvent($event);
+            $now = now();
+
+            // ROBUST FIX: Use DB Builder to explicitly target the dynamic table
+            // This prevents Eloquent from accidentally reverting to 'event_attendees'
+            $tableName = EventAttendee::generateTableName($event);
 
             foreach ($rows as $row) {
                 $email = $row[$emailIdx] ?? null;
@@ -102,18 +105,20 @@ class EventAttendeeController extends Controller
                 $firstName = ($firstIdx !== false) ? ($row[$firstIdx] ?? '') : '';
                 $lastName = ($lastIdx !== false) ? ($row[$lastIdx] ?? '') : '';
 
-                // We must use a fresh query instance for each firstOrCreate to avoid scope pollution
-                $attendee = $model->newQuery()->firstOrCreate(
-                    ['email' => $email],
-                    [
+                $exists = DB::connection('attendees')->table($tableName)
+                    ->where('email', $email)
+                    ->exists();
+
+                if (!$exists) {
+                    DB::connection('attendees')->table($tableName)->insert([
+                        'email' => $email,
                         'first_name' => $firstName,
                         'last_name' => $lastName,
-                        'esn_card' => false, // Default value
+                        'esn_card' => 0,
                         'nationality' => null,
-                    ]
-                );
-                
-                if ($attendee->wasRecentlyCreated) {
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
                     $count++;
                 }
             }

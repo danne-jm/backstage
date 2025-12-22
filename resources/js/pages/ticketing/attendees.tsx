@@ -9,6 +9,7 @@ import axios from 'axios';
 import { Loader2, Save, RefreshCw } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
+import { route } from 'ziggy-js';
 
 export default function EventAttendees({ event, attendees }: { event: any, attendees: any[] }) {
     const [spreadsheetId, setSpreadsheetId] = React.useState(event.google_spreadsheet_id || '');
@@ -17,28 +18,34 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
     const [loadingSheets, setLoadingSheets] = React.useState(false);
     const [syncing, setSyncing] = React.useState(false);
 
-    // Fetch sheets when Spreadsheet ID changes (debounced or manual)
-    const fetchSheets = async () => {
+    // Helper to fetch sheets (reusable)
+    const fetchSheets = async (silent = false) => {
         if (!spreadsheetId) return;
         setLoadingSheets(true);
         try {
-            const res = await axios.get(`/ticketing/events/${event.id}/sheets`, {
+            const res = await axios.get(route('events.sheets', event.id), {
                 params: { spreadsheet_id: spreadsheetId }
             });
-            setAvailableSheets(res.data.sheets);
-            if (res.data.sheets.length > 0 && !sheetName) {
-                setSheetName(res.data.sheets[0]);
+            
+            const sheets = res.data.sheets || [];
+            setAvailableSheets(sheets);
+
+            // AUTO-SELECT LOGIC:
+            // If we have sheets, and NO sheet is currently selected, pick the first one.
+            if (sheets.length > 0 && !sheetName) {
+                setSheetName(sheets[0]);
             }
-            toast.success('Sheets loaded');
-        } catch {
-            toast.error('Failed to load sheets. Check ID and Permissions.');
+
+            if (!silent) toast.success('Sheets loaded');
+        } catch (e) {
+            if (!silent) toast.error('Failed to load sheets. Check ID and Permissions.');
         } finally {
             setLoadingSheets(false);
         }
     };
 
     const saveConfig = () => {
-        router.post(`/ticketing/events/${event.id}/attendees/config`, {
+        router.post(route('events.attendees.config', event.id), {
             google_spreadsheet_id: spreadsheetId,
             google_sheet_name: sheetName
         }, {
@@ -48,17 +55,35 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
 
     const syncAttendees = () => {
         setSyncing(true);
-        router.post(`/ticketing/events/${event.id}/attendees/sync`, {}, {
+        // Ensure we save config first or send params, but typically we rely on saved DB state for sync
+        // Ideally, we save the current selection before syncing to be safe
+        router.post(route('events.attendees.config', event.id), {
+             google_spreadsheet_id: spreadsheetId,
+             google_sheet_name: sheetName
+        }, {
             onSuccess: () => {
-                toast.success('Attendees synced successfully');
-                setSyncing(false);
-            },
-            onError: () => {
-                toast.error('Sync failed');
-                setSyncing(false);
+                // Once saved, trigger the sync
+                router.post(route('events.attendees.sync', event.id), {}, {
+                    onSuccess: () => {
+                        toast.success('Attendees synced successfully');
+                        setSyncing(false);
+                    },
+                    onError: () => {
+                        toast.error('Sync failed');
+                        setSyncing(false);
+                    }
+                });
             }
         });
     };
+
+    // AUTO-TRIGGER ON LOAD
+    React.useEffect(() => {
+        if (spreadsheetId) {
+            // Pass 'true' to silence the initial success toast (optional preference)
+            fetchSheets(true); 
+        }
+    }, []); // Run once on mount
 
     return (
         <AppLayout breadcrumbs={[
@@ -87,7 +112,7 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
                                         onChange={(e) => setSpreadsheetId(e.target.value)} 
                                         placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..." 
                                     />
-                                    <Button variant="outline" size="icon" onClick={fetchSheets} disabled={loadingSheets}>
+                                    <Button variant="outline" size="icon" onClick={() => fetchSheets(false)} disabled={loadingSheets}>
                                         {loadingSheets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                     </Button>
                                 </div>

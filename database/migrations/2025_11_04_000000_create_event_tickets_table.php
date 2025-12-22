@@ -11,7 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('event_tickets', function (Blueprint $table) {
+        // Create the table on the separate 'tickets' connection. We avoid
+        // creating a foreign key across database connections because most
+        // DBMS do not support cross-database foreign key constraints.
+        if (! Schema::connection('tickets')->hasTable('event_tickets')) {
+            Schema::connection('tickets')->create('event_tickets', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('event_id')->nullable()->index();
             $table->string('first_name')->nullable();
@@ -23,13 +27,12 @@ return new class extends Migration
             $table->string('ticket_id')->unique();
             $table->timestamps();
 
-            // Optionally add a foreign key if events table exists
-            try {
-                $table->foreign('event_id')->references('id')->on('events')->onDelete('set null');
-            } catch (\Throwable $e) {
-                // ignore if events table doesn't exist yet during dev
-            }
-        });
+            // Note: do NOT add a foreign key referencing `events` here because
+            // `events` lives in the main connection and cross-connection FKs
+            // are not portable. The application should enforce referential
+            // integrity at the application level when needed.
+            });
+        }
     }
 
     /**
@@ -37,6 +40,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('event_tickets');
+        Schema::connection('tickets')->dropIfExists('event_tickets');
     }
 };

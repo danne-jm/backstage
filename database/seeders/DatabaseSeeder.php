@@ -18,7 +18,9 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
-                'name' => 'Test User',
+                // User model stores first_name / last_name primarily.
+                'first_name' => 'Test',
+                'last_name' => 'User',
                 'password' => 'password',
                 'email_verified_at' => now(),
             ]
