@@ -83,6 +83,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return Inertia::render('ticketing', [
             'events' => $events,
+            // Pass templates to the frontend
+            'templates' => \App\Models\MailTemplate::all(),
         ]);
     })->name('ticketing');
 
@@ -113,7 +115,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('ticket-scanner/scanned-tickets', [App\Http\Controllers\TicketScannerController::class, 'scannedTickets'])->name('ticket-scanner.scanned-tickets');
 
     // Distribution endpoint used by ticketing page to send normal HTML emails to recipients
-    Route::post('distribute-emails', [App\Http\Controllers\DistributionController::class, 'distribute'])->name('distribute-emails');
+    Route::post('distribution/distribute', [App\Http\Controllers\DistributionController::class, 'distribute'])->name('distribute-emails');
 });
 
 // API route for fetching tickets by event (outside auth middleware)

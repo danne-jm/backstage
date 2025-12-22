@@ -14,6 +14,12 @@ import AppLayout from '@/layouts/app-layout';
 import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
+import axios from 'axios';
+let toast: any = (msg: string) => window.alert(msg);
+try {
+    // @ts-ignore
+    toast = require('sonner').toast;
+} catch {}
 import { toDataURL } from 'qrcode';
 import * as React from 'react';
 
@@ -382,65 +388,25 @@ export default function Ticketing() {
         return match ? (match.split('=')[1] ?? null) : null;
     };
 
-    const sendDistribution = async () => {
-        // Ensure we have a generated payload, especially for QR codes
-        if (!generated || mailMode === 'qr') {
-            await generateTickets();
-        }
-
-        const payload = generated ?? [];
-
-        if (!payload.length) {
-            window.alert(
-                'No recipients found to distribute to. Generate preview first.',
-            );
-            return;
-        }
-
-        // Open the nicer confirmation modal
-        setConfirmOpen(true);
-    };
-
-    const proceedSendDistribution = async () => {
-        // Called when user confirms in the modal
-        setConfirmOpen(false);
+    // Replace sendDistribution and proceedSendDistribution with a single distribute function using axios
+    const distribute = async () => {
+        if (!generated || generated.length === 0) return;
         setSending(true);
-
         try {
-            const xsrfCookie = getCookie('XSRF-TOKEN');
-
-            const resp = await fetch('/distribute-emails', {
-                method: 'POST',
-                credentials: 'same-origin', // ensure cookies (session/XSRF) are sent
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': xsrfCookie ?? '',
-                    Accept: 'application/json',
-                },
-                body: JSON.stringify({ recipients: generated ?? [] }),
+            const response = await axios.post('/distribution/distribute', {
+                recipients: generated,
             });
-
-            if (resp.status === 419) {
-                let json = {} as any;
-                try {
-                    json = await resp.json();
-                } catch (_) {
-                    /* ignore */
-                }
-                throw new Error(
-                    `CSRF token mismatch (419). ${json.message ?? ''} Please refresh the page and try again.`,
-                );
+            if (response.data.queued) {
+                toast.success(`Distribution started! Sent ${response.data.sent_count} emails.`);
+                setGenerated([]);
             }
-
-            if (!resp.ok) {
-                const txt = await resp.text();
-                throw new Error(`Server error: ${resp.status} ${txt}`);
+        } catch (error: any) {
+            console.error(error);
+            if (error.response?.status === 419) {
+                toast.error('Session expired. Please refresh the page.');
+            } else {
+                toast.error('Failed to start distribution.');
             }
-
-            const data = await resp.json();
-        } catch (e: any) {
-            console.error(e);
-            window.alert('Distribution failed: ' + (e.message ?? String(e)));
         } finally {
             setSending(false);
         }
@@ -578,14 +544,12 @@ export default function Ticketing() {
                                         Generate Preview
                                     </Button>
                                     <Button
-                                        onClick={sendDistribution}
+                                        onClick={distribute}
                                         className="w-full md:w-auto"
                                         disabled={sending}
                                         variant="destructive"
                                     >
-                                        {sending
-                                            ? 'Sending…'
-                                            : 'Distribute (real)'}
+                                        {sending ? 'Sending…' : 'Distribute (real)'}
                                     </Button>
                                 </div>
                                 {/* Confirmation dialog for distribution */}
@@ -623,9 +587,7 @@ export default function Ticketing() {
                                                 </Button>
                                             </DialogClose>
                                             <Button
-                                                onClick={
-                                                    proceedSendDistribution
-                                                }
+                                                onClick={distribute}
                                                 className="ml-2"
                                             >
                                                 Confirm & Queue
@@ -1426,30 +1388,25 @@ export default function Ticketing() {
                                 )}
 
                                 {showRendered && (
-                                    <div className="rounded border bg-white p-3">
-                                        <h5 className="mb-2 text-sm font-medium">Rendered HTML Preview</h5>
-                                        {selectedSampleIndex === null ? (
-                                            <div className="text-sm text-muted-foreground">
-                                                Select a sample user to preview rendered email.
-                                            </div>
-                                        ) : (
-                                            <div
-                                                className="prose max-w-none"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: (() => {
-                                                        const user = sampleData[selectedSampleIndex as number];
-                                                        let html = generated[Number(selectedSampleIndex)]?.body ?? '';
-                                                        // Mock QR code for preview
-                                                        html = html.replace(
-                                                            /{{qr}}/g, 
-                                                            '<div style="background:#eee;border:2px dashed #999;width:150px;height:150px;display:flex;align-items:center;justify-content:center;margin:10px auto;">QR PREVIEW</div>'
-                                                        );
-                                                        // ... existing replacements ...
-                                                        return html;
-                                                    })(),
-                                                }}
-                                            />
-                                        )}
+                                    <div className="mt-4 rounded-xl border bg-white p-6 shadow-sm text-gray-900">
+                                        <div className="mb-4 border-b pb-2">
+                                            <p className="text-sm font-bold text-gray-500">Previewing: {sampleData[selectedSampleIndex as number]?.email}</p>
+                                        </div>
+                                        <div
+                                            className="prose max-w-none text-black"
+                                            dangerouslySetInnerHTML={{
+                                                __html: (() => {
+                                                    const user = sampleData[selectedSampleIndex as number];
+                                                    let html = generated[Number(selectedSampleIndex)]?.body ?? '';
+                                                    // Mock QR code for preview
+                                                    html = html.replace(
+                                                        /{{qr}}/g,
+                                                        '<div style="background:#eee;border:2px dashed #999;width:150px;height:150px;display:flex;align-items:center;justify-content:center;margin:10px auto;">QR PREVIEW</div>'
+                                                    );
+                                                    return html;
+                                                })(),
+                                            }}
+                                        />
                                     </div>
                                 )}
                             </div>
