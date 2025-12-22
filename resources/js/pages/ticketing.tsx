@@ -15,23 +15,6 @@ import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import axios from 'axios';
-// Provide a safe toast object (sonner's `toast` has methods like success/error).
-// We default to simple alert fallbacks to avoid runtime errors when sonner
-// isn't installed or when imports are transformed by the bundler.
-let toast: { success: (m: string) => void; error: (m: string) => void } = {
-    success: (m: string) => window.alert(String(m)),
-    error: (m: string) => window.alert(String(m)),
-};
-try {
-    // Try to require sonner in CJS environments (Vite may support this).
-    // @ts-ignore
-    const s = require('sonner');
-    if (s && s.toast) {
-        toast = s.toast as typeof toast;
-    }
-} catch (e) {
-    // ignore — fallback toast remains
-}
 import { toDataURL } from 'qrcode';
 import * as React from 'react';
 
@@ -148,9 +131,12 @@ export default function Ticketing() {
         number | null
     >(0);
 
-    // Error modal state for showing server/validation errors
-    const [errorModalOpen, setErrorModalOpen] = React.useState(false);
+    // Error state shown inside the confirm Dialog (overwrites confirm content)
+    const [errorInConfirm, setErrorInConfirm] = React.useState(false);
     const [errorDetails, setErrorDetails] = React.useState<{ title: string; list: string[] }>({ title: '', list: [] });
+
+    // Success banner (replaces alert/toast fallback)
+    const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
     // Default email template (initial editor content)
     const defaultBodyTemplate = React.useMemo(() => {
@@ -399,6 +385,12 @@ export default function Ticketing() {
 
     const [sending, setSending] = React.useState<boolean>(false);
     const [confirmOpen, setConfirmOpen] = React.useState<boolean>(false);
+    // Clear success banner after a short delay
+    React.useEffect(() => {
+        if (!successMessage) return;
+        const t = setTimeout(() => setSuccessMessage(null), 4500);
+        return () => clearTimeout(t);
+    }, [successMessage]);
 
     // Helper to read a cookie value
     const getCookie = (name: string): string | null => {
@@ -417,9 +409,12 @@ export default function Ticketing() {
                 recipients: generated,
             });
             if (response.data.queued) {
-                toast.success(`Distribution started! Sent ${response.data.sent_count} emails.`);
+                // show a subtle in-page success banner instead of alert/toast fallback
+                setSuccessMessage(`Distribution started! Sent ${response.data.sent_count} emails.`);
                 setGenerated([]);
                 setConfirmOpen(false);
+                setErrorInConfirm(false);
+                setErrorDetails({ title: '', list: [] });
             }
         } catch (error: any) {
             console.error(error);
@@ -437,11 +432,9 @@ export default function Ticketing() {
                 list = [error.message || 'Failed to start distribution.'];
             }
             setErrorDetails({ title, list });
-            setErrorModalOpen(true);
-            // Also log/show a simple toast
-            try {
-                toast.error(list[0] ?? title);
-            } catch {}
+            // show the errors inside the open confirm dialog (overwrite its content)
+            setErrorInConfirm(true);
+            setConfirmOpen(true);
         } finally {
             setSending(false);
         }
@@ -453,6 +446,14 @@ export default function Ticketing() {
             <Head title="Ticketing System" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                {/* Success banner (replaces alert/toast fallback) */}
+                {successMessage && (
+                    <div className="fixed right-6 top-20 z-50">
+                        <div className="rounded-md bg-emerald-600 px-4 py-2 text-white shadow">
+                            {successMessage}
+                        </div>
+                    </div>
+                )}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="space-y-3 md:col-span-2">
                         <div>
@@ -582,65 +583,97 @@ export default function Ticketing() {
                                         disabled={sending}
                                         variant="destructive"
                                     >
-                                        {sending ? 'Sending…' : 'Distribute (real)'}
+                                        {sending ? (
+                                            <svg className="animate-spin -ml-1 mr-0 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                            </svg>
+                                        ) : (
+                                            'Distribute (real)'
+                                        )}
                                     </Button>
                                 </div>
                                 {/* Confirmation dialog for distribution */}
                                 <Dialog
                                     open={confirmOpen}
-                                    onOpenChange={setConfirmOpen}
+                                    onOpenChange={(open) => {
+                                        setConfirmOpen(open);
+                                        if (!open) {
+                                            // clear any error state when dialog is closed so re-trying restarts clean
+                                            setErrorInConfirm(false);
+                                            setErrorDetails({ title: '', list: [] });
+                                        }
+                                    }}
                                 >
                                     <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
-                                        <DialogTitle>
-                                            Confirm distribution
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            You are about to distribute the
-                                            prepared email to{' '}
-                                            <strong>{(generated ?? []).length}</strong>{' '}
-                                            recipients. This will enqueue
-                                            background jobs to send the
-                                            messages.
-                                            {((generated ?? []).length > 0) && (
-                                                <div className="mt-2 text-xs text-muted-foreground">
-                                                    Sample recipients: {(generated ?? []).slice(0,3).map(r => r.email).filter(Boolean).join(', ')}
+                                        {errorInConfirm ? (
+                                            <>
+                                                <DialogTitle className="text-white">❌ {errorDetails.title}</DialogTitle>
+                                                <DialogDescription>
+                                                    The following issues prevented distribution:
+                                                </DialogDescription>
+
+                                                <div className="max-h-[300px] overflow-y-auto mt-3 p-4 text-sm text-foreground border border-dotted border-muted/30 bg-transparent">
+                                                    <ul className="list-disc pl-4 space-y-1">
+                                                        {errorDetails.list.map((err, i) => (
+                                                            <li key={i}>{err}</li>
+                                                        ))}
+                                                    </ul>
                                                 </div>
-                                            )}
-                                            Do you want to proceed?
-                                        </DialogDescription>
 
-                                        <div className="mt-4 text-xs text-muted-foreground">
-                                            Queued sending is recommended for
-                                            large recipient lists and will run
-                                            in the background (run{' '}
-                                            <code>php artisan queue:work</code>{' '}
-                                            to process).
-                                        </div>
+                                                <DialogFooter>
+                                                    <DialogClose asChild>
+                                                        <Button variant="ghost">Close</Button>
+                                                    </DialogClose>
+                                                </DialogFooter>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <DialogTitle>
+                                                    Confirm distribution
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                    You are about to distribute the
+                                                    prepared email to{' '}
+                                                    <strong>{(generated ?? []).length}</strong>{' '}
+                                                    recipients. This will enqueue
+                                                    background jobs to send the
+                                                    messages.
+                                                    {/* sample recipients removed — not valuable */}
+                                                    Do you want to proceed?
+                                                </DialogDescription>
 
-                                        <DialogFooter>
-                                            <DialogClose asChild>
-                                                <Button variant="ghost">
-                                                    Cancel
-                                                </Button>
-                                            </DialogClose>
-                                            <Button
-                                                onClick={distribute}
-                                                className="ml-2"
-                                                disabled={sending}
-                                            >
-                                                {sending ? (
-                                                    <>
-                                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                                        </svg>
-                                                        Sending…
-                                                    </>
-                                                ) : (
-                                                    'Confirm & Queue'
-                                                )}
-                                            </Button>
-                                        </DialogFooter>
+                                                <div className="mt-4 text-xs text-muted-foreground">
+                                                    Queued sending is recommended for
+                                                    large recipient lists and will run
+                                                    in the background (run{' '}
+                                                    <code>php artisan queue:work</code>{' '}
+                                                    to process).
+                                                </div>
+
+                                                <DialogFooter>
+                                                    <DialogClose asChild>
+                                                        <Button variant="ghost">
+                                                            Cancel
+                                                        </Button>
+                                                    </DialogClose>
+                                                    <Button
+                                                        onClick={distribute}
+                                                        className="ml-2"
+                                                        disabled={sending}
+                                                    >
+                                                        {sending ? (
+                                                            <svg className="animate-spin -ml-1 mr-0 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden>
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                                            </svg>
+                                                        ) : (
+                                                            'Confirm & Queue'
+                                                        )}
+                                                    </Button>
+                                                </DialogFooter>
+                                            </>
+                                        )}
                                     </DialogContent>
                                 </Dialog>
                             </div>
@@ -1315,25 +1348,7 @@ export default function Ticketing() {
                                 </Dialog>
                             </div>
 
-                                    {/* ERROR MODAL */}
-                                    <Dialog open={errorModalOpen} onOpenChange={setErrorModalOpen}>
-                                        <DialogContent>
-                                            <DialogTitle className="text-red-600 flex items-center gap-2">❌ {errorDetails.title}</DialogTitle>
-                                            <DialogDescription>The following issues prevented distribution:</DialogDescription>
-                                            <div className="max-h-[300px] overflow-y-auto rounded bg-red-50 p-4 text-sm text-red-800 mt-3">
-                                                <ul className="list-disc pl-4 space-y-1">
-                                                    {errorDetails.list.map((err, i) => (
-                                                        <li key={i}>{err}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                            <DialogFooter>
-                                                <DialogClose asChild>
-                                                    <Button variant="secondary">Close</Button>
-                                                </DialogClose>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
+                                    {/* Error content is shown inside the confirmation Dialog (see DialogContent below) */}
 
                             <div className="mt-3 text-xs">
                                 <table className="w-full table-fixed text-xs">
