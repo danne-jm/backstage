@@ -86,6 +86,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('ticketing');
 
+    // Fetch attendees for a specific event from the attendees database
+    Route::get('ticketing/attendees/{event}', function (\App\Models\Event $event) {
+        try {
+            $attendees = \App\Models\EventAttendee::forEvent($event)->get();
+
+            return response()->json([
+                'success' => true,
+                'attendees' => $attendees,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch attendees: '.$e->getMessage(),
+                'attendees' => [],
+            ], 500);
+        }
+    })->name('ticketing.attendees');
+
     // Gmail OAuth connect for per-user sending (routes are registered publicly above)
     // Ticket scanner page
     Route::get('ticket-scanner', [App\Http\Controllers\TicketScannerController::class, 'index'])->name('ticket-scanner');

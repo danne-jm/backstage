@@ -38,22 +38,46 @@ class SendDistributionEmail implements ShouldQueue
             $subject = $this->recipient['subject'] ?? 'Notification from ESN Leuven';
             $body = $this->recipient['body'] ?? '';
 
+            Log::info('SendDistributionEmail: Processing job', [
+                'to' => $to,
+                'subject' => $subject,
+                'has_sender_id' => isset($this->recipient['sender_id']),
+                'sender_id' => $this->recipient['sender_id'] ?? null,
+            ]);
+
             // If sender_id exists and that user has a gmail_refresh_token, attempt to send via Gmail API
             $senderId = $this->recipient['sender_id'] ?? null;
             if ($senderId) {
+                Log::info('SendDistributionEmail: sender_id found, looking up user...', ['sender_id' => $senderId]);
                 $user = User::find($senderId);
                 if ($user && ! empty($user->gmail_refresh_token)) {
+                    Log::info('SendDistributionEmail: User has gmail_refresh_token, attempting Gmail API send...', [
+                        'sender_id' => $senderId,
+                        'user_email' => $user->email,
+                    ]);
                     // Use Gmail API to send as the connected user; keep subject/body as provided
                     $sent = $gmailSender->sendHtmlAsUser($user, $to, $subject, $body);
                     if ($sent) {
+                        Log::info('SendDistributionEmail: Email sent successfully via Gmail API', ['to' => $to]);
                         return;
                     }
+                    Log::warning('SendDistributionEmail: Gmail API send returned false, falling back to SMTP', ['to' => $to]);
                     // If Gmail send failed, fall back to configured mailer
+                } else {
+                    Log::warning('SendDistributionEmail: User found but no gmail_refresh_token', [
+                        'sender_id' => $senderId,
+                        'user_found' => $user !== null,
+                        'has_refresh_token' => $user ? !empty($user->gmail_refresh_token) : false,
+                    ]);
                 }
+            } else {
+                Log::warning('SendDistributionEmail: No sender_id in recipient data, using SMTP fallback');
             }
 
             // Fallback to existing mail system
+            Log::info('SendDistributionEmail: Attempting SMTP send...', ['to' => $to]);
             Mail::to($to)->send(new DistributionMail($subject, $body));
+            Log::info('SendDistributionEmail: Email sent via SMTP', ['to' => $to]);
         } catch (\Throwable $e) {
             Log::error('SendDistributionEmail failed', ['recipient' => $this->recipient, 'error' => $e->getMessage()]);
             // Let the job fail so the queue can retry according to configuration

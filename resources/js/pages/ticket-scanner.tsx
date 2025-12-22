@@ -142,7 +142,7 @@ export default function TicketScanner() {
         }
 
         try {
-            const url = `/ticket-scanner/verify?ticket_id=${encodeURIComponent(ticketId)}`;
+            const url = `/ticket-scanner/verify?ticket_id=${encodeURIComponent(ticketId)}&event_id=${selectedEvent}`;
             const res = await fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });

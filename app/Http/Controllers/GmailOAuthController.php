@@ -18,9 +18,10 @@ class GmailOAuthController extends Controller
         try {
             $redirect = Socialite::driver('google')
                 ->scopes([
-                    // 'https://www.googleapis.com/auth/gmail.send', // complicated cause it requires extra verification from Google
+                    'https://www.googleapis.com/auth/gmail.send', // complicated cause it requires extra verification from Google
                     'https://www.googleapis.com/auth/userinfo.profile',
                     'https://www.googleapis.com/auth/userinfo.email',
+                    'https://www.googleapis.com/auth/spreadsheets.readonly',
                 ])
                 ->with(['access_type' => 'offline'])
                 ->redirect();

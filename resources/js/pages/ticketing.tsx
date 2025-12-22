@@ -23,116 +23,22 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// Small sample dataset embedded in the page for quick testing / mapping
-
-const sampleData = [
-    {
-        first_name: 'Daniel',
-        last_name: 'Meyer',
-        nationality: 'DE',
-        esn_card: true,
-        email: 'danieljaurell@gmail.com',
-    },
-    {
-        first_name: 'Daniel',
-        last_name: 'Mevo',
-        nationality: 'DE',
-        esn_card: true,
-        email: 'danieljaurell@gmail.com',
-    },
-    {
-        first_name: 'Daniel',
-        last_name: 'Meyer',
-        nationality: 'DE',
-        esn_card: true,
-        email: 'danieljaurell@gmail.com',
-    },
-    {
-        first_name: 'Daniel',
-        last_name: 'Ahmad',
-        nationality: 'DE',
-        esn_card: true,
-        email: 'danieljaurell@gmail.com',
-    },
-    {
-        first_name: 'Daniel',
-        last_name: 'Meyer',
-        nationality: 'DE',
-        esn_card: true,
-        email: 'danieljaurell@gmail.com',
-    },
-];
-/*
-const sampleData = [
-    { first_name: 'Alice', last_name: 'Meyer', nationality: 'DE', esn_card: true, email: 'alice.meyer@example.com' },
-    { first_name: 'Bob', last_name: 'Smith', nationality: 'UK', esn_card: false, email: 'bob.smith@gmail.com' },
-    { first_name: 'Carlos', last_name: 'Garcia', nationality: 'ES', esn_card: true, email: 'carlos.garcia@esnleuven.be' },
-    { first_name: 'Diana', last_name: 'Rossi', nationality: 'IT', esn_card: false, email: 'diana.rossi@kuleuven.be' },
-    { first_name: 'Eva', last_name: 'Kowalski', nationality: 'PL', esn_card: true, email: 'eva.kowalski@student.kuleuven.be' },
-    { first_name: 'Frank', last_name: 'Mueller', nationality: 'DE', esn_card: false, email: 'frank.mueller@hotmail.com' },
-    { first_name: 'George', last_name: 'Brown', nationality: 'US', esn_card: true, email: 'george.brown@outlook.com' },
-    { first_name: 'Hannah', last_name: 'Wilson', nationality: 'UK', esn_card: false, email: 'hannah.wilson@yahoo.co.uk' },
-    { first_name: 'Ian', last_name: 'Taylor', nationality: 'CA', esn_card: true, email: 'ian.taylor@icloud.com' },
-    { first_name: 'Jack', last_name: 'Johnson', nationality: 'US', esn_card: false, email: 'jack.johnson@protonmail.com' },
-    { first_name: 'Liam', last_name: 'Williams', nationality: 'AU', esn_card: true, email: 'liam.williams@yahoo.com' },
-    { first_name: 'Maria', last_name: 'Lopez', nationality: 'ES', esn_card: true, email: 'maria.lopez@live.com' },
-    { first_name: 'Niels', last_name: 'Jans', nationality: 'NL', esn_card: false, email: 'niels.jans@telenet.be' },
-    { first_name: 'Sofie', last_name: 'Peeters', nationality: 'BE', esn_card: true, email: 'sofie.peeters@skynet.be' },
-    { first_name: 'Olivia', last_name: 'Martin', nationality: 'FR', esn_card: false, email: 'olivia.martin@ucll.be' },
-    { first_name: 'Tomas', last_name: 'Novak', nationality: 'CZ', esn_card: true, email: 'tomas.novak@kuleuven.be' },
-    { first_name: 'Petra', last_name: 'Horvath', nationality: 'HU', esn_card: false, email: 'petra.horvath@gmail.com' },
-    { first_name: 'Andrei', last_name: 'Popescu', nationality: 'RO', esn_card: true, email: 'andrei.popescu@outlook.com' },
-    { first_name: 'Ana', last_name: 'Silva', nationality: 'PT', esn_card: false, email: 'ana.silva@yahoo.com' },
-    { first_name: 'Bruno', last_name: 'Souza', nationality: 'BR', esn_card: true, email: 'bruno.souza@hotmail.co.uk' },
-    { first_name: 'Lucia', last_name: 'Rossi', nationality: 'IT', esn_card: true, email: 'lucia.rossi@esnleuven.be' },
-    { first_name: 'Mark', last_name: 'OConnor', nationality: 'IE', esn_card: false, email: 'mark.oconnor@gmail.com' },
-    { first_name: 'Ingrid', last_name: 'Svensson', nationality: 'SE', esn_card: true, email: 'ingrid.svensson@hotmail.com' },
-    { first_name: 'Lars', last_name: 'Hansen', nationality: 'NO', esn_card: false, email: 'lars.hansen@live.com' },
-    { first_name: 'Jonas', last_name: 'Meier', nationality: 'CH', esn_card: true, email: 'jonas.meier@protonmail.com' },
-    { first_name: 'Emma', last_name: 'Schmidt', nationality: 'AT', esn_card: false, email: 'emma.schmidt@example.com' },
-    { first_name: 'Zoltan', last_name: 'Kovacs', nationality: 'HU', esn_card: true, email: 'zoltan.kovacs@kuleuven.be' },
-    { first_name: 'Mei', last_name: 'Li', nationality: 'CN', esn_card: false, email: 'mei.li@gmail.com' },
-    { first_name: 'Sipho', last_name: 'Nkosi', nationality: 'ZA', esn_card: true, email: 'sipho.nkosi@icloud.com' },
-    { first_name: 'Miguel', last_name: 'Fernandez', nationality: 'MX', esn_card: false, email: 'miguel.fernandez@student.kuleuven.be' },
-    // Additional entries with deliberate domain typos to test recipients summary
-    { first_name: 'Noah', last_name: 'Baker', nationality: 'GB', esn_card: false, email: 'noah.baker@gamil.com' },
-    { first_name: 'Sara', last_name: 'Ng', nationality: 'IE', esn_card: true, email: 'sara.ng@gnail.com' },
-    { first_name: 'Tom', last_name: 'Lee', nationality: 'US', esn_card: false, email: 'tom.lee@yaho.com' },
-    { first_name: 'Yara', last_name: 'Khan', nationality: 'PK', esn_card: true, email: 'yara.khan@outlok.com' },
-    { first_name: 'Pablo', last_name: 'Diaz', nationality: 'ES', esn_card: false, email: 'pablo.diaz@esnleuven.coom' },
-    { first_name: 'Marta', last_name: 'Gomez', nationality: 'ES', esn_card: true, email: 'marta.gomez@kuleuven.co' },
-    { first_name: 'Luca', last_name: 'Bianchi', nationality: 'IT', esn_card: false, email: 'luca.bianchi@hotmial.com' },
-    { first_name: 'Amina', last_name: 'Saleh', nationality: 'EG', esn_card: true, email: 'amina.saleh@icloud.comm' },
-    { first_name: 'Noah', last_name: 'Baker', nationality: 'GB', esn_card: false, email: 'noah.baker@gamil.com' },
-    { first_name: 'Sara', last_name: 'Ng', nationality: 'IE', esn_card: true, email: 'sara.ng@gnail.com' },
-    { first_name: 'Tom', last_name: 'Lee', nationality: 'US', esn_card: false, email: 'tom.lee@yaho.com' },
-    { first_name: 'Yara', last_name: 'Khan', nationality: 'PK', esn_card: true, email: 'yara.khan@outlok.com' },
-    { first_name: 'Pablo', last_name: 'Diaz', nationality: 'ES', esn_card: false, email: 'pablo.diaz@esnleuven.coom' },
-    { first_name: 'Marta', last_name: 'Gomez', nationality: 'ES', esn_card: true, email: 'marta.gomez@kuleuven.co' },
-    { first_name: 'Luca', last_name: 'Bianchi', nationality: 'IT', esn_card: false, email: 'luca.bianchi@hotmial.com' },
-    { first_name: 'Amina', last_name: 'Saleh', nationality: 'EG', esn_card: true, email: 'amina.saleh@icloud.comm' },
-];
-*/
-
 export default function Ticketing() {
     const props = usePage<SharedData>().props;
     const events: any[] = Array.isArray(props['events']) ? props['events'] : [];
 
+    // State to hold the attendee data fetched from the backend
+    const [sampleData, setSampleData] = React.useState<any[]>([]);
+
     const fields = React.useMemo(
         () => (sampleData.length ? Object.keys(sampleData[0]) : []),
-        [],
+        [sampleData],
     );
 
     // Mapping dropdowns
-    const [firstNameField, setFirstNameField] = React.useState<string>(
-        fields[0] ?? 'first_name',
-    );
-    const [lastNameField, setLastNameField] = React.useState<string>(
-        fields[1] ?? 'last_name',
-    );
-    const [emailField, setEmailField] = React.useState<string>(
-        fields[4] ?? 'email',
-    );
+    const [firstNameField, setFirstNameField] = React.useState<string>('');
+    const [lastNameField, setLastNameField] = React.useState<string>('');
+    const [emailField, setEmailField] = React.useState<string>('');
 
     // Mail information (normal | qr embedding)
     const [mailMode, setMailMode] = React.useState<'normal' | 'qr'>('normal');
@@ -169,6 +75,49 @@ export default function Ticketing() {
     const [selectedEvent, setSelectedEvent] = React.useState<number | null>(
         null,
     );
+
+    // Fetch attendees from backend when event changes
+    React.useEffect(() => {
+        if (!selectedEvent) {
+            // Clear data when no event is selected
+            setSampleData([]);
+            setFirstNameField('');
+            setLastNameField('');
+            setEmailField('');
+            setSelectedSampleIndex(null);
+            return;
+        }
+
+        // Fetch attendees for the selected event
+        fetch(`/ticketing/attendees/${selectedEvent}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success && Array.isArray(data.attendees)) {
+                    setSampleData(data.attendees);
+                    // Set default field mappings when data is loaded
+                    if (data.attendees.length > 0) {
+                        const firstAttendee = data.attendees[0];
+                        const availableFields = Object.keys(firstAttendee);
+                        
+                        setFirstNameField(availableFields.find(f => f === 'first_name') || availableFields[0] || '');
+                        setLastNameField(availableFields.find(f => f === 'last_name') || availableFields[1] || '');
+                        setEmailField(availableFields.find(f => f === 'email') || availableFields[2] || '');
+                        setSelectedSampleIndex(0);
+                    }
+                } else {
+                    console.error('Failed to fetch attendees:', data.message);
+                    setSampleData([]);
+                }
+            })
+            .catch((error) => {
+                console.error('Error fetching attendees:', error);
+                setSampleData([]);
+            });
+    }, [selectedEvent]);
 
     // Preview / generated payload
     const [generated, setGenerated] = React.useState<any[] | null>(null);
@@ -411,23 +360,49 @@ export default function Ticketing() {
             `;
         };
 
-        const out = sampleData.map((row) => ({
-            first_name: String((row as any)[firstNameField] ?? ''),
-            last_name: String((row as any)[lastNameField] ?? ''),
-            email: String((row as any)[emailField] ?? ''),
-            event_id: selectedEvent,
-            event_name: eventObj ? eventObj.name : null,
-            event_date: eventObj ? eventObj.event_date : null,
-            subject,
-            body: buildEmailHtml(bodyHtml, eventObj),
-            // mail metadata (mode and qr-related settings)
-            mail_mode: mailMode,
-            mail_qr: {
-                event_name: qrEventName,
-                event_date: qrEventDate,
-                nullable_fields: nullableFields,
-            },
-        }));
+        const out = sampleData.map((row) => {
+            // Replace template variables in the body HTML with actual values
+            let personalizedBody = bodyHtml;
+            
+            // Replace all field placeholders like {{first_name}}, {{email}}, etc.
+            fields.forEach((field) => {
+                const placeholder = `{{${field}}}`;
+                const value = String((row as any)[field] ?? '');
+                personalizedBody = personalizedBody.replaceAll(placeholder, value);
+            });
+            
+            // Also replace event_name and event_date if they appear
+            if (eventObj) {
+                personalizedBody = personalizedBody.replaceAll('{{event_name}}', eventObj.name || '');
+                const formattedEventDate = eventObj.event_date
+                    ? new Date(eventObj.event_date).toLocaleDateString('en-GB', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                      })
+                    : '';
+                personalizedBody = personalizedBody.replaceAll('{{event_date}}', formattedEventDate);
+            }
+            
+            return {
+                first_name: String((row as any)[firstNameField] ?? ''),
+                last_name: String((row as any)[lastNameField] ?? ''),
+                email: String((row as any)[emailField] ?? ''),
+                event_id: selectedEvent,
+                event_name: eventObj ? eventObj.name : null,
+                event_date: eventObj ? eventObj.event_date : null,
+                subject,
+                body: buildEmailHtml(personalizedBody, eventObj),
+                // mail metadata (mode and qr-related settings)
+                mail_mode: mailMode,
+                mail_qr: {
+                    event_name: qrEventName,
+                    event_date: qrEventDate,
+                    nullable_fields: nullableFields,
+                },
+            };
+        });
 
         setGenerated(out);
         // For now we do not POST anywhere; this prepares the payload ready to be used by your mailer.
@@ -516,9 +491,6 @@ export default function Ticketing() {
             }
 
             const data = await resp.json();
-            window.alert(
-                `Distribution queued. Jobs created: ${data.queued_count ?? 0}`,
-            );
         } catch (e: any) {
             console.error(e);
             window.alert('Distribution failed: ' + (e.message ?? String(e)));

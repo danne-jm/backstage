@@ -3,11 +3,56 @@
 namespace App\Observers;
 
 use App\Models\Event;
-use App\Models\OfficeShiftSale;
+use App\Models\EventAttendee;
 use App\Models\OfficeShift;
+use App\Models\OfficeShiftSale;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class EventObserver
 {
+    public function created(Event $event): void
+    {
+        // Create a table in the attendees database for this event
+        $tableName = EventAttendee::generateTableName($event);
+
+        Schema::connection('attendees')->create($tableName, function ($table) {
+            $table->id();
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('nationality')->nullable();
+            $table->boolean('esn_card')->default(false);
+            $table->string('email');
+            $table->timestamps();
+        });
+
+        // Populate with dummy data
+        $dummyData = [
+            ['first_name' => 'Daniel', 'last_name' => 'Meyer', 'nationality' => 'DE', 'esn_card' => true, 'email' => 'danieljaurell@gmail.com'],
+            ['first_name' => 'Daniel', 'last_name' => 'Mevo', 'nationality' => 'DE', 'esn_card' => true, 'email' => 'danieljaurell@gmail.com'],
+            ['first_name' => 'Daniel', 'last_name' => 'Meyer', 'nationality' => 'DE', 'esn_card' => true, 'email' => 'danieljaurell@gmail.com'],
+            ['first_name' => 'Daniel', 'last_name' => 'Ahmad', 'nationality' => 'DE', 'esn_card' => true, 'email' => 'danieljaurell@gmail.com'],
+            ['first_name' => 'Daniel', 'last_name' => 'Meyer', 'nationality' => 'DE', 'esn_card' => true, 'email' => 'danieljaurell@gmail.com'],
+        ];
+
+        foreach ($dummyData as $data) {
+            DB::connection('attendees')->table($tableName)->insert(array_merge($data, [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        }
+    }
+
+    public function deleted(Event $event): void
+    {
+        // Drop the attendees table for this event
+        $tableName = EventAttendee::generateTableName($event);
+
+        if (Schema::connection('attendees')->hasTable($tableName)) {
+            Schema::connection('attendees')->drop($tableName);
+        }
+    }
+
     public function updated(Event $event): void
     {
         // Build the fields to propagate (exclude price_with_card / price_without_card changes from affecting past sales)
