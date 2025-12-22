@@ -4,7 +4,10 @@ namespace App\Jobs;
 
 use App\Mail\DistributionMail;
 use App\Models\User;
+use App\Models\Ticket;
+use App\Models\Event;
 use App\Services\GmailSender;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -78,6 +81,24 @@ class SendDistributionEmail implements ShouldQueue
             Log::info('SendDistributionEmail: Attempting SMTP send...', ['to' => $to]);
             Mail::to($to)->send(new DistributionMail($subject, $body));
             Log::info('SendDistributionEmail: Email sent via SMTP', ['to' => $to]);
+            // Persist ticket_code into tickets DB if provided (controller already updates unique_trait but we double-write here)
+            try {
+                $ticketCode = $this->recipient['ticket_code'] ?? null;
+                $ticketId = $this->recipient['__ticket_id'] ?? null;
+                $eventId = $this->recipient['event_id'] ?? null;
+                if ($ticketCode && $ticketId && $eventId) {
+                    $event = Event::find($eventId);
+                    if ($event) {
+                        $tableName = Ticket::generateTableName($event);
+                        DB::connection('tickets')->table($tableName)
+                            ->where('ticket_id', $ticketId)
+                            ->update(['unique_trait' => $ticketCode, 'updated_at' => now()]);
+                        Log::info('SendDistributionEmail: persisted ticket_code to tickets DB', ['ticket_id' => $ticketId]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('SendDistributionEmail: failed to persist ticket_code', ['error' => $e->getMessage(), 'recipient' => $this->recipient]);
+            }
         } catch (\Throwable $e) {
             Log::error('SendDistributionEmail failed', ['recipient' => $this->recipient, 'error' => $e->getMessage()]);
             // Let the job fail so the queue can retry according to configuration

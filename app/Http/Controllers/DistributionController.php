@@ -159,30 +159,95 @@ class DistributionController extends Controller
             }
             unset($eventRecipients);
 
-            // Dispatch email jobs with QR code if needed
+            // Dispatch email jobs with updated QR generation logic per recipient
+            // Helper to sanitize parts for QR content (preserve case, replace spaces with dashes)
+            $sanitizePart = function ($s, $allowEmail = false) {
+                $s = trim((string) $s);
+                // replace whitespace groups with single dash
+                $s = preg_replace('/\s+/', '-', $s);
+                if ($allowEmail) {
+                    // allow email characters too
+                    return preg_replace('/[^A-Za-z0-9@._\-]/', '', $s);
+                }
+                return preg_replace('/[^A-Za-z0-9_\-]/', '', $s);
+            };
+
             foreach ($recipients as &$r) {
                 try {
-                    // Only generate QR if {{qr}} tag is present in the body
+                    // 1. Generate the Unique Ticket Code (8 chars)
+                    $ticketCode = Str::random(8);
+
+                    // 2. Check if we need to embed a QR code
                     if (isset($r['body']) && str_contains($r['body'], '{{qr}}')) {
-                        $ticketId = $r['__ticket_id'] ?? null;
-                        $eventName = $r['__event_name'] ?? '';
-                        $qrContent = $ticketId ? $ticketId : ($eventName . '|' . ($r['email'] ?? ''));
+                        // Fetch Event Data
+                        $event = Event::find($r['event_id'] ?? 0);
+
+                        // Helper to format string: Replace spaces with dashes, keep case
+                        $formatStr = fn($s) => str_replace(' ', '-', trim((string) $s));
+
+                        // Construct Parts
+                        // sanitize and format parts
+                        $eventName = $event ? $sanitizePart($event->name) : 'Event';
+
+                        // Format Date: 01-05-2026
+                        $eventDate = $event && ($event->start_date ?? null)
+                            ? \Carbon\Carbon::parse($event->start_date)->format('d-m-Y')
+                            : now()->format('d-m-Y');
+
+                        $recipientName = $sanitizePart(($r['first_name'] ?? 'Guest') . ' ' . ($r['last_name'] ?? ''), false);
+                        $email = isset($r['email']) ? $sanitizePart($r['email'], true) : '';
+
+                        // 3. Construct the Exact Requested String
+                        // Format: "Kick-off-Party_01-05-2026_to_Daniel-Meyer_via_email@ex.com-Code"
+                        $qrContent = sprintf(
+                            '%s_%s_to_%s_via_%s_%s',
+                            $eventName,
+                            $eventDate,
+                            $recipientName,
+                            $email,
+                            $ticketCode
+                        );
+
+                        // 4. Generate Image
                         $qrString = $writer->writeString($qrContent);
                         $base64 = base64_encode($qrString);
-                        // Left-align QR image by removing automatic horizontal centering
-                        $imgTag = sprintf('<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin: 20px 0; max-width: 200px;" />', $base64);
+
+                        // Left-aligned image (margin: 20px 0)
+                        $imgTag = sprintf(
+                            '<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin: 20px 0; max-width: 200px;" />',
+                            $base64
+                        );
+
                         $r['body'] = str_replace('{{qr}}', $imgTag, $r['body']);
+
+                        // Persist the generated ticket code into the tickets DB if we have a created ticket id
+                        try {
+                            if (!empty($r['__ticket_id'])) {
+                                $eventForTable = $event;
+                                if ($eventForTable) {
+                                    $tableName = Ticket::generateTableName($eventForTable);
+                                    DB::connection('tickets')->table($tableName)
+                                        ->where('ticket_id', $r['__ticket_id'])
+                                        ->update(['unique_trait' => $ticketCode, 'updated_at' => now()]);
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            // don't block distribution if DB update fails, just log
+                            Log::warning('Failed to persist ticket code', ['ticket_id' => $r['__ticket_id'] ?? null, 'error' => $e->getMessage()]);
+                        }
                     }
 
                     $payload = array_merge($r, [
                         'sender_id' => $sender?->id,
                         'sender_email' => $sender?->email,
+                        'ticket_code' => $ticketCode // include for job processing / persistence
                     ]);
 
                     SendDistributionEmail::dispatch($payload)->onQueue('distributions');
                     $queued++;
+
                 } catch (\Throwable $e) {
-                    Log::error('DistributionController::distribute dispatch error', ['recipient' => $r, 'error' => $e->getMessage()]);
+                    Log::error('Distribution error', ['error' => $e->getMessage()]);
                     $dispatchErrors[] = ['recipient' => $r, 'error' => $e->getMessage()];
                 }
             }

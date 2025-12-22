@@ -91,7 +91,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Fetch attendees for a specific event from the attendees database
     Route::get('ticketing/attendees/{event}', function (\App\Models\Event $event) {
         try {
-            $attendees = \App\Models\EventAttendee::forEvent($event)->get();
+            // Resolve the canonical table name
+            $generated = \App\Models\EventAttendee::generateTableName($event);
+
+            // If the expected table doesn't exist, try to find any existing table ending with _{event_id}
+            if (!\Illuminate\Support\Facades\Schema::connection('attendees')->hasTable($generated)) {
+                $conn = \Illuminate\Support\Facades\DB::connection('attendees');
+                $dbName = config('database.connections.attendees.database');
+                $like = '%_' . $event->id;
+                $rows = $conn->select('SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = ? AND TABLE_NAME LIKE ? LIMIT 1', [$dbName, $like]);
+                if (!empty($rows) && isset($rows[0]->TABLE_NAME)) {
+                    $generated = $rows[0]->TABLE_NAME;
+                }
+            }
+
+            // Use the resolved table name on the EventAttendee model instance
+            $model = new \App\Models\EventAttendee();
+            $model->setTable($generated);
+            $attendees = $model->get();
 
             return response()->json([
                 'success' => true,
