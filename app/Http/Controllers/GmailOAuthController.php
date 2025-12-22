@@ -12,25 +12,33 @@ class GmailOAuthController extends Controller
 {
     public function redirectToGoogle()
     {
-        // Use Laravel Socialite to build the redirect URL. Request offline access
-        // and explicit consent so Google returns a refresh token.
-        // Request profile and email scopes to get user's first name and last name.
         try {
-            $redirect = Socialite::driver('google')
+            $user = Auth::user();
+            
+            // Default options
+            $options = [
+                'access_type' => 'offline',
+            ];
+
+            // LOGIC: Only force the "Consent" screen if we are missing the token.
+            // This prevents annoying users who are just logging in normally.
+            // But ensures we fix the "Split-Brain" issue if the DB is empty.
+            if (!$user || empty($user->gmail_refresh_token)) {
+                $options['prompt'] = 'consent';
+            }
+
+            return Socialite::driver('google')
                 ->scopes([
-                    'https://www.googleapis.com/auth/gmail.send', // complicated cause it requires extra verification from Google
+                    'https://www.googleapis.com/auth/gmail.send',
                     'https://www.googleapis.com/auth/userinfo.profile',
                     'https://www.googleapis.com/auth/userinfo.email',
                     'https://www.googleapis.com/auth/spreadsheets.readonly',
                 ])
-                ->with(['access_type' => 'offline'])
+                ->with($options)
                 ->redirect();
 
-            // Socialite's redirect returns a RedirectResponse
-            return $redirect;
         } catch (\Throwable $e) {
             Log::error('Socialite redirect failed: '.$e->getMessage());
-
             return redirect()->route('home')->withErrors('Unable to start Google authentication');
         }
     }
