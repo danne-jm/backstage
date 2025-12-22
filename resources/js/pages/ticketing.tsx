@@ -100,20 +100,32 @@ export default function Ticketing() {
         })
             .then((response) => response.json())
             .then((data) => {
-                if (data.success && Array.isArray(data.attendees)) {
-                    setSampleData(data.attendees);
+                if (data.success && Array.isArray(data.rows) && data.rows.length > 0) {
+                    // Convert rows to objects using headers (first row)
+                    const headers = data.rows[0];
+                    const dataRows = data.rows.slice(1);
+                    
+                    const attendees = dataRows.map((row: any[]) => {
+                        const obj: any = {};
+                        headers.forEach((header: string, idx: number) => {
+                            obj[header] = row[idx] ?? '';
+                        });
+                        return obj;
+                    });
+                    
+                    setSampleData(attendees);
+                    
                     // Set default field mappings when data is loaded
-                    if (data.attendees.length > 0) {
-                        const firstAttendee = data.attendees[0];
-                        const availableFields = Object.keys(firstAttendee);
+                    if (attendees.length > 0) {
+                        const availableFields = headers;
                         
-                        setFirstNameField(availableFields.find(f => f === 'first_name') || availableFields[0] || '');
-                        setLastNameField(availableFields.find(f => f === 'last_name') || availableFields[1] || '');
-                        setEmailField(availableFields.find(f => f === 'email') || availableFields[2] || '');
+                        setFirstNameField(availableFields.find((f: string) => f.toLowerCase().includes('first')) || availableFields[0] || '');
+                        setLastNameField(availableFields.find((f: string) => f.toLowerCase().includes('last')) || availableFields[1] || '');
+                        setEmailField(availableFields.find((f: string) => f.toLowerCase().includes('email')) || availableFields[2] || '');
                         setSelectedSampleIndex(0);
                     }
                 } else {
-                    console.error('Failed to fetch attendees:', data.message);
+                    console.error('Failed to fetch attendees or no data:', data.message);
                     setSampleData([]);
                 }
             })

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Jobs\SendDistributionEmail;
 use App\Models\Event;
 use App\Models\Ticket;
-use App\Models\MailTemplate;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -48,7 +47,7 @@ class DistributionController extends Controller
         // Prepare QR Writer
         $renderer = new ImageRenderer(
             new RendererStyle(300, 1), // 300px size, 1px margin
-            new ImagickImageBackEnd()
+            new ImagickImageBackEnd
         );
         $writer = new Writer($renderer);
 
@@ -58,7 +57,7 @@ class DistributionController extends Controller
             foreach ($recipients as $idx => &$r) {
                 $eventId = $r['event_id'] ?? null;
                 if ($eventId) {
-                    if (!isset($recipientsByEvent[$eventId])) {
+                    if (! isset($recipientsByEvent[$eventId])) {
                         $recipientsByEvent[$eventId] = [];
                     }
                     $recipientsByEvent[$eventId][] = &$recipients[$idx];
@@ -70,14 +69,14 @@ class DistributionController extends Controller
             foreach ($recipientsByEvent as $eventId => &$eventRecipients) {
                 try {
                     $event = Event::find($eventId);
-                    if (!$event) {
+                    if (! $event) {
                         continue;
                     }
 
                     $tableName = Ticket::generateTableName($event);
 
                     // Create table if it doesn't exist
-                    if (!Schema::connection('tickets')->hasTable($tableName)) {
+                    if (! Schema::connection('tickets')->hasTable($tableName)) {
                         Schema::connection('tickets')->create($tableName, function ($table) {
                             $table->id();
                             $table->unsignedBigInteger('event_id')->nullable();
@@ -169,78 +168,40 @@ class DistributionController extends Controller
                     // allow email characters too
                     return preg_replace('/[^A-Za-z0-9@._\-]/', '', $s);
                 }
+
                 return preg_replace('/[^A-Za-z0-9_\-]/', '', $s);
             };
 
             foreach ($recipients as &$r) {
                 try {
-                    // 1. Generate the Unique Ticket Code (8 chars)
-                    $ticketCode = Str::random(8);
-
-                    // 2. Check if we need to embed a QR code
+                    // Check if we need to embed a QR code
                     if (isset($r['body']) && str_contains($r['body'], '{{qr}}')) {
-                        // Fetch Event Data
-                        $event = Event::find($r['event_id'] ?? 0);
+                        // Use the ticket_id that was already created and stored in the database
+                        // This ensures the QR code matches what the scanner will verify
+                        $ticketId = $r['__ticket_id'] ?? null;
 
-                        // Helper to format string: Replace spaces with dashes, keep case
-                        $formatStr = fn($s) => str_replace(' ', '-', trim((string) $s));
+                        if ($ticketId) {
+                            // Generate QR code with the actual ticket_id from database
+                            $qrString = $writer->writeString($ticketId);
+                            $base64 = base64_encode($qrString);
 
-                        // Construct Parts
-                        // sanitize and format parts
-                        $eventName = $event ? $sanitizePart($event->name) : 'Event';
+                            // Left-aligned image (margin: 20px 0)
+                            $imgTag = sprintf(
+                                '<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin: 20px 0; max-width: 200px;" />',
+                                $base64
+                            );
 
-                        // Format Date: 01-05-2026
-                        $eventDate = $event && ($event->start_date ?? null)
-                            ? \Carbon\Carbon::parse($event->start_date)->format('d-m-Y')
-                            : now()->format('d-m-Y');
-
-                        $recipientName = $sanitizePart(($r['first_name'] ?? 'Guest') . ' ' . ($r['last_name'] ?? ''), false);
-                        $email = isset($r['email']) ? $sanitizePart($r['email'], true) : '';
-
-                        // 3. Construct the Exact Requested String
-                        // Format: "Kick-off-Party_01-05-2026_to_Daniel-Meyer_via_email@ex.com-Code"
-                        $qrContent = sprintf(
-                            '%s_%s_to_%s_via_%s_%s',
-                            $eventName,
-                            $eventDate,
-                            $recipientName,
-                            $email,
-                            $ticketCode
-                        );
-
-                        // 4. Generate Image
-                        $qrString = $writer->writeString($qrContent);
-                        $base64 = base64_encode($qrString);
-
-                        // Left-aligned image (margin: 20px 0)
-                        $imgTag = sprintf(
-                            '<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin: 20px 0; max-width: 200px;" />',
-                            $base64
-                        );
-
-                        $r['body'] = str_replace('{{qr}}', $imgTag, $r['body']);
-
-                        // Persist the generated ticket code into the tickets DB if we have a created ticket id
-                        try {
-                            if (!empty($r['__ticket_id'])) {
-                                $eventForTable = $event;
-                                if ($eventForTable) {
-                                    $tableName = Ticket::generateTableName($eventForTable);
-                                    DB::connection('tickets')->table($tableName)
-                                        ->where('ticket_id', $r['__ticket_id'])
-                                        ->update(['unique_trait' => $ticketCode, 'updated_at' => now()]);
-                                }
-                            }
-                        } catch (\Throwable $e) {
-                            // don't block distribution if DB update fails, just log
-                            Log::warning('Failed to persist ticket code', ['ticket_id' => $r['__ticket_id'] ?? null, 'error' => $e->getMessage()]);
+                            $r['body'] = str_replace('{{qr}}', $imgTag, $r['body']);
+                        } else {
+                            // Fallback if no ticket_id was created
+                            Log::warning('No ticket_id found for QR generation', ['recipient' => $r['email'] ?? 'unknown']);
+                            $r['body'] = str_replace('{{qr}}', '<p>QR code unavailable</p>', $r['body']);
                         }
                     }
 
                     $payload = array_merge($r, [
                         'sender_id' => $sender?->id,
                         'sender_email' => $sender?->email,
-                        'ticket_code' => $ticketCode // include for job processing / persistence
                     ]);
 
                     SendDistributionEmail::dispatch($payload)->onQueue('distributions');

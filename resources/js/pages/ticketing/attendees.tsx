@@ -6,17 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Loader2, Save, RefreshCw } from 'lucide-react';
+import { Loader2, Save, RotateCw } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 
 
-export default function EventAttendees({ event, attendees }: { event: any, attendees: any[] }) {
+export default function EventAttendees({ event }: { event: any }) {
     const [spreadsheetId, setSpreadsheetId] = React.useState(event.google_spreadsheet_id || '');
     const [sheetName, setSheetName] = React.useState(event.google_sheet_name || '');
     const [availableSheets, setAvailableSheets] = React.useState<string[]>([]);
     const [loadingSheets, setLoadingSheets] = React.useState(false);
-    const [syncing, setSyncing] = React.useState(false);
+    
+    // Dynamic sheet data: headers and rows
+    const [headers, setHeaders] = React.useState<string[]>([]);
+    const [rows, setRows] = React.useState<any[][]>([]);
 
     // Helper to fetch sheets (reusable)
     const fetchSheets = async (silent = false) => {
@@ -100,57 +103,60 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
         }
     };
 
-    // Fetch and log sheet data
+    // Fetch and display sheet data dynamically (no parsing rules)
     const fetchSheetData = async (selectedSheet: string) => {
         try {
             const res = await axios.get(`/ticketing/events/${event.id}/sheet-data`, {
-                params: { 
+                params: {
                     spreadsheet_id: spreadsheetId,
-                    sheet_name: selectedSheet
-                }
+                    sheet_name: selectedSheet,
+                },
             });
+
             console.log('Sheet Data:', res.data);
+
+            // Display all columns dynamically in the order they appear
+            if (res.data && Array.isArray(res.data.rows) && res.data.rows.length > 0) {
+                const sheetRows: any[][] = res.data.rows;
+                const sheetHeaders = sheetRows[0]; // First row is headers
+                const dataRows = sheetRows.slice(1); // Rest are data
+                
+                setHeaders(sheetHeaders);
+                setRows(dataRows);
+            } else {
+                setHeaders([]);
+                setRows([]);
+            }
         } catch (e) {
             console.error('Failed to fetch sheet data:', e);
+            setHeaders([]);
+            setRows([]);
         }
     };
 
     const saveConfig = () => {
-        router.post(`/ticketing/events/${event.id}/attendees/config`, {
-            google_spreadsheet_id: spreadsheetId,
-            google_sheet_name: sheetName
-        }, {
-            onSuccess: () => toast.success('Configuration saved')
-        });
-    };
-
-    const syncAttendees = () => {
-        setSyncing(true);
-        // Save first, then Sync
-        router.post(`/ticketing/events/${event.id}/attendees/config`, {
-             google_spreadsheet_id: spreadsheetId,
-             google_sheet_name: sheetName
-        }, {
-            onSuccess: () => {
-                // Now trigger sync
-                router.post(`/ticketing/events/${event.id}/attendees/sync`, {}, {
-                    onSuccess: () => {
-                        toast.success('Sync started/completed');
-                        setSyncing(false); // Stop spinner
-                    },
-                    onError: (errors) => {
-                        console.error(errors);
-                        toast.error('Sync failed. Check logs.');
-                        setSyncing(false); // Stop spinner on error
-                    },
-                    onFinish: () => setSyncing(false) // Safety net
-                });
+        router.post(
+            `/ticketing/events/${event.id}/attendees/config`,
+            {
+                google_spreadsheet_id: spreadsheetId,
+                google_sheet_name: sheetName,
             },
-            onError: () => {
-                toast.error('Failed to save configuration');
-                setSyncing(false);
-            }
-        });
+            {
+                onSuccess: () => {
+                    toast.success('Configuration saved. Fetching attendees...');
+
+                    // Refresh sheet list and fetch the selected sheet data so the table updates immediately
+                    fetchSheets(true).then(() => {
+                        if (sheetName) {
+                            fetchSheetData(sheetName);
+                        } else if (availableSheets.length > 0) {
+                            // if sheetName was updated by fetchSheets, use the first available
+                            fetchSheetData(availableSheets[0]);
+                        }
+                    });
+                },
+            },
+        );
     };
 
     // AUTO-TRIGGER ON LOAD
@@ -189,7 +195,7 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
                                         placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..." 
                                     />
                                     <Button variant="outline" size="icon" onClick={() => fetchSheets(false)} disabled={loadingSheets}>
-                                        {loadingSheets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                        {loadingSheets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />}
                                     </Button>
                                 </div>
                                 <p className="text-[0.8rem] text-muted-foreground">
@@ -221,53 +227,49 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
                                 </select>
                             </div>
                         </div>
-                        <div className="flex justify-between items-center pt-2">
+                        <div className="flex justify-end items-center pt-2">
                             <Button onClick={saveConfig} variant="secondary">
-                                <Save className="mr-2 h-4 w-4" /> Save Configuration
-                            </Button>
-                            
-                            <Button onClick={syncAttendees} disabled={syncing || !spreadsheetId} variant="default">
-                                {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                                Sync Attendees Now
+                                <Save className="mr-2 h-4 w-4" /> Save & Reload
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Attendees Table */}
+                {/* Attendees Table - Dynamic columns */}
                 <Card className="flex-1">
                     <CardHeader>
-                        <CardTitle>Attendees ({attendees.length})</CardTitle>
+                        <CardTitle>Attendees ({rows.length})</CardTitle>
+                        <CardDescription>Live data from Google Sheets. Columns display dynamically in the order they appear in the sheet.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>First Name</TableHead>
-                                    <TableHead>Last Name</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Registered</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {attendees.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                                            No attendees found. Configure a spreadsheet and sync.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    attendees.map((att: any) => (
-                                        <TableRow key={att.id}>
-                                            <TableCell>{att.first_name}</TableCell>
-                                            <TableCell>{att.last_name}</TableCell>
-                                            <TableCell>{att.email}</TableCell>
-                                            <TableCell>{new Date(att.created_at).toLocaleDateString()}</TableCell>
+                        {headers.length === 0 || rows.length === 0 ? (
+                            <div className="text-center h-24 flex items-center justify-center text-muted-foreground">
+                                {event.google_spreadsheet_id && event.google_sheet_name
+                                    ? 'No data found in the configured spreadsheet.'
+                                    : 'No spreadsheet configured. Configure a Google Sheet above and save.'}
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            {headers.map((header, idx) => (
+                                                <TableHead key={idx}>{header}</TableHead>
+                                            ))}
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {rows.map((row, rowIdx) => (
+                                            <TableRow key={rowIdx}>
+                                                {row.map((cell, cellIdx) => (
+                                                    <TableCell key={cellIdx}>{cell ?? ''}</TableCell>
+                                                ))}
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

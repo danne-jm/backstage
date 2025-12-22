@@ -62,7 +62,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('ticketing/events/{event}')->group(function () {
         Route::get('attendees', [App\Http\Controllers\EventAttendeeController::class, 'index'])->name('events.attendees');
         Route::post('attendees/config', [App\Http\Controllers\EventAttendeeController::class, 'updateConfiguration'])->name('events.attendees.config');
-        Route::post('attendees/sync', [App\Http\Controllers\EventAttendeeController::class, 'sync'])->name('events.attendees.sync');
         Route::get('sheets', [App\Http\Controllers\EventAttendeeController::class, 'listSheets'])->name('events.sheets');
         Route::get('sheet-data', [App\Http\Controllers\EventAttendeeController::class, 'getSheetData'])->name('events.sheet-data');
     });
@@ -96,37 +95,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('ticketing');
 
-    // Fetch attendees for a specific event from the attendees database
+    // Fetch attendees for a specific event from Google Sheets (raw data, no parsing)
     Route::get('ticketing/attendees/{event}', function (\App\Models\Event $event) {
         try {
-            // Resolve the canonical table name
-            $generated = \App\Models\EventAttendee::generateTableName($event);
-
-            // If the expected table doesn't exist, try to find any existing table ending with _{event_id}
-            if (! \Illuminate\Support\Facades\Schema::connection('attendees')->hasTable($generated)) {
-                $conn = \Illuminate\Support\Facades\DB::connection('attendees');
-                $dbName = config('database.connections.attendees.database');
-                $like = '%_'.$event->id;
-                $rows = $conn->select('SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = ? AND TABLE_NAME LIKE ? LIMIT 1', [$dbName, $like]);
-                if (! empty($rows) && isset($rows[0]->TABLE_NAME)) {
-                    $generated = $rows[0]->TABLE_NAME;
-                }
+            // Check if event has spreadsheet configured
+            if (! $event->google_spreadsheet_id || ! $event->google_sheet_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Spreadsheet not configured for this event',
+                    'rows' => [],
+                ]);
             }
 
-            // Use the resolved table name on the EventAttendee model instance
-            $model = new \App\Models\EventAttendee;
-            $model->setTable($generated);
-            $attendees = $model->get();
+            // Fetch raw data from Google Sheets
+            $service = new \App\Services\GoogleSheetsService;
+            $rows = $service->getSheetData($event->google_spreadsheet_id, $event->google_sheet_name);
 
             return response()->json([
                 'success' => true,
-                'attendees' => $attendees,
+                'rows' => $rows ?? [],
             ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch attendees: '.$e->getMessage(),
-                'attendees' => [],
+                'rows' => [],
             ], 500);
         }
     })->name('ticketing.attendees');
