@@ -346,10 +346,23 @@ export default function TicketScanner() {
         return Object.entries(groups).map(([key, ticketList]) => {
             const [first_name, last_name, email] = key.split('|');
             const emailNorm = (email ?? '').toLowerCase().trim();
-            const count = allTickets.filter(
-                (t) =>
-                    ((t.email ?? '') + '').toLowerCase().trim() === emailNorm,
-            ).length;
+
+            // Count only tickets that belong to this exact attendee (first + last + email).
+            // Previously the count compared only by email, which caused every attendee
+            // sharing the same email to show the same total. This makes the count per
+            // attendee (name + email) so the displayed "x{count}" reflects tickets
+            // actually under that attendee.
+            const count = allTickets.filter((t) => {
+                const tEmail = ((t.email ?? '') + '').toLowerCase().trim();
+                const tFirst = (t.first_name ?? '') + '';
+                const tLast = (t.last_name ?? '') + '';
+                return (
+                    tEmail === emailNorm &&
+                    tFirst === (first_name ?? '') &&
+                    tLast === (last_name ?? '')
+                );
+            }).length;
+
             return {
                 first_name,
                 last_name,
