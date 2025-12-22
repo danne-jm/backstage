@@ -59,6 +59,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('sellables/events/{event}', [App\Http\Controllers\SellablesController::class, 'updateEvent'])->name('sellables.events.update');
     Route::delete('sellables/events/{event}', [App\Http\Controllers\SellablesController::class, 'destroyEvent'])->name('sellables.events.destroy');
 
+    Route::prefix('ticketing/events/{event}')->group(function () {
+        Route::get('attendees', [App\Http\Controllers\EventAttendeeController::class, 'index'])->name('events.attendees');
+        Route::post('attendees/config', [App\Http\Controllers\EventAttendeeController::class, 'updateConfiguration'])->name('events.attendees.config');
+        Route::post('attendees/sync', [App\Http\Controllers\EventAttendeeController::class, 'sync'])->name('events.attendees.sync');
+        Route::get('sheets', [App\Http\Controllers\EventAttendeeController::class, 'listSheets'])->name('events.sheets');
+    });
+
     // Warehouse inventory pages & API
     Route::get('warehouse', [App\Http\Controllers\Warehouse\ItemController::class, 'index'])->name('warehouse');
     Route::post('warehouse/items', [App\Http\Controllers\Warehouse\ItemController::class, 'store'])->name('warehouse.items.store');

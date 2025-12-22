@@ -75,6 +75,7 @@ class SellablesController extends Controller
             'variable_amount' => $event->variable_amount,
             'quantity_with_card' => $event->quantity_with_card,
             'quantity_without_card' => $event->quantity_without_card,
+            'google_spreadsheet_id' => $event->google_spreadsheet_id,
             'responsibleUser' => $event->responsibleUser ? [
                 'id' => $event->responsibleUser->id,
                 'first_name' => $event->responsibleUser->first_name,
@@ -187,6 +188,7 @@ class SellablesController extends Controller
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
+            'google_spreadsheet_id' => ['nullable', 'string'],
         ]);
 
         // If variable_amount is true, set quantity to null
@@ -214,11 +216,9 @@ class SellablesController extends Controller
             'price_with_card' => ['required', 'numeric', 'min:0'],
             'price_without_card' => ['required', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'integer', 'min:0'],
-            'responsible_user_id' => ['required', 'exists:users,id'],
-            'notes' => ['nullable', 'string'],
-            'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
+            'google_spreadsheet_id' => ['nullable', 'string'],
         ]);
 
         // If variable_amount is true, set quantity to null

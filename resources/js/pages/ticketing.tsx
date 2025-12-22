@@ -15,7 +15,6 @@ import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { toDataURL } from 'qrcode';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [

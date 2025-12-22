@@ -21,6 +21,8 @@ class Event extends Model
         'variable_amount',
         'quantity_with_card',
         'quantity_without_card',
+        'google_spreadsheet_id',
+        'google_sheet_name',
     ];
 
     protected function casts(): array
@@ -38,5 +40,10 @@ class Event extends Model
     public function responsibleUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'responsible_user_id');
+    }
+
+    public function attendees()
+    {
+        return $this->hasMany(EventAttendee::class);
     }
 }

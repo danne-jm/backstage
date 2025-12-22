@@ -21,8 +21,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
-import { Check } from 'lucide-react';
+import { Head, router, usePage, Link } from '@inertiajs/react';
+import { Check, ExternalLink } from 'lucide-react';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -58,6 +58,7 @@ interface Event {
     variable_amount: boolean;
     quantity_with_card: number | null;
     quantity_without_card: number | null;
+    google_spreadsheet_id: string | null;
     responsibleUser?: {
         id: number;
         first_name: string;
@@ -227,6 +228,7 @@ export default function Sellables() {
     const [variableAmount, setVariableAmount] = React.useState(false);
     const [quantityWithCard, setQuantityWithCard] = React.useState('');
     const [quantityWithoutCard, setQuantityWithoutCard] = React.useState('');
+    const [googleSpreadsheetId, setGoogleSpreadsheetId] = React.useState('');
 
     const openProductDialog = (product?: Product) => {
         // Open product dialog. Do not manually manage scroll restoration —
@@ -333,6 +335,7 @@ export default function Sellables() {
             setQuantityWithoutCard(
                 event.quantity_without_card?.toString() || '',
             );
+            setGoogleSpreadsheetId(event.google_spreadsheet_id || '');
         } else {
             setEditingEvent(null);
             setEventName('');
@@ -348,6 +351,7 @@ export default function Sellables() {
             setVariableAmount(false);
             setQuantityWithCard('');
             setQuantityWithoutCard('');
+            setGoogleSpreadsheetId('');
         }
         setEventDialogOpen(true);
 
@@ -393,6 +397,7 @@ export default function Sellables() {
                 variableAmount && quantityWithoutCard
                     ? parseInt(quantityWithoutCard)
                     : null,
+            google_spreadsheet_id: googleSpreadsheetId || null,
         };
 
         if (editingEvent) {
@@ -939,6 +944,27 @@ export default function Sellables() {
                                         }
                                     />
                                 </div>
+                                <div className="grid gap-2">
+                                    <Label>Google Spreadsheet ID (Optional)</Label>
+                                    <Input
+                                        value={googleSpreadsheetId}
+                                        onChange={(e) => setGoogleSpreadsheetId(e.target.value)}
+                                        placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..."
+                                    />
+                                    <p className="text-[0.8rem] text-muted-foreground">
+                                        Link a Google Sheet to sync attendees.
+                                    </p>
+                                </div>
+                                {editingEvent && (
+                                    <div className="mt-4 rounded-md bg-muted p-4 flex items-center justify-between">
+                                        <div className="text-sm font-medium">Manage Attendees</div>
+                                        <Button asChild variant="secondary" size="sm">
+                                            <Link href={route('events.attendees', editingEvent.id)}>
+                                                View & Sync <ExternalLink className="ml-2 h-3 w-3" />
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                             <DialogFooter>
                                 <DialogClose asChild>
