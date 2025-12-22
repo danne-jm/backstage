@@ -22,6 +22,7 @@ Homestead.json
 Homestead.yaml
 /auth.json
 /.env.backup
+.env.production
 /.phpactor.json
 /public/hot
 /storage/pail

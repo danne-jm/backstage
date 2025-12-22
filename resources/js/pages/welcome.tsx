@@ -1,4 +1,4 @@
-import { dashboard, login } from '@/routes';
+import { dashboard, login, privacyPolicy, termsConditions } from '@/routes';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 
@@ -793,6 +793,23 @@ export default function Welcome({
                         </div>
                     </main>
                 </div>
+                <footer className="w-full max-w-[335px] py-6 text-center text-xs text-[#706f6c] lg:max-w-4xl dark:text-[#A1A09A]">
+                    <div className="flex items-center justify-center gap-4">
+                        <Link
+                            href={termsConditions()}
+                            className="hover:text-[#1b1b18] hover:underline dark:hover:text-[#EDEDEC]"
+                        >
+                            Terms & Conditions
+                        </Link>
+                        <span>·</span>
+                        <Link
+                            href={privacyPolicy()}
+                            className="hover:text-[#1b1b18] hover:underline dark:hover:text-[#EDEDEC]"
+                        >
+                            Privacy Policy
+                        </Link>
+                    </div>
+                </footer>
                 <div className="hidden h-14.5 lg:block"></div>
             </div>
         </>

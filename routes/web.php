@@ -11,6 +11,14 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+Route::get('/terms-conditions', function () {
+    return Inertia::render('terms-conditions');
+})->name('terms-conditions');
+
+Route::get('/privacy-policy', function () {
+    return Inertia::render('privacy-policy');
+})->name('privacy-policy');
+
 // Gmail OAuth redirect/callback (used for both connect and sign-in flows)
 Route::get('auth/google/redirect', [App\Http\Controllers\GmailOAuthController::class, 'redirectToGoogle'])->name('gmail.connect');
 Route::get('auth/google/callback', [App\Http\Controllers\GmailOAuthController::class, 'handleGoogleCallback'])->name('gmail.callback');
