@@ -23,7 +23,18 @@ class GoogleSheetsService
         $this->client = new Client();
         $this->client->setClientId(config('services.google.client_id'));
         $this->client->setClientSecret(config('services.google.client_secret'));
-        $this->client->refreshToken($user->gmail_refresh_token);
+        
+        // FIX 1: Decrypt the token stored in the database
+        try {
+            $refreshToken = decrypt($user->gmail_refresh_token);
+        } catch (\Throwable $e) {
+            // If decryption fails (e.g., old data), force a reconnect
+            throw new Exception('Invalid Google Token. Please disconnect and reconnect your account in Settings.');
+        }
+
+        // FIX 2: Explicitly exchange the refresh token for a usable Access Token
+        // This sets the OAuth headers for subsequent requests
+        $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
         
         $this->service = new Sheets($this->client);
     }
@@ -38,6 +49,7 @@ class GoogleSheetsService
             }
             return $sheets;
         } catch (\Throwable $e) {
+            // Include specific error message for debugging
             throw new Exception('Failed to fetch sheets: ' . $e->getMessage());
         }
     }

@@ -6,6 +6,8 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Services\GoogleSheetsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema; // Import Schema
+use Illuminate\Database\Schema\Blueprint; // Import Blueprint
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
@@ -13,10 +15,21 @@ class EventAttendeeController extends Controller
 {
     public function index(Event $event)
     {
-        return Inertia::render('Ticketing/Attendees', [
-            'event' => $event,
-            'attendees' => $event->attendees()->latest()->get(),
-        ]);
+        $tableName = EventAttendee::generateTableName($event);
+        $attendees = [];
+
+        // 1. Check if the dynamic table exists in the 'attendees' database
+        if (Schema::connection('attendees')->hasTable($tableName)) {
+            // 2. If it exists, fetch data using the dynamic table name
+            $attendees = EventAttendee::forEvent($event)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        return Inertia::render('ticketing/attendees', [ 
+        'event' => $event,
+        'attendees' => $attendees,
+    ]);
     }
 
     public function updateConfiguration(Request $request, Event $event)
@@ -33,6 +46,7 @@ class EventAttendeeController extends Controller
 
     public function listSheets(Request $request, Event $event)
     {
+        // ... (Keep existing listSheets logic) ...
         $spreadsheetId = $request->input('spreadsheet_id') ?? $event->google_spreadsheet_id;
 
         if (!$spreadsheetId) {
@@ -54,28 +68,33 @@ class EventAttendeeController extends Controller
             return back()->with('error', 'Spreadsheet not configured.');
         }
 
+        // 1. Ensure the table exists before we try to save data
+        $this->ensureTableExists($event);
+
         try {
             $service = new GoogleSheetsService();
-            // Fetch all data from the selected sheet
             $rows = $service->getSheetData($event->google_spreadsheet_id, $event->google_sheet_name);
 
             if (empty($rows)) {
                 return back()->with('error', 'Sheet is empty.');
             }
 
-            // Assume first row is header
             $headers = array_map('strtolower', array_shift($rows));
             
-            // Basic column mapping
-            $emailIdx = $this->findHeaderIndex($headers, ['email', 'e-mail', 'mail']);
-            $firstIdx = $this->findHeaderIndex($headers, ['first name', 'firstname', 'first']);
+            // Loose matching for column names
+            $emailIdx = $this->findHeaderIndex($headers, ['email', 'e-mail', 'mail', 'email address']);
+            $firstIdx = $this->findHeaderIndex($headers, ['first name', 'firstname', 'first', 'name']);
             $lastIdx = $this->findHeaderIndex($headers, ['last name', 'lastname', 'last', 'surname']);
 
             if ($emailIdx === false) {
-                return back()->with('error', 'Could not find an "Email" column in the spreadsheet headers.');
+                return back()->with('error', 'Could not find an "Email" column in the spreadsheet.');
             }
 
             $count = 0;
+            
+            // 2. Use the dynamic model
+            $model = EventAttendee::forEvent($event);
+
             foreach ($rows as $row) {
                 $email = $row[$emailIdx] ?? null;
                 if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) continue;
@@ -83,16 +102,14 @@ class EventAttendeeController extends Controller
                 $firstName = ($firstIdx !== false) ? ($row[$firstIdx] ?? '') : '';
                 $lastName = ($lastIdx !== false) ? ($row[$lastIdx] ?? '') : '';
 
-                // Create if not exists
-                $attendee = EventAttendee::firstOrCreate(
-                    [
-                        'event_id' => $event->id,
-                        'email' => $email,
-                    ],
+                // We must use a fresh query instance for each firstOrCreate to avoid scope pollution
+                $attendee = $model->newQuery()->firstOrCreate(
+                    ['email' => $email],
                     [
                         'first_name' => $firstName,
                         'last_name' => $lastName,
-                        // 'ticket_code' => ... (Generate if needed, or leave nullable)
+                        'esn_card' => false, // Default value
+                        'nationality' => null,
                     ]
                 );
                 
@@ -106,6 +123,27 @@ class EventAttendeeController extends Controller
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return back()->with('error', 'Sync failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Creates the dynamic table if it does not exist.
+     */
+    private function ensureTableExists(Event $event)
+    {
+        $tableName = EventAttendee::generateTableName($event);
+        $connection = Schema::connection('attendees');
+
+        if (!$connection->hasTable($tableName)) {
+            $connection->create($tableName, function (Blueprint $table) {
+                $table->id();
+                $table->string('first_name')->nullable();
+                $table->string('last_name')->nullable();
+                $table->string('email')->unique(); // Unique email per event
+                $table->string('nationality')->nullable();
+                $table->boolean('esn_card')->default(false);
+                $table->timestamps();
+            });
         }
     }
 
