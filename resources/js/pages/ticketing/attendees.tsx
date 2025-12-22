@@ -4,12 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
 import { Loader2, Save, RefreshCw } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
-import { route } from 'ziggy-js';
 
 export default function EventAttendees({ event, attendees }: { event: any, attendees: any[] }) {
     const [spreadsheetId, setSpreadsheetId] = React.useState(event.google_spreadsheet_id || '');
@@ -23,7 +22,7 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
         if (!spreadsheetId) return;
         setLoadingSheets(true);
         try {
-            const res = await axios.get(route('events.sheets', event.id), {
+            const res = await axios.get(`/ticketing/events/${event.id}/sheets`, {
                 params: { spreadsheet_id: spreadsheetId }
             });
             setAvailableSheets(res.data.sheets);
@@ -31,7 +30,7 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
                 setSheetName(res.data.sheets[0]);
             }
             toast.success('Sheets loaded');
-        } catch (e) {
+        } catch {
             toast.error('Failed to load sheets. Check ID and Permissions.');
         } finally {
             setLoadingSheets(false);
@@ -39,7 +38,7 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
     };
 
     const saveConfig = () => {
-        router.post(route('events.attendees.config', event.id), {
+        router.post(`/ticketing/events/${event.id}/attendees/config`, {
             google_spreadsheet_id: spreadsheetId,
             google_sheet_name: sheetName
         }, {
@@ -49,7 +48,7 @@ export default function EventAttendees({ event, attendees }: { event: any, atten
 
     const syncAttendees = () => {
         setSyncing(true);
-        router.post(route('events.attendees.sync', event.id), {}, {
+        router.post(`/ticketing/events/${event.id}/attendees/sync`, {}, {
             onSuccess: () => {
                 toast.success('Attendees synced successfully');
                 setSyncing(false);

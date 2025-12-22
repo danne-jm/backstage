@@ -959,7 +959,7 @@ export default function Sellables() {
                                     <div className="mt-4 rounded-md bg-muted p-4 flex items-center justify-between">
                                         <div className="text-sm font-medium">Manage Attendees</div>
                                         <Button asChild variant="secondary" size="sm">
-                                            <Link href={route('events.attendees', editingEvent.id)}>
+                                            <Link href={`/ticketing/events/${editingEvent.id}/attendees`}>
                                                 View & Sync <ExternalLink className="ml-2 h-3 w-3" />
                                             </Link>
                                         </Button>
