@@ -15,11 +15,23 @@ import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import axios from 'axios';
-let toast: any = (msg: string) => window.alert(msg);
+// Provide a safe toast object (sonner's `toast` has methods like success/error).
+// We default to simple alert fallbacks to avoid runtime errors when sonner
+// isn't installed or when imports are transformed by the bundler.
+let toast: { success: (m: string) => void; error: (m: string) => void } = {
+    success: (m: string) => window.alert(String(m)),
+    error: (m: string) => window.alert(String(m)),
+};
 try {
+    // Try to require sonner in CJS environments (Vite may support this).
     // @ts-ignore
-    toast = require('sonner').toast;
-} catch {}
+    const s = require('sonner');
+    if (s && s.toast) {
+        toast = s.toast as typeof toast;
+    }
+} catch (e) {
+    // ignore — fallback toast remains
+}
 import { toDataURL } from 'qrcode';
 import * as React from 'react';
 
@@ -135,6 +147,10 @@ export default function Ticketing() {
     const [selectedSampleIndex, setSelectedSampleIndex] = React.useState<
         number | null
     >(0);
+
+    // Error modal state for showing server/validation errors
+    const [errorModalOpen, setErrorModalOpen] = React.useState(false);
+    const [errorDetails, setErrorDetails] = React.useState<{ title: string; list: string[] }>({ title: '', list: [] });
 
     // Default email template (initial editor content)
     const defaultBodyTemplate = React.useMemo(() => {
@@ -340,9 +356,11 @@ export default function Ticketing() {
                 let tmpl = selectedTemplate.html_content;
                 // Replace template-level variables
                 const eventTitle = ev ? ev.name : '';
-                const eventDate = ev && ev.event_date ? new Date(ev.event_date).toLocaleDateString() : '';
-                tmpl = tmpl.replace('{{event_name}}', eventTitle);
-                tmpl = tmpl.replace('{{event_date}}', eventDate);
+                // Support start_date OR event_date depending on the model
+                const rawDate = ev ? (ev.start_date ?? ev.event_date) : null;
+                const eventDate = rawDate ? new Date(rawDate).toLocaleDateString() : '';
+                tmpl = tmpl.replace(/{{event_name}}/g, eventTitle);
+                tmpl = tmpl.replace(/{{event_date}}/g, eventDate);
                 // Inject the user content into {{body}}
                 return tmpl.replace('{{body}}', innerHtml);
             }
@@ -361,7 +379,9 @@ export default function Ticketing() {
             // The frontend preview (below) will handle mocking it.
             if (eventObj) {
                 personalizedBody = personalizedBody.replaceAll('{{event_name}}', eventObj.name || '');
-                // ... date replacement ...
+                const rawDate = eventObj ? (eventObj.start_date ?? eventObj.event_date) : null;
+                const formattedEventDate = rawDate ? new Date(rawDate).toLocaleDateString() : '';
+                personalizedBody = personalizedBody.replaceAll('{{event_date}}', formattedEventDate);
             }
             return {
                 first_name: String((row as any)[firstNameField] ?? ''),
@@ -369,7 +389,7 @@ export default function Ticketing() {
                 email: String((row as any)[emailField] ?? ''),
                 event_id: selectedEvent,
                 event_name: eventObj ? eventObj.name : null,
-                event_date: eventObj ? eventObj.event_date : null,
+                event_date: eventObj ? (eventObj.start_date ?? eventObj.event_date) : null,
                 subject,
                 body: buildEmailHtml(personalizedBody, eventObj),
             };
@@ -399,14 +419,29 @@ export default function Ticketing() {
             if (response.data.queued) {
                 toast.success(`Distribution started! Sent ${response.data.sent_count} emails.`);
                 setGenerated([]);
+                setConfirmOpen(false);
             }
         } catch (error: any) {
             console.error(error);
-            if (error.response?.status === 419) {
-                toast.error('Session expired. Please refresh the page.');
+            // Populate a helpful error modal for users
+            let title = 'Distribution Failed';
+            let list: string[] = [];
+            if (error.response?.status === 422) {
+                title = 'Validation Error';
+                const errors = error.response.data?.errors || {};
+                list = Object.values(errors).flat() as string[];
+            } else if (error.response?.status === 419) {
+                title = 'Session Expired';
+                list = ['Please refresh the page and try again.'];
             } else {
-                toast.error('Failed to start distribution.');
+                list = [error.message || 'Failed to start distribution.'];
             }
+            setErrorDetails({ title, list });
+            setErrorModalOpen(true);
+            // Also log/show a simple toast
+            try {
+                toast.error(list[0] ?? title);
+            } catch {}
         } finally {
             setSending(false);
         }
@@ -485,22 +520,20 @@ export default function Ticketing() {
                                         <option value="">
                                             -- Select event --
                                         </option>
-                                        {events.length === 0 ? (
+                                            {events.length === 0 ? (
                                             <option value="">
                                                 No events available
                                             </option>
                                         ) : (
-                                            events.map((ev: any) => (
-                                                <option
-                                                    key={ev.id}
-                                                    value={ev.id}
-                                                >
-                                                    {ev.name}{' '}
-                                                    {ev.event_date
-                                                        ? `(${new Date(ev.event_date).toLocaleDateString()})`
-                                                        : ''}
-                                                </option>
-                                            ))
+                                            events.map((ev: any) => {
+                                                const rawDate = ev ? (ev.start_date ?? ev.event_date) : null;
+                                                return (
+                                                    <option key={ev.id} value={ev.id}>
+                                                        {ev.name}{' '}
+                                                        {rawDate ? `(${new Date(rawDate).toLocaleDateString()})` : ''}
+                                                    </option>
+                                                );
+                                            })
                                         )}
                                     </select>
                                 </div>
@@ -544,7 +577,7 @@ export default function Ticketing() {
                                         Generate Preview
                                     </Button>
                                     <Button
-                                        onClick={distribute}
+                                        onClick={() => setConfirmOpen(true)}
                                         className="w-full md:w-auto"
                                         disabled={sending}
                                         variant="destructive"
@@ -564,12 +597,16 @@ export default function Ticketing() {
                                         <DialogDescription>
                                             You are about to distribute the
                                             prepared email to{' '}
-                                            <strong>
-                                                {(generated ?? []).length}
-                                            </strong>{' '}
+                                            <strong>{(generated ?? []).length}</strong>{' '}
                                             recipients. This will enqueue
                                             background jobs to send the
-                                            messages. Do you want to proceed?
+                                            messages.
+                                            {((generated ?? []).length > 0) && (
+                                                <div className="mt-2 text-xs text-muted-foreground">
+                                                    Sample recipients: {(generated ?? []).slice(0,3).map(r => r.email).filter(Boolean).join(', ')}
+                                                </div>
+                                            )}
+                                            Do you want to proceed?
                                         </DialogDescription>
 
                                         <div className="mt-4 text-xs text-muted-foreground">
@@ -589,8 +626,19 @@ export default function Ticketing() {
                                             <Button
                                                 onClick={distribute}
                                                 className="ml-2"
+                                                disabled={sending}
                                             >
-                                                Confirm & Queue
+                                                {sending ? (
+                                                    <>
+                                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                                        </svg>
+                                                        Sending…
+                                                    </>
+                                                ) : (
+                                                    'Confirm & Queue'
+                                                )}
                                             </Button>
                                         </DialogFooter>
                                     </DialogContent>
@@ -627,13 +675,14 @@ export default function Ticketing() {
                                             label: 'Name',
                                             value: String(ev.name),
                                         });
-                                    if (ev.event_date)
-                                        rows.push({
-                                            label: 'Event date',
-                                            value: new Date(
-                                                ev.event_date,
-                                            ).toLocaleString(),
-                                        });
+                                    {
+                                        const rawDate = ev ? (ev.start_date ?? ev.event_date) : null;
+                                        if (rawDate)
+                                            rows.push({
+                                                label: 'Event date',
+                                                value: new Date(rawDate).toLocaleString(),
+                                            });
+                                    }
                                     if (ev.start_sell_date)
                                         rows.push({
                                             label: 'Start selling',
@@ -1257,14 +1306,34 @@ export default function Ticketing() {
                                             </div>
                                         </div>
 
-                                        <DialogFooter>
-                                            <DialogClose asChild>
-                                                <Button>Close</Button>
-                                            </DialogClose>
-                                        </DialogFooter>
+                                                <DialogFooter>
+                                                    <DialogClose asChild>
+                                                        <Button>Close</Button>
+                                                    </DialogClose>
+                                                </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
                             </div>
+
+                                    {/* ERROR MODAL */}
+                                    <Dialog open={errorModalOpen} onOpenChange={setErrorModalOpen}>
+                                        <DialogContent>
+                                            <DialogTitle className="text-red-600 flex items-center gap-2">❌ {errorDetails.title}</DialogTitle>
+                                            <DialogDescription>The following issues prevented distribution:</DialogDescription>
+                                            <div className="max-h-[300px] overflow-y-auto rounded bg-red-50 p-4 text-sm text-red-800 mt-3">
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                    {errorDetails.list.map((err, i) => (
+                                                        <li key={i}>{err}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                            <DialogFooter>
+                                                <DialogClose asChild>
+                                                    <Button variant="secondary">Close</Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
 
                             <div className="mt-3 text-xs">
                                 <table className="w-full table-fixed text-xs">
@@ -1389,9 +1458,7 @@ export default function Ticketing() {
 
                                 {showRendered && (
                                     <div className="mt-4 rounded-xl border bg-white p-6 shadow-sm text-gray-900">
-                                        <div className="mb-4 border-b pb-2">
-                                            <p className="text-sm font-bold text-gray-500">Previewing: {sampleData[selectedSampleIndex as number]?.email}</p>
-                                        </div>
+                                        
                                         <div
                                             className="prose max-w-none text-black"
                                             dangerouslySetInnerHTML={{
@@ -1401,7 +1468,7 @@ export default function Ticketing() {
                                                     // Mock QR code for preview
                                                     html = html.replace(
                                                         /{{qr}}/g,
-                                                        '<div style="background:#eee;border:2px dashed #999;width:150px;height:150px;display:flex;align-items:center;justify-content:center;margin:10px auto;">QR PREVIEW</div>'
+                                                        '<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:10px 0;font-weight:bold;text-align:center;display:block;">QR PREVIEW</div>'
                                                     );
                                                     return html;
                                                 })(),

@@ -169,7 +169,8 @@ class DistributionController extends Controller
                         $qrContent = $ticketId ? $ticketId : ($eventName . '|' . ($r['email'] ?? ''));
                         $qrString = $writer->writeString($qrContent);
                         $base64 = base64_encode($qrString);
-                        $imgTag = sprintf('<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin: 20px auto; max-width: 200px;" />', $base64);
+                        // Left-align QR image by removing automatic horizontal centering
+                        $imgTag = sprintf('<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin: 20px 0; max-width: 200px;" />', $base64);
                         $r['body'] = str_replace('{{qr}}', $imgTag, $r['body']);
                     }
 
