@@ -492,7 +492,7 @@ export default function Office() {
                     <section
                         className="flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border"
                         style={{
-                            height: lastShiftHeight
+                            height: (lastShift && lastShiftHeight) // Only sync height if lastShift exists
                                 ? `${lastShiftHeight}px`
                                 : 'auto',
                         }}
@@ -550,7 +550,7 @@ export default function Office() {
                     <section
                         className="flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border"
                         style={{
-                            height: lastShiftHeight
+                            height: (lastShift && lastShiftHeight) // Only sync height if lastShift exists
                                 ? `${lastShiftHeight}px`
                                 : 'auto',
                         }}
