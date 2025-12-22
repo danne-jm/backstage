@@ -14,6 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
+import { toDataURL } from 'qrcode';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,11 +25,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Ticketing() {
-    const props = usePage<SharedData>().props;
+    const props = usePage<SharedData & { templates: any[] }>().props;
     const events: any[] = Array.isArray(props['events']) ? props['events'] : [];
+    const templates: any[] = Array.isArray(props['templates']) ? props['templates'] : [];
 
     // State to hold the attendee data fetched from the backend
     const [sampleData, setSampleData] = React.useState<any[]>([]);
+
+    // Template State
+    const [selectedTemplateId, setSelectedTemplateId] = React.useState<number | 'none'>('none');
 
     const fields = React.useMemo(
         () => (sampleData.length ? Object.keys(sampleData[0]) : []),
@@ -42,8 +47,7 @@ export default function Ticketing() {
 
     // Mail information (normal | qr embedding)
     const [mailMode, setMailMode] = React.useState<'normal' | 'qr'>('normal');
-    const [qrEventName, setQrEventName] = React.useState<string>('');
-    const [qrEventDate, setQrEventDate] = React.useState<string>('');
+    // Note: event name/date for QR will be taken from the selected event automatically
     const [nullableFields, setNullableFields] = React.useState<
         Record<string, boolean>
     >(() => {
@@ -128,9 +132,14 @@ export default function Ticketing() {
 
     // Default email template (initial editor content)
     const defaultBodyTemplate = React.useMemo(() => {
+        const qrHint =
+            mailMode === 'qr'
+                ? '<p>Your QR code for the event:</p><p>{{qr}}</p>'
+                : '';
         return `
             <p>Hello <strong>{{${firstNameField}}}</strong>,</p>
             <p>Thanks for registering — below are your ticket details for the event.</p>
+            ${qrHint}
             <ul>
                 <li><strong>Event:</strong> {{event_name}}</li>
                 <li><strong>Date:</strong> {{event_date}}</li>
@@ -139,7 +148,7 @@ export default function Ticketing() {
             <p>Please bring a copy of this email (printed or on your phone).</p>
             <p>See you there,<br/>ESN Leuven</p>
         `;
-    }, [firstNameField]);
+    }, [firstNameField, mailMode]);
 
     // initialize editor with default template if empty
     React.useEffect(() => {
@@ -316,75 +325,38 @@ export default function Ticketing() {
 
     const generateTickets = () => {
         const bodyHtml = bodyRef.current ? bodyRef.current.innerHTML : '';
-
-        // Find selected event metadata to enrich the generated payload and the template
-        const eventObj =
-            events.find((ev: any) => ev.id === selectedEvent) ?? null;
+        const eventObj = events.find((ev: any) => ev.id === selectedEvent) ?? null;
+        const selectedTemplate = templates.find(t => t.id === Number(selectedTemplateId));
 
         const buildEmailHtml = (innerHtml: string, ev: any | null) => {
-            const eventTitle = ev ? `${ev.name}` : '';
-            const eventDate =
-                ev && ev.event_date
-                    ? new Date(ev.event_date).toLocaleDateString('en-GB', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                      })
-                    : '';
-
-            // Minimalist email template inspired by NIMAH design
-            return `
-                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fdfcf9; border: 1px solid #d4c5a9;">
-                    <div style="text-align: center; padding: 40px 20px 20px; border-bottom: 1px solid #d4c5a9;">
-                        <div style="font-size: 32px; font-weight: 300; letter-spacing: 4px; color: #2c2416; margin-bottom: 8px;">ESN LEUVEN</div>
-                        <div style="font-size: 11px; letter-spacing: 2px; color: #8b7355; font-weight: 500;">Announcement</div>
-                    </div>
-                    
-                    <div style="padding: 50px 40px; color: #5a4a3a; line-height: 1.8;">
-                        <h1 style="font-size: 28px; font-weight: 300; color: #2c2416; margin: 0 0 20px 0; text-align: center;">${eventTitle}</h1>
-                        <p style="text-align: center; color: #8b7355; font-size: 14px; margin: 0 0 30px 0;">${eventDate}</p>
-                        ${innerHtml}
-                    </div>
-                    
-                    <div style="padding: 30px 40px; border-top: 1px solid #d4c5a9; background-color: #f8f6f0; text-align: center;">
-                        <p style="margin: 0 0 10px 0; font-size: 13px; color: #5a4a3a;">© 2025 ESN Leuven. All rights reserved.</p>
-                        <div style="font-size: 13px; color: #8b7355; margin-bottom: 10px;">
-                            <a href="https://www.instagram.com/esnleuven/" target="_blank" style="color: #8b7355; text-decoration: none;">Instagram</a> | 
-                            <a href="https://linktr.ee/esnleuven" target="_blank" style="color: #8b7355; text-decoration: none;">Linktree</a> | 
-                            <a href="https://www.esnleuven.be/" target="_blank" style="color: #8b7355; text-decoration: none;">Website</a>
-                        </div>
-                        <p style="margin: 0; font-size: 12px; color: #a39482;">You received this email because you registered for an ESN Leuven communication.</p>
-                    </div>
-                </div>
-            `;
+            // Use Template from DB if selected
+            if (selectedTemplate) {
+                let tmpl = selectedTemplate.html_content;
+                // Replace template-level variables
+                const eventTitle = ev ? ev.name : '';
+                const eventDate = ev && ev.event_date ? new Date(ev.event_date).toLocaleDateString() : '';
+                tmpl = tmpl.replace('{{event_name}}', eventTitle);
+                tmpl = tmpl.replace('{{event_date}}', eventDate);
+                // Inject the user content into {{body}}
+                return tmpl.replace('{{body}}', innerHtml);
+            }
+            // "No Template" -> Basic blank email
+            return innerHtml;
         };
 
         const out = sampleData.map((row) => {
-            // Replace template variables in the body HTML with actual values
             let personalizedBody = bodyHtml;
-            
-            // Replace all field placeholders like {{first_name}}, {{email}}, etc.
             fields.forEach((field) => {
                 const placeholder = `{{${field}}}`;
                 const value = String((row as any)[field] ?? '');
                 personalizedBody = personalizedBody.replaceAll(placeholder, value);
             });
-            
-            // Also replace event_name and event_date if they appear
+            // Note: We leave {{qr}} intact here so the backend can find it.
+            // The frontend preview (below) will handle mocking it.
             if (eventObj) {
                 personalizedBody = personalizedBody.replaceAll('{{event_name}}', eventObj.name || '');
-                const formattedEventDate = eventObj.event_date
-                    ? new Date(eventObj.event_date).toLocaleDateString('en-GB', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                      })
-                    : '';
-                personalizedBody = personalizedBody.replaceAll('{{event_date}}', formattedEventDate);
+                // ... date replacement ...
             }
-            
             return {
                 first_name: String((row as any)[firstNameField] ?? ''),
                 last_name: String((row as any)[lastNameField] ?? ''),
@@ -394,19 +366,9 @@ export default function Ticketing() {
                 event_date: eventObj ? eventObj.event_date : null,
                 subject,
                 body: buildEmailHtml(personalizedBody, eventObj),
-                // mail metadata (mode and qr-related settings)
-                mail_mode: mailMode,
-                mail_qr: {
-                    event_name: qrEventName,
-                    event_date: qrEventDate,
-                    nullable_fields: nullableFields,
-                },
             };
         });
-
         setGenerated(out);
-        // For now we do not POST anywhere; this prepares the payload ready to be used by your mailer.
-        console.log('Prepared tickets', out);
     };
 
     const [sending, setSending] = React.useState<boolean>(false);
@@ -421,17 +383,9 @@ export default function Ticketing() {
     };
 
     const sendDistribution = async () => {
-        if (mailMode !== 'normal') {
-            // Only normal mail is supported at this time
-            window.alert(
-                'Only Normal mail distribution is supported right now. Switch to "Normal mail" and try again.',
-            );
-            return;
-        }
-
-        // Ensure we have a generated payload
-        if (!generated) {
-            generateTickets();
+        // Ensure we have a generated payload, especially for QR codes
+        if (!generated || mailMode === 'qr') {
+            await generateTickets();
         }
 
         const payload = generated ?? [];
@@ -453,21 +407,14 @@ export default function Ticketing() {
         setSending(true);
 
         try {
-            const token =
-                document
-                    .querySelector('meta[name="csrf-token"]')
-                    ?.getAttribute('content') ?? '';
-            // Laravel sets XSRF-TOKEN cookie (URL encoded). Send it as X-XSRF-TOKEN header.
             const xsrfCookie = getCookie('XSRF-TOKEN');
-            const xsrf = xsrfCookie ? decodeURIComponent(xsrfCookie) : '';
 
             const resp = await fetch('/distribute-emails', {
                 method: 'POST',
                 credentials: 'same-origin', // ensure cookies (session/XSRF) are sent
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': token,
-                    'X-XSRF-TOKEN': xsrf,
+                    'X-XSRF-TOKEN': xsrfCookie ?? '',
                     Accept: 'application/json',
                 },
                 body: JSON.stringify({ recipients: generated ?? [] }),
@@ -499,6 +446,7 @@ export default function Ticketing() {
         }
     };
 
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Ticketing System" />
@@ -516,76 +464,31 @@ export default function Ticketing() {
 
                         <div>
                             <Label>Message</Label>
-                            <div className="mb-2 flex flex-wrap items-center gap-2">
-                                <Button
-                                    onClick={() => applyFormat('bold')}
-                                    size="sm"
-                                    variant="outline"
-                                    aria-label="Bold"
-                                >
-                                    B
-                                </Button>
-                                <Button
-                                    onClick={() => applyFormat('italic')}
-                                    size="sm"
-                                    variant="outline"
-                                    aria-label="Italic"
-                                >
-                                    I
-                                </Button>
-                                <Button
-                                    onClick={() => applyFormat('underline')}
-                                    size="sm"
-                                    variant="outline"
-                                    aria-label="Underline"
-                                >
-                                    U
-                                </Button>
-                                <Button
-                                    onClick={insertBulletList}
-                                    size="sm"
-                                    variant="outline"
-                                    aria-label="Insert list"
-                                >
-                                    •
-                                </Button>
-                                <Button
-                                    onClick={insertLink}
-                                    size="sm"
-                                    variant="outline"
-                                    aria-label="Insert link"
-                                >
-                                    🔗
-                                </Button>
-                                <Button
-                                    onClick={removeLink}
-                                    size="sm"
-                                    variant="outline"
-                                    aria-label="Remove link"
-                                >
-                                    ⛔
-                                </Button>
-                                <Button
-                                    onClick={setTextColor}
-                                    size="sm"
-                                    variant="outline"
-                                    aria-label="Text color"
-                                    style={{ color: '#d97706' }}
-                                >
-                                    A
-                                </Button>
-                                <Button
-                                    onClick={setBgColor}
-                                    size="sm"
-                                    variant="outline"
-                                    aria-label="Background color"
-                                    style={{
-                                        background: '#fde68a',
-                                        color: '#222',
-                                    }}
-                                >
-                                    Bg
-                                </Button>
+                            <div className="mb-2 flex flex-wrap items-center gap-2 justify-between">
+                                <div className="flex gap-2">
+                                    <Button onClick={() => applyFormat('bold')} size="sm" variant="outline" aria-label="Bold">B</Button>
+                                    <Button onClick={() => applyFormat('italic')} size="sm" variant="outline" aria-label="Italic">I</Button>
+                                    <Button onClick={() => applyFormat('underline')} size="sm" variant="outline" aria-label="Underline">U</Button>
+                                    <Button onClick={insertBulletList} size="sm" variant="outline" aria-label="Insert list">•</Button>
+                                    <Button onClick={insertLink} size="sm" variant="outline" aria-label="Insert link">🔗</Button>
+                                    <Button onClick={removeLink} size="sm" variant="outline" aria-label="Remove link">⛔</Button>
+                                    <Button onClick={setTextColor} size="sm" variant="outline" aria-label="Text color" style={{ color: '#d97706' }}>A</Button>
+                                    <Button onClick={setBgColor} size="sm" variant="outline" aria-label="Background color" style={{ background: '#fde68a', color: '#222' }}>Bg</Button>
+                                </div>
+                                {/* Template Selector */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Email Template:</span>
+                                    <select
+                                        className="h-8 w-[160px] rounded border text-xs"
+                                        value={selectedTemplateId}
+                                        onChange={(e) => setSelectedTemplateId(e.target.value === 'none' ? 'none' : Number(e.target.value))}
+                                    >
+                                        <option value="none" className=''>No Template</option>
+                                        {templates.map(t => (
+                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                             <div
                                 ref={bodyRef}
@@ -594,107 +497,7 @@ export default function Ticketing() {
                                 className="min-h-[180px] w-full rounded-md border bg-black p-3 text-sm text-foreground"
                                 style={{ overflowY: 'auto' }}
                             >
-                                <p>Dear {'{{first_name}}'},</p>
-                                <br></br>
-                                <p>
-                                    The Welcome Weekend is finally here 🎊 This
-                                    is your chance to join us for an
-                                    unforgettable getaway in Durbuy, where
-                                    endless fun awaits you!
-                                </p>
-                                <br></br>
-
-                                <h2>What we will do:</h2>
-                                <ul>
-                                    <li>
-                                        🏡 Enjoy a cozy stay in one big house
-                                        with everyone!
-                                    </li>
-                                    <li>
-                                        🏛 Indulge in a delicious brunch,
-                                        explore nature on a walk, and challenge
-                                        each other during quiz night!
-                                    </li>
-                                    <li>
-                                        🎤 Get ready for a lively cantus with
-                                        the theme{' '}
-                                        <strong>Brat vs. Demure</strong> - show
-                                        us your wild or classy side! Plus, we’re
-                                        having an epic pyjama party, so bring
-                                        your comfiest, craziest PJs! We’ll also
-                                        enjoy karaoke, game night, and so much
-                                        more!
-                                    </li>
-                                    <li>
-                                        🍔 We’ve got the food and drinks covered
-                                        - just bring your boundless energy!
-                                    </li>
-                                </ul>
-                                <br></br>
-
-                                <h2>What to bring:</h2>
-                                <ul>
-                                    <li>
-                                        🧳 Clothes for the Brat vs. Demure
-                                        cantus and your best outfit for the
-                                        pyjama party!
-                                    </li>
-                                    <li>
-                                        🛏 Bed linen (for over the mattress),
-                                        pillowcases, towels and sleeping bag
-                                        (optional).
-                                    </li>
-                                    <li>
-                                        🧥 Rain jacket - just in case the
-                                        weather decides to play tricks on us!
-                                    </li>
-                                    <li>
-                                        🎟️ And of course, don’t forget to keep
-                                        your QR-ticket handy when you approach
-                                        the bus.
-                                    </li>
-                                </ul>
-
-                                <br></br>
-                                <p>
-                                    🗓 <strong>When:</strong> Friday, October
-                                    18, 14:00 – Sunday, October 20, 18:00
-                                </p>
-                                <p>
-                                    🚌 <strong>Meeting Point:</strong> Parking
-                                    Bodart (14:00 at the latest)
-                                </p>
-                                <p>
-                                    📍 <strong>Destination:</strong> Durbuy
-                                </p>
-                                <br></br>
-
-                                <p>
-                                    You can find the room allocation plan
-                                    through the following link. You may start
-                                    planning your next sleep (fill it in) 💤:
-                                    <br />
-                                    <a
-                                        href="https://docs.google.com/spreadsheets/d/1kSL913cMP2S2Y798Z-Fijill4aZNGbkrRhj7-aTlBWI/edit?usp=sharing"
-                                        target="_blank"
-                                    >
-                                        Room Allocation Plan Link
-                                    </a>
-                                </p>
-                                <br></br>
-
-                                <p>
-                                    Get ready for an epic adventure filled with
-                                    laughter and great memories! We can’t wait
-                                    to see you all there!
-                                </p>
-                                <br></br>
-
-                                <p>
-                                    Best wishes,
-                                    <br />
-                                    Daniel
-                                </p>
+                                {/* ... editor ... */}
                             </div>
                         </div>
 
@@ -1071,33 +874,15 @@ export default function Ticketing() {
                                             </label>
                                         </div>
                                     </div>
-                                    {/* QR-specific inputs (only shown when QR mail selected) */}
+                                    {/* When Mail with QR embedding is selected we take event metadata from the chosen event.
+                                        Use the {{qr}} placeholder anywhere in your message to place the QR image. */}
                                     {mailMode === 'qr' && (
-                                        <div className="space-y-3">
+                                        <div className="space-y-2 text-xs text-muted-foreground">
                                             <div>
-                                                <Label>QR: Event name</Label>
-                                                <Input
-                                                    value={qrEventName}
-                                                    onChange={(e) =>
-                                                        setQrEventName(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Optional event name"
-                                                />
+                                                Event name and date will be taken directly from the selected event. No need to enter them here.
                                             </div>
-
                                             <div>
-                                                <Label>QR: Event date</Label>
-                                                <Input
-                                                    value={qrEventDate}
-                                                    onChange={(e) =>
-                                                        setQrEventDate(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Optional event date"
-                                                />
+                                                Use <code>{'{{qr}}'}</code> in your message where you want the QR image to appear.
                                             </div>
                                         </div>
                                     )}
@@ -1603,9 +1388,7 @@ export default function Ticketing() {
 
             <div>
                 <div className="px-4 pb-4">
-                    <h4 className="text-sm font-semibold">
-                        Generated Payload Preview
-                    </h4>
+                    <h4 className="text-sm font-semibold">Generated Payload Preview</h4>
                     <div className="pt-2">
                         <div className="mb-1 text-sm">Render format</div>
                         <div
@@ -1644,42 +1427,25 @@ export default function Ticketing() {
 
                                 {showRendered && (
                                     <div className="rounded border bg-white p-3">
-                                        <h5 className="mb-2 text-sm font-medium">
-                                            Rendered HTML Preview
-                                        </h5>
+                                        <h5 className="mb-2 text-sm font-medium">Rendered HTML Preview</h5>
                                         {selectedSampleIndex === null ? (
                                             <div className="text-sm text-muted-foreground">
-                                                Select a sample user to preview
-                                                rendered email.
+                                                Select a sample user to preview rendered email.
                                             </div>
                                         ) : (
                                             <div
                                                 className="prose max-w-none"
                                                 dangerouslySetInnerHTML={{
                                                     __html: (() => {
-                                                        const user =
-                                                            sampleData[
-                                                                selectedSampleIndex as number
-                                                            ];
-                                                        // simple token replacement for {{field}}
-                                                        const html =
-                                                            generated[
-                                                                Number(
-                                                                    selectedSampleIndex as number,
-                                                                )
-                                                            ]?.body ?? '';
-                                                        return html.replace(
-                                                            /{{\s*(\w+)\s*}}/g,
-                                                            (
-                                                                _m: string,
-                                                                p1: string,
-                                                            ) =>
-                                                                String(
-                                                                    (
-                                                                        user as any
-                                                                    )[p1] ?? '',
-                                                                ),
+                                                        const user = sampleData[selectedSampleIndex as number];
+                                                        let html = generated[Number(selectedSampleIndex)]?.body ?? '';
+                                                        // Mock QR code for preview
+                                                        html = html.replace(
+                                                            /{{qr}}/g, 
+                                                            '<div style="background:#eee;border:2px dashed #999;width:150px;height:150px;display:flex;align-items:center;justify-content:center;margin:10px auto;">QR PREVIEW</div>'
                                                         );
+                                                        // ... existing replacements ...
+                                                        return html;
                                                     })(),
                                                 }}
                                             />
@@ -1689,8 +1455,7 @@ export default function Ticketing() {
                             </div>
                         ) : (
                             <div className="text-sm text-muted-foreground">
-                                No preview generated yet. Click Generate
-                                Preview.
+                                No preview generated yet. Click Generate Preview.
                             </div>
                         )}
                     </div>

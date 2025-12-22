@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use App\Jobs\SendDistributionEmail;
 use App\Models\Event;
 use App\Models\Ticket;
+use App\Models\MailTemplate;
+use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,37 +40,34 @@ class DistributionController extends Controller
         ]);
 
         $recipients = $data['recipients'];
-
-        // Log incoming payload for debugging
-        try {
-            Log::info('DistributionController::distribute received', ['count' => is_array($recipients) ? count($recipients) : 0]);
-            if (is_array($recipients) && count($recipients) > 0) {
-                Log::info('DistributionController::distribute sample recipient', ['sample' => array_slice($recipients, 0, 3)]);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('DistributionController::distribute logging failed', ['error' => $e->getMessage()]);
-        }
-
         $sender = Auth::user();
         $queued = 0;
         $ticketsCreated = 0;
         $dispatchErrors = [];
 
+        // Prepare QR Writer
+        $renderer = new ImageRenderer(
+            new RendererStyle(300, 1), // 300px size, 1px margin
+            new ImagickImageBackEnd()
+        );
+        $writer = new Writer($renderer);
+
         if (is_array($recipients)) {
             // Group recipients by event_id to create tables once per event
             $recipientsByEvent = [];
-            foreach ($recipients as $r) {
+            foreach ($recipients as $idx => &$r) {
                 $eventId = $r['event_id'] ?? null;
                 if ($eventId) {
                     if (!isset($recipientsByEvent[$eventId])) {
                         $recipientsByEvent[$eventId] = [];
                     }
-                    $recipientsByEvent[$eventId][] = $r;
+                    $recipientsByEvent[$eventId][] = &$recipients[$idx];
                 }
             }
+            unset($r); // break reference
 
             // Create ticket tables for events that need them
-            foreach ($recipientsByEvent as $eventId => $eventRecipients) {
+            foreach ($recipientsByEvent as $eventId => &$eventRecipients) {
                 try {
                     $event = Event::find($eventId);
                     if (!$event) {
@@ -95,8 +97,8 @@ class DistributionController extends Controller
                         });
                     }
 
-                    // Create tickets for this event
-                    foreach ($eventRecipients as $r) {
+                    // Create tickets for this event and update recipient with ticket_id
+                    foreach ($eventRecipients as &$r) {
                         $unique = Str::random(8);
                         $first = $r['first_name'] ?? '';
                         $last = $r['last_name'] ?? '';
@@ -145,15 +147,32 @@ class DistributionController extends Controller
                         ]);
 
                         $ticketsCreated++;
+
+                        // Attach ticket_id to recipient for QR generation
+                        $r['__ticket_id'] = $ticketId;
+                        $r['__event_name'] = $eventName;
                     }
+                    unset($r);
                 } catch (\Throwable $e) {
                     Log::error('Failed to create tickets for event', ['event_id' => $eventId, 'error' => $e->getMessage()]);
                 }
             }
+            unset($eventRecipients);
 
-            // Dispatch email jobs with sender context
-            foreach ($recipients as $r) {
+            // Dispatch email jobs with QR code if needed
+            foreach ($recipients as &$r) {
                 try {
+                    // Only generate QR if {{qr}} tag is present in the body
+                    if (isset($r['body']) && str_contains($r['body'], '{{qr}}')) {
+                        $ticketId = $r['__ticket_id'] ?? null;
+                        $eventName = $r['__event_name'] ?? '';
+                        $qrContent = $ticketId ? $ticketId : ($eventName . '|' . ($r['email'] ?? ''));
+                        $qrString = $writer->writeString($qrContent);
+                        $base64 = base64_encode($qrString);
+                        $imgTag = sprintf('<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin: 20px auto; max-width: 200px;" />', $base64);
+                        $r['body'] = str_replace('{{qr}}', $imgTag, $r['body']);
+                    }
+
                     $payload = array_merge($r, [
                         'sender_id' => $sender?->id,
                         'sender_email' => $sender?->email,
@@ -166,6 +185,7 @@ class DistributionController extends Controller
                     $dispatchErrors[] = ['recipient' => $r, 'error' => $e->getMessage()];
                 }
             }
+            unset($r);
         }
 
         return response()->json([

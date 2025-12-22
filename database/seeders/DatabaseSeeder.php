@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ProductSeeder::class,
             EventSeeder::class,
+            MailTemplateSeeder::class,
             \Database\Seeders\EventTicketsSeeder::class,
         ]);
     }
