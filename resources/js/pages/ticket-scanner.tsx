@@ -35,6 +35,17 @@ export default function TicketScanner() {
         null,
     );
 
+    // Format scan date as DD/MM/YYYY
+    const formatScanDate = (iso?: string | null): string => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return '';
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     const selectedEventObj = React.useMemo(() => {
         return events.find((ev) => ev.id === selectedEvent) ?? null;
     }, [events, selectedEvent]);
@@ -973,45 +984,34 @@ export default function TicketScanner() {
                                                 : ''}
                                         </div>
 
-                                        {scanModal.ticket.scan_details &&
-                                            Array.isArray(
-                                                scanModal.ticket.scan_details,
-                                            ) &&
-                                            scanModal.ticket.scan_details
-                                                .length > 0 && (
+                                        {/* Show scan history only for repeated scans (status === 'already') */}
+                                        {scanModal.status === 'already' &&
+                                            scanModal.ticket &&
+                                            scanModal.ticket.scan_details &&
+                                            Array.isArray(scanModal.ticket.scan_details) &&
+                                            scanModal.ticket.scan_details.length > 0 && (
                                                 <div className="border-t pt-3">
                                                     <div className="mb-2 text-xs text-muted-foreground">
                                                         Scan History
                                                     </div>
                                                     <ul className="max-h-40 space-y-2 overflow-y-auto text-xs">
                                                         {[
-                                                            ...scanModal.ticket
-                                                                .scan_details,
+                                                            ...scanModal.ticket.scan_details,
                                                         ]
                                                             .reverse()
-                                                            .map(
-                                                                (
-                                                                    d: any,
-                                                                    idx: number,
-                                                                ) => (
-                                                                    <li
-                                                                        key={
-                                                                            idx
-                                                                        }
-                                                                        className="flex justify-between gap-2"
-                                                                    >
-                                                                        <span className="overflow-hidden text-ellipsis">
-                                                                            {d.user_email ??
-                                                                                'unknown'}
-                                                                        </span>
-                                                                        <span className="whitespace-nowrap text-muted-foreground">
-                                                                            {new Date(
-                                                                                d.at,
-                                                                            ).toLocaleString()}
-                                                                        </span>
-                                                                    </li>
-                                                                ),
-                                                            )}
+                                                            .map((d: any, idx: number) => (
+                                                                <li
+                                                                    key={idx}
+                                                                    className="flex justify-between gap-2"
+                                                                >
+                                                                    <span className="overflow-hidden text-ellipsis">
+                                                                        {d.user_email ?? 'unknown'}
+                                                                    </span>
+                                                                    <span className="whitespace-nowrap text-muted-foreground">
+                                                                        {formatScanDate(d.at)}
+                                                                    </span>
+                                                                </li>
+                                                            ))}
                                                     </ul>
                                                 </div>
                                             )}
@@ -1202,12 +1202,10 @@ export default function TicketScanner() {
                                     </div>
                                 </div>
 
+                                {/* Always show scan history if present in scanned ticket details modal */}
                                 {selectedScannedTicket.scan_details &&
-                                    Array.isArray(
-                                        selectedScannedTicket.scan_details,
-                                    ) &&
-                                    selectedScannedTicket.scan_details.length >
-                                        0 && (
+                                    Array.isArray(selectedScannedTicket.scan_details) &&
+                                    selectedScannedTicket.scan_details.length > 0 && (
                                         <div>
                                             <h4 className="mb-2 text-sm font-medium">
                                                 Scan History
@@ -1217,27 +1215,19 @@ export default function TicketScanner() {
                                                     ...selectedScannedTicket.scan_details,
                                                 ]
                                                     .reverse()
-                                                    .map(
-                                                        (
-                                                            d: any,
-                                                            idx: number,
-                                                        ) => (
-                                                            <div
-                                                                key={idx}
-                                                                className="flex justify-between gap-2 p-3"
-                                                            >
-                                                                <span className="text-sm">
-                                                                    {d.user_email ??
-                                                                        'unknown'}
-                                                                </span>
-                                                                <span className="text-sm whitespace-nowrap text-muted-foreground">
-                                                                    {new Date(
-                                                                        d.at,
-                                                                    ).toLocaleString()}
-                                                                </span>
-                                                            </div>
-                                                        ),
-                                                    )}
+                                                    .map((d: any, idx: number) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="flex justify-between gap-2 p-3"
+                                                        >
+                                                            <span className="text-sm">
+                                                                {d.user_email ?? 'unknown'}
+                                                            </span>
+                                                            <span className="text-sm whitespace-nowrap text-muted-foreground">
+                                                                {formatScanDate(d.at)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
                                             </div>
                                         </div>
                                     )}

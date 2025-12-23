@@ -149,6 +149,19 @@ class TicketScannerController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Ensure scan_details is decoded to an array for the JSON response
+        $tickets = $tickets->map(function ($t) {
+            $t = (array) $t;
+            if (isset($t['scan_details']) && $t['scan_details'] !== null) {
+                $decoded = json_decode($t['scan_details'], true);
+                $t['scan_details'] = is_array($decoded) ? $decoded : [];
+            } else {
+                $t['scan_details'] = [];
+            }
+
+            return $t;
+        });
+
         return response()->json(['tickets' => $tickets]);
     }
 
@@ -176,6 +189,19 @@ class TicketScannerController extends Controller
             ->where('scan_count', '>', 0)
             ->orderBy('updated_at', 'desc')
             ->get();
+
+        // Ensure scan_details is decoded to an array for the JSON response
+        $tickets = $tickets->map(function ($t) {
+            $t = (array) $t;
+            if (isset($t['scan_details']) && $t['scan_details'] !== null) {
+                $decoded = json_decode($t['scan_details'], true);
+                $t['scan_details'] = is_array($decoded) ? $decoded : [];
+            } else {
+                $t['scan_details'] = [];
+            }
+
+            return $t;
+        });
 
         return response()->json(['tickets' => $tickets]);
     }
@@ -231,11 +257,22 @@ class TicketScannerController extends Controller
                 'updated_at' => now(),
             ]);
 
-        // Fetch updated ticket
+        // Fetch updated ticket and decode scan_details for JSON response
         $updatedTicket = DB::connection('tickets')
             ->table($tableName)
             ->where('ticket_id', $id)
             ->first();
+
+        if ($updatedTicket) {
+            $ut = (array) $updatedTicket;
+            if (isset($ut['scan_details']) && $ut['scan_details'] !== null) {
+                $decoded = json_decode($ut['scan_details'], true);
+                $ut['scan_details'] = is_array($decoded) ? $decoded : [];
+            } else {
+                $ut['scan_details'] = [];
+            }
+            $updatedTicket = $ut;
+        }
 
         return response()->json(['valid' => true, 'ticket' => $updatedTicket, 'previous_scan_count' => $previous]);
     }
