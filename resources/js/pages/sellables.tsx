@@ -41,6 +41,7 @@ interface Product {
     variable_amount?: boolean;
     quantity_with_card?: number | null;
     quantity_without_card?: number | null;
+    remaining: number;
 }
 
 interface Event {
@@ -64,6 +65,9 @@ interface Event {
         first_name: string;
         last_name: string;
     };
+    remaining: number;
+    remaining_with_card: number;
+    remaining_without_card: number;
 }
 
 interface BoardUser {
@@ -247,10 +251,10 @@ export default function Sellables() {
             setProductName(product.name);
             setProductPrice(product.price.toString());
             setProductDescription(product.description || '');
-            setProductQuantity(product.quantity?.toString() || '');
+            setProductQuantity(product.quantity === -1 ? '' : product.quantity?.toString() || ''); // Modified
             setProductVariableAmount(Boolean(product.variable_amount));
-            setProductQuantityWithCard(product.quantity_with_card?.toString() || '');
-            setProductQuantityWithoutCard(product.quantity_without_card?.toString() || '');
+            setProductQuantityWithCard(product.quantity_with_card === -1 ? '' : product.quantity_with_card?.toString() || ''); // Modified
+            setProductQuantityWithoutCard(product.quantity_without_card === -1 ? '' : product.quantity_without_card?.toString() || ''); // Modified
         } else {
             setEditingProduct(null);
             setProductName('');
@@ -336,13 +340,13 @@ export default function Sellables() {
             setEndSellDate(event.end_sell_date.split('T')[0]);
             setPriceWithCard(event.price_with_card.toString());
             setPriceWithoutCard(event.price_without_card.toString());
-            setQuantity(event.quantity?.toString() || '');
+            setQuantity(event.quantity === -1 ? '' : event.quantity?.toString() || ''); // Modified
             setResponsibleUserId(event.responsible_user_id.toString());
             setNotes(event.notes || '');
             setVariableAmount(event.variable_amount);
-            setQuantityWithCard(event.quantity_with_card?.toString() || '');
+            setQuantityWithCard(event.quantity_with_card === -1 ? '' : event.quantity_with_card?.toString() || ''); // Modified
             setQuantityWithoutCard(
-                event.quantity_without_card?.toString() || '',
+                event.quantity_without_card === -1 ? '' : event.quantity_without_card?.toString() || '', // Modified
             );
             setGoogleSpreadsheetId(event.google_spreadsheet_id || '');
         } else {
@@ -653,14 +657,24 @@ export default function Sellables() {
                                         <p className="mt-1 text-sm text-muted-foreground">
                                             €{product.price}
                                         </p>
-                                        <div className="mt-1 text-sm text-muted-foreground">
+                                        <div className="mt-1 text-sm"> {/* Changed to remove inherited muted-foreground */}
                                             {product.variable_amount ? (
                                                 <>
-                                                    Qty w/ Card: {product.quantity_with_card ?? 'N/A'} | w/o Card: {product.quantity_without_card ?? 'N/A'}
+                                                    <span className="text-muted-foreground">Qty w/ Card:</span> {product.quantity_with_card === -1 ? 'Unlimited' : product.quantity_with_card}
+                                                    {product.quantity_with_card !== -1 && product.remaining_with_card !== undefined && product.remaining_with_card !== null && (
+                                                        <span className="text-gray-500"> | {product.remaining_with_card} remain</span>
+                                                    )}{' '}
+                                                    | <span className="text-muted-foreground">w/o Card:</span> {product.quantity_without_card === -1 ? 'Unlimited' : product.quantity_without_card}
+                                                    {product.quantity_without_card !== -1 && product.remaining_without_card !== undefined && product.remaining_without_card !== null && (
+                                                        <span className="text-gray-500"> | {product.remaining_without_card} remain</span>
+                                                    )}
                                                 </>
                                             ) : (
                                                 <>
-                                                    Quantity: {product.quantity ?? 'Unlimited'}
+                                                    <span className="text-muted-foreground">Quantity:</span> {product.quantity === -1 ? 'Unlimited' : product.quantity}
+                                                    {product.quantity !== -1 && product.remaining !== undefined && product.remaining !== null && (
+                                                        <span className="text-gray-500"> | {product.remaining} remain</span>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -1083,26 +1097,30 @@ export default function Sellables() {
                                                         {event.variable_amount ? (
                                                             <p>
                                                                 <span className="text-muted-foreground">
-                                                                    Qty with
-                                                                    Card:
+                                                                    Qty w/ Card:
                                                                 </span>{' '}
-                                                                {event.quantity_with_card ??
-                                                                    'N/A'}{' '}
+                                                                {event.quantity_with_card === -1 ? 'Unlimited' : event.quantity_with_card}
+                                                                {event.quantity_with_card !== -1 && event.remaining_with_card !== undefined && event.remaining_with_card !== null && (
+                                                                    <span className="text-gray-500"> | {event.remaining_with_card} remain</span>
+                                                                )}{' '}
                                                                 |{' '}
                                                                 <span className="text-muted-foreground">
-                                                                    without
-                                                                    Card:
+                                                                    w/o Card:
                                                                 </span>{' '}
-                                                                {event.quantity_without_card ??
-                                                                    'N/A'}
+                                                                {event.quantity_without_card === -1 ? 'Unlimited' : event.quantity_without_card}
+                                                                {event.quantity_without_card !== -1 && event.remaining_without_card !== undefined && event.remaining_without_card !== null && (
+                                                                    <span className="text-gray-500"> | {event.remaining_without_card} remain</span>
+                                                                )}
                                                             </p>
                                                         ) : (
                                                             <p>
                                                                 <span className="text-muted-foreground">
                                                                     Quantity:
                                                                 </span>{' '}
-                                                                {event.quantity ??
-                                                                    'Unlimited'}
+                                                                {event.quantity === -1 ? 'Unlimited' : event.quantity}
+                                                                {event.quantity !== -1 && event.remaining !== undefined && event.remaining !== null && (
+                                                                    <span className="text-gray-500"> | {event.remaining} remain</span>
+                                                                )}
                                                             </p>
                                                         )}
                                                         <p>
@@ -1180,9 +1198,7 @@ export default function Sellables() {
                                                                     undone.
                                                                 </DialogDescription>
                                                                 <DialogFooter>
-                                                                    <DialogClose
-                                                                        asChild
-                                                                    >
+                                                                    <DialogClose asChild>
                                                                         <Button variant="ghost">
                                                                             Cancel
                                                                         </Button>
@@ -1207,7 +1223,7 @@ export default function Sellables() {
                                                 <div className="absolute right-4 bottom-4">
                                                     <Button asChild variant="secondary" size="sm">
                                                         <Link href={`/sellables/events/${event.id}/attendees`}>
-                                                            Manage Attendees
+                                                            View & Sync <ExternalLink className="ml-2 h-3 w-3" />
                                                         </Link>
                                                     </Button>
                                                 </div>

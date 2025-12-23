@@ -1,3 +1,4 @@
+
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -387,7 +388,13 @@ export default function Office() {
                             <div className="mt-2 border-t pt-2"><div className="flex items-center justify-between"><h4 className="text-xs font-medium">Quick add sale</h4><Link href="/sellables"><Button size="sm" variant="ghost">Manage</Button></Link></div>
                                 <div className="mt-2 grid grid-cols-1 gap-2">
                                     <select value={String(saleProductId ?? '')} onChange={(e) => { const id = Number(e.target.value) || null; setSaleProductId(id); const item = filteredSellables.find((i: any) => i.actual_id === id); if (item) setSaleItemType(item.type); }} className="w-full rounded-md border p-2" disabled={activeShift?.status !== 'open'}>
-                                        {filteredSellables.map((item: any) => { const label = item.type === 'product' ? `${item.name} — €${Number(item.price).toFixed(2)}` : `${item.name} — Event`; return (<option key={item.id} value={item.actual_id}>{label}</option>); })}
+                                        {filteredSellables.map((item: any) => { 
+                                            const remainingText = item.remaining === -1 ? 'Unlimited' : `${item.remaining} remaining`;
+                                            const label = item.type === 'product' 
+                                                ? `${item.name} — €${Number(item.price).toFixed(2)} (${remainingText})` 
+                                                : `${item.name} — Event (${remainingText})`; 
+                                            return (<option key={item.id} value={item.actual_id}>{label}</option>); 
+                                        })}
                                     </select>
                                 </div>
                                 {saleItemType === 'event' && saleProductId && filteredSellables.find((i: any) => i.actual_id === saleProductId) && (
@@ -406,7 +413,16 @@ export default function Office() {
                             <div className="mt-2 border-t pt-2">
                                 <h4 className="text-xs font-medium">Custom sale</h4>
                                 <div className="mt-2 grid grid-cols-1 gap-2">
-                                    <select value={customSaleItemId} onChange={(e) => setCustomSaleItemId(e.target.value)} className="rounded-md border p-2" disabled={activeShift?.status !== 'open'}><option value="custom">Custom</option>{filteredSellables.map((item: any) => { const label = item.type === 'product' ? `${item.name} — €${Number(item.price).toFixed(2)}` : `${item.name} — Event`; return (<option key={item.id} value={item.actual_id}>{label}</option>); })}</select>
+                                    <select value={customSaleItemId} onChange={(e) => setCustomSaleItemId(e.target.value)} className="rounded-md border p-2" disabled={activeShift?.status !== 'open'}>
+                                        <option value="custom">Custom</option>
+                                        {filteredSellables.map((item: any) => { 
+                                            const remainingText = item.remaining === -1 ? 'Unlimited' : `${item.remaining} remaining`;
+                                            const label = item.type === 'product' 
+                                                ? `${item.name} — €${Number(item.price).toFixed(2)} (${remainingText})` 
+                                                : `${item.name} — Event (${remainingText})`; 
+                                            return (<option key={item.id} value={item.actual_id}>{label}</option>); 
+                                        })}
+                                    </select>
                                     <div className="flex items-center gap-2"><Input type="number" step="0.01" min="0" placeholder="€0.00" value={customAmount} onChange={(e) => { const value = e.target.value; if (value === '' || /^\d*\.?\d*$/.test(value)) setCustomAmount(value); }} disabled={activeShift?.status !== 'open'} /></div>
                                     <Input placeholder="Description (mandatory)" value={customDescription} onChange={(e) => setCustomDescription(e.target.value)} disabled={activeShift?.status !== 'open'} />
                                 </div>

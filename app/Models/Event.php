@@ -25,6 +25,8 @@ class Event extends Model
         'google_sheet_name',
     ];
 
+    protected $appends = ['remaining', 'remaining_with_card', 'remaining_without_card'];
+
     protected function casts(): array
     {
         return [
@@ -76,5 +78,39 @@ class Event extends Model
     {
         if (!$value) return null;
         return \Illuminate\Support\Carbon::parse($value)->format('Y-m-d');
+    }
+
+    public function getSalesWithCardCountAttribute()
+    {
+        return $this->sales()->where('snapshot->ticket_type', 'with_card')->count();
+    }
+
+    public function getSalesWithoutCardCountAttribute()
+    {
+        return $this->sales()->where('snapshot->ticket_type', 'without_card')->count();
+    }
+
+    public function getRemainingWithCardAttribute()
+    {
+        if ($this->quantity_with_card === -1) {
+            return -1;
+        }
+        return $this->quantity_with_card - $this->getSalesWithCardCountAttribute();
+    }
+
+    public function getRemainingWithoutCardAttribute()
+    {
+        if ($this->quantity_without_card === -1) {
+            return -1;
+        }
+        return $this->quantity_without_card - $this->getSalesWithoutCardCountAttribute();
+    }
+
+    public function getRemainingAttribute()
+    {
+        if ($this->quantity === -1) {
+            return -1;
+        }
+        return $this->quantity - $this->sales()->count();
     }
 }

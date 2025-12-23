@@ -82,6 +82,9 @@ class SellablesController extends Controller
                 'first_name' => $event->responsibleUser->first_name,
                 'last_name' => $event->responsibleUser->last_name,
             ] : null,
+            'remaining' => $event->remaining,
+            'remaining_with_card' => $event->remaining_with_card,
+            'remaining_without_card' => $event->remaining_without_card,
         ];
     }
 
@@ -126,11 +129,10 @@ class SellablesController extends Controller
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        // If variable_amount is true, set quantity to null
         if ($validated['variable_amount']) {
-            $validated['quantity'] = null;
+            $validated['quantity'] = -1;
         } else {
-            // If not variable, clear the separate quantities
+            $validated['quantity'] = $validated['quantity'] ?? -1;
             $validated['quantity_with_card'] = null;
             $validated['quantity_without_card'] = null;
         }
@@ -152,11 +154,10 @@ class SellablesController extends Controller
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        // If variable_amount is true, set quantity to null
         if ($validated['variable_amount']) {
-            $validated['quantity'] = null;
+            $validated['quantity'] = -1;
         } else {
-            // If not variable, clear the separate quantities
+            $validated['quantity'] = $validated['quantity'] ?? -1;
             $validated['quantity_with_card'] = null;
             $validated['quantity_without_card'] = null;
         }
@@ -192,11 +193,12 @@ class SellablesController extends Controller
             'google_spreadsheet_id' => ['nullable', 'string'],
         ]);
 
-        // If variable_amount is true, set quantity to null
         if ($validated['variable_amount']) {
-            $validated['quantity'] = null;
+            $validated['quantity'] = -1;
+            $validated['quantity_with_card'] = $validated['quantity_with_card'] ?? -1;
+            $validated['quantity_without_card'] = $validated['quantity_without_card'] ?? -1;
         } else {
-            // If not variable, clear the separate quantities
+            $validated['quantity'] = $validated['quantity'] ?? -1;
             $validated['quantity_with_card'] = null;
             $validated['quantity_without_card'] = null;
         }
@@ -225,11 +227,12 @@ class SellablesController extends Controller
             'google_spreadsheet_id' => ['nullable', 'string'],
         ]);
 
-        // If variable_amount is true, set quantity to null
         if ($validated['variable_amount']) {
-            $validated['quantity'] = null;
+            $validated['quantity'] = -1;
+            $validated['quantity_with_card'] = $validated['quantity_with_card'] ?? -1;
+            $validated['quantity_without_card'] = $validated['quantity_without_card'] ?? -1;
         } else {
-            // If not variable, clear the separate quantities
+            $validated['quantity'] = $validated['quantity'] ?? -1;
             $validated['quantity_with_card'] = null;
             $validated['quantity_without_card'] = null;
         }

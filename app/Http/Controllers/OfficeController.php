@@ -49,15 +49,18 @@ class OfficeController extends Controller
         foreach ($products as $product) {
             $sellables->push([
                 'id' => 'product_'.$product->id,
+                'actual_id' => $product->id,
                 'type' => 'product',
                 'name' => $product->name,
                 'description' => $product->description,
                 'price' => $product->price,
+                'remaining' => $product->remaining,
             ]);
         }
         foreach ($events as $event) {
             $sellables->push([
                 'id' => 'event_'.$event->id,
+                'actual_id' => $event->id,
                 'type' => 'event',
                 'name' => $event->name,
                 'description' => $event->description,
@@ -66,6 +69,9 @@ class OfficeController extends Controller
                 'end_sell_date' => $event->end_sell_date,
                 'price_with_card' => $event->price_with_card,
                 'price_without_card' => $event->price_without_card,
+                'remaining' => $event->remaining,
+                'remaining_with_card' => $event->remaining_with_card,
+                'remaining_without_card' => $event->remaining_without_card,
             ]);
         }
 
@@ -161,10 +167,27 @@ class OfficeController extends Controller
 
         $sellables = collect([]);
         foreach ($products as $p) {
-            $sellables->push(['id' => 'product_'.$p->id, 'actual_id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => $p->price]);
+            $sellables->push([
+                'id' => 'product_'.$p->id, 
+                'actual_id' => $p->id, 
+                'type' => 'product', 
+                'name' => $p->name, 
+                'price' => $p->price,
+                'remaining' => $p->remaining,
+            ]);
         }
         foreach ($events as $e) {
-            $sellables->push(['id' => 'event_'.$e->id, 'actual_id' => $e->id, 'type' => 'event', 'name' => $e->name, 'price_with_card' => $e->price_with_card, 'price_without_card' => $e->price_without_card]);
+            $sellables->push([
+                'id' => 'event_'.$e->id, 
+                'actual_id' => $e->id, 
+                'type' => 'event', 
+                'name' => $e->name, 
+                'price_with_card' => $e->price_with_card, 
+                'price_without_card' => $e->price_without_card,
+                'remaining' => $e->remaining,
+                'remaining_with_card' => $e->remaining_with_card,
+                'remaining_without_card' => $e->remaining_without_card,
+            ]);
         }
 
         // Calculate previous shift totals
@@ -309,6 +332,20 @@ class OfficeController extends Controller
         if ($itemType === 'event' && ! empty($data['product_id'])) {
             $event = Event::find($data['product_id']);
             if ($event) {
+                if ($event->variable_amount) {
+                    $ticketType = $data['ticket_type'] ?? null;
+                    if ($ticketType === 'with_card' && $event->remaining_with_card === 0) {
+                        return redirect()->back()->withErrors(['sold_out' => 'Tickets with ESNcard for this event are sold out.']);
+                    }
+                    if ($ticketType === 'without_card' && $event->remaining_without_card === 0) {
+                        return redirect()->back()->withErrors(['sold_out' => 'Tickets without ESNcard for this event are sold out.']);
+                    }
+                } else { // Not variable amount
+                    if ($event->remaining === 0) {
+                        return redirect()->back()->withErrors(['sold_out' => 'This event is sold out.']);
+                    }
+                }
+
                 $itemName = $event->name;
                 $itemDescription = $event->description;
                 $eventId = $event->id;
@@ -316,6 +353,9 @@ class OfficeController extends Controller
         } elseif ($itemType === 'product' && ! empty($data['product_id'])) {
             $product = Product::find($data['product_id']);
             if ($product) {
+                if ($product->remaining === 0) {
+                    return redirect()->back()->withErrors(['sold_out' => 'This product is sold out.']);
+                }
                 $itemName = $product->name;
                 $itemDescription = $product->description;
                 $productId = $product->id;
