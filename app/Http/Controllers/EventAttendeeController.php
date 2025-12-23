@@ -16,7 +16,7 @@ class EventAttendeeController extends Controller
     {
         // Frontend fetches attendees directly from Google Sheets via the sheet-data endpoint
         // No need to parse or pass attendees here
-        return Inertia::render('ticketing/attendees', [
+        return Inertia::render('attendees', [
             'event' => $event,
         ]);
     }

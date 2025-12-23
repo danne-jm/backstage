@@ -19,7 +19,7 @@ class SellablesController extends Controller
             ->where('event_date', '>=', $now)
             ->orderBy('event_date', 'asc')
             ->get()
-            ->map(fn($event) => $this->formatEvent($event));
+            ->map(fn ($event) => $this->formatEvent($event));
 
         // Paginate expired events (event_date < now). Return first page in index.
         $expiredPage = max(1, (int) $request->query('expired_page', 1));
@@ -31,7 +31,7 @@ class SellablesController extends Controller
 
         $expiredPaginator = $expiredQuery->paginate($expiredPerPage, ['*'], 'expired_page', $expiredPage);
 
-        $expiredEvents = collect($expiredPaginator->items())->map(fn($event) => $this->formatEvent($event));
+        $expiredEvents = collect($expiredPaginator->items())->map(fn ($event) => $this->formatEvent($event));
 
         // Combine live/upcoming (all) then the first page of expired events
         $events = $liveEvents->concat($expiredEvents)->values();
@@ -99,7 +99,7 @@ class SellablesController extends Controller
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        $items = collect($paginator->items())->map(fn($e) => $this->formatEvent($e));
+        $items = collect($paginator->items())->map(fn ($e) => $this->formatEvent($e));
 
         return response()->json([
             'data' => $items,
@@ -219,6 +219,7 @@ class SellablesController extends Controller
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
+            'variable_amount' => ['required', 'boolean'],
         ]);
 
         // If variable_amount is true, set quantity to null

@@ -944,22 +944,24 @@ export default function Sellables() {
                                         }
                                     />
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label>Google Spreadsheet ID (Optional)</Label>
-                                    <Input
-                                        value={googleSpreadsheetId}
-                                        onChange={(e) => setGoogleSpreadsheetId(e.target.value)}
-                                        placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..."
-                                    />
-                                    <p className="text-[0.8rem] text-muted-foreground">
-                                        Link a Google Sheet to sync attendees.
-                                    </p>
-                                </div>
+                                {!editingEvent && (
+                                    <div className="grid gap-2">
+                                        <Label>Google Spreadsheet ID (Eventually necessary...)</Label>
+                                        <Input
+                                            value={googleSpreadsheetId}
+                                            onChange={(e) => setGoogleSpreadsheetId(e.target.value)}
+                                            placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..."
+                                        />
+                                        <p className="text-[0.8rem] text-muted-foreground">
+                                            Link a Google Sheet to sync attendees.
+                                        </p>
+                                    </div>
+                                )}
                                 {editingEvent && (
                                     <div className="mt-4 rounded-md bg-muted p-4 flex items-center justify-between">
                                         <div className="text-sm font-medium">Manage Attendees</div>
                                         <Button asChild variant="secondary" size="sm">
-                                            <Link href={`/ticketing/events/${editingEvent.id}/attendees`}>
+                                            <Link href={`/sellables/events/${editingEvent.id}/attendees`}>
                                                 View & Sync <ExternalLink className="ml-2 h-3 w-3" />
                                             </Link>
                                         </Button>
@@ -1012,7 +1014,7 @@ export default function Sellables() {
 
                                         <div
                                             key={event.id}
-                                            className="rounded-lg border p-4"
+                                            className="relative rounded-lg border p-4"
                                         >
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
@@ -1112,7 +1114,9 @@ export default function Sellables() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="ml-4 flex gap-2">
+                                                
+                                                <div className="flex flex-col justify-between h-full"> {/* take all remaining height */}
+                                                    <div className="ml-4 flex gap-2">
                                                     <Button
                                                         size="sm"
                                                         variant="ghost"
@@ -1189,6 +1193,17 @@ export default function Sellables() {
                                                         </Dialog>
                                                     </>
                                                 </div>
+
+                                                {/* Manage Attendees button (bottom-right of event card) */}
+                                                <div className="absolute right-4 bottom-4">
+                                                    <Button asChild variant="secondary" size="sm">
+                                                        <Link href={`/sellables/events/${event.id}/attendees`}>
+                                                            Manage Attendees
+                                                        </Link>
+                                                    </Button>
+                                                </div>
+                                                    </div>
+
                                             </div>
                                         </div>
                                     </React.Fragment>

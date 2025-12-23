@@ -59,11 +59,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('sellables/events/{event}', [App\Http\Controllers\SellablesController::class, 'updateEvent'])->name('sellables.events.update');
     Route::delete('sellables/events/{event}', [App\Http\Controllers\SellablesController::class, 'destroyEvent'])->name('sellables.events.destroy');
 
-    Route::prefix('ticketing/events/{event}')->group(function () {
+    // New canonical routes: attendees under sellables so URLs align with Sellables section
+    Route::prefix('sellables/events/{event}')->group(function () {
         Route::get('attendees', [App\Http\Controllers\EventAttendeeController::class, 'index'])->name('events.attendees');
         Route::post('attendees/config', [App\Http\Controllers\EventAttendeeController::class, 'updateConfiguration'])->name('events.attendees.config');
         Route::get('sheets', [App\Http\Controllers\EventAttendeeController::class, 'listSheets'])->name('events.sheets');
         Route::get('sheet-data', [App\Http\Controllers\EventAttendeeController::class, 'getSheetData'])->name('events.sheet-data');
+    });
+
+    // Backwards-compatible routes (keep old ticketing prefix working for now)
+    Route::prefix('ticketing/events/{event}')->group(function () {
+        Route::get('attendees', [App\Http\Controllers\EventAttendeeController::class, 'index']);
+        Route::post('attendees/config', [App\Http\Controllers\EventAttendeeController::class, 'updateConfiguration']);
+        Route::get('sheets', [App\Http\Controllers\EventAttendeeController::class, 'listSheets']);
+        Route::get('sheet-data', [App\Http\Controllers\EventAttendeeController::class, 'getSheetData']);
     });
 
     // Warehouse inventory pages & API

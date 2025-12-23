@@ -30,11 +30,19 @@ export function Breadcrumbs({
                                                 {item.title}
                                             </BreadcrumbPage>
                                         ) : (
-                                            <BreadcrumbLink asChild>
-                                                <Link href={item.href}>
+                                            // If href is provided, render a clickable link.
+                                            // If not, render a plain page item (non-clickable).
+                                            item.href ? (
+                                                <BreadcrumbLink asChild>
+                                                    <Link href={item.href}>
+                                                        {item.title}
+                                                    </Link>
+                                                </BreadcrumbLink>
+                                            ) : (
+                                                <BreadcrumbPage>
                                                     {item.title}
-                                                </Link>
-                                            </BreadcrumbLink>
+                                                </BreadcrumbPage>
+                                            )
                                         )}
                                     </BreadcrumbItem>
                                     {!isLast && <BreadcrumbSeparator />}

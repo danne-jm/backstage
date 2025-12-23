@@ -1023,7 +1023,7 @@ export default function Ticketing() {
                                     </DialogTrigger>
                                     <DialogContent className="flex h-[90vh] !w-[95vw] !max-w-[95vw] flex-col overflow-hidden p-4 sm:!max-w-[95vw]">
                                         <DialogTitle>
-                                            Sample Data Source
+                                            Full Data Source
                                         </DialogTitle>
                                         <DialogDescription>
                                             <div className="text-xs text-muted-foreground">

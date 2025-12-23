@@ -1,4 +1,13 @@
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogTrigger,
+    DialogContent,
+    DialogTitle,
+    DialogDescription,
+    DialogClose,
+    DialogFooter,
+} from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,13 +30,25 @@ export default function EventAttendees({ event }: { event: any }) {
     const [headers, setHeaders] = React.useState<string[]>([]);
     const [rows, setRows] = React.useState<any[][]>([]);
 
+    // Derived sample data (array of objects) for easier rendering in the Manage dialog
+    const sampleData = React.useMemo(() => {
+        if (!headers || headers.length === 0 || !rows || rows.length === 0) return [];
+        return rows.map((r) => {
+            const obj: Record<string, any> = {};
+            headers.forEach((h, idx) => {
+                obj[h] = r[idx] ?? '';
+            });
+            return obj;
+        });
+    }, [headers, rows]);
+
     // Helper to fetch sheets (reusable)
     const fetchSheets = async (silent = false) => {
         if (!spreadsheetId) return;
         setLoadingSheets(true);
         try {
             // Use direct URL instead of route()
-            const res = await axios.get(`/ticketing/events/${event.id}/sheets`, {
+            const res = await axios.get(`/sellables/events/${event.id}/sheets`, {
                 params: { spreadsheet_id: spreadsheetId }
             });
             // Validate response
@@ -38,7 +59,7 @@ export default function EventAttendees({ event }: { event: any }) {
                 if (res.data.sheets.length === 0) {
                     setSheetName('');
                     // Clear the sheet name in database
-                    router.post(`/ticketing/events/${event.id}/attendees/config`, {
+                    router.post(`/sellables/events/${event.id}/attendees/config`, {
                         google_spreadsheet_id: spreadsheetId,
                         google_sheet_name: ''
                     }, {
@@ -61,7 +82,7 @@ export default function EventAttendees({ event }: { event: any }) {
                         setSheetName(selectedSheet);
                         
                         // Update database with the new sheet name
-                        router.post(`/ticketing/events/${event.id}/attendees/config`, {
+                        router.post(`/sellables/events/${event.id}/attendees/config`, {
                             google_spreadsheet_id: spreadsheetId,
                             google_sheet_name: selectedSheet
                         }, {
@@ -90,7 +111,7 @@ export default function EventAttendees({ event }: { event: any }) {
             // Clear state and database on error
             setAvailableSheets([]);
             setSheetName('');
-            router.post(`/ticketing/events/${event.id}/attendees/config`, {
+            router.post(`/sellables/events/${event.id}/attendees/config`, {
                 google_spreadsheet_id: spreadsheetId,
                 google_sheet_name: ''
             }, {
@@ -106,7 +127,7 @@ export default function EventAttendees({ event }: { event: any }) {
     // Fetch and display sheet data dynamically (no parsing rules)
     const fetchSheetData = async (selectedSheet: string) => {
         try {
-            const res = await axios.get(`/ticketing/events/${event.id}/sheet-data`, {
+            const res = await axios.get(`/sellables/events/${event.id}/sheet-data`, {
                 params: {
                     spreadsheet_id: spreadsheetId,
                     sheet_name: selectedSheet,
@@ -136,7 +157,7 @@ export default function EventAttendees({ event }: { event: any }) {
 
     const saveConfig = () => {
         router.post(
-            `/ticketing/events/${event.id}/attendees/config`,
+            `/sellables/events/${event.id}/attendees/config`,
             {
                 google_spreadsheet_id: spreadsheetId,
                 google_sheet_name: sheetName,
@@ -163,18 +184,49 @@ export default function EventAttendees({ event }: { event: any }) {
     React.useEffect(() => {
         if (spreadsheetId) {
             // Pass 'true' to silence the initial success toast (optional preference)
-            fetchSheets(true); 
+            fetchSheets(true);
         }
     }, []); // Run once on mount
 
+    // Force the sidebar to highlight Sellables while on the attendees page
+    React.useEffect(() => {
+        const prev = document.documentElement.dataset.activeSidebar;
+        document.documentElement.dataset.activeSidebar = '/sellables';
+        return () => {
+            if (prev === undefined) {
+                delete document.documentElement.dataset.activeSidebar;
+            } else {
+                document.documentElement.dataset.activeSidebar = prev;
+            }
+        };
+    }, []);
+
     return (
         <AppLayout breadcrumbs={[
-            { title: 'Ticketing', href: '/ticketing' },
-            { title: 'Events', href: '/sellables' },
-            { title: event.name, href: '#' },
-            { title: 'Attendees', href: '#' }
+            { title: 'Sellables', href: '/sellables' },
+            { title: 'Events', href: '' },
+            { title: event.name, href: '' },
+            { title: 'Attendees', href: '' }
         ]}>
             <Head title={`Attendees - ${event.name}`} />
+
+            {/* Force the sidebar to highlight Sellables while on the attendees page */}
+            {typeof document !== 'undefined' && (
+                (() => {
+                    React.useEffect(() => {
+                        const prev = document.documentElement.dataset.activeSidebar;
+                        document.documentElement.dataset.activeSidebar = '/sellables';
+                        return () => {
+                            if (prev === undefined) {
+                                delete document.documentElement.dataset.activeSidebar;
+                            } else {
+                                document.documentElement.dataset.activeSidebar = prev;
+                            }
+                        };
+                    }, []);
+                    return null;
+                })()
+            )}
 
             <div className="flex h-full flex-col gap-6 p-6">
                 
@@ -237,9 +289,97 @@ export default function EventAttendees({ event }: { event: any }) {
 
                 {/* Attendees Table - Dynamic columns */}
                 <Card className="flex-1">
-                    <CardHeader>
-                        <CardTitle>Attendees ({rows.length})</CardTitle>
-                        <CardDescription>Live data from Google Sheets. Columns display dynamically in the order they appear in the sheet.</CardDescription>
+                    <CardHeader className="flex items-center justify-between">
+                        <div className='flex flex-col'>
+                            <CardTitle>Attendees ({rows.length})</CardTitle>
+                            <CardDescription>Live data from Google Sheets.</CardDescription>
+                        </div>
+
+                        {/* Manage dialog — matches Ticketing page Full Data Source modal */}
+                        <div>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button size="sm" variant="ghost">Manage</Button>
+                                </DialogTrigger>
+                                <DialogContent className="flex h-[90vh] !w-[95vw] !max-w-[95vw] flex-col overflow-hidden p-4 sm:!max-w-[95vw]">
+                                    <DialogTitle>Full Data Source</DialogTitle>
+                                    <DialogDescription>
+                                        <div className="text-xs text-muted-foreground">Total entries: {sampleData.length}</div>
+                                    </DialogDescription>
+
+                                    <div className="mt-4 min-h-0 flex-1 overflow-hidden">
+                                        <div className="grid h-full min-h-0 grid-cols-3 gap-4">
+                                            <div className="col-span-2 min-h-0">
+                                                <div className="h-full max-h-[75vh] overflow-y-auto rounded border">
+                                                    <table className="w-full table-fixed text-xs">
+                                                        <thead>
+                                                            <tr>
+                                                                {headers.map((f) => (
+                                                                    <th key={f} className="sticky top-0 z-10 border-b bg-background/95 pr-2 text-left text-xs backdrop-blur-sm">{f}</th>
+                                                                ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {sampleData.map((r, idx) => (
+                                                                <tr key={idx} className="border-t">
+                                                                    {headers.map((h) => (
+                                                                        <td key={h} className="py-1 pr-2 align-top text-xs">
+                                                                            <span className="inline-block w-full truncate" title={String(r[h] ?? '')}>{String(r[h] ?? '')}</span>
+                                                                        </td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            <div className="col-span-1 min-h-0">
+                                                <div className="flex h-full max-h-[75vh] flex-col overflow-y-auto rounded-md border bg-background p-4">
+                                                    <div className="flex-shrink-0">
+                                                        <h4 className="text-sm font-semibold">Recipients summary</h4>
+                                                        <p className="mt-1 text-xs text-muted-foreground">Summary of destination domains and potential typos</p>
+                                                    </div>
+
+                                                    <div className="mt-3">
+                                                        {(() => {
+                                                            const emails: string[] = sampleData.map(s => String(s.email ?? '').trim()).filter(Boolean);
+                                                            const domains: string[] = emails.map(e => e.includes('@') ? e.split('@')[1].toLowerCase() : '');
+                                                            const domainCounts: Record<string, number> = {};
+                                                            domains.forEach(d => { if (d) domainCounts[d] = (domainCounts[d] || 0) + 1; });
+
+                                                            const domainEntries = Object.entries(domainCounts).sort((a,b) => b[1] - a[1]);
+
+                                                            if (emails.length === 0) return <div className="text-xs text-muted-foreground">No emails available</div>;
+
+                                                            return (
+                                                                <div className="space-y-2 text-xs">
+                                                                    <div>Total recipients: <strong>{emails.length}</strong></div>
+                                                                    <div className="space-y-1">
+                                                                        {domainEntries.map(([d, count]) => (
+                                                                            <div key={d} className="flex items-center justify-between">
+                                                                                <div className="truncate">{d}</div>
+                                                                                <div className="ml-2 text-muted-foreground">{count}</div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button variant="ghost">Close</Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {headers.length === 0 || rows.length === 0 ? (
