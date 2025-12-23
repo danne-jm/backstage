@@ -74,20 +74,29 @@ class TicketScannerController extends Controller
             $eventName = $ev->name;
             $eventDate = $ev->event_date;
 
-            $datePart = null;
+            $datePart = 'nodate';
             if ($eventDate) {
                 try {
-                    $datePart = $eventDate->format('YmdHis');
+                    $datePart = $eventDate->format('d-m-Y');
                 } catch (\Throwable $e) {
                     $datePart = str_replace([' ', ':', '-'], '', (string) $eventDate);
                 }
             }
 
-            $sanitizedName = preg_replace('/[^A-Za-z0-9_]+/', '_', (string) $eventName);
-            $sanitizedFirst = preg_replace('/[^A-Za-z0-9_]+/', '_', (string) $first);
-            $sanitizedLast = preg_replace('/[^A-Za-z0-9_]+/', '_', (string) $last);
+            // Sanitize for new format: dashes for event and names
+            $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);
+            $sanitizedFirst = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $first);
+            $sanitizedLast = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $last);
+            $sanitizedFullName = trim($sanitizedFirst . '-' . $sanitizedLast, '-');
+            $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $email);
 
-            $ticketId = trim(sprintf('%s_%s_%s_%s_%s', $sanitizedName, $datePart ?? 'nodate', $sanitizedFirst, $sanitizedLast, $unique), '_');
+            $ticketId = sprintf('%s_%s_to_%s_via_%s_%s',
+                $sanitizedEvent,
+                $datePart,
+                $sanitizedFullName,
+                $sanitizedEmail,
+                $unique
+            );
 
             DB::connection('tickets')->table($tableName)->insert([
                 'event_id' => $ev->id,

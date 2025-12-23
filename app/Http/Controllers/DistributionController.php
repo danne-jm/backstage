@@ -103,38 +103,42 @@ class DistributionController extends Controller
                         $last = $r['last_name'] ?? '';
                         $eventName = $r['event_name'] ?? $event->name;
                         $eventDate = $r['event_date'] ?? $event->event_date;
+                        $email = $r['email'] ?? '';
 
                         // Convert event_date to MySQL datetime format
                         $mysqlEventDate = null;
+                        $datePart = 'nodate';
                         if ($eventDate) {
                             try {
                                 $mysqlEventDate = (new \DateTime($eventDate))->format('Y-m-d H:i:s');
+                                $datePart = (new \DateTime($eventDate))->format('d-m-Y');
                             } catch (\Throwable $e) {
                                 $mysqlEventDate = null;
-                            }
-                        }
-
-                        $datePart = null;
-                        if ($eventDate) {
-                            try {
-                                $datePart = (new \DateTime($eventDate))->format('YmdHis');
-                            } catch (\Throwable $e) {
                                 $datePart = str_replace([' ', ':', '-'], '', (string) $eventDate);
                             }
                         }
 
-                        $sanitizedName = preg_replace('/[^A-Za-z0-9_]+/', '_', (string) $eventName);
-                        $sanitizedFirst = preg_replace('/[^A-Za-z0-9_]+/', '_', (string) $first);
-                        $sanitizedLast = preg_replace('/[^A-Za-z0-9_]+/', '_', (string) $last);
+                        // Sanitize for new format: dashes for event and names
+                        $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);
+                        $sanitizedFirst = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $first);
+                        $sanitizedLast = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $last);
+                        $sanitizedFullName = trim($sanitizedFirst . '-' . $sanitizedLast, '-');
+                        $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $email);
 
-                        $ticketId = trim(sprintf('%s_%s_%s_%s_%s', $sanitizedName, $datePart ?? 'nodate', $sanitizedFirst, $sanitizedLast, $unique), '_');
+                        $ticketId = sprintf('%s_%s_to_%s_via_%s_%s',
+                            $sanitizedEvent,
+                            $datePart,
+                            $sanitizedFullName,
+                            $sanitizedEmail,
+                            $unique
+                        );
 
                         // Insert ticket directly into the tickets database table
                         DB::connection('tickets')->table($tableName)->insert([
                             'event_id' => $eventId,
                             'first_name' => $first,
                             'last_name' => $last,
-                            'email' => $r['email'],
+                            'email' => $email,
                             'event_name' => $eventName,
                             'event_date' => $mysqlEventDate,
                             'unique_trait' => $unique,
