@@ -22,7 +22,7 @@ class OfficeController extends Controller
             ->orderBy('started_at', 'desc')
             ->first();
 
-        $lastShift = OfficeShift::with(['workers.user', 'sales'])
+        $lastShift = OfficeShift::with(['workers.user', 'sales.product', 'sales.event'])
             ->where('status', 'closed')
             ->orderBy('ended_at', 'desc')
             ->first();
@@ -91,6 +91,12 @@ class OfficeController extends Controller
                 'name' => $w->user->name,
                 'role' => $w->role,
             ]);
+            $lastShiftData['sales'] = $lastShift->sales->map(function ($sale) {
+                $snap = $sale->snapshot ?? [];
+                $snap['id'] = $sale->id;
+                $snap['breakdown'] = $sale->breakdown; // Add breakdown to the response
+                return $snap;
+            })->sortByDesc('created_at')->values()->all();
         }
 
         $pastShifts = OfficeShift::whereNotNull('ended_at')
@@ -106,6 +112,14 @@ class OfficeController extends Controller
                 'total_card' => $s->total_card,
             ]);
 
+        $staffCollection = User::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'role', 'email']);
+        $staff = $staffCollection->map(fn ($u) => [
+            'id' => $u->id,
+            'name' => $u->name,
+            'role' => $u->role,
+            'email' => $u->email,
+        ])->toArray();
+
         return Inertia::render('office', [
             'activeShift' => $activeData,
             'lastShift' => $lastShiftData,
@@ -113,6 +127,7 @@ class OfficeController extends Controller
             'sellables' => $sellables,
             'pastShifts' => $pastShifts,
             'denominations' => OfficeShift::DENOMINATIONS,
+            'staff' => $staff,
         ]);
     }
 
@@ -175,8 +190,8 @@ class OfficeController extends Controller
         // Transform Sales Relation -> Frontend Array (retaining snapshot data usually preferred for receipts)
         $activeArray['sales'] = $office->sales->map(function ($sale) {
             $snap = $sale->snapshot ?? [];
-            // Ensure ID is present in the object fed to the frontend
             $snap['id'] = $sale->id;
+            $snap['breakdown'] = $sale->breakdown;
 
             return $snap;
         })->sortByDesc('created_at')->values()->all();
@@ -273,15 +288,15 @@ class OfficeController extends Controller
 
     public function recordSale(Request $request, OfficeShift $office)
     {
-        // FIX 2: Relaxed validation and explicit casting for the DB
         $data = $request->validate([
-            'product_id' => ['nullable'], // Removed 'integer' to allow flexibility
+            'product_id' => ['nullable'],
             'item_type' => ['nullable', 'string'],
             'method' => ['required', 'in:cash,card'],
             'amount' => ['required', 'numeric'],
             'description' => ['nullable', 'string'],
             'ticket_type' => ['nullable', 'string'],
             'ticket_label' => ['nullable', 'string'],
+            'breakdown' => ['nullable', 'array'],
         ]);
 
         $itemType = $data['item_type'] ?? 'product';
@@ -320,8 +335,9 @@ class OfficeController extends Controller
             'ticket_type' => $data['ticket_type'] ?? null,
             'ticket_label' => $data['ticket_label'] ?? null,
         ];
+        
+        $saleBreakdown = ($data['method'] === 'cash' && isset($data['breakdown'])) ? $data['breakdown'] : null;
 
-        // Ensure database write happens safely
         $sale = OfficeShiftSale::create([
             'office_shift_id' => $office->id,
             'product_id' => $productId,
@@ -329,19 +345,22 @@ class OfficeController extends Controller
             'method' => $data['method'],
             'amount' => $data['amount'],
             'description' => $data['description'] ?? $itemDescription,
-            'sold_by' => Auth::id(), // Ensure this is the ID as expected by standard foreign keys
+            'sold_by' => Auth::id(),
             'sold_at' => now(),
             'snapshot' => $snapshot,
+            'breakdown' => $saleBreakdown,
         ]);
 
-        // 3. Update Shift Totals
         if ($data['method'] === 'cash') {
             $office->increment('cash_total', $data['amount']);
+            if ($saleBreakdown) {
+                $office->cash_breakdown = $this->mergeBreakdowns($office->cash_breakdown, $saleBreakdown);
+                $office->save();
+            }
         } else {
             $office->increment('card_total', $data['amount']);
         }
 
-        $office->refresh();
         $this->recalculateTotals($office);
 
         return redirect()->route('office.show', $office);
@@ -411,7 +430,11 @@ class OfficeController extends Controller
             $office->start_cash = round($total, 2);
             $office->start_cash_breakdown = $cleanBreakdown;
         } else {
-            $office->cash_breakdown = $cleanBreakdown;
+            // BUG FIX: Merge the new breakdown with the existing one instead of overwriting.
+            $office->cash_breakdown = $this->mergeBreakdowns(
+                $office->cash_breakdown,
+                $cleanBreakdown
+            );
         }
 
         // Force explicit save of JSON columns
@@ -474,6 +497,46 @@ class OfficeController extends Controller
 
     public function updateSale(Request $request, OfficeShift $office)
     {
+        if ($office->status === 'closed') {
+            return redirect()->back()->withErrors(['shift' => 'Cannot update a sale on a closed shift.']);
+        }
+
+        $validated = $request->validate([
+            'sale_id' => ['required', 'exists:office_shift_sales,id'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'breakdown' => ['required', 'array'],
+        ]);
+
+        $sale = OfficeShiftSale::find($validated['sale_id']);
+
+        if (! $sale || $sale->office_shift_id !== $office->id) {
+            return redirect()->back()->withErrors(['sale' => 'Sale not found in this shift.']);
+        }
+
+        $originalAmount = $sale->amount;
+        $newAmount = $validated['amount'];
+        $amountDifference = $newAmount - $originalAmount;
+
+        $sale->amount = $newAmount;
+        $sale->breakdown = $validated['breakdown'];
+        $sale->snapshot = array_merge($sale->snapshot, ['amount' => $newAmount]);
+        $sale->save();
+
+        $office->cash_total += $amountDifference;
+        
+        $allCashSales = $office->sales()->where('method', 'cash')->get();
+        $newShiftBreakdown = [];
+        foreach ($allCashSales as $cashSale) {
+            if ($cashSale->breakdown) {
+                $newShiftBreakdown = $this->mergeBreakdowns($newShiftBreakdown, $cashSale->breakdown);
+            }
+        }
+        $office->cash_breakdown = $newShiftBreakdown;
+        
+        $office->save();
+
+        $this->recalculateTotals($office);
+
         return redirect()->route('office.show', $office);
     }
 }

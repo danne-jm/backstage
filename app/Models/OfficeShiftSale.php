@@ -9,11 +9,13 @@ class OfficeShiftSale extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['office_shift_id', 'product_id', 'event_id', 'method', 'amount', 'description', 'sold_by', 'sold_at', 'snapshot'];
+    protected $fillable = ['office_shift_id', 'product_id', 'event_id', 'method', 'amount', 'description', 'snapshot', 'breakdown', 'sold_by', 'sold_at'];
 
     protected $casts = [
-        'sold_at' => 'datetime',
         'snapshot' => 'array',
+        'breakdown' => 'array',
+        'amount' => 'decimal:2',
+        'sold_at' => 'datetime',
     ];
 
     public function shift()
