@@ -26,6 +26,7 @@ class AuthServiceProvider extends ServiceProvider
         // Gate for admin permission check
         Gate::define('isAdmin', function ($user) {
             $permissions = $user ? $user->permissions : [];
+
             return $user && in_array('admin', $permissions ?? []);
         });
     }

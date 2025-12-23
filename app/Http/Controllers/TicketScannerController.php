@@ -36,14 +36,14 @@ class TicketScannerController extends Controller
         ]);
 
         $ev = Event::find($data['event_id']);
-        if (!$ev) {
+        if (! $ev) {
             return response()->json(['error' => 'Event not found'], 404);
         }
 
         $tableName = Ticket::generateTableName($ev);
 
         // Create table if it doesn't exist
-        if (!Schema::connection('tickets')->hasTable($tableName)) {
+        if (! Schema::connection('tickets')->hasTable($tableName)) {
             Schema::connection('tickets')->create($tableName, function ($table) {
                 $table->id();
                 $table->unsignedBigInteger('event_id')->nullable();
@@ -87,7 +87,7 @@ class TicketScannerController extends Controller
             $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);
             $sanitizedFirst = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $first);
             $sanitizedLast = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $last);
-            $sanitizedFullName = trim($sanitizedFirst . '-' . $sanitizedLast, '-');
+            $sanitizedFullName = trim($sanitizedFirst.'-'.$sanitizedLast, '-');
             $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $email);
 
             $ticketId = sprintf('%s_%s_to_%s_via_%s_%s',
@@ -127,18 +127,18 @@ class TicketScannerController extends Controller
     public function availableTickets(Request $request)
     {
         $eventId = $request->query('event_id');
-        if (!$eventId) {
+        if (! $eventId) {
             return response()->json(['tickets' => []]);
         }
 
         $event = Event::find($eventId);
-        if (!$event) {
+        if (! $event) {
             return response()->json(['tickets' => []]);
         }
 
         $tableName = Ticket::generateTableName($event);
 
-        if (!Schema::connection('tickets')->hasTable($tableName)) {
+        if (! Schema::connection('tickets')->hasTable($tableName)) {
             return response()->json(['tickets' => []]);
         }
 
@@ -155,18 +155,18 @@ class TicketScannerController extends Controller
     public function scannedTickets(Request $request)
     {
         $eventId = $request->query('event_id');
-        if (!$eventId) {
+        if (! $eventId) {
             return response()->json(['tickets' => []]);
         }
 
         $event = Event::find($eventId);
-        if (!$event) {
+        if (! $event) {
             return response()->json(['tickets' => []]);
         }
 
         $tableName = Ticket::generateTableName($event);
 
-        if (!Schema::connection('tickets')->hasTable($tableName)) {
+        if (! Schema::connection('tickets')->hasTable($tableName)) {
             return response()->json(['tickets' => []]);
         }
 
@@ -185,18 +185,18 @@ class TicketScannerController extends Controller
         $id = $request->query('ticket_id');
         $eventId = $request->query('event_id');
 
-        if (!$id || !$eventId) {
+        if (! $id || ! $eventId) {
             return response()->json(['valid' => false], 400);
         }
 
         $event = Event::find($eventId);
-        if (!$event) {
+        if (! $event) {
             return response()->json(['valid' => false], 404);
         }
 
         $tableName = Ticket::generateTableName($event);
 
-        if (!Schema::connection('tickets')->hasTable($tableName)) {
+        if (! Schema::connection('tickets')->hasTable($tableName)) {
             return response()->json(['valid' => false], 404);
         }
 
@@ -205,7 +205,7 @@ class TicketScannerController extends Controller
             ->where('ticket_id', $id)
             ->first();
 
-        if (!$ticket) {
+        if (! $ticket) {
             return response()->json(['valid' => false], 404);
         }
 
@@ -214,7 +214,7 @@ class TicketScannerController extends Controller
 
         // append scan detail (timestamp + user email)
         $details = json_decode($ticket->scan_details ?? '[]', true);
-        if (!is_array($details)) {
+        if (! is_array($details)) {
             $details = [];
         }
         $details[] = [

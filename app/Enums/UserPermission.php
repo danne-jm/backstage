@@ -24,7 +24,7 @@ enum UserPermission: string
      */
     public static function all(): array
     {
-        return array_map(fn($case) => $case->value, self::cases());
+        return array_map(fn ($case) => $case->value, self::cases());
     }
 
     /**
@@ -32,7 +32,7 @@ enum UserPermission: string
      */
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::ADMIN => 'Super Administrator',
             self::BOARD => 'Board Member',
             self::GUEST => 'Guest User',
@@ -53,10 +53,11 @@ enum UserPermission: string
     public static function allWithLabels(): array
     {
         return array_map(
-            fn($case) => ['value' => $case->value, 'label' => $case->label()],
+            fn ($case) => ['value' => $case->value, 'label' => $case->label()],
             self::cases()
         );
     }
+
     /**
      * Define Pre-configured Role Presets
      */

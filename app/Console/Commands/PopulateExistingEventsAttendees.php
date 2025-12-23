@@ -44,6 +44,7 @@ class PopulateExistingEventsAttendees extends Command
             // Skip if table already exists
             if (Schema::connection('attendees')->hasTable($tableName)) {
                 $this->warn("Table {$tableName} already exists. Skipping.");
+
                 continue;
             }
 

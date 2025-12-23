@@ -29,4 +29,3 @@ it('can navigate to privacy policy from home page', function () {
 
     $response->assertSuccessful();
 });
-

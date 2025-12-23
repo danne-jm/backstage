@@ -3,16 +3,16 @@
 namespace App\Jobs;
 
 use App\Mail\DistributionMail;
-use App\Models\User;
-use App\Models\Ticket;
 use App\Models\Event;
+use App\Models\Ticket;
+use App\Models\User;
 use App\Services\GmailSender;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -62,6 +62,7 @@ class SendDistributionEmail implements ShouldQueue
                     $sent = $gmailSender->sendHtmlAsUser($user, $to, $subject, $body);
                     if ($sent) {
                         Log::info('SendDistributionEmail: Email sent successfully via Gmail API', ['to' => $to]);
+
                         return;
                     }
                     Log::warning('SendDistributionEmail: Gmail API send returned false, falling back to SMTP', ['to' => $to]);
@@ -70,7 +71,7 @@ class SendDistributionEmail implements ShouldQueue
                     Log::warning('SendDistributionEmail: User found but no gmail_refresh_token', [
                         'sender_id' => $senderId,
                         'user_found' => $user !== null,
-                        'has_refresh_token' => $user ? !empty($user->gmail_refresh_token) : false,
+                        'has_refresh_token' => $user ? ! empty($user->gmail_refresh_token) : false,
                     ]);
                 }
             } else {

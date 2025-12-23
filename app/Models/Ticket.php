@@ -43,7 +43,7 @@ class Ticket extends Model
 
     public static function forEvent(Event $event): self
     {
-        return (new static())->setTableForEvent($event);
+        return (new static)->setTableForEvent($event);
     }
 
     public static function generateTableName(Event $event): string

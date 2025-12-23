@@ -270,9 +270,9 @@ class OfficeController extends Controller
 
         // Check if it's a product, event, or custom sale
         $itemType = $data['item_type'] ?? 'product';
-    $itemName = null;
-    $itemPrice = null;
-    $itemDescription = null;
+        $itemName = null;
+        $itemPrice = null;
+        $itemDescription = null;
 
         if ($itemType === 'custom') {
             // Custom sale: use description as name

@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Event;
+use App\Models\Product;
+use App\Observers\EventObserver;
+use App\Observers\ProductObserver;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
-use App\Models\Product;
-use App\Models\Event;
-use App\Observers\ProductObserver;
-use App\Observers\EventObserver;
 
 class AppServiceProvider extends ServiceProvider
 {

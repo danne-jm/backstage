@@ -2,9 +2,9 @@
 
 namespace App\Observers;
 
-use App\Models\Product;
-use App\Models\OfficeShiftSale;
 use App\Models\OfficeShift;
+use App\Models\OfficeShiftSale;
+use App\Models\Product;
 
 class ProductObserver
 {

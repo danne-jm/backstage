@@ -161,19 +161,19 @@ export default function Ticketing() {
     const defaultBodyTemplate = React.useMemo(() => {
         const qrHint =
             mailMode === 'qr'
-                ? '<p>Your QR code for the event:</p><p>{{qr}}</p>'
+                ? '<p style="margin:0;">Your QR code for the event:</p><p style="margin:0;">{{qr}}</p>'
                 : '';
         return `
-            <p>Hello <strong>{{${firstNameField}}}</strong>,</p>
-            <p>Thanks for registering — below are your ticket details for the event.</p>
+            <p style="margin:0;">Hello <strong>{{${firstNameField}}}</strong>,</p>
+            <p style="margin:0;">Thanks for registering — below are your ticket details for the event.</p>
             ${qrHint}
-            <ul>
-                <li><strong>Event:</strong> {{event_name}}</li>
-                <li><strong>Date:</strong> {{event_date}}</li>
-                <li><strong>Bring:</strong> Your ESN card (if applicable)</li>
+            <ul style="margin:0; padding-left:20px; list-style-type:disc;">
+                <li style="margin:0; padding:0; display:list-item;">Event: {{event_name}}</li>
+                <li style="margin:0; padding:0; display:list-item;">Date: {{event_date}}</li>
+                <li style="margin:0; padding:0; display:list-item;">Bring: Your ESN card (if applicable)</li>
             </ul>
-            <p>Please bring a copy of this email (printed or on your phone).</p>
-            <p>See you there,<br/>ESN Leuven</p>
+            <p style="margin:0;">Please bring a copy of this email (printed or on your phone).</p>
+            <p style="margin:0;">See you there,<br/>ESN Leuven</p>
         `;
     }, [firstNameField, mailMode]);
 
@@ -214,11 +214,11 @@ export default function Ticketing() {
             const qrPlaceholder = '{{qr}}';
             let html = bodyRef.current.innerHTML || '';
             if (!html.includes(qrPlaceholder)) {
-                // Insert at the end, with a new paragraph if needed
+                // Insert at the end, with a new paragraph if needed — ensure no extra margins
                 if (!html.trim().endsWith('</p>')) {
-                    html += `<p>${qrPlaceholder}</p>`;
+                    html += `<p style="margin:0;">${qrPlaceholder}</p>`;
                 } else {
-                    html += qrPlaceholder;
+                    html += `<span style="display:block;margin:0;">${qrPlaceholder}</span>`;
                 }
                 bodyRef.current.innerHTML = html;
                 markDirty();
@@ -404,11 +404,15 @@ export default function Ticketing() {
                 const eventDate = rawDate ? new Date(rawDate).toLocaleDateString() : '';
                 tmpl = tmpl.replace(/{{event_name}}/g, eventTitle);
                 tmpl = tmpl.replace(/{{event_date}}/g, eventDate);
-                // Inject the user content into {{body}}
-                return tmpl.replace('{{body}}', innerHtml);
+                // Inject the user content into {{body}}; wrap in a preview-scoped container so styles don't leak
+                const wrapper = `<div class="email-preview-reset">${innerHtml}</div>`;
+                const scopedStyle = `<style>.email-preview-reset p, .email-preview-reset ul, .email-preview-reset li { margin:0; padding:0; } .email-preview-reset ul{ padding-left:20px; list-style-type:disc; } .email-preview-reset li{ display:list-item; }</style>`;
+                return tmpl.replace('{{body}}', scopedStyle + wrapper);
             }
-            // "No Template" -> Basic blank email
-            return innerHtml;
+            // "No Template" -> Basic blank email, wrap in preview-scoped container so styles don't leak
+            const wrapper = `<div class="email-preview-reset">${innerHtml}</div>`;
+            const scopedStyle = `<style>.email-preview-reset p, .email-preview-reset ul, .email-preview-reset li { margin:0; padding:0; } .email-preview-reset ul{ padding-left:20px; list-style-type:disc; } .email-preview-reset li{ display:list-item; }</style>`;
+            return scopedStyle + wrapper;
         };
 
         const out = sampleData.map((row) => {
@@ -1541,7 +1545,7 @@ export default function Ticketing() {
                                                     // Mock QR code for preview
                                                     html = html.replace(
                                                         /{{qr}}/g,
-                                                        '<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:10px 0;font-weight:bold;text-align:center;display:block;">QR PREVIEW</div>'
+                                                        '<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:0;font-weight:bold;text-align:center;display:block;">QR PREVIEW</div>'
                                                     );
                                                     return html;
                                                 })(),

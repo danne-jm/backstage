@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 class EventAttendee extends Model
 {
     protected $connection = 'attendees';
+
     protected $guarded = [];
 
     // Helper to generate the dynamic table name safely
@@ -42,6 +43,7 @@ class EventAttendee extends Model
     {
         $instance = new self;
         $instance->setTable(self::generateTableName($event));
+
         return $instance;
     }
 }

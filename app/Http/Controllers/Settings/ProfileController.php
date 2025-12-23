@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\UserPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -10,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Enums\UserPermission;
 
 class ProfileController extends Controller
 {
@@ -35,13 +35,13 @@ class ProfileController extends Controller
             }
         }
 
-        if (!$permissionDisplay) {
-            $extras = array_filter($currentPerms, fn($p) => !in_array($p, ['guest', 'view_dashboard']));
-            $extraLabels = array_map(function($val) {
+        if (! $permissionDisplay) {
+            $extras = array_filter($currentPerms, fn ($p) => ! in_array($p, ['guest', 'view_dashboard']));
+            $extraLabels = array_map(function ($val) {
                 return UserPermission::tryFrom($val)?->label() ?? $val;
             }, $extras);
 
-            $permissionDisplay = '[Guest] ' . (empty($extraLabels) ? '' : implode(', ', $extraLabels));
+            $permissionDisplay = '[Guest] '.(empty($extraLabels) ? '' : implode(', ', $extraLabels));
         }
 
         return Inertia::render('settings/profile', [

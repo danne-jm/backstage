@@ -122,7 +122,7 @@ class DistributionController extends Controller
                         $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);
                         $sanitizedFirst = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $first);
                         $sanitizedLast = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $last);
-                        $sanitizedFullName = trim($sanitizedFirst . '-' . $sanitizedLast, '-');
+                        $sanitizedFullName = trim($sanitizedFirst.'-'.$sanitizedLast, '-');
                         $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $email);
 
                         $ticketId = sprintf('%s_%s_to_%s_via_%s_%s',
@@ -176,6 +176,75 @@ class DistributionController extends Controller
                 return preg_replace('/[^A-Za-z0-9_\-]/', '', $s);
             };
 
+            // Helper to ensure block elements have no default margins when sent via email
+            $applyInlineReset = function (string $html): string {
+                if (! $html) {
+                    return $html;
+                }
+                // Use DOMDocument to add inline styles to common block elements
+                libxml_use_internal_errors(true);
+                $doc = new \DOMDocument;
+                // Ensure proper encoding
+                $loaded = $doc->loadHTML('<?xml encoding="utf-8"?>'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+                if (! $loaded) {
+                    libxml_clear_errors();
+
+                    return $html;
+                }
+
+                $tags = ['p', 'ul', 'li', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+                foreach ($tags as $tag) {
+                    $nodes = $doc->getElementsByTagName($tag);
+                    // iterate in reverse to avoid live node list issues
+                    for ($i = $nodes->length - 1; $i >= 0; $i--) {
+                        $n = $nodes->item($i);
+                        if (! $n) {
+                            continue;
+                        }
+                        $existing = $n->getAttribute('style') ?? '';
+                        // Build required inline reset pieces
+                        $pieces = [];
+                        if (stripos($existing, 'margin:') === false) {
+                            $pieces[] = 'margin:0;';
+                        }
+                        if ($tag === 'ul') {
+                            if (stripos($existing, 'padding-left:') === false) {
+                                $pieces[] = 'padding-left:20px;';
+                            }
+                            if (stripos($existing, 'list-style') === false) {
+                                $pieces[] = 'list-style-type:disc;';
+                            }
+                        }
+                        if ($tag === 'li') {
+                            if (stripos($existing, 'display:') === false) {
+                                $pieces[] = 'display:list-item;';
+                            }
+                        }
+                        // Preserve existing styles but ensure reset pieces are appended
+                        if (! empty($pieces)) {
+                            $append = implode('', $pieces);
+                            $existing = $existing ? rtrim($existing, ';').';'.$append : $append;
+                        }
+                        $n->setAttribute('style', $existing);
+                    }
+                }
+
+                $body = '';
+                $children = $doc->getElementsByTagName('body');
+                if ($children->length > 0) {
+                    $bodyNode = $children->item(0);
+                    // get innerHTML of body
+                    foreach ($bodyNode->childNodes as $child) {
+                        $body .= $doc->saveHTML($child);
+                    }
+                } else {
+                    $body = $doc->saveHTML();
+                }
+                libxml_clear_errors();
+
+                return $body;
+            };
+
             foreach ($recipients as &$r) {
                 try {
                     // Check if we need to embed a QR code
@@ -189,9 +258,9 @@ class DistributionController extends Controller
                             $qrString = $writer->writeString($ticketId);
                             $base64 = base64_encode($qrString);
 
-                            // Left-aligned image (margin: 20px 0)
+                            // Left-aligned image — remove default margins so email clients don't add extra spacing
                             $imgTag = sprintf(
-                                '<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin: 20px 0; max-width: 200px;" />',
+                                '<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin:0; max-width: 200px;" />',
                                 $base64
                             );
 
@@ -201,6 +270,11 @@ class DistributionController extends Controller
                             Log::warning('No ticket_id found for QR generation', ['recipient' => $r['email'] ?? 'unknown']);
                             $r['body'] = str_replace('{{qr}}', '<p>QR code unavailable</p>', $r['body']);
                         }
+                    }
+
+                    // Normalize body to remove default margins in email clients
+                    if (isset($r['body'])) {
+                        $r['body'] = $applyInlineReset((string) $r['body']);
                     }
 
                     $payload = array_merge($r, [

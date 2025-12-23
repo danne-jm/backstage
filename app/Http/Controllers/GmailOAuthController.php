@@ -14,7 +14,7 @@ class GmailOAuthController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             // Default options
             $options = [
                 'access_type' => 'offline',
@@ -23,7 +23,7 @@ class GmailOAuthController extends Controller
             // LOGIC: Only force the "Consent" screen if we are missing the token.
             // This prevents annoying users who are just logging in normally.
             // But ensures we fix the "Split-Brain" issue if the DB is empty.
-            if (!$user || empty($user->gmail_refresh_token)) {
+            if (! $user || empty($user->gmail_refresh_token)) {
                 $options['prompt'] = 'consent';
             }
 
@@ -39,6 +39,7 @@ class GmailOAuthController extends Controller
 
         } catch (\Throwable $e) {
             Log::error('Socialite redirect failed: '.$e->getMessage());
+
             return redirect()->route('home')->withErrors('Unable to start Google authentication');
         }
     }

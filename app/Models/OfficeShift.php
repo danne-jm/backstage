@@ -12,7 +12,7 @@ class OfficeShift extends Model
     // Define the canonical list of denominations (notes first, then coins)
     public const DENOMINATIONS = [
         '500e', '200e', '100e', '50e', '20e', '10e', '5e', // Notes
-        '2e', '1e', '50c', '20c', '10c', '5c', '2c', '1c'  // Coins
+        '2e', '1e', '50c', '20c', '10c', '5c', '2c', '1c',  // Coins
     ];
 
     protected $fillable = [

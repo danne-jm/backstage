@@ -16,21 +16,21 @@ return new class extends Migration
         // DBMS do not support cross-database foreign key constraints.
         if (! Schema::connection('tickets')->hasTable('event_tickets')) {
             Schema::connection('tickets')->create('event_tickets', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('event_id')->nullable()->index();
-            $table->string('first_name')->nullable();
-            $table->string('last_name')->nullable();
-            $table->string('email')->nullable();
-            $table->string('event_name')->nullable();
-            $table->dateTime('event_date')->nullable();
-            $table->string('unique_trait')->nullable()->index();
-            $table->string('ticket_id')->unique();
-            $table->timestamps();
+                $table->bigIncrements('id');
+                $table->unsignedBigInteger('event_id')->nullable()->index();
+                $table->string('first_name')->nullable();
+                $table->string('last_name')->nullable();
+                $table->string('email')->nullable();
+                $table->string('event_name')->nullable();
+                $table->dateTime('event_date')->nullable();
+                $table->string('unique_trait')->nullable()->index();
+                $table->string('ticket_id')->unique();
+                $table->timestamps();
 
-            // Note: do NOT add a foreign key referencing `events` here because
-            // `events` lives in the main connection and cross-connection FKs
-            // are not portable. The application should enforce referential
-            // integrity at the application level when needed.
+                // Note: do NOT add a foreign key referencing `events` here because
+                // `events` lives in the main connection and cross-connection FKs
+                // are not portable. The application should enforce referential
+                // integrity at the application level when needed.
             });
         }
     }

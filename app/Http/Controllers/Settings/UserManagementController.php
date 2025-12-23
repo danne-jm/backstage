@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\UserPermission;
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Enums\UserPermission;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,7 +33,7 @@ class UserManagementController extends Controller implements HasMiddleware
         $permissions = $user ? $user->permissions : [];
 
         // Check for 'admin' OR 'manage_users'
-        if (!$user || (!in_array('admin', $permissions) && !in_array('manage_users', $permissions))) {
+        if (! $user || (! in_array('admin', $permissions) && ! in_array('manage_users', $permissions))) {
             abort(403, 'Unauthorized');
         }
 
@@ -46,7 +43,7 @@ class UserManagementController extends Controller implements HasMiddleware
             // Determine permission display label
             $currentPerms = $u->permissions ?? [];
             sort($currentPerms);
-            
+
             $permissionDisplay = null;
 
             // Check against Admin/Board exact matches
@@ -60,16 +57,16 @@ class UserManagementController extends Controller implements HasMiddleware
             }
 
             // If no match (or Guest), build the custom string
-            if (!$permissionDisplay) {
+            if (! $permissionDisplay) {
                 // Filter out the 'guest' and 'view_dashboard' tags to just show the "extra" stuff
-                $extras = array_filter($currentPerms, fn($p) => !in_array($p, ['guest', 'view_dashboard']));
-                
+                $extras = array_filter($currentPerms, fn ($p) => ! in_array($p, ['guest', 'view_dashboard']));
+
                 // Human readable labels for extras
-                $extraLabels = array_map(function($val) {
+                $extraLabels = array_map(function ($val) {
                     return UserPermission::tryFrom($val)?->label() ?? $val;
                 }, $extras);
 
-                $permissionDisplay = '[Guest] ' . (empty($extraLabels) ? '' : implode(', ', $extraLabels));
+                $permissionDisplay = '[Guest] '.(empty($extraLabels) ? '' : implode(', ', $extraLabels));
             }
 
             return [
@@ -85,7 +82,7 @@ class UserManagementController extends Controller implements HasMiddleware
 
         return Inertia::render('settings/users', [
             'users' => $users,
-            'availablePermissions' => UserPermission::allWithLabels(), 
+            'availablePermissions' => UserPermission::allWithLabels(),
             'rolePresets' => $presets,
         ]);
     }
@@ -109,7 +106,7 @@ class UserManagementController extends Controller implements HasMiddleware
 
         $data['password_hash'] = Hash::make($data['password']);
         unset($data['password']);
-        
+
         $data['permissions'] = $data['permissions'] ?? [];
 
         // Ensure a default role label is present for newly created users
@@ -119,6 +116,7 @@ class UserManagementController extends Controller implements HasMiddleware
         }
 
         User::create($data);
+
         return back();
     }
 
@@ -133,14 +131,14 @@ class UserManagementController extends Controller implements HasMiddleware
         $data = $request->validate([
             'first_name' => 'sometimes|required|string|max:255',
             'last_name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|unique:users,email,' . $id,
+            'email' => 'sometimes|required|email|unique:users,email,'.$id,
             'role' => 'nullable|string|max:100',
             'password' => 'nullable|string|min:8',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string',
         ]);
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $data['password_hash'] = Hash::make($data['password']);
             unset($data['password']);
         }
@@ -150,6 +148,7 @@ class UserManagementController extends Controller implements HasMiddleware
         }
 
         $target->update($data);
+
         return back();
     }
 
@@ -161,6 +160,7 @@ class UserManagementController extends Controller implements HasMiddleware
         $this->authorizeAdmin($request);
         $target = User::findOrFail($id);
         $target->delete();
+
         return back();
     }
 
@@ -168,7 +168,7 @@ class UserManagementController extends Controller implements HasMiddleware
     {
         $user = $request->user();
         $permissions = $user ? $user->permissions : [];
-        if (!$user || (!in_array('admin', $permissions) && !in_array('manage_users', $permissions))) {
+        if (! $user || (! in_array('admin', $permissions) && ! in_array('manage_users', $permissions))) {
             abort(403, 'Unauthorized');
         }
     }
