@@ -97,75 +97,84 @@ export default function Sellables() {
 
     // Products: cheapest first (sorted on demand below when used)
 
-    // Events: classify into active (start <= now <= end), upcoming (start > now), expired (end < now)
-    // Split initial events into live/upcoming and the (first page) expired events.
-    const initialActiveEvents: Event[] = [];
-    const initialUpcomingEvents: Event[] = [];
-    const initialExpiredEvents: Event[] = [];
 
-    (events || []).forEach((ev) => {
-        const eventDate = parseDate(ev.event_date);
-        const start = parseDate(ev.start_sell_date);
-        const end = parseDate(ev.end_sell_date);
-        if (!eventDate || !start || !end) {
-            // treat malformed dates as expired to avoid showing as sellable
-            initialExpiredEvents.push(ev);
-            return;
-        }
+    // Events: compute not-expired directly from props.events so it updates
+    // whenever props change (e.g. after editing). Keep expired events in
+    // state so we can append additional pages; but synchronize state with
+    // props to pick up newly expired events or remove ones that became not
+    // expired.
 
-        if (eventDate.getTime() < now.getTime()) {
-            initialExpiredEvents.push(ev);
-        } else if (
-            now.getTime() >= start.getTime() &&
-            now.getTime() <= end.getTime()
-        ) {
-            initialActiveEvents.push(ev);
-        } else {
-            initialUpcomingEvents.push(ev);
-        }
+    const [expiredEventsState, setExpiredEventsState] = React.useState<Event[]>(() => {
+        // initialize from props.events
+        return (events || []).filter((ev) => {
+            const d = parseDate(ev.event_date);
+            return !d ? true : d.getTime() < Date.now();
+        });
     });
-
-    // Keep expired events in state so we can append additional pages
-    const [expiredEventsState, setExpiredEventsState] = React.useState<
-        Event[]
-    >(() => initialExpiredEvents);
 
     const [expiredPagination, setExpiredPagination] = React.useState<any>(
         expiredPaginationProp ?? {
             current_page: 1,
             last_page: 1,
             per_page: 10,
-            total: initialExpiredEvents.length,
+            total: 0,
             has_more: false,
         },
     );
 
     const [loadingExpired, setLoadingExpired] = React.useState(false);
 
-    // Active: sort by fewest sellable days left (end - now) ascending
-    const activeEvents = initialActiveEvents.slice();
-    const upcomingEvents = initialUpcomingEvents.slice();
+    // Recompute not-expired events from props so ordering updates when props.events changes
+    const notExpiredEvents = React.useMemo(() => {
+        const list = (events || []).filter((ev) => {
+            const d = parseDate(ev.event_date);
+            return d ? d.getTime() >= Date.now() : false;
+        });
+        return list.sort((a, b) => {
+            const aDate = parseDate(a.event_date) as Date;
+            const bDate = parseDate(b.event_date) as Date;
+            return aDate.getTime() - bDate.getTime();
+        });
+    }, [events]);
 
-    activeEvents.sort((a: Event, b: Event) => {
-        const aEnd = parseDate(a.end_sell_date) as Date;
-        const bEnd = parseDate(b.end_sell_date) as Date;
-        return (
-            aEnd.getTime() - now.getTime() - (bEnd.getTime() - now.getTime())
-        );
-    });
+    // Keep expiredEventsState synchronized with props.events: add newly expired
+    // events from props and remove ones that are now not expired.
+    React.useEffect(() => {
+        const nowMs = Date.now();
+        const expiredFromProps = (events || []).filter((ev) => {
+            const d = parseDate(ev.event_date);
+            return !d ? true : d.getTime() < nowMs;
+        });
 
-    // Upcoming: sort by soonest start date
-    upcomingEvents.sort(
-        (a: Event, b: Event) =>
-            (parseDate(a.start_sell_date) as Date).getTime() -
-            (parseDate(b.start_sell_date) as Date).getTime(),
-    );
+        setExpiredEventsState((prev) => {
+            // Map previous expired entries by id for quick lookup/merge
+            const map = new Map<number, Event>(prev.map((e) => [e.id, e]));
 
-    const orderedEvents = [
-        ...activeEvents,
-        ...upcomingEvents,
-        ...expiredEventsState,
-    ];
+            // Replace/add entries coming from props (these are authoritative)
+            expiredFromProps.forEach((e) => map.set(e.id, e));
+
+            // Remove entries that appear in props but are not expired anymore
+            (events || []).forEach((e) => {
+                const d = parseDate(e.event_date);
+                if (d && d.getTime() >= nowMs && map.has(e.id)) {
+                    map.delete(e.id);
+                }
+            });
+
+            return Array.from(map.values());
+        });
+    }, [events]);
+
+    // Sort expired events by event_date descending (most recent first)
+    const expiredEvents = React.useMemo(() => {
+        return expiredEventsState.slice().sort((a, b) => {
+            const aDate = parseDate(a.event_date) as Date;
+            const bDate = parseDate(b.event_date) as Date;
+            return bDate.getTime() - aDate.getTime();
+        });
+    }, [expiredEventsState]);
+
+    const orderedEvents = [...notExpiredEvents, ...expiredEvents];
 
     async function loadMoreExpired() {
         if (!expiredPagination?.has_more || loadingExpired) return;
