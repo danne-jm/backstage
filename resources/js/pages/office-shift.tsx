@@ -49,9 +49,16 @@ const fetcher = (url: string) => axios.get(url).then(res => res.data);
 
 export default function Office() {
     const { props: initialProps } = usePage<SharedData>();
-    const { data } = useSWR(initialProps.activeShift ? `/office/${initialProps.activeShift.id}` : null, fetcher, { refreshInterval: 2000 });
+    const [props, setProps] = React.useState(initialProps);
 
-    const props = data?.props ?? initialProps;
+    useSWR(initialProps.activeShift ? `/office/${initialProps.activeShift.id}` : null, fetcher, { 
+        refreshInterval: 2000,
+        onSuccess: (newData) => {
+            if (newData?.props) {
+                setProps(newData.props);
+            }
+        }
+    });
     
     const sellables: any[] = Array.isArray(props['sellables'])
         ? props['sellables']
