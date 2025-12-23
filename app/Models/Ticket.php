@@ -34,8 +34,6 @@ class Ticket extends Model
         'first_name',
         'last_name',
         'email',
-        'event_name',
-        'event_date',
         'unique_trait',
         'scan_count',
         'scan_details',

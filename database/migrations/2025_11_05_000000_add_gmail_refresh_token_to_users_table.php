@@ -17,7 +17,17 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['gmail_refresh_token', 'gmail_provider_id']);
+            $cols = Schema::getColumnListing('users');
+            $toDrop = [];
+            if (in_array('gmail_refresh_token', $cols)) {
+                $toDrop[] = 'gmail_refresh_token';
+            }
+            if (in_array('gmail_provider_id', $cols)) {
+                $toDrop[] = 'gmail_provider_id';
+            }
+            if (!empty($toDrop)) {
+                $table->dropColumn($toDrop);
+            }
         });
     }
 };

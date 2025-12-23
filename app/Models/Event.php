@@ -28,9 +28,9 @@ class Event extends Model
     protected function casts(): array
     {
         return [
-            'event_date' => 'datetime',
-            'start_sell_date' => 'datetime',
-            'end_sell_date' => 'datetime',
+            'event_date' => 'date',
+            'start_sell_date' => 'date',
+            'end_sell_date' => 'date',
             'variable_amount' => 'boolean',
             'price_with_card' => 'decimal:2',
             'price_without_card' => 'decimal:2',
@@ -55,5 +55,26 @@ class Event extends Model
     public function sales()
     {
         return $this->hasMany(OfficeShiftSale::class);
+    }
+
+    /**
+     * Ensure event_date is always serialized as YYYY-MM-DD (date only).
+     */
+    public function getEventDateAttribute($value): ?string
+    {
+        if (!$value) return null;
+        return \Illuminate\Support\Carbon::parse($value)->format('Y-m-d');
+    }
+
+    public function getStartSellDateAttribute($value): ?string
+    {
+        if (!$value) return null;
+        return \Illuminate\Support\Carbon::parse($value)->format('Y-m-d');
+    }
+
+    public function getEndSellDateAttribute($value): ?string
+    {
+        if (!$value) return null;
+        return \Illuminate\Support\Carbon::parse($value)->format('Y-m-d');
     }
 }

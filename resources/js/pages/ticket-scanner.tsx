@@ -480,7 +480,7 @@ export default function TicketScanner() {
                                         <option key={ev.id} value={ev.id}>
                                             {ev.name}{' '}
                                             {ev.event_date
-                                                ? `(${new Date(ev.event_date).toLocaleString()})`
+                                                ? `(${String(ev.event_date).slice(0, 10)})`
                                                 : ''}
                                         </option>
                                     ))}
@@ -504,9 +504,7 @@ export default function TicketScanner() {
                                 </div>
                                 {selectedEventObj.event_date && (
                                     <div className="text-xs text-muted-foreground">
-                                        {new Date(
-                                            selectedEventObj.event_date,
-                                        ).toLocaleString()}
+                                        {String(selectedEventObj.event_date).slice(0, 10)}
                                     </div>
                                 )}
                                 {selectedEventObj.location && (

@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->dateTime('event_date');
-            $table->dateTime('start_sell_date');
-            $table->dateTime('end_sell_date');
+            $table->date('event_date');
+            $table->date('start_sell_date');
+            $table->date('end_sell_date');
             $table->decimal('price_with_card', 10, 2);
             $table->decimal('price_without_card', 10, 2);
             $table->integer('quantity')->nullable();

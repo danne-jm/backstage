@@ -592,7 +592,7 @@ export default function Ticketing() {
                                                 return (
                                                     <option key={ev.id} value={ev.id}>
                                                         {ev.name}{' '}
-                                                        {rawDate ? `(${new Date(rawDate).toLocaleDateString()})` : ''}
+                                                        {rawDate ? `(${String(rawDate).slice(0, 10)})` : ''}
                                                     </option>
                                                 );
                                             })
@@ -775,22 +775,18 @@ export default function Ticketing() {
                                         if (rawDate)
                                             rows.push({
                                                 label: 'Event date',
-                                                value: new Date(rawDate).toLocaleString(),
+                                                value: String(rawDate).slice(0, 10),
                                             });
                                     }
                                     if (ev.start_sell_date)
                                         rows.push({
                                             label: 'Start selling',
-                                            value: new Date(
-                                                ev.start_sell_date,
-                                            ).toLocaleString(),
+                                            value: String(ev.start_sell_date).slice(0, 10),
                                         });
                                     if (ev.end_sell_date)
                                         rows.push({
                                             label: 'End selling',
-                                            value: new Date(
-                                                ev.end_sell_date,
-                                            ).toLocaleString(),
+                                            value: String(ev.end_sell_date).slice(0, 10),
                                         });
                                     if (ev.price_with_card !== undefined)
                                         rows.push({
