@@ -143,6 +143,13 @@ export default function Ticketing() {
         number | null
     >(0);
 
+    // Track if email config is dirty (subject, body, mappings, etc.)
+    const [isEmailConfigDirty, setIsEmailConfigDirty] = React.useState(false);
+
+    // Helper to mark config as dirty
+    const markDirty = React.useCallback(() => setIsEmailConfigDirty(true), []);
+    const markClean = React.useCallback(() => setIsEmailConfigDirty(false), []);
+
     // Error state shown inside the confirm Dialog (overwrites confirm content)
     const [errorInConfirm, setErrorInConfirm] = React.useState(false);
     const [errorDetails, setErrorDetails] = React.useState<{ title: string; list: string[] }>({ title: '', list: [] });
@@ -180,6 +187,44 @@ export default function Ticketing() {
             bodyRef.current.innerHTML = defaultBodyTemplate;
         }
     }, [bodyRef, defaultBodyTemplate]);
+
+    // Mark config as dirty on changes to subject, mappings, mail mode, template, sample user, or skippable columns
+    React.useEffect(() => {
+        markDirty();
+    }, [subject, firstNameField, lastNameField, emailField, mailMode, defaultBodyTemplate, selectedTemplateId, selectedSampleIndex, nullableFields]);
+
+    // Mark config as clean when preview is generated
+    const handleGenerateTickets = () => {
+        generateTickets();
+        markClean();
+    };
+
+    // Mark config as dirty if body changes (contentEditable)
+    React.useEffect(() => {
+        if (!bodyRef.current) return;
+        const handler = () => markDirty();
+        const el = bodyRef.current;
+        el.addEventListener('input', handler);
+        return () => el.removeEventListener('input', handler);
+    }, [bodyRef, markDirty]);
+
+    // Auto-insert {{qr}} at the bottom of the email when mailMode is set to 'qr'
+    React.useEffect(() => {
+        if (mailMode === 'qr' && bodyRef.current) {
+            const qrPlaceholder = '{{qr}}';
+            let html = bodyRef.current.innerHTML || '';
+            if (!html.includes(qrPlaceholder)) {
+                // Insert at the end, with a new paragraph if needed
+                if (!html.trim().endsWith('</p>')) {
+                    html += `<p>${qrPlaceholder}</p>`;
+                } else {
+                    html += qrPlaceholder;
+                }
+                bodyRef.current.innerHTML = html;
+                markDirty();
+            }
+        }
+    }, [mailMode, bodyRef, markDirty]);
 
     const applyFormat = (cmd: string, value?: string) => {
         try {
@@ -573,8 +618,7 @@ export default function Ticketing() {
                                     >
                                         {sampleData.map((s, i) => (
                                             <option key={i} value={i}>
-                                                {s.first_name} {s.last_name} —{' '}
-                                                {s.email}
+                                                {String(s[firstNameField] ?? '')} {String(s[lastNameField] ?? '')} — {String(s[emailField] ?? '')}
                                             </option>
                                         ))}
                                     </select>
@@ -584,16 +628,18 @@ export default function Ticketing() {
                             <div className="flex flex-col justify-end">
                                 <div className="flex gap-2">
                                     <Button
-                                        onClick={generateTickets}
+                                        onClick={handleGenerateTickets}
                                         className="w-full md:w-auto"
                                     >
                                         Generate Preview
                                     </Button>
                                     <Button
                                         onClick={() => setConfirmOpen(true)}
-                                        className="w-full md:w-auto"
-                                        disabled={sending}
+                                        className={`w-full md:w-auto transition-opacity ${isEmailConfigDirty ? 'opacity-50 pointer-events-none cursor-not-allowed' : ''}`}
+                                        disabled={sending || isEmailConfigDirty}
                                         variant="destructive"
+                                        tabIndex={isEmailConfigDirty ? -1 : 0}
+                                        aria-disabled={isEmailConfigDirty}
                                     >
                                         {sending ? (
                                             <svg className="animate-spin -ml-1 mr-0 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
