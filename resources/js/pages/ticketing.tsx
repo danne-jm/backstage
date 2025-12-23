@@ -16,6 +16,7 @@ import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import * as React from 'react';
+import FullDataDialog from '@/components/FullDataDialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
