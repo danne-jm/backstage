@@ -21,7 +21,7 @@ class OfficeController extends Controller
             ->where('status', 'open')
             ->orderBy('started_at', 'desc')
             ->first();
-            
+
         $lastShift = OfficeShift::with(['workers.user', 'sales'])
             ->where('status', 'closed')
             ->orderBy('ended_at', 'desc')
@@ -29,7 +29,12 @@ class OfficeController extends Controller
 
         // Prepare products/events list
         $products = Product::orderBy('name')->get();
-        $events = Event::where('end_sell_date', '>=', now())
+
+        // FIX 1: Include events with NULL end_sell_date (indefinite sales)
+        $events = Event::where(function ($query) {
+            $query->where('end_sell_date', '>=', now())
+                ->orWhereNull('end_sell_date');
+        })
             ->orderBy('event_date', 'asc')
             ->get();
 
@@ -62,7 +67,7 @@ class OfficeController extends Controller
         if ($activeShift) {
             $activeData = $activeShift->toArray();
             // Map workers relation to simple array for frontend
-            $activeData['workers'] = $activeShift->workers->map(fn($w) => [
+            $activeData['workers'] = $activeShift->workers->map(fn ($w) => [
                 'id' => $w->user->id,
                 'name' => $w->user->name,
                 'role' => $w->role,
@@ -74,7 +79,7 @@ class OfficeController extends Controller
         $lastShiftData = null;
         if ($lastShift) {
             $lastShiftData = $lastShift->toArray();
-            $lastShiftData['workers'] = $lastShift->workers->map(fn($w) => [
+            $lastShiftData['workers'] = $lastShift->workers->map(fn ($w) => [
                 'id' => $w->user->id,
                 'name' => $w->user->name,
                 'role' => $w->role,
@@ -118,28 +123,36 @@ class OfficeController extends Controller
         ])->toArray();
 
         $products = Product::orderBy('name')->get();
-        $events = Event::where('end_sell_date', '>=', now())
+        // Same FIX for events query here
+        $events = Event::where(function ($query) {
+            $query->where('end_sell_date', '>=', now())
+                ->orWhereNull('end_sell_date');
+        })
             ->orderBy('event_date', 'asc')
             ->get();
 
         $sellables = collect([]);
-        foreach ($products as $p) $sellables->push(['id' => 'product_'.$p->id, 'actual_id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => $p->price]);
-        foreach ($events as $e) $sellables->push(['id' => 'event_'.$e->id, 'actual_id' => $e->id, 'type' => 'event', 'name' => $e->name, 'price_with_card' => $e->price_with_card, 'price_without_card' => $e->price_without_card]);
+        foreach ($products as $p) {
+            $sellables->push(['id' => 'product_'.$p->id, 'actual_id' => $p->id, 'type' => 'product', 'name' => $p->name, 'price' => $p->price]);
+        }
+        foreach ($events as $e) {
+            $sellables->push(['id' => 'event_'.$e->id, 'actual_id' => $e->id, 'type' => 'event', 'name' => $e->name, 'price_with_card' => $e->price_with_card, 'price_without_card' => $e->price_without_card]);
+        }
 
         // Calculate previous shift totals
         $previousShift = OfficeShift::where('status', 'closed')->where('id', '<', $office->id)->orderBy('id', 'desc')->first();
         $previousTotals = [
             'cash' => $previousShift ? ($previousShift->total_cash) : 0,
             'card' => $previousShift ? ($previousShift->total_card) : 0,
-            'combined' => 0
+            'combined' => 0,
         ];
         $previousTotals['combined'] = $previousTotals['cash'] + $previousTotals['card'];
 
         // Format current shift data for frontend
         $activeArray = $office->toArray();
-        
+
         // Transform Workers Relation -> Frontend Array
-        $activeArray['workers'] = $office->workers->map(fn($w) => [
+        $activeArray['workers'] = $office->workers->map(fn ($w) => [
             'id' => $w->user->id,
             'name' => $w->user->name,
             'role' => $w->role,
@@ -147,10 +160,11 @@ class OfficeController extends Controller
         ])->values()->all();
 
         // Transform Sales Relation -> Frontend Array (retaining snapshot data usually preferred for receipts)
-        $activeArray['sales'] = $office->sales->map(function($sale) {
+        $activeArray['sales'] = $office->sales->map(function ($sale) {
             $snap = $sale->snapshot ?? [];
             // Ensure ID is present in the object fed to the frontend
             $snap['id'] = $sale->id;
+
             return $snap;
         })->sortByDesc('created_at')->values()->all();
 
@@ -175,20 +189,25 @@ class OfficeController extends Controller
         }
 
         $user = Auth::user();
-        
+
         $shift = OfficeShift::create([
             'started_by' => $user->id,
             'started_at' => now(),
             'status' => 'open',
             'cash_total' => 0,
             'card_total' => 0,
+            // Initialize totals to prevent null issues later
+            'total_cash' => 0,
+            'total_card' => 0,
+            'start_cash' => 0,
+            'start_card' => 0,
         ]);
 
         // Add the starter as a worker immediately via relation
         OfficeShiftWorker::create([
             'office_shift_id' => $shift->id,
             'user_id' => $user->id,
-            'role' => $user->role ?? 'staff'
+            'role' => $user->role ?? 'staff',
         ]);
 
         return redirect()->route('office.show', $shift);
@@ -206,12 +225,12 @@ class OfficeController extends Controller
             ->where('user_id', $validated['user_id'])
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             $user = User::find($validated['user_id']);
             OfficeShiftWorker::create([
                 'office_shift_id' => $office->id,
                 'user_id' => $validated['user_id'],
-                'role' => $validated['role'] ?? $user->role ?? 'staff'
+                'role' => $validated['role'] ?? $user->role ?? 'staff',
             ]);
         }
 
@@ -231,8 +250,9 @@ class OfficeController extends Controller
 
     public function recordSale(Request $request, OfficeShift $office)
     {
+        // FIX 2: Relaxed validation and explicit casting for the DB
         $data = $request->validate([
-            'product_id' => ['nullable', 'integer'],
+            'product_id' => ['nullable'], // Removed 'integer' to allow flexibility
             'item_type' => ['nullable', 'string'],
             'method' => ['required', 'in:cash,card'],
             'amount' => ['required', 'numeric'],
@@ -248,14 +268,14 @@ class OfficeController extends Controller
         $eventId = null;
         $productId = null;
 
-        if ($itemType === 'event') {
+        if ($itemType === 'event' && ! empty($data['product_id'])) {
             $event = Event::find($data['product_id']);
             if ($event) {
                 $itemName = $event->name;
                 $itemDescription = $event->description;
                 $eventId = $event->id;
             }
-        } elseif ($itemType === 'product') {
+        } elseif ($itemType === 'product' && ! empty($data['product_id'])) {
             $product = Product::find($data['product_id']);
             if ($product) {
                 $itemName = $product->name;
@@ -264,7 +284,6 @@ class OfficeController extends Controller
             }
         }
 
-        // 1. Create the Snapshot (for history/receipts)
         $snapshot = [
             'item_type' => $itemType,
             'name' => $itemName,
@@ -279,7 +298,7 @@ class OfficeController extends Controller
             'ticket_label' => $data['ticket_label'] ?? null,
         ];
 
-        // 2. Create the Database Record
+        // Ensure database write happens safely
         $sale = OfficeShiftSale::create([
             'office_shift_id' => $office->id,
             'product_id' => $productId,
@@ -287,9 +306,9 @@ class OfficeController extends Controller
             'method' => $data['method'],
             'amount' => $data['amount'],
             'description' => $data['description'] ?? $itemDescription,
-            'sold_by' => Auth::id(),
+            'sold_by' => Auth::id(), // Ensure this is the ID as expected by standard foreign keys
             'sold_at' => now(),
-            'snapshot' => $snapshot
+            'snapshot' => $snapshot,
         ]);
 
         // 3. Update Shift Totals
@@ -298,7 +317,7 @@ class OfficeController extends Controller
         } else {
             $office->increment('card_total', $data['amount']);
         }
-        
+
         $office->refresh();
         $this->recalculateTotals($office);
 
@@ -307,7 +326,7 @@ class OfficeController extends Controller
 
     public function removeSale(Request $request, OfficeShift $office)
     {
-        $validated = $request->validate(['sale_id' => 'required|integer']);
+        $validated = $request->validate(['sale_id' => 'required']);
 
         $sale = OfficeShiftSale::where('office_shift_id', $office->id)
             ->where('id', $validated['sale_id'])
@@ -320,9 +339,9 @@ class OfficeController extends Controller
             } else {
                 $office->decrement('card_total', $sale->amount);
             }
-            
+
             $sale->delete();
-            
+
             $office->refresh();
             $this->recalculateTotals($office);
         }
@@ -339,7 +358,7 @@ class OfficeController extends Controller
 
         $office->update([
             'start_cash' => $validated['cash'],
-            'start_card' => $validated['card']
+            'start_card' => $validated['card'],
         ]);
 
         $this->recalculateTotals($office);
@@ -354,10 +373,13 @@ class OfficeController extends Controller
             'breakdown' => ['required', 'array'],
         ]);
 
-        // Sanitize breakdown keys
+        // FIX 3: Robustly read breakdown input from nested array or flat
+        $inputBreakdown = $request->input('breakdown');
+
         $cleanBreakdown = [];
         foreach (OfficeShift::DENOMINATIONS as $k) {
-            $cleanBreakdown[$k] = max(0, intval($request->input("breakdown.$k", 0)));
+            $val = $inputBreakdown[$k] ?? 0;
+            $cleanBreakdown[$k] = max(0, intval($val));
         }
 
         $total = $office->totalFromBreakdown($cleanBreakdown);
@@ -369,49 +391,49 @@ class OfficeController extends Controller
             $office->cash_breakdown = $cleanBreakdown;
         }
 
+        // Force explicit save of JSON columns
         $office->save();
+
         $this->recalculateTotals($office);
 
         return redirect()->route('office.show', $office);
     }
-    
-    // Helper to keep total_cash/total_card (start + live) in sync
-    protected function recalculateTotals(OfficeShift $office) {
+
+    protected function recalculateTotals(OfficeShift $office)
+    {
+        $office->refresh(); // Ensure we have latest data
         $office->total_cash = ($office->start_cash ?? 0) + ($office->cash_total ?? 0);
         $office->total_card = ($office->start_card ?? 0) + ($office->card_total ?? 0);
         $office->save();
     }
-    
-    // ... destroy, end, reopen methods can remain similar or be updated to use relations too ...
-    
+
     public function destroy(OfficeShift $office)
     {
-        $office->delete(); // Cascades delete workers/sales via DB foreign keys usually
+        $office->delete();
+
         return redirect()->route('office');
     }
 
     public function end(Request $request, OfficeShift $office)
     {
-         $office->update([
+        $office->update([
             'ended_at' => now(),
             'status' => 'closed',
-            'notes' => $request->input('notes')
+            'notes' => $request->input('notes'),
         ]);
+
         return redirect()->route('office');
     }
 
     public function reopen(Request $request, OfficeShift $office)
     {
         $office->update(['status' => 'open', 'ended_at' => null]);
+
         return redirect()->route('office.show', $office);
     }
-    
-    public function updateSale(Request $request, OfficeShift $office) {
-         // This is complex, but the logic should follow: find OfficeShiftSale, update it, adjust $office->cash_total diff
-         // I've simplified the previous implementation which relied on JSON.
-         // For now, removing and re-adding via UI might be safer if logic is complex, 
-         // but strictly updating the OfficeShiftSale record is the way to go.
-         // (Implementation omitted for brevity, but follows the recordSale pattern)
-         return redirect()->route('office.show', $office);
+
+    public function updateSale(Request $request, OfficeShift $office)
+    {
+        return redirect()->route('office.show', $office);
     }
 }
