@@ -43,20 +43,47 @@ export default function Office() {
     };
 
     // Filter sellables so event items are only visible when current date is within their sell window
+    // FIXED: Allow events with null dates (indefinite sell period)
     const isEventInSellWindow = (item: any) => {
         if (!item) return false;
-        if (item.type !== 'event') return true; // products remain visible
-        if (!item.start_sell_date || !item.end_sell_date) return false;
+        if (item.type !== 'event') return true; 
+        
         const now = new Date();
-        const start = new Date(item.start_sell_date);
-        const end = new Date(item.end_sell_date);
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
-        return (
-            now.getTime() >= start.getTime() && now.getTime() <= end.getTime()
-        );
+        
+        // If start date exists, check it
+        if (item.start_sell_date) {
+            const start = new Date(item.start_sell_date);
+            if (!isNaN(start.getTime()) && now.getTime() < start.getTime()) {
+                return false;
+            }
+        }
+
+        // If end date exists, check it
+        if (item.end_sell_date) {
+            const end = new Date(item.end_sell_date);
+            if (!isNaN(end.getTime()) && now.getTime() > end.getTime()) {
+                return false;
+            }
+        }
+
+        return true;
     };
 
     const filteredSellables = sellables.filter((s) => isEventInSellWindow(s));
+
+    // Helper for rendering cash inputs in proper order with correct keys
+    const denominationConfig = [
+        { key: '50e', label: '€50' },
+        { key: '20e', label: '€20' },
+        { key: '10e', label: '€10' },
+        { key: '5e', label: '€5' },
+        { key: '2e', label: '€2' },
+        { key: '1e', label: '€1' },
+        { key: '50c', label: '50¢' },
+        { key: '20c', label: '20¢' },
+        { key: '10c', label: '10¢' },
+        { key: 'token', label: 'Pink Token' },
+    ];
 
     const [workers, setWorkers] = React.useState<any[]>([]);
     const [sales, setSales] = React.useState<any[]>([]);
@@ -251,19 +278,14 @@ export default function Office() {
     ]);
 
     // Cash breakdown modal state
+    // FIXED: Default state keys now match Backend expectations (e.g. '50e' instead of '50')
     const [isCashModalOpen, setIsCashModalOpen] = React.useState(false);
     const [cashBreakdown, setCashBreakdown] = React.useState<
         Record<string, number>
     >({
-        '50': 0,
-        '20': 0,
-        '10': 0,
-        '5': 0,
-        '2': 0,
-        '1': 0,
-        '0_50': 0,
-        '0_20': 0,
-        '0_10': 0,
+        '50e': 0, '20e': 0, '10e': 0, '5e': 0, 
+        '2e': 0, '1e': 0, 
+        '50c': 0, '20c': 0, '10c': 0, '5c': 0, '2c': 0, '1c': 0,
         token: 0,
     });
 
@@ -273,15 +295,9 @@ export default function Office() {
     const [customCashBreakdown, setCustomCashBreakdown] = React.useState<
         Record<string, number>
     >({
-        '50': 0,
-        '20': 0,
-        '10': 0,
-        '5': 0,
-        '2': 0,
-        '1': 0,
-        '0_50': 0,
-        '0_20': 0,
-        '0_10': 0,
+        '50e': 0, '20e': 0, '10e': 0, '5e': 0, 
+        '2e': 0, '1e': 0, 
+        '50c': 0, '20c': 0, '10c': 0, '5c': 0, '2c': 0, '1c': 0,
         token: 0,
     });
 
@@ -296,15 +312,9 @@ export default function Office() {
         ) {
             const existing = activeShift.start_cash_breakdown ?? null;
             const init: Record<string, number> = {
-                '50': 0,
-                '20': 0,
-                '10': 0,
-                '5': 0,
-                '2': 0,
-                '1': 0,
-                '0_50': 0,
-                '0_20': 0,
-                '0_10': 0,
+                '50e': 0, '20e': 0, '10e': 0, '5e': 0, 
+                '2e': 0, '1e': 0, 
+                '50c': 0, '20c': 0, '10c': 0, '5c': 0, '2c': 0, '1c': 0,
                 token: 0,
             };
             if (existing && typeof existing === 'object') {
@@ -327,15 +337,9 @@ export default function Office() {
         ) {
             const existing = activeShift.cash_breakdown ?? null;
             const init: Record<string, number> = {
-                '50': 0,
-                '20': 0,
-                '10': 0,
-                '5': 0,
-                '2': 0,
-                '1': 0,
-                '0_50': 0,
-                '0_20': 0,
-                '0_10': 0,
+                '50e': 0, '20e': 0, '10e': 0, '5e': 0, 
+                '2e': 0, '1e': 0, 
+                '50c': 0, '20c': 0, '10c': 0, '5c': 0, '2c': 0, '1c': 0,
                 token: 0,
             };
             if (existing && typeof existing === 'object') {
@@ -360,15 +364,9 @@ export default function Office() {
                 ? activeShift.start_cash_breakdown
                 : (activeShift?.start_cash_breakdown ?? null);
         const init: Record<string, number> = {
-            '50': 0,
-            '20': 0,
-            '10': 0,
-            '5': 0,
-            '2': 0,
-            '1': 0,
-            '0_50': 0,
-            '0_20': 0,
-            '0_10': 0,
+            '50e': 0, '20e': 0, '10e': 0, '5e': 0, 
+            '2e': 0, '1e': 0, 
+            '50c': 0, '20c': 0, '10c': 0, '5c': 0, '2c': 0, '1c': 0,
             token: 0,
         };
         if (existing && typeof existing === 'object') {
@@ -380,17 +378,12 @@ export default function Office() {
         setIsCashModalOpen(true);
     };
 
+    // FIXED: Value map keys must match the state keys
     const computeBreakdownTotal = (b: Record<string, number>) => {
         const values: Record<string, number> = {
-            '50': 50,
-            '20': 20,
-            '10': 10,
-            '5': 5,
-            '2': 2,
-            '1': 1,
-            '0_50': 0.5,
-            '0_20': 0.2,
-            '0_10': 0.1,
+            '50e': 50, '20e': 20, '10e': 10, '5e': 5,
+            '2e': 2, '1e': 1,
+            '50c': 0.5, '20c': 0.2, '10c': 0.1, '5c': 0.05, '2c': 0.02, '1c': 0.01,
             token: 0,
         };
         let t = 0;
@@ -408,15 +401,9 @@ export default function Office() {
                 ? activeShift.cash_breakdown
                 : (activeShift?.cash_breakdown ?? null);
         const init: Record<string, number> = {
-            '50': 0,
-            '20': 0,
-            '10': 0,
-            '5': 0,
-            '2': 0,
-            '1': 0,
-            '0_50': 0,
-            '0_20': 0,
-            '0_10': 0,
+            '50e': 0, '20e': 0, '10e': 0, '5e': 0, 
+            '2e': 0, '1e': 0, 
+            '50c': 0, '20c': 0, '10c': 0, '5c': 0, '2c': 0, '1c': 0,
             token: 0,
         };
         if (existing && typeof existing === 'object') {
@@ -435,15 +422,9 @@ export default function Office() {
     const [saleEditBreakdown, setSaleEditBreakdown] = React.useState<
         Record<string, number>
     >({
-        '50': 0,
-        '20': 0,
-        '10': 0,
-        '5': 0,
-        '2': 0,
-        '1': 0,
-        '0_50': 0,
-        '0_20': 0,
-        '0_10': 0,
+        '50e': 0, '20e': 0, '10e': 0, '5e': 0, 
+        '2e': 0, '1e': 0, 
+        '50c': 0, '20c': 0, '10c': 0, '5c': 0, '2c': 0, '1c': 0,
         token: 0,
     });
     // view-only cash breakdown modal for this shift
@@ -464,15 +445,9 @@ export default function Office() {
                 : null;
 
         const zeroInit: Record<string, number> = {
-            '50': 0,
-            '20': 0,
-            '10': 0,
-            '5': 0,
-            '2': 0,
-            '1': 0,
-            '0_50': 0,
-            '0_20': 0,
-            '0_10': 0,
+            '50e': 0, '20e': 0, '10e': 0, '5e': 0, 
+            '2e': 0, '1e': 0, 
+            '50c': 0, '20c': 0, '10c': 0, '5c': 0, '2c': 0, '1c': 0,
             token: 0,
         };
 
@@ -489,15 +464,9 @@ export default function Office() {
         // If no explicit breakdown exists, derive a greedy breakdown from the sale amount so the modal shows a sensible starting point
         const amt = Number(sale?.amount ?? 0) || 0;
         const denominations: Array<{ key: string; value: number }> = [
-            { key: '50', value: 50 },
-            { key: '20', value: 20 },
-            { key: '10', value: 10 },
-            { key: '5', value: 5 },
-            { key: '2', value: 2 },
-            { key: '1', value: 1 },
-            { key: '0_50', value: 0.5 },
-            { key: '0_20', value: 0.2 },
-            { key: '0_10', value: 0.1 },
+            { key: '50e', value: 50 }, { key: '20e', value: 20 }, { key: '10e', value: 10 }, { key: '5e', value: 5 },
+            { key: '2e', value: 2 }, { key: '1e', value: 1 },
+            { key: '50c', value: 0.5 }, { key: '20c', value: 0.2 }, { key: '10c', value: 0.1 },
             // tokens have no monetary value by default
             { key: 'token', value: 0 },
         ];
@@ -862,21 +831,7 @@ export default function Office() {
                                         </DialogDescription>
 
                                         <div className="mt-4 grid grid-cols-1 gap-3">
-                                            {[
-                                                { key: '50', label: '€50' },
-                                                { key: '20', label: '€20' },
-                                                { key: '10', label: '€10' },
-                                                { key: '5', label: '€5' },
-                                                { key: '2', label: '€2' },
-                                                { key: '1', label: '€1' },
-                                                { key: '0_50', label: '50¢' },
-                                                { key: '0_20', label: '20¢' },
-                                                { key: '0_10', label: '10¢' },
-                                                {
-                                                    key: 'token',
-                                                    label: 'Pink Token',
-                                                },
-                                            ].map((d) => (
+                                            {denominationConfig.map((d) => (
                                                 <div
                                                     key={d.key}
                                                     className="flex items-center justify-between"
@@ -1533,48 +1488,7 @@ export default function Office() {
 
                                                 <div className="mt-4 grid grid-cols-1 gap-3">
                                                     {/* Render denominations in required order */}
-                                                    {[
-                                                        {
-                                                            key: '50',
-                                                            label: '€50',
-                                                        },
-                                                        {
-                                                            key: '20',
-                                                            label: '€20',
-                                                        },
-                                                        {
-                                                            key: '10',
-                                                            label: '€10',
-                                                        },
-                                                        {
-                                                            key: '5',
-                                                            label: '€5',
-                                                        },
-                                                        {
-                                                            key: '2',
-                                                            label: '€2',
-                                                        },
-                                                        {
-                                                            key: '1',
-                                                            label: '€1',
-                                                        },
-                                                        {
-                                                            key: '0_50',
-                                                            label: '50¢',
-                                                        },
-                                                        {
-                                                            key: '0_20',
-                                                            label: '20¢',
-                                                        },
-                                                        {
-                                                            key: '0_10',
-                                                            label: '10¢',
-                                                        },
-                                                        {
-                                                            key: 'token',
-                                                            label: 'Pink Token',
-                                                        },
-                                                    ].map((d) => (
+                                                    {denominationConfig.map((d) => (
                                                         <div
                                                             key={d.key}
                                                             className="flex items-center justify-between"
@@ -2798,18 +2712,7 @@ export default function Office() {
                             </DialogDescription>
 
                             <div className="mt-4 grid grid-cols-1 gap-3">
-                                {[
-                                    { key: '50', label: '€50' },
-                                    { key: '20', label: '€20' },
-                                    { key: '10', label: '€10' },
-                                    { key: '5', label: '€5' },
-                                    { key: '2', label: '€2' },
-                                    { key: '1', label: '€1' },
-                                    { key: '0_50', label: '50¢' },
-                                    { key: '0_20', label: '20¢' },
-                                    { key: '0_10', label: '10¢' },
-                                    { key: 'token', label: 'Pink Token' },
-                                ].map((d) => (
+                                {denominationConfig.map((d) => (
                                     <div
                                         key={d.key}
                                         className="flex items-center justify-between"
@@ -2988,18 +2891,7 @@ export default function Office() {
                             </DialogDescription>
 
                             <div className="mt-4 grid grid-cols-1 gap-3">
-                                {[
-                                    { key: '50', label: '€50' },
-                                    { key: '20', label: '€20' },
-                                    { key: '10', label: '€10' },
-                                    { key: '5', label: '€5' },
-                                    { key: '2', label: '€2' },
-                                    { key: '1', label: '€1' },
-                                    { key: '0_50', label: '50¢' },
-                                    { key: '0_20', label: '20¢' },
-                                    { key: '0_10', label: '10¢' },
-                                    { key: 'token', label: 'Pink Token' },
-                                ].map((d) => (
+                                {denominationConfig.map((d) => (
                                     <div
                                         key={d.key}
                                         className="flex items-center justify-between"

@@ -13,6 +13,7 @@ class OfficeShift extends Model
     public const DENOMINATIONS = [
         '500e', '200e', '100e', '50e', '20e', '10e', '5e', // Notes
         '2e', '1e', '50c', '20c', '10c', '5c', '2c', '1c',  // Coins
+        'token', // Added to allow persistence of token counts
     ];
 
     protected $fillable = [
@@ -70,6 +71,7 @@ class OfficeShift extends Model
             '5c' => 0.05,
             '2c' => 0.02,
             '1c' => 0.01,
+            'token' => 0.0,
         ];
 
         $total = 0.0;
