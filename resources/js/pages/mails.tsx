@@ -207,9 +207,9 @@ export default function Mails() {
                     </Table>
                     <div className="mt-4">
                         <Pagination>
-                            <PaginationContent>
+                            <PaginationContent className="gap-3 md:gap-4 lg:gap-6 flex-wrap">
                                 {mails.links.map((link: any, index: number) => (
-                                     <PaginationItem key={index} className="mx-1">
+                                     <PaginationItem key={index} className="mx-2 md:mx-3 lg:mx-4">
                                          <PaginationLink href={link.url} isActive={link.active} dangerouslySetInnerHTML={{ __html: link.label }} disabled={!link.url}></PaginationLink>
                                      </PaginationItem>
                                 ))}

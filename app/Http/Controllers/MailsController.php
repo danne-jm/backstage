@@ -38,7 +38,7 @@ class MailsController extends Controller
             $query->where('created_at', '<=', $request->end_date);
         }
 
-        $mails = $query->paginate(30)->withQueryString();
+    $mails = $query->paginate(110)->withQueryString();
 
         return Inertia::render('mails', [
             'mails' => $mails,

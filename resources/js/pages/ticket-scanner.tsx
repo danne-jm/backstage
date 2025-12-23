@@ -11,6 +11,14 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
 import { CameraOff } from 'lucide-react';
 import * as React from 'react';
+import { type BreadcrumbItem } from '@/types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Ticket Scanner',
+        href: '/ticket-scanner',
+    },
+];
 
 export default function TicketScanner() {
     const props: any = usePage().props;
@@ -452,7 +460,7 @@ export default function TicketScanner() {
     };
 
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Ticket Scanner" />
 
             <div className="p-2 sm:p-4 md:p-6">

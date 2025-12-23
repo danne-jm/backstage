@@ -42,6 +42,7 @@ class DistributionController extends Controller
             'recipients.*.scan_details' => ['nullable'],
         ]);
 
+        $originalRecipients = $data['recipients'];
         $recipients = $data['recipients'];
         $sender = Auth::user();
         $queued = 0;
@@ -219,8 +220,10 @@ class DistributionController extends Controller
                 return $body;
             };
 
-            foreach ($recipients as &$r) {
+            foreach ($recipients as $key => &$r) {
                 try {
+                    $originalBody = $originalRecipients[$key]['body'] ?? '';
+
                     // Check if we need to embed a QR code
                     if (isset($r['body']) && str_contains($r['body'], '{{qr}}')) {
                         // Use the ticket_code for QR generation (not just the id)
@@ -252,9 +255,9 @@ class DistributionController extends Controller
                         'user_id' => $sender?->id,
                         'recipient_email' => $r['email'],
                         'subject' => $r['subject'] ?? null,
-                        'body' => $r['body'] ?? null,
+                        'body' => $originalBody, // Store original composed body
                         'success' => false,
-                        'metadata' => $r,
+                        'metadata' => $r, // Store processed recipient data for sending
                     ]);
 
                     $payload = array_merge($r, [

@@ -13,19 +13,25 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react'; // Link imported
 import axios from 'axios';
 import * as React from 'react';
 import FullDataDialog from '@/components/FullDataDialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Ticketing System',
+        title: 'Ticket Distributor',
         href: ticketing().url,
     },
 ];
 
 export default function Ticketing() {
+    // Header action: All Mails button (right side of breadcrumb bar)
+    const headerActions = (
+        <Link href="/mails">
+            <Button variant="outline" className="ml-4">All Mails</Button>
+        </Link>
+    );
     const props = usePage<SharedData & { templates: any[] }>().props;
     const events: any[] = Array.isArray(props['events']) ? props['events'] : [];
     const templates: any[] = Array.isArray(props['templates']) ? props['templates'] : [];
@@ -503,8 +509,8 @@ export default function Ticketing() {
 
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Ticketing System" />
+        <AppLayout breadcrumbs={breadcrumbs} headerActions={headerActions}>
+            <Head title="Ticket Distributor" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Success banner (replaces alert/toast fallback) */}
@@ -934,7 +940,7 @@ export default function Ticketing() {
                                 </div>
                             </div>
 
-                            {/* Mail information section: choose normal mail or mail with QR embedding. If QR selected show event name/date inputs and per-column nullable radios */}
+                            {/* Mail information section: choose normal | qr embedding. If QR selected show event name/date inputs and per-column nullable radios */}
                             <div className="mt-10">
                                 <h4 className="text-sm font-semibold">
                                     Mail information
@@ -1173,7 +1179,6 @@ export default function Ticketing() {
                                                             </p>
                                                         </div>
                                                         <div className="mt-3">
-                                                            {/* compute domain summary client-side from sampleData */}
                                                             {(() => {
                                                                 const emails: string[] =
                                                                     sampleData
@@ -1183,10 +1188,10 @@ export default function Ticketing() {
                                                                             ) =>
                                                                                 String(
                                                                                     (
-                                                                                        s as any
-                                                                                    )
-                                                                                        .email ??
-                                                                                        '',
+                                                                                                                    s as any
+                                                                                                                )
+                                                                                                                    .email ??
+                                                                                                                    '',
                                                                                 ).trim(),
                                                                         )
                                                                         .filter(
@@ -1494,7 +1499,6 @@ export default function Ticketing() {
                 <div className="px-4 pb-4">
                     <h4 className="text-sm font-semibold">Generated Payload Preview</h4>
                     <div className="pt-2">
-                        <div className="mb-1 text-sm">Render format</div>
                         <div
                             role="tablist"
                             aria-orientation="horizontal"
