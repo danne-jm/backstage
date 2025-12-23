@@ -57,6 +57,7 @@ class SellablesController extends Controller
 
     /**
      * Serialize an Event model into the shape expected by the front-end.
+     * (No OfficeShift JSON column logic for sales/workers; use relationships only.)
      */
     protected function formatEvent(Event $event)
     {
@@ -216,10 +217,12 @@ class SellablesController extends Controller
             'price_with_card' => ['required', 'numeric', 'min:0'],
             'price_without_card' => ['required', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'integer', 'min:0'],
+            'responsible_user_id' => ['required', 'exists:users,id'],
+            'notes' => ['nullable', 'string'],
+            'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
-            'variable_amount' => ['required', 'boolean'],
         ]);
 
         // If variable_amount is true, set quantity to null

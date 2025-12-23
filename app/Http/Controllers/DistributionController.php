@@ -36,6 +36,9 @@ class DistributionController extends Controller
             'recipients.*.last_name' => ['nullable', 'string'],
             'recipients.*.event_name' => ['nullable', 'string'],
             'recipients.*.event_date' => ['nullable', 'string'],
+            'recipients.*.unique_trait' => ['nullable', 'string'],
+            'recipients.*.scan_count' => ['nullable', 'integer'],
+            'recipients.*.scan_details' => ['nullable'],
         ]);
 
         $recipients = $data['recipients'];
@@ -52,115 +55,80 @@ class DistributionController extends Controller
         $writer = new Writer($renderer);
 
         if (is_array($recipients)) {
-            // Group recipients by event_id to create tables once per event
-            $recipientsByEvent = [];
-            foreach ($recipients as $idx => &$r) {
-                $eventId = $r['event_id'] ?? null;
-                if ($eventId) {
-                    if (! isset($recipientsByEvent[$eventId])) {
-                        $recipientsByEvent[$eventId] = [];
-                    }
-                    $recipientsByEvent[$eventId][] = &$recipients[$idx];
+            foreach ($recipients as &$recipient) {
+                $eventId = $recipient['event_id'] ?? null;
+                $event = $eventId ? Event::find($eventId) : null;
+                if (! $event) {
+                    continue;
                 }
-            }
-            unset($r); // break reference
+                $unique = Str::random(8);
+                $first = $recipient['first_name'] ?? '';
+                $last = $recipient['last_name'] ?? '';
+                $eventName = $recipient['event_name'] ?? $event->name;
+                $eventDate = $recipient['event_date'] ?? $event->event_date;
+                $email = $recipient['email'] ?? '';
+                $uniqueTrait = $recipient['unique_trait'] ?? $unique;
+                $scanCount = $recipient['scan_count'] ?? 0;
+                $scanDetails = $recipient['scan_details'] ?? null;
 
-            // Create ticket tables for events that need them
-            foreach ($recipientsByEvent as $eventId => &$eventRecipients) {
-                try {
-                    $event = Event::find($eventId);
-                    if (! $event) {
-                        continue;
-                    }
-
-                    $tableName = Ticket::generateTableName($event);
-
-                    // Create table if it doesn't exist
-                    if (! Schema::connection('tickets')->hasTable($tableName)) {
-                        Schema::connection('tickets')->create($tableName, function ($table) {
-                            $table->id();
-                            $table->unsignedBigInteger('event_id')->nullable();
-                            $table->string('first_name')->nullable();
-                            $table->string('last_name')->nullable();
-                            $table->string('email')->nullable();
-                            $table->string('event_name')->nullable();
-                            $table->dateTime('event_date')->nullable();
-                            $table->string('unique_trait')->nullable();
-                            $table->string('ticket_id')->unique();
-                            $table->unsignedInteger('scan_count')->default(0);
-                            $table->json('scan_details')->nullable();
-                            $table->timestamps();
-
-                            $table->index(['event_id']);
-                            $table->index(['ticket_id']);
-                        });
-                    }
-
-                    // Create tickets for this event and update recipient with ticket_id
-                    foreach ($eventRecipients as &$r) {
-                        $unique = Str::random(8);
-                        $first = $r['first_name'] ?? '';
-                        $last = $r['last_name'] ?? '';
-                        $eventName = $r['event_name'] ?? $event->name;
-                        $eventDate = $r['event_date'] ?? $event->event_date;
-                        $email = $r['email'] ?? '';
-
-                        // Convert event_date to MySQL datetime format
+                // Convert event_date to MySQL datetime format
+                $mysqlEventDate = null;
+                $datePart = 'nodate';
+                if ($eventDate) {
+                    try {
+                        $mysqlEventDate = (new \DateTime($eventDate))->format('Y-m-d H:i:s');
+                        $datePart = (new \DateTime($eventDate))->format('d-m-Y');
+                    } catch (\Throwable $e) {
                         $mysqlEventDate = null;
-                        $datePart = 'nodate';
-                        if ($eventDate) {
-                            try {
-                                $mysqlEventDate = (new \DateTime($eventDate))->format('Y-m-d H:i:s');
-                                $datePart = (new \DateTime($eventDate))->format('d-m-Y');
-                            } catch (\Throwable $e) {
-                                $mysqlEventDate = null;
-                                $datePart = str_replace([' ', ':', '-'], '', (string) $eventDate);
-                            }
-                        }
-
-                        // Sanitize for new format: dashes for event and names
-                        $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);
-                        $sanitizedFirst = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $first);
-                        $sanitizedLast = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $last);
-                        $sanitizedFullName = trim($sanitizedFirst.'-'.$sanitizedLast, '-');
-                        $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $email);
-
-                        $ticketId = sprintf('%s_%s_to_%s_via_%s_%s',
-                            $sanitizedEvent,
-                            $datePart,
-                            $sanitizedFullName,
-                            $sanitizedEmail,
-                            $unique
-                        );
-
-                        // Insert ticket directly into the tickets database table
-                        DB::connection('tickets')->table($tableName)->insert([
-                            'event_id' => $eventId,
-                            'first_name' => $first,
-                            'last_name' => $last,
-                            'email' => $email,
-                            'event_name' => $eventName,
-                            'event_date' => $mysqlEventDate,
-                            'unique_trait' => $unique,
-                            'ticket_id' => $ticketId,
-                            'scan_count' => 0,
-                            'scan_details' => null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        $ticketsCreated++;
-
-                        // Attach ticket_id to recipient for QR generation
-                        $r['__ticket_id'] = $ticketId;
-                        $r['__event_name'] = $eventName;
+                        $datePart = str_replace([' ', ':', '-'], '', (string) $eventDate);
                     }
-                    unset($r);
-                } catch (\Throwable $e) {
-                    Log::error('Failed to create tickets for event', ['event_id' => $eventId, 'error' => $e->getMessage()]);
                 }
+
+                // Sanitize for new format: dashes for event and names
+                $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);
+                $sanitizedFirst = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $first);
+                $sanitizedLast = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $last);
+                $sanitizedFullName = trim($sanitizedFirst.'-'.$sanitizedLast, '-');
+                $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $email);
+
+                $ticketCode = sprintf('%s_%s_to_%s_via_%s_%s',
+                    $sanitizedEvent,
+                    $datePart,
+                    $sanitizedFullName,
+                    $sanitizedEmail,
+                    $unique
+                );
+
+                // Create ticket using Eloquent relationship, store all fields directly
+                $ticket = $event->tickets()->create([
+                    'user_id' => $sender->id ?? null,
+                    'ticket_code' => $ticketCode,
+                    'first_name' => $first,
+                    'last_name' => $last,
+                    'email' => $email,
+                    'event_name' => $eventName,
+                    'event_date' => $mysqlEventDate,
+                    'unique_trait' => $uniqueTrait,
+                    'scan_count' => $scanCount,
+                    'scan_details' => $scanDetails,
+                    'metadata' => [
+                        'first_name' => $first,
+                        'last_name' => $last,
+                        'email' => $email,
+                        'event_name' => $eventName,
+                        'event_date' => $mysqlEventDate,
+                    ],
+                    'scanned_at' => null,
+                ]);
+
+                $ticketsCreated++;
+
+                // Attach ticket_code and ticket_id to recipient for QR generation
+                $recipient['__ticket_code'] = $ticketCode;
+                $recipient['__event_name'] = $eventName;
+                $recipient['__ticket_id'] = $ticket->id;
             }
-            unset($eventRecipients);
+            unset($recipient);
 
             // Dispatch email jobs with updated QR generation logic per recipient
             // Helper to sanitize parts for QR content (preserve case, replace spaces with dashes)
@@ -249,16 +217,13 @@ class DistributionController extends Controller
                 try {
                     // Check if we need to embed a QR code
                     if (isset($r['body']) && str_contains($r['body'], '{{qr}}')) {
-                        // Use the ticket_id that was already created and stored in the database
-                        // This ensures the QR code matches what the scanner will verify
-                        $ticketId = $r['__ticket_id'] ?? null;
+                        // Use the ticket_code for QR generation (not just the id)
+                        $ticketCode = $r['__ticket_code'] ?? null;
 
-                        if ($ticketId) {
-                            // Generate QR code with the actual ticket_id from database
-                            $qrString = $writer->writeString($ticketId);
+                        if ($ticketCode) {
+                            $qrString = $writer->writeString($ticketCode);
                             $base64 = base64_encode($qrString);
 
-                            // Left-aligned image — remove default margins so email clients don't add extra spacing
                             $imgTag = sprintf(
                                 '<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin:0; max-width: 200px;" />',
                                 $base64
@@ -266,8 +231,7 @@ class DistributionController extends Controller
 
                             $r['body'] = str_replace('{{qr}}', $imgTag, $r['body']);
                         } else {
-                            // Fallback if no ticket_id was created
-                            Log::warning('No ticket_id found for QR generation', ['recipient' => $r['email'] ?? 'unknown']);
+                            Log::warning('No ticket_code found for QR generation', ['recipient' => $r['email'] ?? 'unknown']);
                             $r['body'] = str_replace('{{qr}}', '<p>QR code unavailable</p>', $r['body']);
                         }
                     }

@@ -43,7 +43,10 @@ export default function TicketScanner() {
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear();
-        return `${day}/${month}/${year}`;
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
     };
 
     const selectedEventObj = React.useMemo(() => {
@@ -1008,7 +1011,7 @@ export default function TicketScanner() {
                                                                         {d.user_email ?? 'unknown'}
                                                                     </span>
                                                                     <span className="whitespace-nowrap text-muted-foreground">
-                                                                        {formatScanDate(d.at)}
+                                                                        {formatScanDate(d.timestamp)}
                                                                     </span>
                                                                 </li>
                                                             ))}
@@ -1224,7 +1227,7 @@ export default function TicketScanner() {
                                                                 {d.user_email ?? 'unknown'}
                                                             </span>
                                                             <span className="text-sm whitespace-nowrap text-muted-foreground">
-                                                                {formatScanDate(d.at)}
+                                                                {formatScanDate(d.timestamp)}
                                                             </span>
                                                         </div>
                                                     ))}

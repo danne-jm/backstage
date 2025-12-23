@@ -25,13 +25,9 @@ class OfficeShift extends Model
         'card_total',
         'status',
         'notes',
-        'workers',
-        'sales',
     ];
 
     protected $casts = [
-        'workers' => 'array',
-        'sales' => 'array',
         'cash_breakdown' => 'array',
         'start_cash_breakdown' => 'array',
         'started_at' => 'datetime',

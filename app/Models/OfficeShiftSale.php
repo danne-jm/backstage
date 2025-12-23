@@ -16,6 +16,11 @@ class OfficeShiftSale extends Model
         'snapshot' => 'array',
     ];
 
+    public function shift()
+    {
+        return $this->belongsTo(OfficeShift::class, 'office_shift_id');
+    }
+
     public function product()
     {
         return $this->belongsTo(Product::class);
@@ -23,6 +28,6 @@ class OfficeShiftSale extends Model
 
     public function event()
     {
-        return $this->belongsTo(\App\Models\Event::class);
+        return $this->belongsTo(Event::class);
     }
 }

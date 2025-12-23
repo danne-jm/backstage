@@ -42,8 +42,18 @@ class Event extends Model
         return $this->belongsTo(User::class, 'responsible_user_id');
     }
 
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
     public function attendees()
     {
-        return $this->hasMany(EventAttendee::class);
+        return $this->hasMany(Attendee::class);
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(OfficeShiftSale::class);
     }
 }

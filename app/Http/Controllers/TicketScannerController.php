@@ -40,29 +40,6 @@ class TicketScannerController extends Controller
             return response()->json(['error' => 'Event not found'], 404);
         }
 
-        $tableName = Ticket::generateTableName($ev);
-
-        // Create table if it doesn't exist
-        if (! Schema::connection('tickets')->hasTable($tableName)) {
-            Schema::connection('tickets')->create($tableName, function ($table) {
-                $table->id();
-                $table->unsignedBigInteger('event_id')->nullable();
-                $table->string('first_name')->nullable();
-                $table->string('last_name')->nullable();
-                $table->string('email')->nullable();
-                $table->string('event_name')->nullable();
-                $table->dateTime('event_date')->nullable();
-                $table->string('unique_trait')->nullable();
-                $table->string('ticket_id')->unique();
-                $table->unsignedInteger('scan_count')->default(0);
-                $table->json('scan_details')->nullable();
-                $table->timestamps();
-
-                $table->index(['event_id']);
-                $table->index(['ticket_id']);
-            });
-        }
-
         $created = [];
         foreach ($data['samples'] as $row) {
             $first = isset($row['first_name']) ? (string) $row['first_name'] : '';
@@ -90,7 +67,7 @@ class TicketScannerController extends Controller
             $sanitizedFullName = trim($sanitizedFirst.'-'.$sanitizedLast, '-');
             $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $email);
 
-            $ticketId = sprintf('%s_%s_to_%s_via_%s_%s',
+            $ticketCode = sprintf('%s_%s_to_%s_via_%s_%s',
                 $sanitizedEvent,
                 $datePart,
                 $sanitizedFullName,
@@ -98,23 +75,21 @@ class TicketScannerController extends Controller
                 $unique
             );
 
-            DB::connection('tickets')->table($tableName)->insert([
-                'event_id' => $ev->id,
-                'first_name' => $first,
-                'last_name' => $last,
-                'email' => $email,
-                'event_name' => $eventName,
-                'event_date' => $eventDate,
-                'unique_trait' => $unique,
-                'ticket_id' => $ticketId,
-                'scan_count' => 0,
-                'scan_details' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
+            $ticket = $ev->tickets()->create([
+                'user_id' => null,
+                'ticket_code' => $ticketCode,
+                'metadata' => [
+                    'first_name' => $first,
+                    'last_name' => $last,
+                    'email' => $email,
+                    'event_name' => $eventName,
+                    'event_date' => $eventDate,
+                ],
+                'scanned_at' => null,
             ]);
 
             $created[] = [
-                'ticket_id' => $ticketId,
+                'ticket_code' => $ticketCode,
                 'first_name' => $first,
                 'last_name' => $last,
                 'email' => $email,
@@ -136,32 +111,8 @@ class TicketScannerController extends Controller
             return response()->json(['tickets' => []]);
         }
 
-        $tableName = Ticket::generateTableName($event);
-
-        if (! Schema::connection('tickets')->hasTable($tableName)) {
-            return response()->json(['tickets' => []]);
-        }
-
-        // Get tickets with scan_count = 0 for the selected event
-        $tickets = DB::connection('tickets')
-            ->table($tableName)
-            ->where('scan_count', 0)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Ensure scan_details is decoded to an array for the JSON response
-        $tickets = $tickets->map(function ($t) {
-            $t = (array) $t;
-            if (isset($t['scan_details']) && $t['scan_details'] !== null) {
-                $decoded = json_decode($t['scan_details'], true);
-                $t['scan_details'] = is_array($decoded) ? $decoded : [];
-            } else {
-                $t['scan_details'] = [];
-            }
-
-            return $t;
-        });
-
+        // Get tickets with scanned_at = null for the selected event
+        $tickets = $event->tickets()->whereNull('scanned_at')->orderBy('created_at', 'desc')->get();
         return response()->json(['tickets' => $tickets]);
     }
 
@@ -177,32 +128,8 @@ class TicketScannerController extends Controller
             return response()->json(['tickets' => []]);
         }
 
-        $tableName = Ticket::generateTableName($event);
-
-        if (! Schema::connection('tickets')->hasTable($tableName)) {
-            return response()->json(['tickets' => []]);
-        }
-
-        // Get tickets with scan_count > 0 for the selected event
-        $tickets = DB::connection('tickets')
-            ->table($tableName)
-            ->where('scan_count', '>', 0)
-            ->orderBy('updated_at', 'desc')
-            ->get();
-
-        // Ensure scan_details is decoded to an array for the JSON response
-        $tickets = $tickets->map(function ($t) {
-            $t = (array) $t;
-            if (isset($t['scan_details']) && $t['scan_details'] !== null) {
-                $decoded = json_decode($t['scan_details'], true);
-                $t['scan_details'] = is_array($decoded) ? $decoded : [];
-            } else {
-                $t['scan_details'] = [];
-            }
-
-            return $t;
-        });
-
+        // Get tickets with scanned_at not null for the selected event
+        $tickets = $event->tickets()->whereNotNull('scanned_at')->orderBy('updated_at', 'desc')->get();
         return response()->json(['tickets' => $tickets]);
     }
 
@@ -220,60 +147,33 @@ class TicketScannerController extends Controller
             return response()->json(['valid' => false], 404);
         }
 
-        $tableName = Ticket::generateTableName($event);
-
-        if (! Schema::connection('tickets')->hasTable($tableName)) {
-            return response()->json(['valid' => false], 404);
-        }
-
-        $ticket = DB::connection('tickets')
-            ->table($tableName)
-            ->where('ticket_id', $id)
-            ->first();
-
+        $ticket = $event->tickets()->where('ticket_code', $id)->first();
         if (! $ticket) {
             return response()->json(['valid' => false], 404);
         }
 
-        // Record that a verification happened: return previous scan_count to the client
-        $previous = (int) ($ticket->scan_count ?? 0);
-
-        // append scan detail (timestamp + user email)
-        $details = json_decode($ticket->scan_details ?? '[]', true);
-        if (! is_array($details)) {
-            $details = [];
+        $previousScanned = $ticket->scanned_at !== null;
+        if (! $previousScanned) {
+            $ticket->scanned_at = now();
         }
-        $details[] = [
-            'at' => now()->toDateTimeString(),
-            'user_email' => $request->user() ? $request->user()->email : null,
+
+        // Increment scan_count and append scan_details
+        $ticket->scan_count = ($ticket->scan_count ?? 0) + 1;
+        $scanDetails = $ticket->scan_details ?? [];
+        $scanDetails[] = [
+            'timestamp' => now()->toDateTimeString(),
+            'user_id' => auth()->id(),
+            'user_email' => auth()->user()?->email,
         ];
+        $ticket->scan_details = $scanDetails;
 
-        // increment scan_count and save details
-        DB::connection('tickets')->table($tableName)
-            ->where('ticket_id', $id)
-            ->update([
-                'scan_count' => $previous + 1,
-                'scan_details' => json_encode($details),
-                'updated_at' => now(),
-            ]);
+        $ticket->save();
 
-        // Fetch updated ticket and decode scan_details for JSON response
-        $updatedTicket = DB::connection('tickets')
-            ->table($tableName)
-            ->where('ticket_id', $id)
-            ->first();
-
-        if ($updatedTicket) {
-            $ut = (array) $updatedTicket;
-            if (isset($ut['scan_details']) && $ut['scan_details'] !== null) {
-                $decoded = json_decode($ut['scan_details'], true);
-                $ut['scan_details'] = is_array($decoded) ? $decoded : [];
-            } else {
-                $ut['scan_details'] = [];
-            }
-            $updatedTicket = $ut;
-        }
-
-        return response()->json(['valid' => true, 'ticket' => $updatedTicket, 'previous_scan_count' => $previous]);
+        return response()->json([
+            'valid' => true,
+            'ticket' => $ticket,
+            'previously_scanned' => $previousScanned,
+            'previous_scan_count' => ($ticket->scan_count ?? 1) - 1,
+        ]);
     }
 }
