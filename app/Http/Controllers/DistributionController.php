@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\SendDistributionEmail;
 use App\Models\Event;
+use App\Models\Mail;
 use App\Models\Ticket;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -56,6 +57,11 @@ class DistributionController extends Controller
 
         if (is_array($recipients)) {
             foreach ($recipients as &$recipient) {
+                // Only generate tickets for QR mails
+                if (!(isset($recipient['body']) && str_contains($recipient['body'], '{{qr}}'))) {
+                    continue;
+                }
+
                 $eventId = $recipient['event_id'] ?? null;
                 $event = $eventId ? Event::find($eventId) : null;
                 if (! $event) {
@@ -241,9 +247,20 @@ class DistributionController extends Controller
                         $r['body'] = $applyInlineReset((string) $r['body']);
                     }
 
+                    $mailLog = Mail::create([
+                        'event_id' => $r['event_id'] ?? null,
+                        'user_id' => $sender?->id,
+                        'recipient_email' => $r['email'],
+                        'subject' => $r['subject'] ?? null,
+                        'body' => $r['body'] ?? null,
+                        'success' => false,
+                        'metadata' => $r,
+                    ]);
+
                     $payload = array_merge($r, [
                         'sender_id' => $sender?->id,
                         'sender_email' => $sender?->email,
+                        'mail_log_id' => $mailLog->id,
                     ]);
 
                     SendDistributionEmail::dispatch($payload)->onQueue('distributions');

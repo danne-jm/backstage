@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\DistributionMail;
 use App\Models\Event;
+use App\Models\Mail as MailModel;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\GmailSender;
@@ -36,6 +37,8 @@ class SendDistributionEmail implements ShouldQueue
      */
     public function handle(GmailSender $gmailSender): void
     {
+        $mailLog = isset($this->recipient['mail_log_id']) ? MailModel::find($this->recipient['mail_log_id']) : null;
+
         try {
             $to = $this->recipient['email'];
             $subject = $this->recipient['subject'] ?? 'Notification from ESN Leuven';
@@ -62,6 +65,9 @@ class SendDistributionEmail implements ShouldQueue
                     $sent = $gmailSender->sendHtmlAsUser($user, $to, $subject, $body);
                     if ($sent) {
                         Log::info('SendDistributionEmail: Email sent successfully via Gmail API', ['to' => $to]);
+                        if ($mailLog) {
+                            $mailLog->update(['success' => true]);
+                        }
 
                         return;
                     }
@@ -82,6 +88,10 @@ class SendDistributionEmail implements ShouldQueue
             Log::info('SendDistributionEmail: Attempting SMTP send...', ['to' => $to]);
             Mail::to($to)->send(new DistributionMail($subject, $body));
             Log::info('SendDistributionEmail: Email sent via SMTP', ['to' => $to]);
+            if ($mailLog) {
+                $mailLog->update(['success' => true]);
+            }
+
             // Persist ticket_code into tickets DB if provided (controller already updates unique_trait but we double-write here)
             try {
                 $ticketCode = $this->recipient['ticket_code'] ?? null;
@@ -101,6 +111,9 @@ class SendDistributionEmail implements ShouldQueue
                 Log::warning('SendDistributionEmail: failed to persist ticket_code', ['error' => $e->getMessage(), 'recipient' => $this->recipient]);
             }
         } catch (\Throwable $e) {
+            if ($mailLog) {
+                $mailLog->update(['success' => false, 'error_message' => $e->getMessage()]);
+            }
             Log::error('SendDistributionEmail failed', ['recipient' => $this->recipient, 'error' => $e->getMessage()]);
             // Let the job fail so the queue can retry according to configuration
             throw $e;
