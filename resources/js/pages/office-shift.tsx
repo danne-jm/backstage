@@ -14,7 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import { office } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Check, Eye, Pencil } from 'lucide-react';
+import { Check, Eye, HelpCircle, Pencil } from 'lucide-react';
 import * as React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,7 +24,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// Helper for rendering cash inputs in proper order with correct keys
 const denominationConfig = [
     { key: '50e', label: '€50' }, { key: '20e', label: '€20' }, { key: '10e', label: '€10' }, { key: '5e', label: '€5' },
     { key: '2e', label: '€2' }, { key: '1e', label: '€1' },
@@ -56,7 +55,6 @@ export default function Office() {
         combined: 0,
     };
 
-    // FIXED: Allow events with null dates (indefinite sell period)
     const isEventInSellWindow = (item: any) => {
         if (!item) return false;
         if (item.type !== 'event') return true; 
@@ -334,7 +332,7 @@ export default function Office() {
                                                 </div>
                                             ))}
                                             <div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Calculated total</div><div className="text-lg font-medium">€{computeBreakdownTotal(customCashBreakdown).toFixed(2)}</div></div>
-                                            <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button onClick={() => { if (!activeShift) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(customCashBreakdown).toFixed(2)); const isQuick = Boolean(quickSaleContext); let amountToUse = 0; let selectedItem = null; let itemName = 'Custom Sale'; let productIdToSend = null; let itemTypeToSend = 'custom'; let descToUse = String(customDescription || ''); let ticketTypeToSend = undefined; let ticketLabelToSend = undefined; if (isQuick) { selectedItem = filteredSellables.find((i: any) => i.actual_id === quickSaleContext.productId); productIdToSend = quickSaleContext.productId; itemTypeToSend = quickSaleContext.itemType; ticketTypeToSend = quickSaleContext.ticketType; ticketLabelToSend = quickSaleContext.ticketLabel; if (computed > 0) amountToUse = computed; else if (selectedItem) { if (selectedItem.type === 'product') amountToUse = Number(selectedItem.price || 0); else amountToUse = Number(quickSaleContext.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card) || 0; } itemName = selectedItem ? selectedItem.name : 'Quick Sale'; descToUse = ''; } else { amountToUse = computed > 0 ? computed : Number(customAmount || 0); const isCustom = customSaleItemId === 'custom'; selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); productIdToSend = selectedItem ? selectedItem.actual_id : null; itemTypeToSend = selectedItem ? selectedItem.type : 'custom'; itemName = selectedItem ? selectedItem.name : 'Custom Sale'; } const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'cash', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: productIdToSend, item_type: itemTypeToSend, method: 'cash', amount: String(amountToUse), description: descToUse, ticket_type: ticketTypeToSend, ticket_label: ticketLabelToSend, breakdown: customCashBreakdown, }, { onSuccess: () => { setMessage(isQuick ? 'Sale recorded (Cash)' : 'Custom sale recorded (Cash)'); if (!isQuick) { setCustomSaleItemId('custom'); setCustomAmount(''); setCustomDescription(''); } setIsCustomCashModalOpen(false); setQuickSaleContext(null); }, onError: () => { setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId)); setMessage('Failed to record sale'); }, onFinish: () => setSubmitting(false), }); }}>Save</Button></div>
+                                            <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button onClick={() => { if (!activeShift) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(customCashBreakdown).toFixed(2)); const isQuick = Boolean(quickSaleContext); let amountToUse = 0; let selectedItem = null; let itemName = 'Custom Sale'; let productIdToSend = null; let itemTypeToSend = 'custom'; let descToUse = String(customDescription || ''); let ticketTypeToSend = undefined; let ticketLabelToSend = undefined; if (isQuick) { selectedItem = filteredSellables.find((i: any) => i.actual_id === quickSaleContext.productId); productIdToSend = quickSaleContext.productId; itemTypeToSend = quickSaleContext.itemType; ticketTypeToSend = quickSaleContext.ticketType; ticketLabelToSend = quickSaleContext.ticketLabel; if (computed > 0) amountToUse = computed; else if (selectedItem) { if (selectedItem.type === 'product') amountToUse = Number(selectedItem.price || 0); else amountToUse = Number(quickSaleContext.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card) || 0; } itemName = selectedItem ? selectedItem.name : 'Quick Sale'; descToUse = ''; } else { amountToUse = computed > 0 ? computed : Number(customAmount || 0); const isCustom = customSaleItemId === 'custom'; selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); productIdToSend = selectedItem ? selectedItem.actual_id : null; itemTypeToSend = selectedItem ? selectedItem.type : 'custom'; itemName = selectedItem ? selectedItem.name : 'Custom Sale'; } const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'cash', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: productIdToSend, item_type: itemType... [truncated]
                                         </div>
                                     </DialogContent>
                                 </Dialog>
@@ -387,7 +385,7 @@ export default function Office() {
                                 {activeShift?.status === 'open' ? (
                                     <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-1">End shift</Button></DialogTrigger><DialogContent><DialogTitle>End shift?</DialogTitle><DialogDescription>Confirm close.</DialogDescription><DialogFooter className="gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><DialogClose asChild><Button variant="destructive" onClick={() => router.post(`/office/${activeShift?.id}/end`, {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: () => { setMessage('Shift ended'); setTimeout(() => router.reload(), 600); } })}>End shift</Button></DialogClose></DialogFooter></DialogContent></Dialog>
                                 ) : (
-                                    <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-1" disabled={!activeShift}>Reopen shift</Button></DialogTrigger><DialogContent><DialogTitle>Reopen?</DialogTitle><DialogDescription>Confirm reopen.</DialogDescription><DialogFooter className="gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><DialogClose asChild><Button disabled={activeShift?.status !== 'closed'} onClick={() => router.post(`/office/${activeShift?.id}/reopen`, {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: () => { setMessage('Shift reopened'); setTimeout(() => router.reload(), 600); } })}>Reopen shift</Button></DialogClose></DialogFooter></DialogContent></Dialog>
+                                    <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-1" disabled={!activeShift || activeShift?.status !== 'closed'}>Reopen shift</Button></DialogTrigger><DialogContent><DialogTitle>Reopen?</DialogTitle><DialogDescription>Confirm reopen.</DialogDescription><DialogFooter className="gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><DialogClose asChild><Button disabled={!activeShift || activeShift?.status !== 'closed'} onClick={() => router.post(`/office/${activeShift?.id}/reopen`, {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: () => { setMessage('Shift reopened'); setTimeout(() => router.reload(), 600); } })}>Reopen shift</Button></DialogClose></DialogFooter></DialogContent></Dialog>
                                 )}
                              </div>
                             <div className="mt-2 border-t pt-2"><div className="flex items-center justify-between"><h4 className="text-xs font-medium">Quick add sale</h4><Link href="/sellables"><Button size="sm" variant="ghost">Manage</Button></Link></div>
@@ -412,7 +410,7 @@ export default function Office() {
                             <div className="mt-2 border-t pt-2">
                                 <h4 className="text-xs font-medium">Custom sale</h4>
                                 <div className="mt-2 grid grid-cols-1 gap-2">
-                                    <select value={customSaleItemId} onChange={(e) => setCustomSaleItemId(e.target.value)} className="rounded-md border p-2" disabled={activeShift?.status !== 'open'}><option value="custom">Custom</option>{filteredSellables.map((item: any) => { const label = item.type === 'product' ? `${item.name} — €${Number(item.price).toFixed(2)}` : `${item.name} — Event`; return (<option key={item.id} value={item.id}>{label}</option>); })}</select>
+                                    <select value={customSaleItemId} onChange={(e) => setCustomSaleItemId(e.target.value)} className="rounded-md border p-2" disabled={activeShift?.status !== 'open'}><option value="custom">Custom</option>{filteredSellables.map((item: any) => { const label = item.type === 'product' ? `${item.name} — €${Number(item.price).toFixed(2)}` : `${item.name} — Event`; return (<option key={item.id} value={item.actual_id}>{label}</option>); })}</select>
                                     <div className="flex items-center gap-2"><Input type="number" step="0.01" min="0" placeholder="€0.00" value={customAmount} onChange={(e) => { const value = e.target.value; if (value === '' || /^\d*\.?\d*$/.test(value)) setCustomAmount(value); }} disabled={activeShift?.status !== 'open'} /></div>
                                     <Input placeholder="Description (mandatory)" value={customDescription} onChange={(e) => setCustomDescription(e.target.value)} disabled={activeShift?.status !== 'open'} />
                                 </div>
@@ -429,20 +427,66 @@ export default function Office() {
                      <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold">Sales log</h3><div className="text-xs text-muted-foreground">{Array.isArray(sales) ? `${sales.length} sales${sales.length ? ' | ' + summarizeSales(sales) : ''}` : ''}</div></div>
                      <div className="overflow-x-auto">
                         <div className="max-h-[36rem] overflow-y-auto">
-                            <table className="w-full table-fixed text-sm">
-                                <thead><tr className="text-left text-xs text-muted-foreground"><th className="w-4/12">Item</th><th className="w-2/12">Method</th><th className="w-2/12">Amount</th><th className="w-3/12">Description</th><th className="w-2/12">Sold by</th><th className="w-2/12">Sold at</th></tr></thead>
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="text-left text-xs text-muted-foreground">
+                                        <th className="w-[25%] px-1">Item</th>
+                                        <th className="w-[10%] px-1">Method</th>
+                                        <th className="w-[15%] px-1">Amount</th>
+                                        <th className="w-[20%] px-1">Description</th>
+                                        <th className="w-[15%] px-1">Sold by</th>
+                                        <th className="w-[15%] px-1">Sold at</th>
+                                        <th className="sr-only">Actions</th> {/* Hidden column for alignment */}
+                                    </tr>
+                                </thead>
                                 <tbody className="mt-2">
                                     {(sales || []).slice(0, 12).map((s: any) => (
                                         <tr key={String(s.id)} className="border-t">
-                                            <td className="py-3"><span className="block max-w-[20rem] truncate" title={s.name ?? s.item ?? 'N/A'}>{s.name ?? s.item ?? 'N/A'}</span></td>
-                                            <td className="py-3"><span className="block max-w-[8rem] truncate" title={String(s.method)}>{s.method}</span></td>
-                                            <td className="py-3"><div className="flex items-center gap-2"><span className="block max-w-[8rem] truncate" title={`€${Number(s.amount ?? 0).toFixed(2)}`}>€{Number(s.amount ?? 0).toFixed(2)}</span>
-                                                {String(s.method).toLowerCase() === 'cash' && (<Button size="sm" variant="ghost" onClick={() => activeShift?.status === 'open' && openSaleEditModal(s)} aria-label="Edit cash sale" disabled={activeShift?.status !== 'open'}><Pencil className="h-4 w-4" /></Button>)}
-                                            </div></td>
-                                            <td className="py-3"><span className="block max-w-[20rem] truncate" title={s.description ?? s.buyer ?? ''}>{s.description ?? s.buyer ?? ''}</span></td>
-                                            <td className="py-3"><span className="block max-w-[16rem] truncate" title={s.sold_by ?? s.sold_by_email ?? s.sold_by_id ?? 'Unknown'}>{s.sold_by ?? s.sold_by_email ?? s.sold_by_id ?? 'Unknown'}</span></td>
-                                            <td className="py-3"><span className="block max-w-[12rem] truncate" title={s.sold_at ?? s.created_at ?? ''}>{(s.sold_at ?? s.created_at) ? new Date(s.sold_at ?? s.created_at).toLocaleString() : 'N/A'}</span></td>
-                                            <td className="py-3"><div className="flex items-center gap-2"><Button size="sm" variant="ghost" disabled={submitting || activeShift?.status !== 'open'} onClick={() => { if (!activeShift || submitting) return; const saleId = s.id; setSales((prev) => (prev || []).filter((x: any) => x.id !== saleId)); setSubmitting(true); router.post(`/office/${activeShift?.id}/remove-sale`, { sale_id: saleId }, { preserveScroll: true, onSuccess: () => setMessage('Sale removed'), onError: () => { setSales((prev) => [s, ...(prev || [])]); setMessage('Failed to remove sale'); }, onFinish: () => setSubmitting(false) }); }}>Remove</Button></div></td>
+                                            <td className="py-3 px-1">
+                                                <span className="block max-w-[100%] truncate" title={s.name ?? s.item ?? 'N/A'}>
+                                                    {s.name ?? s.item ?? 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-1">
+                                                <span className="block max-w-[100%] truncate" title={String(s.method)}>
+                                                    {s.method}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="block max-w-[100%] truncate" title={`€${Number(s.amount ?? 0).toFixed(2)}`}>
+                                                        €{Number(s.amount ?? 0).toFixed(2)}
+                                                    </span>
+                                                    {String(s.method).toLowerCase() === 'cash' && (
+                                                        <>
+                                                            <Button size="icon" variant="ghost" className="h-4 w-4" onClick={() => setViewingSale(s)} aria-label="View cash breakdown">
+                                                                <Eye className="h-3 w-3" />
+                                                            </Button>
+                                                            <Button size="icon" variant="ghost" className="h-4 w-4" onClick={() => activeShift?.status === 'open' && openSaleEditModal(s)} aria-label="Edit cash sale" disabled={activeShift?.status !== 'open'}>
+                                                                <Pencil className="h-3 w-3" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-1">
+                                                <span className="block max-w-[100%] truncate" title={s.description ?? s.buyer ?? ''}>
+                                                    {s.description ?? s.buyer ?? ''}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-1">
+                                                <span className="block max-w-[100%] truncate" title={s.sold_by ?? s.sold_by_email ?? s.sold_by_id ?? 'Unknown'}>
+                                                    {s.sold_by ?? s.sold_by_email ?? s.sold_by_id ?? 'Unknown'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-1">
+                                                <span className="block max-w-[100%] truncate" title={(s.sold_at ?? s.created_at) ? new Date(s.sold_at ?? s.created_at).toLocaleString() : 'N/A'}>
+                                                    {(s.sold_at ?? s.created_at) ? new Date(s.sold_at ?? s.created_at).toLocaleString() : 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-1">
+                                                <Button size="sm" variant="ghost" disabled={submitting || activeShift?.status !== 'open'} onClick={() => { if (!activeShift || submitting) return; const saleId = s.id; setSales((prev) => (prev || []).filter((x: any) => x.id !== saleId)); setSubmitting(true); router.post(`/office/${activeShift?.id}/remove-sale`, { sale_id: saleId }, { preserveScroll: true, onSuccess: () => setMessage('Sale removed'), onError: () => { setSales((prev) => [s, ...(prev || [])]); setMessage('Failed to remove sale'); }, onFinish: () => setSubmitting(false) }); }}>Remove</Button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -455,27 +499,24 @@ export default function Office() {
                              <div className="mt-4 grid grid-cols-1 gap-3">
                                  {denominationConfig.map((d) => (
                                      <div key={d.key} className="flex items-center justify-between">
-                                         <div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div></div>
-                                         <div className="flex items-center gap-2"><Button size="sm" variant="ghost" onClick={() => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: Math.max(0, (prev[d.key] || 0) - 1) }))}>-</Button><input type="number" min={0} value={String(saleEditBreakdown[d.key] ?? 0)} onChange={(e) => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: Math.max(0, Math.floor(Number(e.target.value || 0))) }))} className="w-20 rounded-md border p-1 text-right" /><Button size="sm" onClick={() => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: (prev[d.key] || 0) + 1 }))}>+</Button></div>
-                                     </div>
-                                 ))}
-                                 <div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Calculated total</div><div className="text-lg font-medium">€{computeBreakdownTotal(saleEditBreakdown).toFixed(2)}</div></div>
+                                         <div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div><div className="text-sm text-muted-foreground">{d.label === 'Pink Token' ? 'jeton' : ''}</div></div><div className="flex items-center gap-2"><Button size="sm" variant="ghost" onClick={() => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: Math.max(0, (prev[d.key] || 0) - 1) }))}>-</Button><input type="number" min={0} value={String(saleEditBreakdown[d.key] ?? 0)} onChange={(e) => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: Math.max(0, Math.floor(Number(e.target.value || 0))) }))} className="w-20 rounded-md border p-1 text-right" /><Button size="sm" onClick={() => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: (prev[d.key] || 0) + 1 }))}>+</Button></div></div>))}
+                                                    <div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Calculated total</div><div className="text-lg font-medium">€{computeBreakdownTotal(saleEditBreakdown).toFixed(2)}</div></div>
                                  <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button onClick={() => { if (!activeShift || !editingSale) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(saleEditBreakdown).toFixed(2)); const amountToUse = computed > 0 ? computed : Number(editingSale.amount || 0); setSales((prev) => (prev || []).map((x: any) => x.id === editingSale.id ? { ...x, amount: amountToUse } : x)); router.post(`/office/${activeShift.id}/update-sale`, { sale_id: editingSale.id, amount: amountToUse, breakdown: saleEditBreakdown }, { onSuccess: () => { setMessage('Sale updated'); setIsSaleEditOpen(false); }, onError: () => { router.get(`/office/${activeShift.id}`, {}, { preserveState: true, only: ['activeShift'] }); setMessage('Failed to update sale'); }, onFinish: () => setSubmitting(false) }); }}>Save</Button></div>
                              </div>
                          </DialogContent>
                      </Dialog>
                      <div className="mt-6 flex justify-end gap-4">
-                        <div className="text-sm"><div className="flex items-center gap-2 text-muted-foreground"><span>Cash</span><Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setIsViewingLiveCashBreakdown(true)}><Eye className="h-4 w-4" /></Button></div><div className="font-medium">€{cashTotal.toFixed(2)}</div></div>
+                        <div className="text-sm"><div className="flex items-center gap-2 text-muted-foreground"><span>Cash</span><Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setIsViewingLiveCashBreakdown(true)}><HelpCircle className="h-4 w-4" /></Button></div><div className="font-medium">€{cashTotal.toFixed(2)}</div></div>
                         <div className="text-sm"><div className="text-muted-foreground">Card</div><div className="font-medium">€{cardTotal.toFixed(2)}</div></div>
                         <div className="text-sm"><div className="text-muted-foreground">Total</div><div className="font-semibold">€{combinedTotal.toFixed(2)}</div></div>
                      </div>
                 </div>
 
                 <Dialog open={isViewingLiveCashBreakdown} onOpenChange={setIsViewingLiveCashBreakdown}>
-                    <DialogContent><DialogTitle>Live Cash Sales Breakdown</DialogTitle><DialogDescription>Read-only breakdown of cash sales made during this shift.</DialogDescription><div className="mt-4 grid grid-cols-1 gap-3 p-1">{denominationConfig.map((d) => (<div key={d.key} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div></div><div className="text-sm font-medium">{Number((activeShift?.cash_breakdown || {})[d.key] ?? 0)}</div></div>))}<div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Total</div><div className="text-lg font-medium">€{computeBreakdownTotal(activeShift?.cash_breakdown || {}).toFixed(2)}</div></div></div><DialogFooter><DialogClose asChild><Button variant="secondary">Close</Button></DialogClose></DialogFooter></DialogContent>
+                    <DialogContent><DialogTitle>Live Cash Sales Breakdown</DialogTitle><DialogDescription>Read-only breakdown of cash sales made during this shift.</DialogDescription><div className="mt-4 grid grid-cols-1 gap-3 p-1">{denominationConfig.map((d) => (<div key={d.key} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div><div className="text-sm font-medium">{Number((activeShift?.cash_breakdown || {})[d.key] ?? 0)}</div></div>))}<div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Total</div><div className="text-lg font-medium">€{computeBreakdownTotal(activeShift?.cash_breakdown || {}).toFixed(2)}</div></div></div><DialogFooter><DialogClose asChild><Button variant="secondary">Close</Button></DialogClose></DialogContent>
                 </Dialog>
                 <Dialog open={isViewingTotalCashBreakdown} onOpenChange={setIsViewingTotalCashBreakdown}>
-                    <DialogContent><DialogTitle>Total Cash Drawer Breakdown</DialogTitle><DialogDescription>Read-only breakdown of all cash currently in the drawer (start of shift + live sales).</DialogDescription><div className="mt-4 grid grid-cols-1 gap-3 p-1">{denominationConfig.map((d) => (<div key={d.key} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div></div><div className="text-sm font-medium">{Number((totalCashBreakdown || {})[d.key] ?? 0)}</div></div>))}<div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Total</div><div className="text-lg font-medium">€{computeBreakdownTotal(totalCashBreakdown).toFixed(2)}</div></div></div><DialogFooter><DialogClose asChild><Button variant="secondary">Close</Button></DialogClose></DialogFooter></DialogContent>
+                    <DialogContent><DialogTitle>Total Cash Drawer Breakdown</DialogTitle><DialogDescription>Read-only breakdown of all cash currently in the drawer (start of shift + live sales).</DialogDescription><div className="mt-4 grid grid-cols-1 gap-3 p-1">{denominationConfig.map((d) => (<div key={d.key} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div><div className="text-sm font-medium">{Number((totalCashBreakdown || {})[d.key] ?? 0)}</div></div>))}<div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Total</div><div className="text-lg font-medium">€{computeBreakdownTotal(totalCashBreakdown).toFixed(2)}</div></div></div><DialogFooter><DialogClose asChild><Button variant="secondary">Close</Button></DialogClose></DialogContent>
                 </Dialog>
             </div>
         </AppLayout>
