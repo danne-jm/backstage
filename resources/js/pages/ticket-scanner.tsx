@@ -951,11 +951,18 @@ export default function TicketScanner() {
                                             <div className="text-xs text-muted-foreground">
                                                 Ticket ID
                                             </div>
-                                            <div className="font-mono text-sm break-words">
-                                                {(
-                                                    scanModal.ticket
-                                                        .ticket_id ?? ''
-                                                ).replace(/_[0-9]{6,}_/, '_…_')}
+                                            <div
+                                                className="font-mono text-sm break-words truncate"
+                                                title={scanModal.ticket.ticket_id ?? ''}
+                                            >
+                                                {(() => {
+                                                    const rawId = scanModal.ticket.ticket_id ?? '';
+                                                    // Truncate visually if too long, always show full in tooltip
+                                                    if (rawId.length > 24) {
+                                                        return rawId.slice(0, 12) + '…' + rawId.slice(-8);
+                                                    }
+                                                    return rawId;
+                                                })()}
                                             </div>
                                         </div>
 
@@ -979,7 +986,18 @@ export default function TicketScanner() {
                                         </div>
 
                                         <div className="text-xs text-muted-foreground">
-                                            Event: {scanModal.ticket.event_name}{' '}
+                                            Event: {
+                                                scanModal.ticket.event_name
+                                                    ? scanModal.ticket.event_name
+                                                    : (() => {
+                                                        // fallback: lookup event by id from events array
+                                                        const evId = scanModal.ticket.event_id ?? scanModal.ticket.event;
+                                                        const found = Array.isArray(events)
+                                                            ? events.find((ev) => ev.id === evId)
+                                                            : null;
+                                                        return found ? found.name : 'Unknown';
+                                                    })()
+                                            }{' '}
                                             {scanModal.ticket.event_date
                                                 ? `(${new Date(scanModal.ticket.event_date).toLocaleString()})`
                                                 : ''}

@@ -20,11 +20,15 @@ class OfficeShift extends Model
         'started_at',
         'ended_at',
         'cash_total',
+        'card_total',
+        'start_cash',
+        'start_card',
         'cash_breakdown',
         'start_cash_breakdown',
-        'card_total',
         'status',
         'notes',
+        'total_cash',
+        'total_card',
     ];
 
     protected $casts = [
@@ -32,6 +36,12 @@ class OfficeShift extends Model
         'start_cash_breakdown' => 'array',
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
+        'cash_total' => 'decimal:2',
+        'card_total' => 'decimal:2',
+        'start_cash' => 'decimal:2',
+        'start_card' => 'decimal:2',
+        'total_cash' => 'decimal:2',
+        'total_card' => 'decimal:2',
     ];
 
     /**
