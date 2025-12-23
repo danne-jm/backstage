@@ -143,6 +143,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Distribution endpoint used by ticketing page to send normal HTML emails to recipients
     Route::post('distribution/distribute', [App\Http\Controllers\DistributionController::class, 'distribute'])->name('distribute-emails');
+
+    // Mails log page
+    Route::get('mails', [App\Http\Controllers\MailsController::class, 'index'])->name('mails');
+    Route::get('mails/{mail}/ticket', [App\Http\Controllers\MailsController::class, 'getTicketForMail'])->name('mails.ticket');
 });
 
 // API route for fetching tickets by event (outside auth middleware)
