@@ -332,7 +332,7 @@ export default function Office() {
                                                 </div>
                                             ))}
                                             <div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Calculated total</div><div className="text-lg font-medium">€{computeBreakdownTotal(customCashBreakdown).toFixed(2)}</div></div>
-                                            <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button onClick={() => { if (!activeShift) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(customCashBreakdown).toFixed(2)); const isQuick = Boolean(quickSaleContext); let amountToUse = 0; let selectedItem = null; let itemName = 'Custom Sale'; let productIdToSend = null; let itemTypeToSend = 'custom'; let descToUse = String(customDescription || ''); let ticketTypeToSend = undefined; let ticketLabelToSend = undefined; if (isQuick) { selectedItem = filteredSellables.find((i: any) => i.actual_id === quickSaleContext.productId); productIdToSend = quickSaleContext.productId; itemTypeToSend = quickSaleContext.itemType; ticketTypeToSend = quickSaleContext.ticketType; ticketLabelToSend = quickSaleContext.ticketLabel; if (computed > 0) amountToUse = computed; else if (selectedItem) { if (selectedItem.type === 'product') amountToUse = Number(selectedItem.price || 0); else amountToUse = Number(quickSaleContext.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card) || 0; } itemName = selectedItem ? selectedItem.name : 'Quick Sale'; descToUse = ''; } else { amountToUse = computed > 0 ? computed : Number(customAmount || 0); const isCustom = customSaleItemId === 'custom'; selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); productIdToSend = selectedItem ? selectedItem.actual_id : null; itemTypeToSend = selectedItem ? selectedItem.type : 'custom'; itemName = selectedItem ? selectedItem.name : 'Custom Sale'; } const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'cash', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: productIdToSend, item_type: itemType... [truncated]
+                                            <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button onClick={() => { if (!activeShift) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(customCashBreakdown).toFixed(2)); const isQuick = Boolean(quickSaleContext); let amountToUse = 0; let selectedItem = null; let itemName = 'Custom Sale'; let productIdToSend = null; let itemTypeToSend = 'custom'; let descToUse = String(customDescription || ''); let ticketTypeToSend = undefined; let ticketLabelToSend = undefined; if (isQuick) { selectedItem = filteredSellables.find((i: any) => i.actual_id === quickSaleContext.productId); productIdToSend = quickSaleContext.productId; itemTypeToSend = quickSaleContext.itemType; ticketTypeToSend = quickSaleContext.ticketType; ticketLabelToSend = quickSaleContext.ticketLabel; if (computed > 0) amountToUse = computed; else if (selectedItem) { if (selectedItem.type === 'product') amountToUse = Number(selectedItem.price || 0); else amountToUse = Number(quickSaleContext.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card) || 0; } itemName = selectedItem ? selectedItem.name : 'Quick Sale'; descToUse = ''; } else { amountToUse = computed > 0 ? computed : Number(customAmount || 0); const isCustom = customSaleItemId === 'custom'; selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); productIdToSend = selectedItem ? selectedItem.actual_id : null; itemTypeToSend = selectedItem ? selectedItem.type : 'custom'; itemName = selectedItem ? selectedItem.name : 'Custom Sale'; } const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'cash', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: productIdToSend, item_type: itemTypeToSend, method: 'cash', amount: amountToUse, description: descToUse, ticket_type: ticketTypeToSend, ticket_label: ticketLabelToSend, breakdown: customCashBreakdown }, { onSuccess: () => { setMessage('Sale recorded (Cash)'); setIsCustomCashModalOpen(false); setCustomSaleItemId('custom'); setCustomAmount(''); setCustomDescription(''); }, onError: () => { setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId)); setMessage('Failed to record sale'); }, onFinish: () => { setSubmitting(false); setQuickSaleContext(null); } }); }}>Save</Button></div>
                                         </div>
                                     </DialogContent>
                                 </Dialog>
@@ -459,9 +459,6 @@ export default function Office() {
                                                     </span>
                                                     {String(s.method).toLowerCase() === 'cash' && (
                                                         <>
-                                                            <Button size="icon" variant="ghost" className="h-4 w-4" onClick={() => setViewingSale(s)} aria-label="View cash breakdown">
-                                                                <Eye className="h-3 w-3" />
-                                                            </Button>
                                                             <Button size="icon" variant="ghost" className="h-4 w-4" onClick={() => activeShift?.status === 'open' && openSaleEditModal(s)} aria-label="Edit cash sale" disabled={activeShift?.status !== 'open'}>
                                                                 <Pencil className="h-3 w-3" />
                                                             </Button>
@@ -513,10 +510,54 @@ export default function Office() {
                 </div>
 
                 <Dialog open={isViewingLiveCashBreakdown} onOpenChange={setIsViewingLiveCashBreakdown}>
-                    <DialogContent><DialogTitle>Live Cash Sales Breakdown</DialogTitle><DialogDescription>Read-only breakdown of cash sales made during this shift.</DialogDescription><div className="mt-4 grid grid-cols-1 gap-3 p-1">{denominationConfig.map((d) => (<div key={d.key} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div><div className="text-sm font-medium">{Number((activeShift?.cash_breakdown || {})[d.key] ?? 0)}</div></div>))}<div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Total</div><div className="text-lg font-medium">€{computeBreakdownTotal(activeShift?.cash_breakdown || {}).toFixed(2)}</div></div></div><DialogFooter><DialogClose asChild><Button variant="secondary">Close</Button></DialogClose></DialogContent>
+                    <DialogContent>
+                        <DialogTitle>Live Cash Sales Breakdown</DialogTitle>
+                        <DialogDescription>Read-only breakdown of cash sales made during this shift.</DialogDescription>
+                        <div className="mt-4 grid grid-cols-1 gap-3 p-1">
+                            {denominationConfig.map((d) => (
+                                <div key={d.key} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div>
+                                        <div className="text-sm font-medium">{Number((activeShift?.cash_breakdown || {})[d.key] ?? 0)}</div>
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="flex items-center justify-between border-t pt-2">
+                                <div className="text-sm text-muted-foreground">Total</div>
+                                <div className="text-lg font-medium">€{computeBreakdownTotal(activeShift?.cash_breakdown || {}).toFixed(2)}</div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="secondary">Close</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </DialogContent>
                 </Dialog>
                 <Dialog open={isViewingTotalCashBreakdown} onOpenChange={setIsViewingTotalCashBreakdown}>
-                    <DialogContent><DialogTitle>Total Cash Drawer Breakdown</DialogTitle><DialogDescription>Read-only breakdown of all cash currently in the drawer (start of shift + live sales).</DialogDescription><div className="mt-4 grid grid-cols-1 gap-3 p-1">{denominationConfig.map((d) => (<div key={d.key} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div><div className="text-sm font-medium">{Number((totalCashBreakdown || {})[d.key] ?? 0)}</div></div>))}<div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Total</div><div className="text-lg font-medium">€{computeBreakdownTotal(totalCashBreakdown).toFixed(2)}</div></div></div><DialogFooter><DialogClose asChild><Button variant="secondary">Close</Button></DialogClose></DialogContent>
+                    <DialogContent>
+                        <DialogTitle>Total Cash Drawer Breakdown</DialogTitle>
+                        <DialogDescription>Read-only breakdown of all cash currently in the drawer (start of shift + live sales).</DialogDescription>
+                        <div className="mt-4 grid grid-cols-1 gap-3 p-1">
+                            {denominationConfig.map((d) => (
+                                <div key={d.key} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div>
+                                        <div className="text-sm font-medium">{Number((totalCashBreakdown || {})[d.key] ?? 0)}</div>
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="flex items-center justify-between border-t pt-2">
+                                <div className="text-sm text-muted-foreground">Total</div>
+                                <div className="text-lg font-medium">€{computeBreakdownTotal(totalCashBreakdown).toFixed(2)}</div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="secondary">Close</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </DialogContent>
                 </Dialog>
             </div>
         </AppLayout>
