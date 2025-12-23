@@ -32,8 +32,15 @@ class OfficeController extends Controller
 
         // FIX 1: Include events with NULL end_sell_date (indefinite sales)
         $events = Event::where(function ($query) {
-            $query->where('end_sell_date', '>=', now())
-                ->orWhereNull('end_sell_date');
+            $now = now();
+            $query->where(function ($q) use ($now) {
+                $q->where('start_sell_date', '<=', $now)
+                  ->orWhereNull('start_sell_date');
+            });
+            $query->where(function ($q) use ($now) {
+                $q->where('end_sell_date', '>=', $now)
+                      ->orWhereNull('end_sell_date');
+            });
         })
             ->orderBy('event_date', 'asc')
             ->get();
@@ -123,10 +130,16 @@ class OfficeController extends Controller
         ])->toArray();
 
         $products = Product::orderBy('name')->get();
-        // Same FIX for events query here
         $events = Event::where(function ($query) {
-            $query->where('end_sell_date', '>=', now())
-                ->orWhereNull('end_sell_date');
+            $now = now();
+            $query->where(function ($q) use ($now) {
+                $q->where('start_sell_date', '<=', $now)
+                  ->orWhereNull('start_sell_date');
+            });
+            $query->where(function ($q) use ($now) {
+                $q->where('end_sell_date', '>=', $now)
+                      ->orWhereNull('end_sell_date');
+            });
         })
             ->orderBy('event_date', 'asc')
             ->get();
@@ -190,17 +203,27 @@ class OfficeController extends Controller
 
         $user = Auth::user();
 
+        // Find the last closed shift to carry over its totals
+        $lastShift = OfficeShift::where('status', 'closed')
+            ->orderBy('ended_at', 'desc')
+            ->first();
+
+        $startCash = $lastShift ? $lastShift->total_cash : 0;
+        $startCard = $lastShift ? $lastShift->total_card : 0;
+        $startCashBreakdown = $lastShift ? $lastShift->end_of_shift_cash_breakdown : null;
+
         $shift = OfficeShift::create([
             'started_by' => $user->id,
             'started_at' => now(),
             'status' => 'open',
-            'cash_total' => 0,
-            'card_total' => 0,
-            // Initialize totals to prevent null issues later
-            'total_cash' => 0,
-            'total_card' => 0,
-            'start_cash' => 0,
-            'start_card' => 0,
+            'cash_total' => 0, // This is for sales during this shift
+            'card_total' => 0, // This is for sales during this shift
+            'start_cash' => $startCash,
+            'start_card' => $startCard,
+            'start_cash_breakdown' => $startCashBreakdown,
+            // Initialize total_ fields with the starting amounts
+            'total_cash' => $startCash,
+            'total_card' => $startCard,
         ]);
 
         // Add the starter as a worker immediately via relation
@@ -416,13 +439,30 @@ class OfficeController extends Controller
 
     public function end(Request $request, OfficeShift $office)
     {
+        $finalBreakdown = $this->mergeBreakdowns(
+            $office->start_cash_breakdown,
+            $office->cash_breakdown
+        );
+
         $office->update([
             'ended_at' => now(),
             'status' => 'closed',
             'notes' => $request->input('notes'),
+            'end_of_shift_cash_breakdown' => $finalBreakdown,
         ]);
 
         return redirect()->route('office');
+    }
+
+    private function mergeBreakdowns(?array $b1, ?array $b2): array
+    {
+        $merged = [];
+        foreach (OfficeShift::DENOMINATIONS as $denom) {
+            $val1 = isset($b1[$denom]) ? intval($b1[$denom]) : 0;
+            $val2 = isset($b2[$denom]) ? intval($b2[$denom]) : 0;
+            $merged[$denom] = $val1 + $val2;
+        }
+        return $merged;
     }
 
     public function reopen(Request $request, OfficeShift $office)

@@ -26,6 +26,7 @@ class OfficeShift extends Model
         'start_card',
         'cash_breakdown',
         'start_cash_breakdown',
+        'end_of_shift_cash_breakdown',
         'status',
         'notes',
         'total_cash',
@@ -35,6 +36,7 @@ class OfficeShift extends Model
     protected $casts = [
         'cash_breakdown' => 'array',
         'start_cash_breakdown' => 'array',
+        'end_of_shift_cash_breakdown' => 'array',
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
         'cash_total' => 'decimal:2',

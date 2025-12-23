@@ -245,20 +245,6 @@ export default function Office() {
     const [customCashBreakdown, setCustomCashBreakdown] = React.useState<Record<string, number>>(defaultCashState);
 
     React.useEffect(() => {
-        if (isCashModalOpen) return;
-        if (activeShift) {
-            const existing = activeShift.start_cash_breakdown || null;
-            const init = { ...defaultCashState };
-            if (existing && typeof existing === 'object') {
-                for (const k of Object.keys(init)) {
-                    init[k] = Number(existing[k] ?? 0);
-                }
-            }
-            setCashBreakdown(init);
-        }
-    }, [activeShift?.start_cash_breakdown, isCashModalOpen]);
-
-    React.useEffect(() => {
         if (isCustomCashModalOpen) return;
         if (activeShift) {
             const existing = activeShift.cash_breakdown || null;
@@ -301,15 +287,24 @@ export default function Office() {
         return t;
     };
 
+    const [customCashModalTitle, setCustomCashModalTitle] = React.useState('Cash Sale');
+
     const openCustomCashModal = (context: any | null = null) => {
-        const existing = activeShift?.cash_breakdown ?? null;
-        const init = { ...defaultCashState };
-        if (existing && typeof existing === 'object') {
-            for (const k of Object.keys(init)) {
-                init[k] = Number(existing[k] ?? 0);
+        setCustomCashBreakdown({ ...defaultCashState }); // Always reset to zero for a new sale
+
+        if (context) {
+            const selectedItem = filteredSellables.find((i: any) => i.actual_id === context.productId);
+            if (selectedItem) {
+                let price = selectedItem.price;
+                if (selectedItem.type === 'event') {
+                    price = context.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card;
+                }
+                setCustomCashModalTitle(`Cash Sale: ${selectedItem.name} (€${Number(price).toFixed(2)})`);
             }
+        } else {
+            setCustomCashModalTitle('Cash breakdown for Custom Sale');
         }
-        setCustomCashBreakdown(init);
+
         setQuickSaleContext(context);
         setIsCustomCashModalOpen(true);
     };
@@ -516,7 +511,7 @@ export default function Office() {
                                 </div>
                                 <Dialog open={isCustomCashModalOpen} onOpenChange={(v) => { setIsCustomCashModalOpen(v); if (!v) setQuickSaleContext(null); setIsPollingPaused(v); }}>
                                     <DialogContent>
-                                        <DialogTitle>Cash breakdown for Custom Sale</DialogTitle>
+                                        <DialogTitle>{customCashModalTitle}</DialogTitle>
                                         <DialogDescription>Provide the counts of bills, coins and tokens.</DialogDescription>
                                         <div className="mt-4 grid grid-cols-1 gap-3">
                                             {denominationConfig.map((d) => (
