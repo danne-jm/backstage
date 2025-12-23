@@ -16,6 +16,8 @@ import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Check, Eye, Pencil } from 'lucide-react';
 import * as React from 'react';
+import useSWR from 'swr';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -31,8 +33,13 @@ const denominationConfig = [
     { key: 'token', label: 'Pink Token' },
 ];
 
+const fetcher = (url: string) => axios.get(url).then(res => res.data);
+
 export default function Office() {
-    const props = usePage<SharedData>().props;
+    const { props: initialProps } = usePage<SharedData>();
+    const { data } = useSWR(office().url, fetcher, { refreshInterval: 2000 });
+
+    const props = data?.props ?? initialProps;
 
     const activeShift: any = props['activeShift'] ?? null;
     const lastShift: any = props['lastShift'] ?? null;
@@ -100,7 +107,6 @@ export default function Office() {
     };
 
     const [message, setMessage] = React.useState('');
-    const [isPollingPaused, setIsPollingPaused] = React.useState(false);
     const [viewingSale, setViewingSale] = React.useState<any | null>(null);
     const [isViewingStartBreakdown, setIsViewingStartBreakdown] = React.useState(false);
     const [isViewingEndBreakdown, setIsViewingEndBreakdown] = React.useState(false);
@@ -170,16 +176,8 @@ export default function Office() {
         return grouped.map((g) => `${g.name} ${g.count}`).join(' | ');
     };
 
-    React.useEffect(() => {
-        if (isPollingPaused) return undefined;
-        const interval = setInterval(() => {
-            router.get(office().url, {}, { preserveState: true, preserveScroll: true, replace: true, only: ['activeShift', 'lastShift', 'products', 'sellables', 'pastShifts', 'staff'] });
-        }, 2000);
-        return () => clearInterval(interval);
-    }, [isPollingPaused]);
-
     const filteredPastShifts = (pastShifts || []).filter((s: any) => s.id !== lastShift?.id && s.id !== activeShift?.id);
-
+    
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Office" />
@@ -260,7 +258,7 @@ export default function Office() {
                                     <div className="text-sm font-medium">No Active Shift</div>
                                     <div className="mt-1 text-xs text-muted-foreground">Start a new shift to begin tracking sales and workers</div>
                                 </div>
-                                <Button className="w-full" variant="default" onClick={() => { router.post('/office/start', {}, { preserveScroll: true, onSuccess: () => { setTimeout(() => router.get(office().url, {}, { preserveScroll: true, preserveState: true, replace: true }), 300); }, }); }}>Start Office Shift</Button>
+                                <Button className="w-full" variant="default" onClick={() => router.post('/office/start')}>Start Office Shift</Button>
                             </div>
                         )}
                     </section>
@@ -316,7 +314,7 @@ export default function Office() {
                                 </div>
                             </div>
 
-                            <Dialog open={isViewingStartBreakdown} onOpenChange={(v) => { setIsViewingStartBreakdown(v); setIsPollingPaused(v); }}>
+                            <Dialog open={isViewingStartBreakdown} onOpenChange={(v) => { setIsViewingStartBreakdown(v);}}>
                                 <DialogContent>
                                     <DialogTitle>Start of Shift Cash</DialogTitle>
                                     <DialogDescription>Read-only cash distribution at the start of the shift.</DialogDescription>
@@ -336,7 +334,7 @@ export default function Office() {
                                 </DialogContent>
                             </Dialog>
 
-                            <Dialog open={isViewingEndBreakdown} onOpenChange={(v) => { setIsViewingEndBreakdown(v); setIsPollingPaused(v); }}>
+                            <Dialog open={isViewingEndBreakdown} onOpenChange={(v) => { setIsViewingEndBreakdown(v);}}>
                                 <DialogContent>
                                     <DialogTitle>End of Shift Cash</DialogTitle>
                                     <DialogDescription>Read-only cash distribution at the end of the shift.</DialogDescription>
@@ -356,7 +354,7 @@ export default function Office() {
                                 </DialogContent>
                             </Dialog>
 
-                             <Dialog open={isViewingSalesBreakdown} onOpenChange={(v) => { setIsViewingSalesBreakdown(v); setIsPollingPaused(v); }}>
+                             <Dialog open={isViewingSalesBreakdown} onOpenChange={(v) => { setIsViewingSalesBreakdown(v);}}>
                                 <DialogContent>
                                     <DialogTitle>Last Shift Cash Sales Distribution</DialogTitle>
                                     <DialogDescription>Read-only cash distribution for all cash sales made during the last shift.</DialogDescription>

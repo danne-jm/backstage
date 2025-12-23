@@ -16,6 +16,8 @@ import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Check, Eye, HelpCircle, Pencil } from 'lucide-react';
 import * as React from 'react';
+import useSWR from 'swr';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -42,8 +44,13 @@ const mergeBreakdowns = (b1: any, b2: any): Record<string, number> => {
     return merged;
 };
 
+const fetcher = (url: string) => axios.get(url).then(res => res.data);
+
 export default function Office() {
-    const props = usePage<SharedData>().props;
+    const { props: initialProps } = usePage<SharedData>();
+    const { data } = useSWR(initialProps.activeShift ? `/office/${initialProps.activeShift.id}` : null, fetcher, { refreshInterval: 2000 });
+
+    const props = data?.props ?? initialProps;
     
     const sellables: any[] = Array.isArray(props['sellables'])
         ? props['sellables']
@@ -84,29 +91,18 @@ export default function Office() {
     const [sales, setSales] = React.useState<any[]>([]);
     const [submitting, setSubmitting] = React.useState(false);
     const [message, setMessage] = React.useState('');
-    const [isPollingPaused, setIsPollingPaused] = React.useState(false);
 
     React.useEffect(() => {
-        if (!message) return undefined;
-        const t = setTimeout(() => setMessage(''), 4000);
-        return () => clearTimeout(t);
-    }, [message]);
+        if (activeShift) {
+            setSales(activeShift.sales || []);
+            setWorkers(activeShift.workers || []);
+        }
+    }, [activeShift]);
 
-    React.useEffect(() => {
-        const active: any = props['activeShift'] ?? null;
-        setWorkers(Array.isArray(active?.workers) ? active.workers : []);
-        setSales(Array.isArray(active?.sales) ? active.sales : []);
-    }, [props['activeShift']]);
-
-    React.useEffect(() => {
-        if (!activeShift || isPollingPaused || activeShift?.status === 'closed') return undefined;
-
-        const interval = setInterval(() => {
-            router.get(`/office/${activeShift.id}`, {}, { preserveState: true, preserveScroll: true, replace: true, only: ['activeShift', 'previousTotals', 'staff', 'products'] });
-        }, 60000);
-
-        return () => clearInterval(interval);
-    }, [activeShift?.id, isPollingPaused, activeShift?.status]);
+    const staffMap = React.useMemo(
+        () => new Map((props['staff'] || []).map((s: any) => [s.email, s.name])),
+        [props['staff']],
+    );
 
     const staffData = (Array.isArray(props['staff']) ? props['staff'] : []).map(
         (m: any) => ({
@@ -320,7 +316,7 @@ export default function Office() {
                         <div className="mt-4 space-y-3">
                             <div>
                                 <div className="flex items-center justify-between"><div className="text-xs font-medium">Start of shift</div><Button size="sm" variant="ghost" onClick={() => setStartCollapsed((s) => !s)}>{startCollapsed ? 'Show' : 'Hide'}</Button></div>
-                                <Dialog open={isCustomCashModalOpen} onOpenChange={(v) => { setIsCustomCashModalOpen(v); if (!v) setQuickSaleContext(null); setIsPollingPaused(v); }}>
+                                <Dialog open={isCustomCashModalOpen} onOpenChange={(v) => { setIsCustomCashModalOpen(v); if (!v) setQuickSaleContext(null); }}>
                                     <DialogContent>
                                         <DialogTitle>{customCashModalTitle}</DialogTitle>
                                         <DialogDescription>Provide the counts of bills, coins and tokens.</DialogDescription>
@@ -340,7 +336,7 @@ export default function Office() {
                                     <div className="mt-2 space-y-2">
                                         <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">Cash</div><div className="flex items-center gap-2">{editingStart.cash ? (<><Input type="number" step="0.01" className="w-32" value={String(pendingStart?.cash ?? startTotals.cash)} onChange={(e) => setPendingStart((prev) => ({ ...(prev ?? startTotals), cash: Number(e.target.value || 0) }))} /><Button size="sm" onClick={() => { if (!activeShift) return; setSubmitting(true); const newCash = pendingStart?.cash ?? startTotals.cash; router.post(`/office/${activeShift.id}/update-start-totals`, { cash: newCash, card: startTotals.card }, { onSuccess: () => { setStartTotals((s) => ({ ...s, cash: newCash })); setMessage('Start cash updated'); setEditingStart((e) => ({ ...e, cash: false })); setPendingStart(null); }, onError: () => setMessage('Failed to update start cash'), onFinish: () => setSubmitting(false) }); }}>Save</Button><Button size="sm" variant="ghost" onClick={() => { setEditingStart((e) => ({ ...e, cash: false })); setPendingStart(null); }}>Cancel</Button></>) : (<><div className="text-lg font-medium">€{Number(startTotals.cash).toFixed(2)}</div><Button size="sm" variant="ghost" disabled={activeShift?.status === 'closed'} onClick={() => openCashModalForStart()}><Pencil className="h-4 w-4" /></Button></>)}</div></div>
                                         <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">Card</div><div className="flex items-center gap-2">{editingStart.card ? (<><Input type="number" step="0.01" className="w-32" value={String(pendingStart?.card ?? startTotals.card)} onChange={(e) => setPendingStart((prev) => ({ ...(prev ?? startTotals), card: Number(e.target.value || 0) }))} /><Button size="sm" onClick={() => { if (!activeShift) return; setSubmitting(true); const newCard = pendingStart?.card ?? startTotals.card; router.post(`/office/${activeShift.id}/update-start-totals`, { cash: startTotals.cash, card: newCard }, { onSuccess: () => { setStartTotals((s) => ({ ...s, card: newCard })); setMessage('Start card updated'); setEditingStart((e) => ({ ...e, card: false })); setPendingStart(null); }, onError: () => setMessage('Failed to update start card'), onFinish: () => setSubmitting(false) }); }}>Save</Button><Button size="sm" variant="ghost" onClick={() => { setEditingStart((e) => ({ ...e, card: false })); setPendingStart(null); }}>Cancel</Button></>) : (<><div className="text-lg font-medium">€{Number(startTotals.card).toFixed(2)}</div><Button size="sm" variant="ghost" disabled={activeShift?.status === 'closed'} onClick={() => setEditingStart((e) => ({ ...e, card: true }))}><Pencil className="h-4 w-4" /></Button></>)}</div></div>
-                                        <Dialog open={isCashModalOpen} onOpenChange={(v) => { setIsCashModalOpen(v); setIsPollingPaused(v); }}>
+                                        <Dialog open={isCashModalOpen} onOpenChange={(v) => { setIsCashModalOpen(v); }}>
                                             <DialogContent>
                                                 <DialogTitle>Cash breakdown</DialogTitle><DialogDescription>Enter counts for each denomination.</DialogDescription>
                                                 <div className="mt-4 grid grid-cols-1 gap-3">
@@ -472,8 +468,8 @@ export default function Office() {
                                                 </span>
                                             </td>
                                             <td className="py-3 px-1">
-                                                <span className="block max-w-[100%] truncate" title={s.sold_by ?? s.sold_by_email ?? s.sold_by_id ?? 'Unknown'}>
-                                                    {s.sold_by ?? s.sold_by_email ?? s.sold_by_id ?? 'Unknown'}
+                                                <span className="block max-w-[100%] truncate" title={staffMap.get(s.sold_by) ?? s.sold_by ?? 'Unknown'}>
+                                                    {staffMap.get(s.sold_by) ?? s.sold_by ?? 'Unknown'}
                                                 </span>
                                             </td>
                                             <td className="py-3 px-1">
@@ -490,7 +486,7 @@ export default function Office() {
                             </table>
                         </div>
                      </div>
-                     <Dialog open={isSaleEditOpen} onOpenChange={(v) => { setIsSaleEditOpen(v); if (!v) setEditingSale(null); setIsPollingPaused(v); }}>
+                     <Dialog open={isSaleEditOpen} onOpenChange={(v) => { setIsSaleEditOpen(v); if (!v) setEditingSale(null); }}>
                          <DialogContent>
                              <DialogTitle>Edit cash transaction</DialogTitle><DialogDescription>Adjust cash denominations.</DialogDescription>
                              <div className="mt-4 grid grid-cols-1 gap-3">
