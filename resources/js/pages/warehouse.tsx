@@ -150,27 +150,23 @@ export default function Warehouse() {
             );
         }
 
-        // convert categoryText into array
-        const cats = (createCategoryText || '')
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean);
-
-        createForm.setData('category', cats);
-        // Use the useForm helper for submission and force FormData when a file is present.
-        // Do NOT auto-close the create modal on success — wait for user confirmation.
+        createForm.transform((data) => ({
+            ...data,
+            category: (createCategoryText || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean),
+        }));
         createForm.post('/warehouse/items', {
-            forceFormData: true,
             preserveState: true,
             onSuccess: () => {
-                // keep the modal open so the user can confirm; clear only the internal file input
-                try {
-                    if (createFileInputRef.current)
-                        createFileInputRef.current.value = '';
-                } catch (e) {
-                    void e;
+                setCreateOpen(false);
+                createForm.reset();
+                setCreateCategoryText('');
+                setCreateImagePreview(null);
+                if (createFileInputRef.current) {
+                    createFileInputRef.current.value = '';
                 }
-                createForm.setData('image', null);
             },
         });
     }
@@ -220,49 +216,26 @@ export default function Warehouse() {
             );
         }
 
-        const cats = (editCategoryText || '')
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean);
-        editForm.setData('category', cats);
+        editForm.transform((data) => ({
+            ...data,
+            category: (editCategoryText || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean),
+        }));
 
-        // Use the useForm helper which supports file uploads when forceFormData is true.
-        // For updates we always call put; useForm will send multipart when a File is present.
-        if (editForm.data.image || editForm.data.remove_image) {
-            editForm.put(`/warehouse/items/${selectedItem.id}`, {
-                forceFormData: true,
-                onSuccess: () => {
-                    setEditOpen(false);
-                    editForm.setData('image', null);
-                    setEditImagePreview(null);
-                    editForm.setData('remove_image', false);
-                    setEditRemoveImage(false);
-                    try {
-                        if (editFileInputRef.current)
-                            editFileInputRef.current.value = '';
-                    } catch (e) {
-                        void e;
-                    }
-                },
-            });
-        } else {
-            editForm.put(`/warehouse/items/${selectedItem.id}`, {
-                forceFormData: true,
-                onSuccess: () => {
-                    setEditOpen(false);
-                    editForm.setData('image', null);
-                    setEditImagePreview(null);
-                    editForm.setData('remove_image', false);
-                    setEditRemoveImage(false);
-                    try {
-                        if (editFileInputRef.current)
-                            editFileInputRef.current.value = '';
-                    } catch (e) {
-                        void e;
-                    }
-                },
-            });
-        }
+        editForm.put(`/warehouse/items/${selectedItem.id}`, {
+            onSuccess: () => {
+                setEditOpen(false);
+                editForm.reset();
+                setEditCategoryText('');
+                setEditImagePreview(null);
+                setEditRemoveImage(false);
+                if (editFileInputRef.current) {
+                    editFileInputRef.current.value = '';
+                }
+            },
+        });
     }
 
     // Controlled Delete dialog
@@ -557,6 +530,7 @@ export default function Warehouse() {
                                             />
                                             <div className="flex gap-2">
                                                 <Button
+                                                    type="button"
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() =>
@@ -566,6 +540,7 @@ export default function Warehouse() {
                                                     Change
                                                 </Button>
                                                 <Button
+                                                    type="button"
                                                     size="sm"
                                                     variant="secondary"
                                                     onClick={() => {
@@ -584,6 +559,7 @@ export default function Warehouse() {
                                         </div>
                                     ) : (
                                         <Button
+                                            type="button"
                                             onClick={() =>
                                                 createFileInputRef.current?.click()
                                             }
@@ -1050,14 +1026,6 @@ export default function Warehouse() {
                                                                         setEditCategoryText(
                                                                             next,
                                                                         );
-                                                                        editForm.setData(
-                                                                            'category',
-                                                                            existingNow.concat(
-                                                                                [
-                                                                                    c,
-                                                                                ],
-                                                                            ),
-                                                                        );
                                                                     }
                                                                 }}
                                                             >
@@ -1116,6 +1084,7 @@ export default function Warehouse() {
                                             <div className="flex flex-col gap-2">
                                                 <div className="flex gap-2">
                                                     <Button
+                                                        type="button"
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() =>
@@ -1125,6 +1094,7 @@ export default function Warehouse() {
                                                         Change
                                                     </Button>
                                                     <Button
+                                                        type="button"
                                                         size="sm"
                                                         variant="secondary"
                                                         onClick={() => {
@@ -1155,6 +1125,7 @@ export default function Warehouse() {
                                         </>
                                     ) : (
                                         <Button
+                                            type="button"
                                             onClick={() =>
                                                 editFileInputRef.current?.click()
                                             }
