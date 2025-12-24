@@ -33,13 +33,18 @@ const denominationConfig = [
     { key: 'token', label: 'Pink Token' },
 ];
 
-const fetcher = (url: string) => axios.get(url).then(res => res.data);
-
 export default function Office() {
-    const { props: initialProps } = usePage<SharedData>();
+    const { props: initialProps, version } = usePage<SharedData>();
     const [props, setProps] = React.useState(initialProps);
 
-    useSWR(office().url, fetcher, { 
+    const fetcher = (url: string) => axios.get(url, {
+        headers: {
+            'X-Inertia': 'true',
+            'X-Inertia-Version': version,
+        }
+    }).then(res => res.data);
+
+    useSWR(office().url, fetcher, {
         refreshInterval: 2000,
         onSuccess: (newData) => {
             if (newData?.props) {
