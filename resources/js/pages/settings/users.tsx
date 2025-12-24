@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,10 +24,14 @@ import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import HeadingSmall from '@/components/heading-small';
+import { type BreadcrumbItem } from '@/types';
 import { router } from '@inertiajs/react';
 import { cn } from '@/lib/utils';
 
 export default function Users() {
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'User management', href: '/settings/users' },
+    ];
     const { users, auth, availablePermissions, rolePresets } = usePage().props as any;
     
     const [addModalOpen, setAddModalOpen] = useState(false);
@@ -285,7 +289,8 @@ export default function Users() {
     );
 
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="User management" />
             <SettingsLayout>
                 <div className="space-y-6">
                     <HeadingSmall
