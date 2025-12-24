@@ -487,8 +487,8 @@ export default function Office() {
                                                 </div>
                                             </td>
                                             <td className="py-3 px-1">
-                                                <span className="block max-w-[100%] truncate" title={s.description ?? s.buyer ?? ''}>
-                                                    {s.description ?? s.buyer ?? ''}
+                                                <span className="block max-w-[100%] truncate" title={s.item_type === 'custom' ? (s.description ?? '') : ''}>
+                                                    {s.item_type === 'custom' ? (s.description ?? '') : ''}
                                                 </span>
                                             </td>
                                             <td className="py-3 px-1">
@@ -538,8 +538,8 @@ export default function Office() {
                                 <div key={d.key} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div>
-                                        <div className="text-sm font-medium">{Number((activeShift?.cash_breakdown || {})[d.key] ?? 0)}</div>
                                     </div>
+                                    <div className="text-sm font-medium">{Number((activeShift?.cash_breakdown || {})[d.key] ?? 0)}</div>
                                 </div>
                             ))}
                             <div className="flex items-center justify-between border-t pt-2">
@@ -563,8 +563,8 @@ export default function Office() {
                                 <div key={d.key} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div>
-                                        <div className="text-sm font-medium">{Number((totalCashBreakdown || {})[d.key] ?? 0)}</div>
                                     </div>
+                                    <div className="text-sm font-medium">{Number((totalCashBreakdown || {})[d.key] ?? 0)}</div>
                                 </div>
                             ))}
                             <div className="flex items-center justify-between border-t pt-2">
