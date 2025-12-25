@@ -23,6 +23,7 @@ class Event extends Model
         'quantity_without_card',
         'google_spreadsheet_id',
         'google_sheet_name',
+        'is_online_sellable',
     ];
 
     protected $appends = ['remaining', 'remaining_with_card', 'remaining_without_card'];

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\OnlineSale;
-use App\Models\OnlineSellable;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class StoreManagerController extends Controller
@@ -31,6 +31,7 @@ class StoreManagerController extends Controller
                 'remaining' => $p->remaining,
                 'remaining_with_card' => $p->remaining_with_card,
                 'remaining_without_card' => $p->remaining_without_card,
+                'is_online_sellable' => $p->is_online_sellable,
             ];
         });
 
@@ -57,6 +58,8 @@ class StoreManagerController extends Controller
                     'remaining_with_card' => $e->remaining_with_card,
                     'remaining_without_card' => $e->remaining_without_card,
                     'responsibleUser' => $e->responsibleUser,
+                    'is_online_sellable' => $e->is_online_sellable,
+                    'responsible_user_id' => $e->responsible_user_id,
                 ];
             });
 
@@ -65,13 +68,23 @@ class StoreManagerController extends Controller
             ->limit(10)
             ->get();
 
-        $onlineSellablesCount = OnlineSellable::count();
+        $onlineSellablesCount = Product::where('is_online_sellable', true)->count() + Event::where('is_online_sellable', true)->count();
+
+        $boardUsers = User::where('permissions', 'like', '%board%')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'email'])
+            ->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
+                'email' => $u->email,
+            ]);
 
         return response()->json([
             'products' => $products,
             'events' => $events,
             'onlineSales' => $onlineSales,
             'onlineSellablesCount' => $onlineSellablesCount,
+            'boardUsers' => $boardUsers,
         ]);
     }
 }

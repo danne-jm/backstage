@@ -7,8 +7,8 @@ import { Head, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { ProductDialog } from '@/components/sellables/ProductDialog';
 import { EventDialog } from '@/components/sellables/EventDialog';
-import { StoreManagerProductPreview } from '@/components/sellables/StoreManagerProductPreview';
-import { StoreManagerEventPreview } from '@/components/sellables/StoreManagerEventPreview';
+import { ProductPreview } from '@/components/sellables/ProductPreview';
+import { EventPreview } from '@/components/sellables/EventPreview';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,6 +30,7 @@ interface Product {
     remaining: number;
     remaining_with_card?: number;
     remaining_without_card?: number;
+    is_online_sellable: boolean;
 }
 
 interface Event {
@@ -56,6 +57,7 @@ interface Event {
     remaining: number;
     remaining_with_card: number;
     remaining_without_card: number;
+    is_online_sellable: boolean;
 }
 
 type Sellable = Product | Event;
@@ -88,7 +90,6 @@ export default function StoreManager() {
     >([]);
     const [onlineSales, setOnlineSales] = useState<OnlineSale[]>([]);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
-    const [onlineSellableIds, setOnlineSellableIds] = useState<number[]>([]);
 
     // Product modal state
     const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -125,20 +126,6 @@ export default function StoreManager() {
                 if (Array.isArray(json.onlineSales))
                     setOnlineSales(json.onlineSales);
                 setOnlineSellablesCount(json.onlineSellablesCount || 0);
-
-                const onlineSellablesRes = await fetch(
-                    '/store-manager/online-sellables',
-                    { credentials: 'same-origin' },
-                );
-                if (onlineSellablesRes.ok) {
-                    const onlineSellablesJson =
-                        await onlineSellablesRes.json();
-                    if (Array.isArray(onlineSellablesJson)) {
-                        setOnlineSellableIds(
-                            onlineSellablesJson.map(s => s.original_id),
-                        );
-                    }
-                }
             }
 
             const sres = await fetch('/sales/summary?days=14', {
@@ -176,26 +163,40 @@ export default function StoreManager() {
         const sellable = sellables.find(s => s.id === sellableId);
         if (!sellable) return;
 
-        if (isOnline) {
-            await router.post('/store-manager/online-sellables', {
-                original_type: sellable.type,
-                original_id: sellable.id,
-            });
-        } else {
-            const res = await fetch(
-                `/store-manager/online-sellables/find?type=${sellable.type}&id=${sellable.id}`,
-                { credentials: 'same-origin' },
-            );
-            if (res.ok) {
-                const json = await res.json();
-                if (json.data) {
-                    await router.delete(
-                        `/store-manager/online-sellables/${json.data.id}`,
-                    );
-                }
-            }
+        const url =
+            sellable.type === 'product'
+                ? `/sellables/products/${sellable.id}`
+                : `/sellables/events/${sellable.id}`;
+
+        const data: any = {
+            name: sellable.name,
+            description: sellable.description,
+            price:
+                sellable.type === 'product'
+                    ? sellable.price
+                    : sellable.price_with_card,
+            quantity: sellable.quantity,
+            variable_amount: sellable.variable_amount,
+            quantity_with_card: sellable.quantity_with_card,
+            quantity_without_card: sellable.quantity_without_card,
+            is_online_sellable: isOnline,
+        };
+
+        if (sellable.type === 'event') {
+            data.price_with_card = sellable.price_with_card;
+            data.price_without_card = sellable.price_without_card;
+            data.event_date = sellable.event_date;
+            data.start_sell_date = sellable.start_sell_date;
+            data.end_sell_date = sellable.end_sell_date;
+            data.responsible_user_id = sellable.responsible_user_id;
+            data.notes = sellable.notes;
+            data.google_spreadsheet_id = sellable.google_spreadsheet_id;
         }
-        load();
+
+        router.put(url, data, {
+            preserveState: true,
+            onSuccess: () => load(),
+        });
     };
 
     // Quick stats
@@ -360,23 +361,25 @@ export default function StoreManager() {
                                 <div className="max-h-96 space-y-2 overflow-y-auto">
                                     {sellables.map(s =>
                                         s.type === 'product' ? (
-                                            <StoreManagerProductPreview
+                                            <ProductPreview
                                                 key={s.id}
                                                 product={s as Product}
                                                 onEdit={openProductDialog}
-                                                isOnline={onlineSellableIds.includes(
-                                                    s.id,
-                                                )}
+                                                variant="store-manager"
+                                                isOnline={
+                                                    s.is_online_sellable
+                                                }
                                                 onSetOnline={handleSetOnline}
                                             />
                                         ) : (
-                                            <StoreManagerEventPreview
+                                            <EventPreview
                                                 key={s.id}
                                                 event={s as Event}
                                                 onEdit={openEventDialog}
-                                                isOnline={onlineSellableIds.includes(
-                                                    s.id,
-                                                )}
+                                                variant="store-manager"
+                                                isOnline={
+                                                    s.is_online_sellable
+                                                }
                                                 onSetOnline={handleSetOnline}
                                             />
                                         ),

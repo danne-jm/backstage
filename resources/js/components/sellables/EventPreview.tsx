@@ -10,6 +10,7 @@ import {
 import { Link } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import * as React from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Event {
     id: number;
@@ -35,14 +36,18 @@ interface Event {
     remaining: number;
     remaining_with_card: number;
     remaining_without_card: number;
+    is_online_sellable: boolean;
 }
 
 interface EventPreviewProps {
     event: Event;
     onEdit: (event: Event) => void;
-    onDelete: (eventId: number) => void;
-    eventToDelete: number | null;
-    setEventToDelete: (id: number | null) => void;
+    onDelete?: (eventId: number) => void;
+    eventToDelete?: number | null;
+    setEventToDelete?: (id: number | null) => void;
+    variant: 'sellables' | 'store-manager';
+    isOnline?: boolean;
+    onSetOnline?: (eventId: number, isOnline: boolean) => void;
 }
 
 export function EventPreview({
@@ -51,6 +56,9 @@ export function EventPreview({
     onDelete,
     eventToDelete,
     setEventToDelete,
+    variant,
+    isOnline,
+    onSetOnline,
 }: EventPreviewProps) {
     const formatDate = (iso: string) => {
         const d = new Date(iso);
@@ -93,33 +101,61 @@ export function EventPreview({
 
     return (
         <div className="relative rounded-lg border p-4">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start">
                 <div className="flex-1">
-                    <h3 className="font-medium">{event.name}</h3>
-                    {event.description && (
+                    <div className="flex items-start justify-between">
+                        <h3 className="font-medium">{event.name}</h3>
+
+                        <div className="flex items-center gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => onEdit(event)}>
+                                Edit
+                            </Button>
+
+                            {variant === 'sellables' && onDelete && setEventToDelete && (
+                                <>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-muted-foreground hover:bg-muted/30"
+                                        onClick={() => setEventToDelete(event.id)}
+                                    >
+                                        Remove
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {variant === 'sellables' && event.description && (
                         <p className="mt-1 text-sm text-muted-foreground">
                             {event.description}
                         </p>
                     )}
+
                     <div className="mt-2 space-y-1 text-sm">
-                        <p>
-                            <span className="text-muted-foreground">
-                                Event Date:
-                            </span>{' '}
-                            {formatDate(event.event_date)}
-                        </p>
+                        {variant === 'sellables' && (
+                            <p>
+                                <span className="text-muted-foreground">
+                                    Event Date:
+                                </span>{' '}
+                                {formatDate(event.event_date)}
+                            </p>
+                        )}
                         <p>
                             <span className="text-muted-foreground">
                                 Sell Period:
                             </span>{' '}
                             {formatDate(event.start_sell_date)} -{' '}
                             {formatDate(event.end_sell_date)}
-                            <span className="ml-2 text-muted-foreground">
-                                | {sellPeriodMessage(
-                                    event.start_sell_date,
-                                    event.end_sell_date,
-                                )}
-                            </span>
+                            {variant === 'sellables' && (
+                                <span className="ml-2 text-muted-foreground">
+                                    |{' '}
+                                    {sellPeriodMessage(
+                                        event.start_sell_date,
+                                        event.end_sell_date,
+                                    )}
+                                </span>
+                            )}
                         </p>
                         <p>
                             <span className="text-muted-foreground">
@@ -132,64 +168,103 @@ export function EventPreview({
                             €{event.price_without_card}
                         </p>
                         {event.variable_amount ? (
-                            <p>
-                                <span className="text-muted-foreground">
-                                    Qty w/ Card:
-                                </span>{' '}
-                                {event.quantity_with_card === -1
-                                    ? 'Unlimited'
-                                    : event.quantity_with_card}
-                                {event.quantity_with_card !== -1 &&
-                                    event.remaining_with_card !== undefined &&
-                                    event.remaining_with_card !== null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {event.remaining_with_card} remain
-                                        </span>
-                                    )}{' '}
-                                |{' '}
-                                <span className="text-muted-foreground">
-                                    w/o Card:
-                                </span>{' '}
-                                {event.quantity_without_card === -1
-                                    ? 'Unlimited'
-                                    : event.quantity_without_card}
-                                {event.quantity_without_card !== -1 &&
-                                    event.remaining_without_card !==
-                                        undefined &&
-                                    event.remaining_without_card !== null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {event.remaining_without_card} remain
-                                        </span>
-                                    )}
-                            </p>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <span className="text-muted-foreground">
+                                        Qty w/ Card:
+                                    </span>{' '}
+                                    {event.quantity_with_card === -1
+                                        ? 'Unlimited'
+                                        : event.quantity_with_card}
+                                    {event.quantity_with_card !== -1 &&
+                                        event.remaining_with_card !== undefined &&
+                                        event.remaining_with_card !== null && (
+                                            <span className="text-gray-500">
+                                                {' '}
+                                                | {event.remaining_with_card} remain
+                                            </span>
+                                        )}{' '}
+                                    |{' '}
+                                    <span className="text-muted-foreground">
+                                        w/o Card:
+                                    </span>{' '}
+                                    {event.quantity_without_card === -1
+                                        ? 'Unlimited'
+                                        : event.quantity_without_card}
+                                    {event.quantity_without_card !== -1 &&
+                                        event.remaining_without_card !==
+                                            undefined &&
+                                        event.remaining_without_card !== null && (
+                                            <span className="text-gray-500">
+                                                {' '}
+                                                | {event.remaining_without_card}{' '}
+                                                remain
+                                            </span>
+                                        )}
+                                </div>
+
+                                {variant === 'store-manager' && onSetOnline && (
+                                    <div className="flex items-center space-x-2 ml-4">
+                                        <Checkbox
+                                            id={`online-${event.id}`}
+                                            checked={isOnline}
+                                            onCheckedChange={checked => onSetOnline(event.id, checked === true)}
+                                        />
+                                        <label
+                                            htmlFor={`online-${event.id}`}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            Sell Online
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
                         ) : (
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <span className="text-muted-foreground">
+                                        Quantity:
+                                    </span>{' '}
+                                    {event.quantity === -1
+                                        ? 'Unlimited'
+                                        : event.quantity}
+                                    {event.quantity !== -1 &&
+                                        event.remaining !== undefined &&
+                                        event.remaining !== null && (
+                                            <span className="text-gray-500">
+                                                {' '}
+                                                | {event.remaining} remain
+                                            </span>
+                                        )}
+                                </div>
+
+                                {variant === 'store-manager' && onSetOnline && (
+                                    <div className="flex items-center space-x-2 ml-4">
+                                        <Checkbox
+                                            id={`online-${event.id}`}
+                                            checked={isOnline}
+                                            onCheckedChange={checked => onSetOnline(event.id, checked === true)}
+                                        />
+                                        <label
+                                            htmlFor={`online-${event.id}`}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            Sell Online
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {variant === 'sellables' && (
                             <p>
                                 <span className="text-muted-foreground">
-                                    Quantity:
+                                    Responsible:
                                 </span>{' '}
-                                {event.quantity === -1
-                                    ? 'Unlimited'
-                                    : event.quantity}
-                                {event.quantity !== -1 &&
-                                    event.remaining !== undefined &&
-                                    event.remaining !== null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {event.remaining} remain
-                                        </span>
-                                    )}
+                                {event.responsibleUser
+                                    ? `${event.responsibleUser.first_name} ${event.responsibleUser.last_name}`
+                                    : 'N/A'}
                             </p>
                         )}
-                        <p>
-                            <span className="text-muted-foreground">
-                                Responsible:
-                            </span>{' '}
-                            {event.responsibleUser
-                                ? `${event.responsibleUser.first_name} ${event.responsibleUser.last_name}`
-                                : 'N/A'}
-                        </p>
                         {event.notes && (
                             <p>
                                 <span className="text-muted-foreground">
@@ -201,68 +276,41 @@ export function EventPreview({
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-between h-full">
-                    <div className="ml-4 flex gap-2">
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => onEdit(event)}
-                        >
-                            Edit
-                        </Button>
-                        <>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-muted-foreground hover:bg-muted/30"
-                                onClick={() => setEventToDelete(event.id)}
-                            >
-                                Remove
-                            </Button>
-
-                            <Dialog
-                                open={eventToDelete === event.id}
-                                onOpenChange={open =>
-                                    !open && setEventToDelete(null)
-                                }
-                            >
-                                <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
-                                    <DialogTitle>Delete Event</DialogTitle>
-                                    <DialogDescription>
-                                        Are you sure you want to delete "
-                                        {event.name}"? This action cannot be
-                                        undone.
-                                    </DialogDescription>
-                                    <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button variant="ghost">
-                                                Cancel
-                                            </Button>
-                                        </DialogClose>
-                                        <Button
-                                            variant="destructive"
-                                            onClick={() => onDelete(event.id)}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        </>
-                    </div>
-
-                    <div className="absolute right-4 bottom-4">
-                        <Button asChild variant="secondary" size="sm">
-                            <Link
-                                href={`/sellables/events/${event.id}/attendees`}
-                            >
-                                View & Sync{' '}
-                                <ExternalLink className="ml-2 h-3 w-3" />
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
+                {/* Delete dialog kept separate from layout */}
+                {variant === 'sellables' && onDelete && setEventToDelete && (
+                    <Dialog
+                        open={eventToDelete === event.id}
+                        onOpenChange={open => !open && setEventToDelete(null)}
+                    >
+                        <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                            <DialogTitle>Delete Event</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete "{event.name}"? This action cannot be undone.
+                            </DialogDescription>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="ghost">Cancel</Button>
+                                </DialogClose>
+                                <Button variant="destructive" onClick={() => onDelete(event.id)}>
+                                    Delete
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </div>
+            {variant === 'sellables' && (
+                <div className="absolute bottom-4 right-4">
+                    <Button asChild variant="secondary" size="sm">
+                        <Link
+                            href={`/sellables/events/${event.id}/attendees`}
+                        >
+                            View & Sync{' '}
+                            <ExternalLink className="ml-2 h-3 w-3" />
+                        </Link>
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

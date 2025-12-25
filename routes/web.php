@@ -88,15 +88,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // JSON data for the Store Manager page (used by the React page)
     Route::get('store-manager/data', [App\Http\Controllers\StoreManagerController::class, 'data'])->name('store-manager.data');
 
-    // Online-specific sellables (overrides for online sales instances)
-    Route::get('store-manager/online-sellables', [App\Http\Controllers\OnlineSellableController::class, 'index'])->name('store-manager.online-sellables.index');
-    Route::get('store-manager/online-sellables/find', [App\Http\Controllers\OnlineSellableController::class, 'find'])->name('store-manager.online-sellables.find');
-    Route::get('store-manager/online-sellables/{onlineSellable}', [App\Http\Controllers\OnlineSellableController::class, 'show'])->name('store-manager.online-sellables.show');
-    Route::post('store-manager/online-sellables', [App\Http\Controllers\OnlineSellableController::class, 'store'])->name('store-manager.online-sellables.store');
-    Route::put('store-manager/online-sellables/{onlineSellable}', [App\Http\Controllers\OnlineSellableController::class, 'update'])->name('store-manager.online-sellables.update');
-    Route::post('store-manager/online-sellables/{onlineSellable}/images', [App\Http\Controllers\OnlineSellableController::class, 'uploadImage'])->name('store-manager.online-sellables.images');
-    Route::delete('store-manager/online-sellables/{onlineSellable}', [App\Http\Controllers\OnlineSellableController::class, 'destroy'])->name('store-manager.online-sellables.destroy');
-
     // Sales summary endpoints (office vs online)
     Route::get('sales/summary', [App\Http\Controllers\SalesController::class, 'summary'])->name('sales.summary');
 

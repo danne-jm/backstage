@@ -85,6 +85,7 @@ class SellablesController extends Controller
             'remaining' => $event->remaining,
             'remaining_with_card' => $event->remaining_with_card,
             'remaining_without_card' => $event->remaining_without_card,
+            'is_online_sellable' => $event->is_online_sellable,
         ];
     }
 
@@ -148,10 +149,11 @@ class SellablesController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
-            'quantity' => ['nullable', 'integer', 'min:0'],
+            'quantity' => ['nullable', 'integer', 'min:-1'],
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
+            'is_online_sellable' => ['required', 'boolean'],
         ]);
 
         if ($validated['variable_amount']) {
@@ -163,8 +165,6 @@ class SellablesController extends Controller
         }
 
         $product->update($validated);
-
-        return redirect()->route('sellables');
     }
 
     public function destroyProduct(Product $product)
@@ -218,13 +218,14 @@ class SellablesController extends Controller
             'end_sell_date' => ['required', 'date', 'after:start_sell_date'],
             'price_with_card' => ['required', 'numeric', 'min:0'],
             'price_without_card' => ['required', 'numeric', 'min:0'],
-            'quantity' => ['nullable', 'integer', 'min:0'],
-            'responsible_user_id' => ['required', 'exists:users,id'],
+            'quantity' => ['nullable', 'integer', 'min:-1'],
+            'responsible_user_id' => ['nullable', 'exists:users,id'],
             'notes' => ['nullable', 'string'],
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
+            'is_online_sellable' => ['required', 'boolean'],
         ]);
 
         if ($validated['variable_amount']) {
@@ -238,8 +239,6 @@ class SellablesController extends Controller
         }
 
         $event->update($validated);
-
-        return redirect()->route('sellables');
     }
 
     public function destroyEvent(Event $event)
