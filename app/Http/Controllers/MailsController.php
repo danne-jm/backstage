@@ -38,7 +38,7 @@ class MailsController extends Controller
             $query->where('created_at', '<=', $request->end_date);
         }
 
-    $mails = $query->paginate(110)->withQueryString();
+        $mails = $query->paginate(110)->withQueryString();
 
         return Inertia::render('mails', [
             'mails' => $mails,
@@ -52,13 +52,13 @@ class MailsController extends Controller
     {
         $ticketId = $mail->metadata['__ticket_id'] ?? null;
 
-        if (!$ticketId) {
+        if (! $ticketId) {
             return response()->json(['message' => 'No ticket associated with this mail.'], 404);
         }
 
         $ticket = Ticket::find($ticketId);
 
-        if (!$ticket) {
+        if (! $ticket) {
             return response()->json(['message' => 'Ticket not found.'], 404);
         }
 

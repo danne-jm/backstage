@@ -134,11 +134,11 @@ export function EventPreview({
                         </p>
                         <p>
                             <span className="text-muted-foreground">
-                                Price with Card:
+                                Price with ESNcard:
                             </span>{' '}
                             €{event.price_with_card} |{' '}
                             <span className="text-muted-foreground">
-                                without Card:
+                                without ESNcard:
                             </span>{' '}
                             €{event.price_without_card}
                         </p>
@@ -148,25 +148,26 @@ export function EventPreview({
                                     <span className="text-muted-foreground">
                                         Qty w/ Card:
                                     </span>{' '}
-                                    {event.quantity_with_card === -1
+                                    {(event.unlimited_quantity_with_card || event.quantity_with_card == null)
                                         ? 'Unlimited'
                                         : event.quantity_with_card}
-                                    {event.quantity_with_card !== -1 &&
+                                    {(event.unlimited_quantity_with_card || event.quantity_with_card == null) ? false : (
                                         event.remaining_with_card !== undefined &&
                                         event.remaining_with_card !== null && (
                                             <span className="text-gray-500">
                                                 {' '}
                                                 | {event.remaining_with_card} remain
                                             </span>
-                                        )}{' '}
+                                        )
+                                    )}{' '}
                                     |{' '}
                                     <span className="text-muted-foreground">
                                         w/o Card:
                                     </span>{' '}
-                                    {event.quantity_without_card === -1
+                                    {(event.unlimited_quantity_without_card || event.quantity_without_card == null)
                                         ? 'Unlimited'
                                         : event.quantity_without_card}
-                                    {event.quantity_without_card !== -1 &&
+                                    {(event.unlimited_quantity_without_card || event.quantity_without_card == null) ? false : (
                                         event.remaining_without_card !==
                                             undefined &&
                                         event.remaining_without_card !== null && (
@@ -175,7 +176,8 @@ export function EventPreview({
                                                 | {event.remaining_without_card}{' '}
                                                 remain
                                             </span>
-                                        )}
+                                        )
+                                    )}
                                 </div>
 
                                 {variant === 'store-manager' && onSetOnline && (
@@ -200,17 +202,18 @@ export function EventPreview({
                                     <span className="text-muted-foreground">
                                         Quantity:
                                     </span>{' '}
-                                    {event.quantity === -1
+                                    {(event.unlimited_quantity || event.quantity == null)
                                         ? 'Unlimited'
                                         : event.quantity}
-                                    {event.quantity !== -1 &&
+                                    {(event.unlimited_quantity || event.quantity == null) ? false : (
                                         event.remaining !== undefined &&
                                         event.remaining !== null && (
                                             <span className="text-gray-500">
                                                 {' '}
                                                 | {event.remaining} remain
                                             </span>
-                                        )}
+                                        )
+                                    )}
                                 </div>
 
                                 {variant === 'store-manager' && onSetOnline && (
@@ -280,7 +283,7 @@ export function EventPreview({
                         <Link
                             href={`/sellables/events/${event.id}/attendees`}
                         >
-                            View & Sync{' '}
+                            Manage Attendees{' '}
                             <ExternalLink className="ml-2 h-3 w-3" />
                         </Link>
                     </Button>

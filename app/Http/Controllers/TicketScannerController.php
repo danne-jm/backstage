@@ -3,10 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\Ticket;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -113,6 +110,7 @@ class TicketScannerController extends Controller
 
         // Get tickets with scanned_at = null for the selected event
         $tickets = $event->tickets()->whereNull('scanned_at')->orderBy('created_at', 'desc')->get();
+
         return response()->json(['tickets' => $tickets]);
     }
 
@@ -130,6 +128,7 @@ class TicketScannerController extends Controller
 
         // Get tickets with scanned_at not null for the selected event
         $tickets = $event->tickets()->whereNotNull('scanned_at')->orderBy('updated_at', 'desc')->get();
+
         return response()->json(['tickets' => $tickets]);
     }
 

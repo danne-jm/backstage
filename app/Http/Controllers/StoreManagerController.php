@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\Product;
 use App\Models\OnlineSale;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -25,9 +25,12 @@ class StoreManagerController extends Controller
                 'description' => $p->description,
                 'price' => $p->price,
                 'quantity' => $p->quantity,
+                'unlimited_quantity' => (bool) ($p->unlimited_quantity ?? false),
                 'variable_amount' => $p->variable_amount,
                 'quantity_with_card' => $p->quantity_with_card,
+                'unlimited_quantity_with_card' => (bool) ($p->unlimited_quantity_with_card ?? false),
                 'quantity_without_card' => $p->quantity_without_card,
+                'unlimited_quantity_without_card' => (bool) ($p->unlimited_quantity_without_card ?? false),
                 'remaining' => $p->remaining,
                 'remaining_with_card' => $p->remaining_with_card,
                 'remaining_without_card' => $p->remaining_without_card,
@@ -51,13 +54,17 @@ class StoreManagerController extends Controller
                     'price_with_card' => $e->price_with_card,
                     'price_without_card' => $e->price_without_card,
                     'quantity' => $e->quantity,
+                    'unlimited_quantity' => (bool) ($e->unlimited_quantity ?? false),
                     'variable_amount' => $e->variable_amount,
                     'quantity_with_card' => $e->quantity_with_card,
+                    'unlimited_quantity_with_card' => (bool) ($e->unlimited_quantity_with_card ?? false),
                     'quantity_without_card' => $e->quantity_without_card,
+                    'unlimited_quantity_without_card' => (bool) ($e->unlimited_quantity_without_card ?? false),
                     'remaining' => $e->remaining,
                     'remaining_with_card' => $e->remaining_with_card,
                     'remaining_without_card' => $e->remaining_without_card,
                     'responsibleUser' => $e->responsibleUser,
+                    'google_spreadsheet_id' => $e->google_spreadsheet_id,
                     'is_online_sellable' => $e->is_online_sellable,
                     'responsible_user_id' => $e->responsible_user_id,
                 ];
@@ -79,7 +86,7 @@ class StoreManagerController extends Controller
             ->get(['id', 'first_name', 'last_name', 'email'])
             ->map(fn ($u) => [
                 'id' => $u->id,
-                'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
+                'name' => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
                 'email' => $u->email,
             ]);
 

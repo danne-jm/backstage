@@ -313,37 +313,30 @@ export default function Sellables() {
                                             {product.variable_amount ? (
                                                 <>
                                                     <span className="text-muted-foreground">
-                                                        Qty w/ Card:
+                                                        Qty w/ ESNcard:
                                                     </span>{' '}
-                                                    {product.quantity_with_card ===
-                                                    -1
+                                                    {(product.unlimited_quantity_with_card || product.quantity_with_card == null)
                                                         ? 'Unlimited'
                                                         : product.quantity_with_card}
-                                                    {product.quantity_with_card !==
-                                                        -1 &&
-                                                        product.remaining_with_card !==
-                                                            undefined &&
-                                                        product.remaining_with_card !==
-                                                            null && (
+                                                    {(product.unlimited_quantity_with_card || product.quantity_with_card == null) ? false : (
+                                                        product.remaining_with_card !== undefined &&
+                                                        product.remaining_with_card !== null && (
                                                             <span className="text-gray-500">
                                                                 {' '}
                                                                 |{' '}
-                                                                {
-                                                                    product.remaining_with_card
-                                                                }{' '}
+                                                                {product.remaining_with_card}{' '}
                                                                 remain
                                                             </span>
-                                                        )}{' '}
+                                                        )
+                                                    )}{' '}
                                                     |{' '}
                                                     <span className="text-muted-foreground">
-                                                        w/o Card:
+                                                        w/o ESNcard:
                                                     </span>{' '}
-                                                    {product.quantity_without_card ===
-                                                    -1
+                                                    {(product.unlimited_quantity_without_card || product.quantity_without_card == null)
                                                         ? 'Unlimited'
                                                         : product.quantity_without_card}
-                                                    {product.quantity_without_card !==
-                                                        -1 &&
+                                                    {(product.unlimited_quantity_without_card || product.quantity_without_card == null) ? false : (
                                                         product.remaining_without_card !==
                                                             undefined &&
                                                         product.remaining_without_card !==
@@ -356,17 +349,18 @@ export default function Sellables() {
                                                                 }{' '}
                                                                 remain
                                                             </span>
-                                                        )}
+                                                        )
+                                                    )}
                                                 </>
                                             ) : (
                                                 <>
                                                     <span className="text-muted-foreground">
                                                         Quantity:
                                                     </span>{' '}
-                                                    {product.quantity === -1
+                                                    {(product.unlimited_quantity || product.quantity == null)
                                                         ? 'Unlimited'
                                                         : product.quantity}
-                                                    {product.quantity !== -1 &&
+                                                    {(product.unlimited_quantity || product.quantity == null) ? false : (
                                                         product.remaining !==
                                                             undefined &&
                                                         product.remaining !==
@@ -379,7 +373,8 @@ export default function Sellables() {
                                                                 }{' '}
                                                                 remain
                                                             </span>
-                                                        )}
+                                                        )
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -554,7 +549,7 @@ export default function Sellables() {
                                                         </p>
                                                         <p>
                                                             <span className="text-muted-foreground">
-                                                                Price with Card:
+                                                                Price with ESNcard:
                                                             </span>{' '}
                                                             €
                                                             {
@@ -562,7 +557,7 @@ export default function Sellables() {
                                                             }{' '}
                                                             |{' '}
                                                             <span className="text-muted-foreground">
-                                                                without Card:
+                                                                without ESNcard:
                                                             </span>{' '}
                                                             €
                                                             {
@@ -572,75 +567,60 @@ export default function Sellables() {
                                                         {event.variable_amount ? (
                                                             <p>
                                                                 <span className="text-muted-foreground">
-                                                                    Qty w/ Card:
+                                                                    Qty w/ ESNcard:
                                                                 </span>{' '}
-                                                                {event.quantity_with_card ===
-                                                                -1
+                                                                {(event.unlimited_quantity_with_card || event.quantity_with_card == null)
                                                                     ? 'Unlimited'
                                                                     : event.quantity_with_card}
-                                                                {event.quantity_with_card !==
-                                                                    -1 &&
-                                                                    event.remaining_with_card !==
-                                                                        undefined &&
-                                                                    event.remaining_with_card !==
-                                                                        null && (
+                                                                {(event.unlimited_quantity_with_card || event.quantity_with_card == null) ? false : (
+                                                                    event.remaining_with_card !== undefined &&
+                                                                    event.remaining_with_card !== null && (
                                                                         <span className="text-gray-500">
                                                                             {' '}
                                                                             |{' '}
-                                                                            {
-                                                                                event.remaining_with_card
-                                                                            }{' '}
+                                                                            {event.remaining_with_card}{' '}
                                                                             remain
                                                                         </span>
-                                                                    )}{' '}
+                                                                    )
+                                                                )}{' '}
                                                                 |{' '}
                                                                 <span className="text-muted-foreground">
-                                                                    w/o Card:
+                                                                    w/o ESNcard:
                                                                 </span>{' '}
-                                                                {event.quantity_without_card ===
-                                                                -1
+                                                                {(event.unlimited_quantity_without_card || event.quantity_without_card == null)
                                                                     ? 'Unlimited'
                                                                     : event.quantity_without_card}
-                                                                {event.quantity_without_card !==
-                                                                    -1 &&
-                                                                    event.remaining_without_card !==
-                                                                        undefined &&
-                                                                    event.remaining_without_card !==
-                                                                        null && (
+                                                                {(event.unlimited_quantity_without_card || event.quantity_without_card == null) ? false : (
+                                                                    event.remaining_without_card !== undefined &&
+                                                                    event.remaining_without_card !== null && (
                                                                         <span className="text-gray-500">
                                                                             {' '}
                                                                             |{' '}
-                                                                            {
-                                                                                event.remaining_without_card
-                                                                            }{' '}
+                                                                            {event.remaining_without_card}{' '}
                                                                             remain
                                                                         </span>
-                                                                    )}
+                                                                    )
+                                                                )}
                                                             </p>
                                                         ) : (
                                                             <p>
                                                                 <span className="text-muted-foreground">
                                                                     Quantity:
                                                                 </span>{' '}
-                                                                {event.quantity ===
-                                                                -1
+                                                                {(event.unlimited_quantity || event.quantity == null)
                                                                     ? 'Unlimited'
                                                                     : event.quantity}
-                                                                {event.quantity !==
-                                                                    -1 &&
-                                                                    event.remaining !==
-                                                                        undefined &&
-                                                                    event.remaining !==
-                                                                        null && (
+                                                                {(event.unlimited_quantity || event.quantity == null) ? false : (
+                                                                    event.remaining !== undefined &&
+                                                                    event.remaining !== null && (
                                                                         <span className="text-gray-500">
                                                                             {' '}
                                                                             |{' '}
-                                                                            {
-                                                                                event.remaining
-                                                                            }{' '}
+                                                                            {event.remaining}{' '}
                                                                             remain
                                                                         </span>
-                                                                    )}
+                                                                    )
+                                                                )}
                                                             </p>
                                                         )}
                                                         <p>
@@ -756,7 +736,7 @@ export default function Sellables() {
                                                             <Link
                                                                 href={`/sellables/events/${event.id}/attendees`}
                                                             >
-                                                                View & Sync{' '}
+                                                                Manage Attendees
                                                                 <ExternalLink className="ml-2 h-3 w-3" />
                                                             </Link>
                                                         </Button>

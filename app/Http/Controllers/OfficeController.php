@@ -35,11 +35,11 @@ class OfficeController extends Controller
             $now = now();
             $query->where(function ($q) use ($now) {
                 $q->where('start_sell_date', '<=', $now)
-                  ->orWhereNull('start_sell_date');
+                    ->orWhereNull('start_sell_date');
             });
             $query->where(function ($q) use ($now) {
                 $q->where('end_sell_date', '>=', $now)
-                      ->orWhereNull('end_sell_date');
+                    ->orWhereNull('end_sell_date');
             });
         })
             ->orderBy('event_date', 'asc')
@@ -54,7 +54,10 @@ class OfficeController extends Controller
                 'name' => $product->name,
                 'description' => $product->description,
                 'price' => $product->price,
-                'remaining' => $product->remaining,
+                'remaining' => $product->remaining === -1 ? null : $product->remaining,
+                'unlimited_quantity' => (bool) ($product->unlimited_quantity ?? false),
+                'unlimited_quantity_with_card' => (bool) ($product->unlimited_quantity_with_card ?? false),
+                'unlimited_quantity_without_card' => (bool) ($product->unlimited_quantity_without_card ?? false),
             ]);
         }
         foreach ($events as $event) {
@@ -69,9 +72,12 @@ class OfficeController extends Controller
                 'end_sell_date' => $event->end_sell_date,
                 'price_with_card' => $event->price_with_card,
                 'price_without_card' => $event->price_without_card,
-                'remaining' => $event->remaining,
-                'remaining_with_card' => $event->remaining_with_card,
-                'remaining_without_card' => $event->remaining_without_card,
+                'remaining' => $event->remaining === -1 ? null : $event->remaining,
+                'unlimited_quantity' => (bool) ($event->unlimited_quantity ?? false),
+                'remaining_with_card' => $event->remaining_with_card === -1 ? null : $event->remaining_with_card,
+                'unlimited_quantity_with_card' => (bool) ($event->unlimited_quantity_with_card ?? false),
+                'remaining_without_card' => $event->remaining_without_card === -1 ? null : $event->remaining_without_card,
+                'unlimited_quantity_without_card' => (bool) ($event->unlimited_quantity_without_card ?? false),
             ]);
         }
 
@@ -101,6 +107,7 @@ class OfficeController extends Controller
                 $snap = $sale->snapshot ?? [];
                 $snap['id'] = $sale->id;
                 $snap['breakdown'] = $sale->breakdown; // Add breakdown to the response
+
                 return $snap;
             })->sortByDesc('created_at')->values()->all();
         }
@@ -155,11 +162,11 @@ class OfficeController extends Controller
             $now = now();
             $query->where(function ($q) use ($now) {
                 $q->where('start_sell_date', '<=', $now)
-                  ->orWhereNull('start_sell_date');
+                    ->orWhereNull('start_sell_date');
             });
             $query->where(function ($q) use ($now) {
                 $q->where('end_sell_date', '>=', $now)
-                      ->orWhereNull('end_sell_date');
+                    ->orWhereNull('end_sell_date');
             });
         })
             ->orderBy('event_date', 'asc')
@@ -168,25 +175,29 @@ class OfficeController extends Controller
         $sellables = collect([]);
         foreach ($products as $p) {
             $sellables->push([
-                'id' => 'product_'.$p->id, 
-                'actual_id' => $p->id, 
-                'type' => 'product', 
-                'name' => $p->name, 
+                'id' => 'product_'.$p->id,
+                'actual_id' => $p->id,
+                'type' => 'product',
+                'name' => $p->name,
                 'price' => $p->price,
-                'remaining' => $p->remaining,
+                'remaining' => $p->remaining === -1 ? null : $p->remaining,
+                'unlimited_quantity' => (bool) ($p->unlimited_quantity ?? false),
             ]);
         }
         foreach ($events as $e) {
             $sellables->push([
-                'id' => 'event_'.$e->id, 
-                'actual_id' => $e->id, 
-                'type' => 'event', 
-                'name' => $e->name, 
-                'price_with_card' => $e->price_with_card, 
+                'id' => 'event_'.$e->id,
+                'actual_id' => $e->id,
+                'type' => 'event',
+                'name' => $e->name,
+                'price_with_card' => $e->price_with_card,
                 'price_without_card' => $e->price_without_card,
-                'remaining' => $e->remaining,
-                'remaining_with_card' => $e->remaining_with_card,
-                'remaining_without_card' => $e->remaining_without_card,
+                'remaining' => $e->remaining === -1 ? null : $e->remaining,
+                'unlimited_quantity' => (bool) ($e->unlimited_quantity ?? false),
+                'remaining_with_card' => $e->remaining_with_card === -1 ? null : $e->remaining_with_card,
+                'unlimited_quantity_with_card' => (bool) ($e->unlimited_quantity_with_card ?? false),
+                'remaining_without_card' => $e->remaining_without_card === -1 ? null : $e->remaining_without_card,
+                'unlimited_quantity_without_card' => (bool) ($e->unlimited_quantity_without_card ?? false),
             ]);
         }
 
@@ -375,7 +386,7 @@ class OfficeController extends Controller
             'ticket_type' => $data['ticket_type'] ?? null,
             'ticket_label' => $data['ticket_label'] ?? null,
         ];
-        
+
         $saleBreakdown = ($data['method'] === 'cash' && isset($data['breakdown'])) ? $data['breakdown'] : null;
 
         $sale = OfficeShiftSale::create([
@@ -525,6 +536,7 @@ class OfficeController extends Controller
             $val2 = isset($b2[$denom]) ? intval($b2[$denom]) : 0;
             $merged[$denom] = $val1 + $val2;
         }
+
         return $merged;
     }
 
@@ -563,7 +575,7 @@ class OfficeController extends Controller
         $sale->save();
 
         $office->cash_total += $amountDifference;
-        
+
         $allCashSales = $office->sales()->where('method', 'cash')->get();
         $newShiftBreakdown = [];
         foreach ($allCashSales as $cashSale) {
@@ -572,7 +584,7 @@ class OfficeController extends Controller
             }
         }
         $office->cash_breakdown = $newShiftBreakdown;
-        
+
         $office->save();
 
         $this->recalculateTotals($office);

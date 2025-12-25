@@ -5,9 +5,12 @@ export interface Product {
     description: string | null;
     price: number;
     quantity?: number | null;
+    unlimited_quantity?: boolean;
     variable_amount?: boolean;
     quantity_with_card?: number | null;
+    unlimited_quantity_with_card?: boolean;
     quantity_without_card?: number | null;
+    unlimited_quantity_without_card?: boolean;
     remaining: number;
     remaining_with_card?: number;
     remaining_without_card?: number;
@@ -25,11 +28,14 @@ export interface Event {
     price_with_card: number;
     price_without_card: number;
     quantity: number | null;
+    unlimited_quantity?: boolean;
     responsible_user_id?: number | null;
     notes: string | null;
     variable_amount: boolean;
     quantity_with_card: number | null;
+    unlimited_quantity_with_card?: boolean;
     quantity_without_card: number | null;
+    unlimited_quantity_without_card?: boolean;
     google_spreadsheet_id?: string | null;
     responsibleUser?: {
         id: number;

@@ -196,6 +196,18 @@ export default function StoreManager() {
 
     const seriesMax = Math.max(1, ...onlineSellableSeries.flatMap(s => s.series));
 
+    const formatDateTime = (iso?: string | null) => {
+        if (!iso) return 'N/A';
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return 'N/A';
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+    };
+
     return (
         <>
             <AppLayout breadcrumbs={breadcrumbs}>
@@ -332,7 +344,7 @@ export default function StoreManager() {
                                 </div>
                                 <div className="rounded-md bg-muted/40 p-3">
                                     <div className="text-xs text-muted-foreground">
-                                        Total Online
+                                        Total Card
                                     </div>
                                     <div className="mt-1 text-lg font-medium">
                                         €{totalOnline.toFixed(2)}
@@ -410,32 +422,28 @@ export default function StoreManager() {
                             <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
                         ) : (
                             <div className="space-y-4">
-                                {onlineSales.map(sale => (
-                                    <div
-                                        key={sale.id}
-                                        className="flex items-center justify-between rounded-lg border p-4"
-                                    >
-                                        <div>
-                                            <h3 className="font-medium">
-                                                {sale.product?.name ||
-                                                    sale.event?.name ||
-                                                    'Unknown Item'}
-                                            </h3>
-                                            <p className="mt-1 text-sm text-muted-foreground">
-                                                {new Date(
-                                                    sale.sold_at,
-                                                ).toLocaleString()}
-                                            </p>
-                                        </div>
-                                        <div className="text-lg font-medium">
-                                            €{sale.amount}
-                                        </div>
+                                {/* Limit to the 10 most recent sales and make the list vertically scrollable */}
+                                {onlineSales.length > 0 ? (
+                                    <div className="max-h-[70vh] overflow-y-auto space-y-4">
+                                        {onlineSales.slice(0, 15).map((sale: any) => (
+                                            <div
+                                                key={sale.id}
+                                                className="flex items-center justify-between rounded-lg border p-4"
+                                            >
+                                                <div>
+                                                    <h3 className="font-medium">
+                                                        {sale.product?.name || sale.event?.name || 'Unknown Item'}
+                                                    </h3>
+                                                    <p className="mt-1 text-sm text-muted-foreground">
+                                                        {formatDateTime(sale.sold_at)}
+                                                    </p>
+                                                </div>
+                                                <div className="text-lg font-medium">€{sale.amount}</div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                                {onlineSales.length === 0 && (
-                                    <div className="text-sm text-muted-foreground">
-                                        No online sales yet.
-                                    </div>
+                                ) : (
+                                    <div className="text-sm text-muted-foreground">No online sales yet.</div>
                                 )}
                             </div>
                         )}

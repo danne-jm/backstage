@@ -13,9 +13,7 @@ use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class DistributionController extends Controller
@@ -59,7 +57,7 @@ class DistributionController extends Controller
         if (is_array($recipients)) {
             foreach ($recipients as &$recipient) {
                 // Only generate tickets for QR mails
-                if (!(isset($recipient['body']) && str_contains($recipient['body'], '{{qr}}'))) {
+                if (! (isset($recipient['body']) && str_contains($recipient['body'], '{{qr}}'))) {
                     continue;
                 }
 

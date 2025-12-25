@@ -32,6 +32,7 @@ export function ProductDialog({
     const [productPrice, setProductPrice] = React.useState('');
     const [productDescription, setProductDescription] = React.useState('');
     const [productQuantity, setProductQuantity] = React.useState('');
+    const [productUnlimited, setProductUnlimited] = React.useState(false);
     const [productVariableAmount, setProductVariableAmount] =
         React.useState(false);
     const [productQuantityWithCard, setProductQuantityWithCard] =
@@ -45,18 +46,19 @@ export function ProductDialog({
             setProductPrice(editingProduct.price.toString());
             setProductDescription(editingProduct.description || '');
             setProductQuantity(
-                editingProduct.quantity === -1
+                editingProduct.unlimited_quantity
                     ? ''
                     : editingProduct.quantity?.toString() || '',
             );
+            setProductUnlimited(Boolean(editingProduct.unlimited_quantity));
             setProductVariableAmount(Boolean(editingProduct.variable_amount));
             setProductQuantityWithCard(
-                editingProduct.quantity_with_card === -1
+                editingProduct.unlimited_quantity_with_card
                     ? ''
                     : editingProduct.quantity_with_card?.toString() || '',
             );
             setProductQuantityWithoutCard(
-                editingProduct.quantity_without_card === -1
+                editingProduct.unlimited_quantity_without_card
                     ? ''
                     : editingProduct.quantity_without_card?.toString() || '',
             );
@@ -65,6 +67,7 @@ export function ProductDialog({
             setProductPrice('');
             setProductDescription('');
             setProductQuantity('');
+            setProductUnlimited(false);
             setProductVariableAmount(false);
             setProductQuantityWithCard('');
             setProductQuantityWithoutCard('');
@@ -77,19 +80,25 @@ export function ProductDialog({
             price: parseFloat(productPrice),
             description: productDescription || null,
             variable_amount: productVariableAmount,
+            // quantity handling: empty quantity => null and mark unlimited
             quantity: productVariableAmount
                 ? null
                 : productQuantity
-                  ? parseInt(productQuantity)
-                  : null,
+                    ? parseInt(productQuantity)
+                    : null,
+            unlimited_quantity: productVariableAmount ? false : !productQuantity,
             quantity_with_card:
                 productVariableAmount && productQuantityWithCard
                     ? parseInt(productQuantityWithCard)
                     : null,
+            unlimited_quantity_with_card:
+                productVariableAmount ? (!productQuantityWithCard) : false,
             quantity_without_card:
                 productVariableAmount && productQuantityWithoutCard
                     ? parseInt(productQuantityWithoutCard)
                     : null,
+            unlimited_quantity_without_card:
+                productVariableAmount ? (!productQuantityWithoutCard) : false,
         };
 
         if (editingProduct) {
@@ -175,14 +184,14 @@ export function ProductDialog({
                             className="cursor-pointer"
                         >
                             Variable Amount (separate quantities for with/without
-                            card)
+                            ESNcard)
                         </Label>
                     </div>
                     {productVariableAmount && (
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="product-quantity-with-card">
-                                    Quantity with Card
+                                    Quantity with ESNcard
                                 </Label>
                                 <Input
                                     id="product-quantity-with-card"
@@ -197,7 +206,7 @@ export function ProductDialog({
                             </div>
                             <div>
                                 <Label htmlFor="product-quantity-without-card">
-                                    Quantity without Card
+                                    Quantity without ESNcard
                                 </Label>
                                 <Input
                                     id="product-quantity-without-card"

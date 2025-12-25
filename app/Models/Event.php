@@ -16,11 +16,14 @@ class Event extends Model
         'price_with_card',
         'price_without_card',
         'quantity',
+        'unlimited_quantity',
         'responsible_user_id',
         'notes',
         'variable_amount',
         'quantity_with_card',
+        'unlimited_quantity_with_card',
         'quantity_without_card',
+        'unlimited_quantity_without_card',
         'google_spreadsheet_id',
         'google_sheet_name',
         'is_online_sellable',
@@ -37,6 +40,9 @@ class Event extends Model
             'variable_amount' => 'boolean',
             'price_with_card' => 'decimal:2',
             'price_without_card' => 'decimal:2',
+            'unlimited_quantity' => 'boolean',
+            'unlimited_quantity_with_card' => 'boolean',
+            'unlimited_quantity_without_card' => 'boolean',
         ];
     }
 
@@ -65,19 +71,28 @@ class Event extends Model
      */
     public function getEventDateAttribute($value): ?string
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
+
         return \Illuminate\Support\Carbon::parse($value)->format('Y-m-d');
     }
 
     public function getStartSellDateAttribute($value): ?string
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
+
         return \Illuminate\Support\Carbon::parse($value)->format('Y-m-d');
     }
 
     public function getEndSellDateAttribute($value): ?string
     {
-        if (!$value) return null;
+        if (! $value) {
+            return null;
+        }
+
         return \Illuminate\Support\Carbon::parse($value)->format('Y-m-d');
     }
 
@@ -93,25 +108,38 @@ class Event extends Model
 
     public function getRemainingWithCardAttribute()
     {
-        if ($this->quantity_with_card === -1) {
-            return -1;
+        // Return null when unlimited or quantity is not set so the frontend can show "Unlimited"
+        if ($this->unlimited_quantity_with_card) {
+            return null;
         }
+        if (is_null($this->quantity_with_card)) {
+            return null;
+        }
+
         return $this->quantity_with_card - $this->getSalesWithCardCountAttribute();
     }
 
     public function getRemainingWithoutCardAttribute()
     {
-        if ($this->quantity_without_card === -1) {
-            return -1;
+        if ($this->unlimited_quantity_without_card) {
+            return null;
         }
+        if (is_null($this->quantity_without_card)) {
+            return null;
+        }
+
         return $this->quantity_without_card - $this->getSalesWithoutCardCountAttribute();
     }
 
     public function getRemainingAttribute()
     {
-        if ($this->quantity === -1) {
-            return -1;
+        if ($this->unlimited_quantity) {
+            return null;
         }
+        if (is_null($this->quantity)) {
+            return null;
+        }
+
         return $this->quantity - $this->sales()->count();
     }
 }

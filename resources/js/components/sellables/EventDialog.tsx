@@ -47,6 +47,7 @@ export function EventDialog({
     const [priceWithCard, setPriceWithCard] = React.useState('');
     const [priceWithoutCard, setPriceWithoutCard] = React.useState('');
     const [quantity, setQuantity] = React.useState('');
+    const [unlimitedQuantity, setUnlimitedQuantity] = React.useState(false);
     const [responsibleUserId, setResponsibleUserId] = React.useState('');
     const [notes, setNotes] = React.useState('');
     const [variableAmount, setVariableAmount] = React.useState(false);
@@ -64,10 +65,11 @@ export function EventDialog({
             setPriceWithCard(editingEvent.price_with_card.toString());
             setPriceWithoutCard(editingEvent.price_without_card.toString());
             setQuantity(
-                editingEvent.quantity === -1
+                editingEvent.unlimited_quantity
                     ? ''
                     : editingEvent.quantity?.toString() || '',
             );
+            setUnlimitedQuantity(Boolean(editingEvent.unlimited_quantity));
             setResponsibleUserId(
                 editingEvent.responsible_user_id
                     ? editingEvent.responsible_user_id.toString()
@@ -76,15 +78,16 @@ export function EventDialog({
             setNotes(editingEvent.notes || '');
             setVariableAmount(editingEvent.variable_amount);
             setQuantityWithCard(
-                editingEvent.quantity_with_card === -1
+                editingEvent.unlimited_quantity_with_card
                     ? ''
                     : editingEvent.quantity_with_card?.toString() || '',
             );
             setQuantityWithoutCard(
-                editingEvent.quantity_without_card === -1
+                editingEvent.unlimited_quantity_without_card
                     ? ''
                     : editingEvent.quantity_without_card?.toString() || '',
             );
+            setUnlimitedQuantity(Boolean(editingEvent.unlimited_quantity));
             setGoogleSpreadsheetId(editingEvent.google_spreadsheet_id || '');
         } else {
             setEventName('');
@@ -95,6 +98,7 @@ export function EventDialog({
             setPriceWithCard('');
             setPriceWithoutCard('');
             setQuantity('');
+            setUnlimitedQuantity(false);
             setResponsibleUserId('');
             setNotes('');
             setVariableAmount(false);
@@ -116,8 +120,9 @@ export function EventDialog({
             quantity: variableAmount
                 ? null
                 : quantity
-                  ? parseInt(quantity)
-                  : null,
+                    ? parseInt(quantity)
+                    : null,
+            unlimited_quantity: variableAmount ? false : !quantity,
             responsible_user_id: parseInt(responsibleUserId),
             notes: notes || null,
             variable_amount: variableAmount,
@@ -125,12 +130,24 @@ export function EventDialog({
                 variableAmount && quantityWithCard
                     ? parseInt(quantityWithCard)
                     : null,
+            unlimited_quantity_with_card:
+                variableAmount ? (!quantityWithCard) : false,
             quantity_without_card:
                 variableAmount && quantityWithoutCard
                     ? parseInt(quantityWithoutCard)
                     : null,
-            google_spreadsheet_id: googleSpreadsheetId || null,
+            unlimited_quantity_without_card:
+                variableAmount ? (!quantityWithoutCard) : false,
         };
+
+        // For updates: avoid clearing google_spreadsheet_id accidentally when editing from contexts
+        // where the sheet id input is not exposed (e.g. store-manager). Only include the field
+        // when creating new events or when the user provided a non-empty id.
+        if (!editingEvent) {
+            data.google_spreadsheet_id = googleSpreadsheetId || null;
+        } else if (googleSpreadsheetId && googleSpreadsheetId !== '') {
+            data.google_spreadsheet_id = googleSpreadsheetId;
+        }
 
         if (editingEvent) {
             router.put(`/sellables/events/${editingEvent.id}`, data, {
@@ -213,7 +230,7 @@ export function EventDialog({
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="price-with-card">
-                                Price with ESN Card (€)
+                                Price with ESNcard (€)
                             </Label>
                             <Input
                                 id="price-with-card"
@@ -225,7 +242,7 @@ export function EventDialog({
                         </div>
                         <div>
                             <Label htmlFor="price-without-card">
-                                Price without ESN Card (€)
+                                Price without ESNcard (€)
                             </Label>
                             <Input
                                 id="price-without-card"
@@ -274,14 +291,14 @@ export function EventDialog({
                             className="cursor-pointer"
                         >
                             Variable Amount (separate quantities for with/without
-                            card)
+                            ESNcard)
                         </Label>
                     </div>
                     {variableAmount ? (
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="quantity-with-card">
-                                    Quantity with Card
+                                    Quantity with ESNcard
                                 </Label>
                                 <Input
                                     id="quantity-with-card"
@@ -294,7 +311,7 @@ export function EventDialog({
                             </div>
                             <div>
                                 <Label htmlFor="quantity-without-card">
-                                    Quantity without Card
+                                    Quantity without ESNcard
                                 </Label>
                                 <Input
                                     id="quantity-without-card"
@@ -358,7 +375,6 @@ export function EventDialog({
                                 <Link
                                     href={`/sellables/events/${editingEvent.id}/attendees`}
                                 >
-                                    View & Sync{' '}
                                     <ExternalLink className="ml-2 h-3 w-3" />
                                 </Link>
                             </Button>

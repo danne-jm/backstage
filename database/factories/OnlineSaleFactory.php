@@ -13,6 +13,7 @@ class OnlineSaleFactory extends Factory
     public function definition(): array
     {
         $date = $this->faker->dateTimeBetween('-30 days', 'now');
+
         return [
             'product_id' => null,
             'event_id' => null,

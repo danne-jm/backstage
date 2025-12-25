@@ -25,7 +25,7 @@ return new class extends Migration
             if (in_array('gmail_provider_id', $cols)) {
                 $toDrop[] = 'gmail_provider_id';
             }
-            if (!empty($toDrop)) {
+            if (! empty($toDrop)) {
                 $table->dropColumn($toDrop);
             }
         });

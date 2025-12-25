@@ -33,7 +33,7 @@ class SalesController extends Controller
         // Office sales
         $office = OfficeShiftSale::query()
             ->whereBetween('sold_at', [$start, $end])
-            ->selectRaw("DATE(sold_at) as day, SUM(amount) as total")
+            ->selectRaw('DATE(sold_at) as day, SUM(amount) as total')
             ->groupBy('day')
             ->get();
 
@@ -47,7 +47,7 @@ class SalesController extends Controller
         // Online sales
         $online = OnlineSale::query()
             ->whereBetween('sold_at', [$start, $end])
-            ->selectRaw("DATE(sold_at) as day, SUM(amount) as total")
+            ->selectRaw('DATE(sold_at) as day, SUM(amount) as total')
             ->groupBy('day')
             ->get();
 
