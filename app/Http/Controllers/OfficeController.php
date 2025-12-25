@@ -28,10 +28,25 @@ class OfficeController extends Controller
             ->first();
 
         // Prepare products/events list
-        $products = Product::orderBy('name')->get();
+        $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
 
         // FIX 1: Include events with NULL end_sell_date (indefinite sales)
-        $events = Event::where(function ($query) {
+        $events = Event::withCount([
+            'sales',
+            'onlineSales',
+            'sales as sales_with_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'with_card');
+            },
+            'sales as sales_without_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'without_card');
+            },
+            'onlineSales as online_sales_with_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'with_card');
+            },
+            'onlineSales as online_sales_without_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'without_card');
+            },
+        ])->where(function ($query) {
             $now = now();
             $query->where(function ($q) use ($now) {
                 $q->where('start_sell_date', '<=', $now)
@@ -54,7 +69,7 @@ class OfficeController extends Controller
                 'name' => $product->name,
                 'description' => $product->description,
                 'price' => $product->price,
-                'remaining' => $product->remaining === -1 ? null : $product->remaining,
+                'remaining' => $product->remaining,
                 'unlimited_quantity' => (bool) ($product->unlimited_quantity ?? false),
                 'unlimited_quantity_with_card' => (bool) ($product->unlimited_quantity_with_card ?? false),
                 'unlimited_quantity_without_card' => (bool) ($product->unlimited_quantity_without_card ?? false),
@@ -72,12 +87,13 @@ class OfficeController extends Controller
                 'end_sell_date' => $event->end_sell_date,
                 'price_with_card' => $event->price_with_card,
                 'price_without_card' => $event->price_without_card,
-                'remaining' => $event->remaining === -1 ? null : $event->remaining,
+                'remaining' => $event->remaining,
                 'unlimited_quantity' => (bool) ($event->unlimited_quantity ?? false),
-                'remaining_with_card' => $event->remaining_with_card === -1 ? null : $event->remaining_with_card,
+                'remaining_with_card' => $event->remaining_with_card,
                 'unlimited_quantity_with_card' => (bool) ($event->unlimited_quantity_with_card ?? false),
-                'remaining_without_card' => $event->remaining_without_card === -1 ? null : $event->remaining_without_card,
+                'remaining_without_card' => $event->remaining_without_card,
                 'unlimited_quantity_without_card' => (bool) ($event->unlimited_quantity_without_card ?? false),
+                'variable_amount' => $event->variable_amount,
             ]);
         }
 
@@ -157,8 +173,23 @@ class OfficeController extends Controller
             'email' => $u->email,
         ])->toArray();
 
-        $products = Product::orderBy('name')->get();
-        $events = Event::where(function ($query) {
+        $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
+        $events = Event::withCount([
+            'sales',
+            'onlineSales',
+            'sales as sales_with_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'with_card');
+            },
+            'sales as sales_without_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'without_card');
+            },
+            'onlineSales as online_sales_with_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'with_card');
+            },
+            'onlineSales as online_sales_without_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'without_card');
+            },
+        ])->where(function ($query) {
             $now = now();
             $query->where(function ($q) use ($now) {
                 $q->where('start_sell_date', '<=', $now)
@@ -180,7 +211,7 @@ class OfficeController extends Controller
                 'type' => 'product',
                 'name' => $p->name,
                 'price' => $p->price,
-                'remaining' => $p->remaining === -1 ? null : $p->remaining,
+                'remaining' => $p->remaining,
                 'unlimited_quantity' => (bool) ($p->unlimited_quantity ?? false),
             ]);
         }
@@ -192,12 +223,13 @@ class OfficeController extends Controller
                 'name' => $e->name,
                 'price_with_card' => $e->price_with_card,
                 'price_without_card' => $e->price_without_card,
-                'remaining' => $e->remaining === -1 ? null : $e->remaining,
+                'remaining' => $e->remaining,
                 'unlimited_quantity' => (bool) ($e->unlimited_quantity ?? false),
-                'remaining_with_card' => $e->remaining_with_card === -1 ? null : $e->remaining_with_card,
+                'remaining_with_card' => $e->remaining_with_card,
                 'unlimited_quantity_with_card' => (bool) ($e->unlimited_quantity_with_card ?? false),
-                'remaining_without_card' => $e->remaining_without_card === -1 ? null : $e->remaining_without_card,
+                'remaining_without_card' => $e->remaining_without_card,
                 'unlimited_quantity_without_card' => (bool) ($e->unlimited_quantity_without_card ?? false),
+                'variable_amount' => $e->variable_amount,
             ]);
         }
 

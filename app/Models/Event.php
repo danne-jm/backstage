@@ -66,6 +66,11 @@ class Event extends Model
         return $this->hasMany(OfficeShiftSale::class);
     }
 
+    public function onlineSales()
+    {
+        return $this->hasMany(OnlineSale::class);
+    }
+
     /**
      * Ensure event_date is always serialized as YYYY-MM-DD (date only).
      */
@@ -98,12 +103,18 @@ class Event extends Model
 
     public function getSalesWithCardCountAttribute()
     {
-        return $this->sales()->where('snapshot->ticket_type', 'with_card')->count();
+        $officeSales = array_key_exists('sales_with_card_count', $this->attributes) ? $this->attributes['sales_with_card_count'] : $this->sales()->where('snapshot->ticket_type', 'with_card')->count();
+        $onlineSales = array_key_exists('online_sales_with_card_count', $this->attributes) ? $this->attributes['online_sales_with_card_count'] : $this->onlineSales()->where('details->ticket_type', 'with_card')->count();
+
+        return $officeSales + $onlineSales;
     }
 
     public function getSalesWithoutCardCountAttribute()
     {
-        return $this->sales()->where('snapshot->ticket_type', 'without_card')->count();
+        $officeSales = array_key_exists('sales_without_card_count', $this->attributes) ? $this->attributes['sales_without_card_count'] : $this->sales()->where('snapshot->ticket_type', 'without_card')->count();
+        $onlineSales = array_key_exists('online_sales_without_card_count', $this->attributes) ? $this->attributes['online_sales_without_card_count'] : $this->onlineSales()->where('details->ticket_type', 'without_card')->count();
+
+        return $officeSales + $onlineSales;
     }
 
     public function getRemainingWithCardAttribute()
@@ -140,6 +151,10 @@ class Event extends Model
             return null;
         }
 
-        return $this->quantity - $this->sales()->count();
+        if (array_key_exists('sales_count', $this->attributes) && array_key_exists('online_sales_count', $this->attributes)) {
+            return $this->quantity - $this->attributes['sales_count'] - $this->attributes['online_sales_count'];
+        }
+
+        return $this->quantity - $this->sales()->count() - $this->onlineSales()->count();
     }
 }

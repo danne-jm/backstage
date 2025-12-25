@@ -12,10 +12,25 @@ class SellablesController extends Controller
 {
     public function index(\Illuminate\Http\Request $request)
     {
-        $products = Product::orderBy('name')->get();
+        $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
         $now = now();
         // Fetch all live/upcoming events (event_date >= now)
-        $liveEvents = Event::with('responsibleUser')
+        $liveEvents = Event::with('responsibleUser')->withCount([
+            'sales',
+            'onlineSales',
+            'sales as sales_with_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'with_card');
+            },
+            'sales as sales_without_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'without_card');
+            },
+            'onlineSales as online_sales_with_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'with_card');
+            },
+            'onlineSales as online_sales_without_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'without_card');
+            },
+        ])
             ->where('event_date', '>=', $now)
             ->orderBy('event_date', 'asc')
             ->get()
@@ -25,7 +40,22 @@ class SellablesController extends Controller
         $expiredPage = max(1, (int) $request->query('expired_page', 1));
         $expiredPerPage = max(1, (int) $request->query('expired_per_page', 10));
 
-        $expiredQuery = Event::with('responsibleUser')
+        $expiredQuery = Event::with('responsibleUser')->withCount([
+            'sales',
+            'onlineSales',
+            'sales as sales_with_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'with_card');
+            },
+            'sales as sales_without_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'without_card');
+            },
+            'onlineSales as online_sales_with_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'with_card');
+            },
+            'onlineSales as online_sales_without_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'without_card');
+            },
+        ])
             ->where('event_date', '<', $now)
             ->orderBy('event_date', 'desc');
 
@@ -101,7 +131,22 @@ class SellablesController extends Controller
         $page = max(1, (int) $request->query('page', 1));
         $perPage = max(1, (int) $request->query('per_page', 10));
 
-        $query = Event::with('responsibleUser')
+        $query = Event::with('responsibleUser')->withCount([
+            'sales',
+            'onlineSales',
+            'sales as sales_with_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'with_card');
+            },
+            'sales as sales_without_card_count' => function ($query) {
+                $query->where('snapshot->ticket_type', 'without_card');
+            },
+            'onlineSales as online_sales_with_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'with_card');
+            },
+            'onlineSales as online_sales_without_card_count' => function ($query) {
+                $query->where('details->ticket_type', 'without_card');
+            },
+        ])
             ->where('event_date', '<', $now)
             ->orderBy('event_date', 'desc');
 

@@ -29,6 +29,11 @@ class Product extends Model
         return $this->hasMany(OfficeShiftSale::class);
     }
 
+    public function onlineSales()
+    {
+        return $this->hasMany(OnlineSale::class);
+    }
+
     public function getRemainingAttribute()
     {
         // Return null when unlimited or quantity is not set so frontend shows 'Unlimited'
@@ -39,6 +44,11 @@ class Product extends Model
             return null; // treat null as unlimited for backwards compatibility
         }
 
-        return $this->quantity - $this->sales()->count();
+        // If sales_count and online_sales_count are loaded, use them. Otherwise, query.
+        if (array_key_exists('sales_count', $this->attributes) && array_key_exists('online_sales_count', $this->attributes)) {
+            return $this->quantity - $this->attributes['sales_count'] - $this->attributes['online_sales_count'];
+        }
+
+        return $this->quantity - $this->sales()->count() - $this->onlineSales()->count();
     }
 }

@@ -322,24 +322,30 @@ export default function Office() {
     // Helper to compute a human-friendly remaining text for sellables
     const getRemainingTextForItem = (item: any) => {
         if (!item) return '0 remaining';
+
         // For variable-amount events, prefer per-ticket quantities
         if (item.type === 'event' && item.variable_amount) {
-            const withUnlimited = Boolean(item.unlimited_quantity_with_card);
-            const withoutUnlimited = Boolean(item.unlimited_quantity_without_card);
-            if (withUnlimited || withoutUnlimited) return 'Unlimited';
+            const withUnlimited = item.unlimited_quantity_with_card;
+            const withoutUnlimited = item.unlimited_quantity_without_card;
 
-            const withQty = Number(item.remaining_with_card ?? item.quantity_with_card ?? 0) || 0;
-            const withoutQty = Number(item.remaining_without_card ?? item.quantity_without_card ?? 0) || 0;
-            const total = withQty + withoutQty;
-            return `${total} remaining`;
+            // If either is unlimited, we can simplify the display
+            if (withUnlimited && withoutUnlimited) return 'Unlimited';
+            if (withUnlimited) return 'Unlimited w/ card';
+            if (withoutUnlimited) return 'Unlimited w/o card';
+
+            const withQty = typeof item.remaining_with_card === 'number' ? item.remaining_with_card : 'N/A';
+            const withoutQty = typeof item.remaining_without_card === 'number' ? item.remaining_without_card : 'N/A';
+
+            return `${withQty} w/ card, ${withoutQty} w/o card`;
         }
 
-        // Non-variable events or products: check explicit unlimited flags first
-        const isUnlimited = Boolean(item.unlimited_quantity || item.unlimited_quantity_with_card || item.unlimited_quantity_without_card);
+        // Non-variable events or products: check for explicit unlimited flags
+        const isUnlimited = item.unlimited_quantity || item.unlimited_quantity_with_card || item.unlimited_quantity_without_card;
         if (isUnlimited) return 'Unlimited';
 
-        // Prefer explicit `remaining` if present, else fall back to `quantity`
-        const rem = typeof item.remaining === 'number' ? item.remaining : (typeof item.quantity === 'number' ? item.quantity : 0);
+        // Prefer explicit `remaining` if present, otherwise it's effectively 0 or not set
+        const rem = typeof item.remaining === 'number' ? item.remaining : 0;
+
         return `${rem} remaining`;
     };
 
@@ -368,6 +374,91 @@ export default function Office() {
         const grouped = Object.values(groups);
         grouped.sort((a, b) => { const diff = a.count - b.count; if (diff !== 0) return diff; return a.name.localeCompare(b.name); });
         return grouped.map((g) => `${g.name} ${g.count}`).join(' | ');
+    };
+
+    const addCardSale = () => {
+        if (!saleProductId || !activeShift) return;
+        const selectedItem = filteredSellables.find((i: any) => i.actual_id === saleProductId);
+        if (!selectedItem) return;
+
+        let amountToUse = '0';
+        let itemName = selectedItem.name;
+        if (selectedItem.type === 'product') {
+            amountToUse = String(selectedItem.price);
+        } else {
+            amountToUse = saleTicketType === 'with_card' ? String(selectedItem.price_with_card) : String(selectedItem.price_without_card);
+            itemName += ` (${saleTicketType === 'with_card' ? 'with' : 'without'} ESN card)`;
+        }
+
+        const ticketLabel = selectedItem.type === 'event' ? (saleTicketType === 'with_card' ? 'With ESNcard' : 'Without ESNcard') : '';
+        const tempId = `tmp-${Date.now()}`;
+        const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: '', ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined, ticket_label: ticketLabel || undefined };
+        
+        setSales((prev) => [tempSale, ...(prev || [])]);
+        setSubmitting(true);
+
+        axios.post('/online-sales', {
+            office_shift_id: activeShift?.id,
+            product_id: selectedItem.type === 'product' ? saleProductId : null,
+            event_id: selectedItem.type === 'event' ? saleProductId : null,
+            method: 'card',
+            amount: amountToUse,
+            ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined,
+            ticket_label: ticketLabel || undefined,
+        }).then(() => {
+            setMessage('Sale recorded (Card)');
+            mutate();
+        }).catch((err: any) => {
+            setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId));
+            const status = err?.response?.status;
+            const stockErr = err?.response?.data?.errors?.stock;
+            if (status === 422 && stockErr) {
+                const text = Array.isArray(stockErr) ? stockErr.join(' | ') : String(stockErr);
+                setSoldOutText(text);
+                setIsSoldOutModalOpen(true);
+            } else {
+                setMessage('Failed to record sale');
+            }
+        }).finally(() => setSubmitting(false));
+    };
+
+    const addCustomCardSale = () => {
+        if (!activeShift || !customAmount || !customDescription) return;
+        const isCustom = customSaleItemId === 'custom';
+        const selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId);
+        const amountToUse = String(customAmount);
+        const descToUse = String(customDescription || '');
+        const itemName = selectedItem ? selectedItem.name : 'Custom Sale';
+        const tempId = `tmp-${Date.now()}`;
+        const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: descToUse };
+        setSales((prev) => [tempSale, ...(prev || [])]);
+        setSubmitting(true);
+
+        axios.post('/online-sales', {
+            office_shift_id: activeShift?.id,
+            product_id: selectedItem && selectedItem.type === 'product' ? selectedItem.actual_id : null,
+            event_id: selectedItem && selectedItem.type === 'event' ? selectedItem.actual_id : null,
+            method: 'card',
+            amount: amountToUse,
+            description: descToUse,
+        }).then(() => {
+            setMessage('Custom sale recorded (Card)');
+            setCustomSaleItemId('custom');
+            setCustomAmount('');
+            setCustomDescription('');
+            mutate();
+        }).catch((err: any) => {
+            setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId));
+            const status = err?.response?.status;
+            const stockErr = err?.response?.data?.errors?.stock;
+            if (status === 422 && stockErr) {
+                const text = Array.isArray(stockErr) ? stockErr.join(' | ') : String(stockErr);
+                setSoldOutText(text);
+                setIsSoldOutModalOpen(true);
+            } else {
+                setMessage('Failed to record custom sale');
+            }
+        }).finally(() => setSubmitting(false));
     };
 
     return (
@@ -414,7 +505,7 @@ export default function Office() {
                                                 </div>
                                             ))}
                                             <div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Calculated total</div><div className="text-lg font-medium">€{computeBreakdownTotal(customCashBreakdown).toFixed(2)}</div></div>
-                                            <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button onClick={() => { if (!activeShift) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(customCashBreakdown).toFixed(2)); const isQuick = Boolean(quickSaleContext); let amountToUse = 0; let selectedItem = null; let itemName = 'Custom Sale'; let productIdToSend = null; let itemTypeToSend = 'custom'; let descToUse = String(customDescription || ''); let ticketTypeToSend = undefined; let ticketLabelToSend = undefined; if (isQuick) { selectedItem = filteredSellables.find((i: any) => i.actual_id === quickSaleContext.productId); productIdToSend = quickSaleContext.productId; itemTypeToSend = quickSaleContext.itemType; ticketTypeToSend = quickSaleContext.ticketType; ticketLabelToSend = quickSaleContext.ticketLabel; if (computed > 0) amountToUse = computed; else if (selectedItem) { if (selectedItem.type === 'product') amountToUse = Number(selectedItem.price || 0); else amountToUse = Number(quickSaleContext.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card) || 0; } itemName = selectedItem ? selectedItem.name : 'Quick Sale'; descToUse = ''; } else { amountToUse = computed > 0 ? computed : Number(customAmount || 0); const isCustom = customSaleItemId === 'custom'; selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); productIdToSend = selectedItem ? selectedItem.actual_id : null; itemTypeToSend = selectedItem ? selectedItem.type : 'custom'; itemName = selectedItem ? selectedItem.name : 'Custom Sale'; } const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'cash', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: productIdToSend, item_type: itemTypeToSend, method: 'cash', amount: amountToUse, description: descToUse, ticket_type: ticketTypeToSend, ticket_label: ticketLabelToSend, breakdown: customCashBreakdown }, { onSuccess: () => { setMessage('Sale recorded (Cash)'); setIsCustomCashModalOpen(false); setCustomSaleItemId('custom'); setCustomAmount(''); setCustomDescription(''); }, onError: () => { setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId)); setMessage('Failed to record sale'); }, onFinish: () => { setSubmitting(false); setQuickSaleContext(null); } }); }}>Save</Button></div>
+                                            <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button disabled={submitting} onClick={() => { if (!activeShift) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(customCashBreakdown).toFixed(2)); const isQuick = Boolean(quickSaleContext); let amountToUse = 0; let selectedItem = null; let itemName = 'Custom Sale'; let productIdToSend = null; let itemTypeToSend = 'custom'; let descToUse = String(customDescription || ''); let ticketTypeToSend = undefined; let ticketLabelToSend = undefined; if (isQuick) { selectedItem = filteredSellables.find((i: any) => i.actual_id === quickSaleContext.productId); productIdToSend = quickSaleContext.productId; itemTypeToSend = quickSaleContext.itemType; ticketTypeToSend = quickSaleContext.ticketType; ticketLabelToSend = quickSaleContext.ticketLabel; if (computed > 0) amountToUse = computed; else if (selectedItem) { if (selectedItem.type === 'product') amountToUse = Number(selectedItem.price || 0); else amountToUse = Number(quickSaleContext.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card) || 0; } itemName = selectedItem ? selectedItem.name : 'Quick Sale'; descToUse = ''; } else { amountToUse = computed > 0 ? computed : Number(customAmount || 0); const isCustom = customSaleItemId === 'custom'; selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); productIdToSend = selectedItem ? selectedItem.actual_id : null; itemTypeToSend = selectedItem ? selectedItem.type : 'custom'; itemName = selectedItem ? selectedItem.name : 'Custom Sale'; } const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'cash', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: productIdToSend, item_type: itemTypeToSend, method: 'cash', amount: amountToUse, description: descToUse, ticket_type: ticketTypeToSend, ticket_label: ticketLabelToSend, breakdown: customCashBreakdown }, { onSuccess: () => { setMessage('Sale recorded (Cash)'); setIsCustomCashModalOpen(false); setCustomSaleItemId('custom'); setCustomAmount(''); setCustomDescription(''); }, onError: () => { setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId)); setMessage('Failed to record sale'); }, onFinish: () => { setSubmitting(false); setQuickSaleContext(null); } }); }}>Save</Button></div>
                                         </div>
                                     </DialogContent>
                                 </Dialog>
@@ -492,37 +583,10 @@ export default function Office() {
                                     </div>
                                 )}
                                 <div className="mt-2 flex items-center gap-2">
-                                    <Button disabled={activeShift?.status !== 'open'} onClick={() => { if (!saleProductId || !activeShift) return; const selectedItem = filteredSellables.find((i: any) => i.actual_id === saleProductId); if (!selectedItem) return; openCustomCashModal({ productId: saleProductId, itemType: selectedItem.type, ticketType: saleTicketType, ticketLabel: selectedItem.type === 'event' ? (saleTicketType === 'with_card' ? 'With ESNcard' : 'Without ESNcard') : undefined }); }}>Add Cash</Button>
-                                                                        <Button disabled={activeShift?.status !== 'open'} onClick={() => { if (!saleProductId || !activeShift) return; const selectedItem = filteredSellables.find((i: any) => i.actual_id === saleProductId); if (!selectedItem) return; let amountToUse = '0'; let itemName = selectedItem.name; if (selectedItem.type === 'product') { amountToUse = String(selectedItem.price); } else { amountToUse = saleTicketType === 'with_card' ? String(selectedItem.price_with_card) : String(selectedItem.price_without_card); itemName += ` (${saleTicketType === 'with_card' ? 'with' : 'without'} ESN card)`; } const ticketLabel = selectedItem.type === 'event' ? (saleTicketType === 'with_card' ? 'With ESNcard' : 'Without ESNcard') : ''; const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: '', ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined, ticket_label: ticketLabel || undefined }; setSales((prev) => [tempSale, ...(prev || [])]); setSubmitting(true);
-                                                                            // Create an online sale and also record it on the current office shift
-                                                                            axios.post('/online-sales', {
-                                                                                office_shift_id: activeShift?.id,
-                                                                                // For events, send event_id and leave product_id null. For products, send product_id.
-                                                                                product_id: selectedItem.type === 'product' ? saleProductId : null,
-                                                                                event_id: selectedItem.type === 'event' ? saleProductId : null,
-                                                                                method: 'card',
-                                                                                amount: amountToUse,
-                                                                                ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined,
-                                                                                ticket_label: ticketLabel || undefined,
-                                                                            }).then(() => {
-                                                                                setMessage('Sale recorded (Card)');
-                                                                                mutate();
-                                                                            }).catch((err: any) => {
-                                                                                // Remove optimistic temp sale
-                                                                                setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId));
-                                                                                const status = err?.response?.status;
-                                                                                const stockErr = err?.response?.data?.errors?.stock;
-                                                                                if (status === 422 && stockErr) {
-                                                                                    const text = Array.isArray(stockErr) ? stockErr.join(' | ') : String(stockErr);
-                                                                                    setSoldOutText(text);
-                                                                                    setIsSoldOutModalOpen(true);
-                                                                                } else {
-                                                                                    setMessage('Failed to record sale');
-                                                                                }
-                                                                            }).finally(() => setSubmitting(false));
-                                                                        }}>Add Card</Button>
-                                                                        <div className="flex-1" />
-                                                                    </div>
+                                    <Button disabled={activeShift?.status !== 'open' || submitting} onClick={() => { if (!saleProductId || !activeShift) return; const selectedItem = filteredSellables.find((i: any) => i.actual_id === saleProductId); if (!selectedItem) return; openCustomCashModal({ productId: saleProductId, itemType: selectedItem.type, ticketType: saleTicketType, ticketLabel: selectedItem.type === 'event' ? (saleTicketType === 'with_card' ? 'With ESNcard' : 'Without ESNcard') : undefined }); }}>Add Cash</Button>
+                                    <Button disabled={activeShift?.status !== 'open' || submitting} onClick={addCardSale}>Add Card</Button>
+                                    <div className="flex-1" />
+                                </div>
                                                                 </div>
                                                                 
                                                                 <div className="mt-2 border-t pt-2">
@@ -547,35 +611,8 @@ export default function Office() {
                                                                         <Input placeholder="Description (mandatory)" value={customDescription} onChange={(e) => setCustomDescription(e.target.value)} disabled={activeShift?.status !== 'open'} />
                                                                     </div>
                                                                     <div className="mt-2 flex items-center gap-2">
-                                                                        <Button disabled={!activeShift || !customDescription || activeShift?.status !== 'open'} onClick={() => { if (!activeShift || !customDescription) return; openCustomCashModal(null); }}>Add Cash</Button>
-                                                                        <Button disabled={!activeShift || !customAmount || !customDescription || activeShift?.status !== 'open'} onClick={() => { if (!activeShift || !customAmount || !customDescription) return; const isCustom = customSaleItemId === 'custom'; const selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); const amountToUse = String(customAmount); const descToUse = String(customDescription || ''); const itemName = selectedItem ? selectedItem.name : 'Custom Sale'; const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); setSubmitting(true);
-                                                                            axios.post('/online-sales', {
-                                                                                office_shift_id: activeShift?.id,
-                                                                                // ensure product_id is null for events
-                                                                                product_id: selectedItem && selectedItem.type === 'product' ? selectedItem.actual_id : null,
-                                                                                event_id: selectedItem && selectedItem.type === 'event' ? selectedItem.actual_id : null,
-                                                                                method: 'card',
-                                                                                amount: amountToUse,
-                                                                                description: descToUse,
-                                                                            }).then(() => {
-                                                                                setMessage('Custom sale recorded (Card)');
-                                                                                setCustomSaleItemId('custom');
-                                                                                setCustomAmount('');
-                                                                                setCustomDescription('');
-                                                                                mutate();
-                                                                            }).catch((err: any) => {
-                                                                                setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId));
-                                                                                const status = err?.response?.status;
-                                                                                const stockErr = err?.response?.data?.errors?.stock;
-                                                                                if (status === 422 && stockErr) {
-                                                                                    const text = Array.isArray(stockErr) ? stockErr.join(' | ') : String(stockErr);
-                                                                                    setSoldOutText(text);
-                                                                                    setIsSoldOutModalOpen(true);
-                                                                                } else {
-                                                                                    setMessage('Failed to record custom sale');
-                                                                                }
-                                                                            }).finally(() => setSubmitting(false));
-                                                                        }}>Add Card</Button>
+                                                                        <Button disabled={!activeShift || !customDescription || activeShift?.status !== 'open' || submitting} onClick={() => { if (!activeShift || !customDescription) return; openCustomCashModal(null); }}>Add Cash</Button>
+                                                                        <Button disabled={!activeShift || !customAmount || !customDescription || activeShift?.status !== 'open' || submitting} onClick={addCustomCardSale}>Add Card</Button>
                                                                     </div>                            </div>
                          </div>
                     </section>
