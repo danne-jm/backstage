@@ -1,6 +1,5 @@
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogClose,
@@ -9,21 +8,13 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import { Check, ExternalLink } from 'lucide-react';
 import * as React from 'react';
+import { ProductDialog } from '@/components/sellables/ProductDialog';
+import { EventDialog } from '@/components/sellables/EventDialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -101,16 +92,17 @@ export default function Sellables() {
 
     // Products: cheapest first (sorted on demand below when used)
 
-
     // Events: compute not-expired directly from props.events so it updates
     // whenever props change (e.g. after editing). Keep expired events in
     // state so we can append additional pages; but synchronize state with
     // props to pick up newly expired events or remove ones that became not
     // expired.
 
-    const [expiredEventsState, setExpiredEventsState] = React.useState<Event[]>(() => {
+    const [expiredEventsState, setExpiredEventsState] = React.useState<
+        Event[]
+    >(() => {
         // initialize from props.events
-        return (events || []).filter((ev) => {
+        return (events || []).filter(ev => {
             const d = parseDate(ev.event_date);
             return !d ? true : d.getTime() < Date.now();
         });
@@ -130,7 +122,7 @@ export default function Sellables() {
 
     // Recompute not-expired events from props so ordering updates when props.events changes
     const notExpiredEvents = React.useMemo(() => {
-        const list = (events || []).filter((ev) => {
+        const list = (events || []).filter(ev => {
             const d = parseDate(ev.event_date);
             return d ? d.getTime() >= Date.now() : false;
         });
@@ -145,20 +137,20 @@ export default function Sellables() {
     // events from props and remove ones that are now not expired.
     React.useEffect(() => {
         const nowMs = Date.now();
-        const expiredFromProps = (events || []).filter((ev) => {
+        const expiredFromProps = (events || []).filter(ev => {
             const d = parseDate(ev.event_date);
             return !d ? true : d.getTime() < nowMs;
         });
 
-        setExpiredEventsState((prev) => {
+        setExpiredEventsState(prev => {
             // Map previous expired entries by id for quick lookup/merge
-            const map = new Map<number, Event>(prev.map((e) => [e.id, e]));
+            const map = new Map<number, Event>(prev.map(e => [e.id, e]));
 
             // Replace/add entries coming from props (these are authoritative)
-            expiredFromProps.forEach((e) => map.set(e.id, e));
+            expiredFromProps.forEach(e => map.set(e.id, e));
 
             // Remove entries that appear in props but are not expired anymore
-            (events || []).forEach((e) => {
+            (events || []).forEach(e => {
                 const d = parseDate(e.event_date);
                 if (d && d.getTime() >= nowMs && map.has(e.id)) {
                     map.delete(e.id);
@@ -191,8 +183,10 @@ export default function Sellables() {
             );
             if (!res.ok) throw new Error('Failed to load');
             const json = await res.json();
-            const newItems: Event[] = Array.isArray(json.data) ? json.data : [];
-            setExpiredEventsState((prev) => [...prev, ...newItems]);
+            const newItems: Event[] = Array.isArray(json.data)
+                ? json.data
+                : [];
+            setExpiredEventsState(prev => [...prev, ...newItems]);
             setExpiredPagination(json.pagination ?? { has_more: false });
         } catch (e) {
             // swallow for now or show a message
@@ -217,102 +211,14 @@ export default function Sellables() {
     const [editingProduct, setEditingProduct] = React.useState<Product | null>(
         null,
     );
-    const [productName, setProductName] = React.useState('');
-    const [productPrice, setProductPrice] = React.useState('');
-    const [productDescription, setProductDescription] = React.useState('');
-    const [productQuantity, setProductQuantity] = React.useState('');
-    const [productVariableAmount, setProductVariableAmount] = React.useState(false);
-    const [productQuantityWithCard, setProductQuantityWithCard] = React.useState('');
-    const [productQuantityWithoutCard, setProductQuantityWithoutCard] = React.useState('');
 
     // Event form state
     const [eventDialogOpen, setEventDialogOpen] = React.useState(false);
     const [editingEvent, setEditingEvent] = React.useState<Event | null>(null);
-    const [eventName, setEventName] = React.useState('');
-    const [eventDescription, setEventDescription] = React.useState('');
-    const [eventDate, setEventDate] = React.useState('');
-    const [startSellDate, setStartSellDate] = React.useState('');
-    const [endSellDate, setEndSellDate] = React.useState('');
-    const [priceWithCard, setPriceWithCard] = React.useState('');
-    const [priceWithoutCard, setPriceWithoutCard] = React.useState('');
-    const [quantity, setQuantity] = React.useState('');
-    const [responsibleUserId, setResponsibleUserId] = React.useState('');
-    const [notes, setNotes] = React.useState('');
-    const [variableAmount, setVariableAmount] = React.useState(false);
-    const [quantityWithCard, setQuantityWithCard] = React.useState('');
-    const [quantityWithoutCard, setQuantityWithoutCard] = React.useState('');
-    const [googleSpreadsheetId, setGoogleSpreadsheetId] = React.useState('');
 
     const openProductDialog = (product?: Product) => {
-        // Open product dialog. Do not manually manage scroll restoration —
-        // rely on the dialog component to preserve the user's position.
-        if (product) {
-            setEditingProduct(product);
-            setProductName(product.name);
-            setProductPrice(product.price.toString());
-            setProductDescription(product.description || '');
-            setProductQuantity(product.quantity === -1 ? '' : product.quantity?.toString() || ''); // Modified
-            setProductVariableAmount(Boolean(product.variable_amount));
-            setProductQuantityWithCard(product.quantity_with_card === -1 ? '' : product.quantity_with_card?.toString() || ''); // Modified
-            setProductQuantityWithoutCard(product.quantity_without_card === -1 ? '' : product.quantity_without_card?.toString() || ''); // Modified
-        } else {
-            setEditingProduct(null);
-            setProductName('');
-            setProductPrice('');
-            setProductDescription('');
-            setProductQuantity('');
-            setProductVariableAmount(false);
-            setProductQuantityWithCard('');
-            setProductQuantityWithoutCard('');
-        }
+        setEditingProduct(product || null);
         setProductDialogOpen(true);
-
-        // Some Dialog implementations auto-focus the first input for accessibility.
-        // That causes desktop text selection and mobile keyboards to open unexpectedly when the
-        // dialog is shown. Immediately blur any input that received focus so the user must
-        // tap the field to start editing.
-        // We use a short timeout to let the Dialog mount and run its own focus logic first.
-        setTimeout(() => {
-            const active = document.activeElement as HTMLElement | null;
-            if (
-                active &&
-                (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
-            ) {
-                try {
-                    active.blur();
-                } catch (e) {
-                        void e;
-                }
-            }
-        }, 50);
-    };
-
-    const submitProduct = () => {
-        const data: any = {
-            name: productName,
-            price: parseFloat(productPrice),
-            description: productDescription || null,
-            variable_amount: productVariableAmount,
-            quantity: productVariableAmount ? null : (productQuantity ? parseInt(productQuantity) : null),
-            quantity_with_card: productVariableAmount && productQuantityWithCard ? parseInt(productQuantityWithCard) : null,
-            quantity_without_card: productVariableAmount && productQuantityWithoutCard ? parseInt(productQuantityWithoutCard) : null,
-        };
-
-        if (editingProduct) {
-            router.put(`/sellables/products/${editingProduct.id}`, data, {
-                onSuccess: () => {
-                    setProductDialogOpen(false);
-                    setMessage('Product updated successfully');
-                },
-            });
-        } else {
-            router.post('/sellables/products', data, {
-                onSuccess: () => {
-                    setProductDialogOpen(false);
-                    setMessage('Product created successfully');
-                },
-            });
-        }
     };
 
     const [productToDelete, setProductToDelete] = React.useState<number | null>(
@@ -329,105 +235,8 @@ export default function Sellables() {
     };
 
     const openEventDialog = (event?: Event) => {
-        // Open event dialog. Do not manually manage scroll restoration —
-        // rely on the dialog component to preserve the user's position.
-        if (event) {
-            setEditingEvent(event);
-            setEventName(event.name);
-            setEventDescription(event.description || '');
-            setEventDate(event.event_date.split('T')[0]);
-            setStartSellDate(event.start_sell_date.split('T')[0]);
-            setEndSellDate(event.end_sell_date.split('T')[0]);
-            setPriceWithCard(event.price_with_card.toString());
-            setPriceWithoutCard(event.price_without_card.toString());
-            setQuantity(event.quantity === -1 ? '' : event.quantity?.toString() || ''); // Modified
-            setResponsibleUserId(event.responsible_user_id.toString());
-            setNotes(event.notes || '');
-            setVariableAmount(event.variable_amount);
-            setQuantityWithCard(event.quantity_with_card === -1 ? '' : event.quantity_with_card?.toString() || ''); // Modified
-            setQuantityWithoutCard(
-                event.quantity_without_card === -1 ? '' : event.quantity_without_card?.toString() || '', // Modified
-            );
-            setGoogleSpreadsheetId(event.google_spreadsheet_id || '');
-        } else {
-            setEditingEvent(null);
-            setEventName('');
-            setEventDescription('');
-            setEventDate('');
-            setStartSellDate('');
-            setEndSellDate('');
-            setPriceWithCard('');
-            setPriceWithoutCard('');
-            setQuantity('');
-            setResponsibleUserId('');
-            setNotes('');
-            setVariableAmount(false);
-            setQuantityWithCard('');
-            setQuantityWithoutCard('');
-            setGoogleSpreadsheetId('');
-        }
+        setEditingEvent(event || null);
         setEventDialogOpen(true);
-
-        // Prevent the dialog from auto-focusing the first input (which triggers text selection
-        // on desktop and keyboard on mobile). Blur any focused input shortly after opening.
-        setTimeout(() => {
-            const active = document.activeElement as HTMLElement | null;
-            if (
-                active &&
-                (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
-            ) {
-                try {
-                    active.blur();
-                } catch (e) {
-                        void e;
-                }
-            }
-        }, 50);
-    };
-
-    const submitEvent = () => {
-        const data: any = {
-            name: eventName,
-            description: eventDescription || null,
-            event_date: eventDate,
-            start_sell_date: startSellDate,
-            end_sell_date: endSellDate,
-            price_with_card: parseFloat(priceWithCard),
-            price_without_card: parseFloat(priceWithoutCard),
-            quantity: variableAmount
-                ? null
-                : quantity
-                  ? parseInt(quantity)
-                  : null,
-            responsible_user_id: parseInt(responsibleUserId),
-            notes: notes || null,
-            variable_amount: variableAmount,
-            quantity_with_card:
-                variableAmount && quantityWithCard
-                    ? parseInt(quantityWithCard)
-                    : null,
-            quantity_without_card:
-                variableAmount && quantityWithoutCard
-                    ? parseInt(quantityWithoutCard)
-                    : null,
-            google_spreadsheet_id: googleSpreadsheetId || null,
-        };
-
-        if (editingEvent) {
-            router.put(`/sellables/events/${editingEvent.id}`, data, {
-                onSuccess: () => {
-                    setEventDialogOpen(false);
-                    setMessage('Event updated successfully');
-                },
-            });
-        } else {
-            router.post('/sellables/events', data, {
-                onSuccess: () => {
-                    setEventDialogOpen(false);
-                    setMessage('Event created successfully');
-                },
-            });
-        }
     };
 
     const [eventToDelete, setEventToDelete] = React.useState<number | null>(
@@ -503,136 +312,18 @@ export default function Sellables() {
                         </Button>
                     </div>
 
-                    <Dialog
+                    <ProductDialog
                         open={productDialogOpen}
                         onOpenChange={setProductDialogOpen}
-                    >
-                        <DialogContent className="max-h-[90vh] w-full max-w-lg overflow-y-auto px-2 sm:max-w-xl sm:px-6 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl">
-                            <DialogTitle>
-                                {editingProduct
-                                    ? 'Edit Product'
-                                    : 'Add Product'}
-                            </DialogTitle>
-                            <DialogDescription>
-                                {editingProduct
-                                    ? 'Update the product details below.'
-                                    : 'Enter the details for the new product.'}
-                            </DialogDescription>
-                            <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="product-name">Name</Label>
-                                    <Input
-                                        id="product-name"
-                                        value={productName}
-                                        onChange={(e) =>
-                                            setProductName(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="product-description">
-                                        Description (optional)
-                                    </Label>
-                                    <Textarea
-                                        id="product-description"
-                                        value={productDescription}
-                                        onChange={(e) =>
-                                            setProductDescription(
-                                                e.target.value,
-                                            )
-                                        }
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="product-price">
-                                        Price (€)
-                                    </Label>
-                                    <Input
-                                        id="product-price"
-                                        type="number"
-                                        step="0.01"
-                                        value={productPrice}
-                                        onChange={(e) =>
-                                            setProductPrice(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="product-quantity">
-                                        Quantity (optional)
-                                    </Label>
-                                    <Input
-                                        id="product-quantity"
-                                        type="number"
-                                        value={productQuantity}
-                                        onChange={(e) =>
-                                            setProductQuantity(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="product-variable-amount"
-                                        checked={productVariableAmount}
-                                        onCheckedChange={(checked) =>
-                                            setProductVariableAmount(checked === true)
-                                        }
-                                    />
-                                    <Label
-                                        htmlFor="product-variable-amount"
-                                        className="cursor-pointer"
-                                    >
-                                        Variable Amount (separate quantities for
-                                        with/without card)
-                                    </Label>
-                                </div>
-                                {productVariableAmount && (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="product-quantity-with-card">
-                                                Quantity with Card
-                                            </Label>
-                                            <Input
-                                                id="product-quantity-with-card"
-                                                type="number"
-                                                value={productQuantityWithCard}
-                                                onChange={(e) =>
-                                                    setProductQuantityWithCard(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="product-quantity-without-card">
-                                                Quantity without Card
-                                            </Label>
-                                            <Input
-                                                id="product-quantity-without-card"
-                                                type="number"
-                                                value={productQuantityWithoutCard}
-                                                onChange={(e) =>
-                                                    setProductQuantityWithoutCard(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <DialogFooter>
-                                <DialogClose asChild>
-                                    <Button variant="ghost">Cancel</Button>
-                                </DialogClose>
-                                <Button onClick={submitProduct}>
-                                    {editingProduct
-                                        ? 'Update Product'
-                                        : 'Create Product'}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                        editingProduct={editingProduct}
+                        onSuccess={() =>
+                            setMessage(
+                                editingProduct
+                                    ? 'Product updated successfully'
+                                    : 'Product created successfully',
+                            )
+                        }
+                    />
 
                     {products.length === 0 ? (
                         <div className="py-8 text-center text-muted-foreground">
@@ -640,7 +331,7 @@ export default function Sellables() {
                         </div>
                     ) : (
                         <div className="grid gap-4">
-                            {products.map((product) => (
+                            {products.map(product => (
                                 <div
                                     key={product.id}
                                     className="flex items-center justify-between rounded-lg border p-4"
@@ -657,24 +348,79 @@ export default function Sellables() {
                                         <p className="mt-1 text-sm text-muted-foreground">
                                             €{product.price}
                                         </p>
-                                        <div className="mt-1 text-sm"> {/* Changed to remove inherited muted-foreground */}
+                                        <div className="mt-1 text-sm">
+                                            {' '}
+                                            {/* Changed to remove inherited muted-foreground */}
                                             {product.variable_amount ? (
                                                 <>
-                                                    <span className="text-muted-foreground">Qty w/ Card:</span> {product.quantity_with_card === -1 ? 'Unlimited' : product.quantity_with_card}
-                                                    {product.quantity_with_card !== -1 && product.remaining_with_card !== undefined && product.remaining_with_card !== null && (
-                                                        <span className="text-gray-500"> | {product.remaining_with_card} remain</span>
-                                                    )}{' '}
-                                                    | <span className="text-muted-foreground">w/o Card:</span> {product.quantity_without_card === -1 ? 'Unlimited' : product.quantity_without_card}
-                                                    {product.quantity_without_card !== -1 && product.remaining_without_card !== undefined && product.remaining_without_card !== null && (
-                                                        <span className="text-gray-500"> | {product.remaining_without_card} remain</span>
-                                                    )}
+                                                    <span className="text-muted-foreground">
+                                                        Qty w/ Card:
+                                                    </span>{' '}
+                                                    {product.quantity_with_card ===
+                                                    -1
+                                                        ? 'Unlimited'
+                                                        : product.quantity_with_card}
+                                                    {product.quantity_with_card !==
+                                                        -1 &&
+                                                        product.remaining_with_card !==
+                                                            undefined &&
+                                                        product.remaining_with_card !==
+                                                            null && (
+                                                            <span className="text-gray-500">
+                                                                {' '}
+                                                                |{' '}
+                                                                {
+                                                                    product.remaining_with_card
+                                                                }{' '}
+                                                                remain
+                                                            </span>
+                                                        )}{' '}
+                                                    |{' '}
+                                                    <span className="text-muted-foreground">
+                                                        w/o Card:
+                                                    </span>{' '}
+                                                    {product.quantity_without_card ===
+                                                    -1
+                                                        ? 'Unlimited'
+                                                        : product.quantity_without_card}
+                                                    {product.quantity_without_card !==
+                                                        -1 &&
+                                                        product.remaining_without_card !==
+                                                            undefined &&
+                                                        product.remaining_without_card !==
+                                                            null && (
+                                                            <span className="text-gray-500">
+                                                                {' '}
+                                                                |{' '}
+                                                                {
+                                                                    product.remaining_without_card
+                                                                }{' '}
+                                                                remain
+                                                            </span>
+                                                        )}
                                                 </>
                                             ) : (
                                                 <>
-                                                    <span className="text-muted-foreground">Quantity:</span> {product.quantity === -1 ? 'Unlimited' : product.quantity}
-                                                    {product.quantity !== -1 && product.remaining !== undefined && product.remaining !== null && (
-                                                        <span className="text-gray-500"> | {product.remaining} remain</span>
-                                                    )}
+                                                    <span className="text-muted-foreground">
+                                                        Quantity:
+                                                    </span>{' '}
+                                                    {product.quantity === -1
+                                                        ? 'Unlimited'
+                                                        : product.quantity}
+                                                    {product.quantity !== -1 &&
+                                                        product.remaining !==
+                                                            undefined &&
+                                                        product.remaining !==
+                                                            null && (
+                                                            <span className="text-gray-500">
+                                                                {' '}
+                                                                |{' '}
+                                                                {
+                                                                    product.remaining
+                                                                }{' '}
+                                                                remain
+                                                            </span>
+                                                        )}
                                                 </>
                                             )}
                                         </div>
@@ -708,7 +454,7 @@ export default function Sellables() {
                                                     productToDelete ===
                                                     product.id
                                                 }
-                                                onOpenChange={(open) =>
+                                                onOpenChange={open =>
                                                     !open &&
                                                     setProductToDelete(null)
                                                 }
@@ -759,250 +505,19 @@ export default function Sellables() {
                         </Button>
                     </div>
 
-                    <Dialog
+                    <EventDialog
                         open={eventDialogOpen}
                         onOpenChange={setEventDialogOpen}
-                    >
-                        <DialogContent className="max-h-[80vh] w-full max-w-lg overflow-y-auto px-2 sm:max-w-xl sm:px-6 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl">
-                            <DialogTitle>
-                                {editingEvent ? 'Edit Event' : 'Add Event'}
-                            </DialogTitle>
-                            <DialogDescription>
-                                {editingEvent
-                                    ? 'Update the event details below.'
-                                    : 'Enter the details for the new event.'}
-                            </DialogDescription>
-                            <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="event-name">Name</Label>
-                                    <Input
-                                        id="event-name"
-                                        value={eventName}
-                                        onChange={(e) =>
-                                            setEventName(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="event-description">
-                                        Description (optional)
-                                    </Label>
-                                    <Textarea
-                                        id="event-description"
-                                        value={eventDescription}
-                                        onChange={(e) =>
-                                            setEventDescription(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="event-date">
-                                        Event Date
-                                    </Label>
-                                    <Input
-                                        id="event-date"
-                                        type="date"
-                                        value={eventDate}
-                                        onChange={(e) =>
-                                            setEventDate(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="start-sell-date">
-                                            Start Sell Date
-                                        </Label>
-                                        <Input
-                                            id="start-sell-date"
-                                            type="date"
-                                            value={startSellDate}
-                                            onChange={(e) =>
-                                                setStartSellDate(e.target.value)
-                                            }
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="end-sell-date">
-                                            End Sell Date
-                                        </Label>
-                                        <Input
-                                            id="end-sell-date"
-                                            type="date"
-                                            value={endSellDate}
-                                            onChange={(e) =>
-                                                setEndSellDate(e.target.value)
-                                            }
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="price-with-card">
-                                            Price with ESN Card (€)
-                                        </Label>
-                                        <Input
-                                            id="price-with-card"
-                                            type="number"
-                                            step="0.01"
-                                            value={priceWithCard}
-                                            onChange={(e) =>
-                                                setPriceWithCard(e.target.value)
-                                            }
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="price-without-card">
-                                            Price without ESN Card (€)
-                                        </Label>
-                                        <Input
-                                            id="price-without-card"
-                                            type="number"
-                                            step="0.01"
-                                            value={priceWithoutCard}
-                                            onChange={(e) =>
-                                                setPriceWithoutCard(
-                                                    e.target.value,
-                                                )
-                                            }
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label htmlFor="responsible-user">
-                                        Responsible User (Board)
-                                    </Label>
-                                    <Select
-                                        value={responsibleUserId}
-                                        onValueChange={setResponsibleUserId}
-                                    >
-                                        <SelectTrigger id="responsible-user">
-                                            <SelectValue placeholder="Select a board member" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {boardUsers.map((user) => (
-                                                <SelectItem
-                                                    key={user.id}
-                                                    value={user.id.toString()}
-                                                >
-                                                    {user.name} ({user.email})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="variable-amount"
-                                        checked={variableAmount}
-                                        onCheckedChange={(checked) =>
-                                            setVariableAmount(checked === true)
-                                        }
-                                    />
-                                    <Label
-                                        htmlFor="variable-amount"
-                                        className="cursor-pointer"
-                                    >
-                                        Variable Amount (separate quantities for
-                                        with/without card)
-                                    </Label>
-                                </div>
-                                {variableAmount ? (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="quantity-with-card">
-                                                Quantity with Card
-                                            </Label>
-                                            <Input
-                                                id="quantity-with-card"
-                                                type="number"
-                                                value={quantityWithCard}
-                                                onChange={(e) =>
-                                                    setQuantityWithCard(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="quantity-without-card">
-                                                Quantity without Card
-                                            </Label>
-                                            <Input
-                                                id="quantity-without-card"
-                                                type="number"
-                                                value={quantityWithoutCard}
-                                                onChange={(e) =>
-                                                    setQuantityWithoutCard(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <Label htmlFor="quantity">
-                                            Quantity (optional)
-                                        </Label>
-                                        <Input
-                                            id="quantity"
-                                            type="number"
-                                            value={quantity}
-                                            onChange={(e) =>
-                                                setQuantity(e.target.value)
-                                            }
-                                        />
-                                    </div>
-                                )}
-                                <div>
-                                    <Label htmlFor="notes">
-                                        Notes (optional)
-                                    </Label>
-                                    <Textarea
-                                        id="notes"
-                                        value={notes}
-                                        onChange={(e) =>
-                                            setNotes(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                {!editingEvent && (
-                                    <div className="grid gap-2">
-                                        <Label>Google Spreadsheet ID (Eventually necessary...)</Label>
-                                        <Input
-                                            value={googleSpreadsheetId}
-                                            onChange={(e) => setGoogleSpreadsheetId(e.target.value)}
-                                            placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..."
-                                        />
-                                        <p className="text-[0.8rem] text-muted-foreground">
-                                            Link a Google Sheet to sync attendees.
-                                        </p>
-                                    </div>
-                                )}
-                                {editingEvent && (
-                                    <div className="mt-4 rounded-md bg-muted p-4 flex items-center justify-between">
-                                        <div className="text-sm font-medium">Manage Attendees</div>
-                                        <Button asChild variant="secondary" size="sm">
-                                            <Link href={`/sellables/events/${editingEvent.id}/attendees`}>
-                                                View & Sync <ExternalLink className="ml-2 h-3 w-3" />
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                            <DialogFooter>
-                                <DialogClose asChild>
-                                    <Button variant="ghost">Cancel</Button>
-                                </DialogClose>
-                                <Button onClick={submitEvent}>
-                                    {editingEvent
-                                        ? 'Update Event'
-                                        : 'Create Event'}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                        editingEvent={editingEvent}
+                        boardUsers={boardUsers}
+                        onSuccess={() => {
+                            setMessage(
+                                editingEvent
+                                    ? 'Event updated successfully'
+                                    : 'Event created successfully',
+                            );
+                        }}
+                    />
 
                     {orderedEvents.length === 0 ? (
                         <div className="py-8 text-center text-muted-foreground">
@@ -1018,7 +533,8 @@ export default function Sellables() {
                                 const prevEvDate =
                                     idx > 0
                                         ? parseDate(
-                                              orderedEvents[idx - 1].event_date,
+                                              orderedEvents[idx - 1]
+                                                  .event_date,
                                           )
                                         : null;
                                 const prevIsPast = prevEvDate
@@ -1099,28 +615,73 @@ export default function Sellables() {
                                                                 <span className="text-muted-foreground">
                                                                     Qty w/ Card:
                                                                 </span>{' '}
-                                                                {event.quantity_with_card === -1 ? 'Unlimited' : event.quantity_with_card}
-                                                                {event.quantity_with_card !== -1 && event.remaining_with_card !== undefined && event.remaining_with_card !== null && (
-                                                                    <span className="text-gray-500"> | {event.remaining_with_card} remain</span>
-                                                                )}{' '}
+                                                                {event.quantity_with_card ===
+                                                                -1
+                                                                    ? 'Unlimited'
+                                                                    : event.quantity_with_card}
+                                                                {event.quantity_with_card !==
+                                                                    -1 &&
+                                                                    event.remaining_with_card !==
+                                                                        undefined &&
+                                                                    event.remaining_with_card !==
+                                                                        null && (
+                                                                        <span className="text-gray-500">
+                                                                            {' '}
+                                                                            |{' '}
+                                                                            {
+                                                                                event.remaining_with_card
+                                                                            }{' '}
+                                                                            remain
+                                                                        </span>
+                                                                    )}{' '}
                                                                 |{' '}
                                                                 <span className="text-muted-foreground">
                                                                     w/o Card:
                                                                 </span>{' '}
-                                                                {event.quantity_without_card === -1 ? 'Unlimited' : event.quantity_without_card}
-                                                                {event.quantity_without_card !== -1 && event.remaining_without_card !== undefined && event.remaining_without_card !== null && (
-                                                                    <span className="text-gray-500"> | {event.remaining_without_card} remain</span>
-                                                                )}
+                                                                {event.quantity_without_card ===
+                                                                -1
+                                                                    ? 'Unlimited'
+                                                                    : event.quantity_without_card}
+                                                                {event.quantity_without_card !==
+                                                                    -1 &&
+                                                                    event.remaining_without_card !==
+                                                                        undefined &&
+                                                                    event.remaining_without_card !==
+                                                                        null && (
+                                                                        <span className="text-gray-500">
+                                                                            {' '}
+                                                                            |{' '}
+                                                                            {
+                                                                                event.remaining_without_card
+                                                                            }{' '}
+                                                                            remain
+                                                                        </span>
+                                                                    )}
                                                             </p>
                                                         ) : (
                                                             <p>
                                                                 <span className="text-muted-foreground">
                                                                     Quantity:
                                                                 </span>{' '}
-                                                                {event.quantity === -1 ? 'Unlimited' : event.quantity}
-                                                                {event.quantity !== -1 && event.remaining !== undefined && event.remaining !== null && (
-                                                                    <span className="text-gray-500"> | {event.remaining} remain</span>
-                                                                )}
+                                                                {event.quantity ===
+                                                                -1
+                                                                    ? 'Unlimited'
+                                                                    : event.quantity}
+                                                                {event.quantity !==
+                                                                    -1 &&
+                                                                    event.remaining !==
+                                                                        undefined &&
+                                                                    event.remaining !==
+                                                                        null && (
+                                                                        <span className="text-gray-500">
+                                                                            {' '}
+                                                                            |{' '}
+                                                                            {
+                                                                                event.remaining
+                                                                            }{' '}
+                                                                            remain
+                                                                        </span>
+                                                                    )}
                                                             </p>
                                                         )}
                                                         <p>
@@ -1141,115 +702,132 @@ export default function Sellables() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                
-                                                <div className="flex flex-col justify-between h-full"> {/* take all remaining height */}
+
+                                                <div className="flex h-full flex-col justify-between">
+                                                    {' '}
+                                                    {/* take all remaining height */}
                                                     <div className="ml-4 flex gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        onClick={() =>
-                                                            openEventDialog(
-                                                                event,
-                                                            )
-                                                        }
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                    <>
                                                         <Button
                                                             size="sm"
                                                             variant="ghost"
-                                                            className="text-muted-foreground hover:bg-muted/30"
                                                             onClick={() =>
-                                                                setEventToDelete(
-                                                                    event.id,
+                                                                openEventDialog(
+                                                                    event,
                                                                 )
                                                             }
                                                         >
-                                                            Remove
+                                                            Edit
                                                         </Button>
+                                                        <>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="text-muted-foreground hover:bg-muted/30"
+                                                                onClick={() =>
+                                                                    setEventToDelete(
+                                                                        event.id,
+                                                                    )
+                                                                }
+                                                            >
+                                                                Remove
+                                                            </Button>
 
-                                                        <Dialog
-                                                            open={
-                                                                eventToDelete ===
-                                                                event.id
-                                                            }
-                                                            onOpenChange={(
-                                                                open,
-                                                            ) =>
-                                                                !open &&
-                                                                setEventToDelete(
-                                                                    null,
-                                                                )
-                                                            }
-                                                        >
-                                                            <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
-                                                                <DialogTitle>
-                                                                    Delete Event
-                                                                </DialogTitle>
-                                                                <DialogDescription>
-                                                                    Are you sure
-                                                                    you want to
-                                                                    delete "
-                                                                    {event.name}
-                                                                    "? This
-                                                                    action
-                                                                    cannot be
-                                                                    undone.
-                                                                </DialogDescription>
-                                                                <DialogFooter>
-                                                                    <DialogClose asChild>
-                                                                        <Button variant="ghost">
-                                                                            Cancel
-                                                                        </Button>
-                                                                    </DialogClose>
-                                                                    <Button
-                                                                        variant="destructive"
-                                                                        onClick={() =>
-                                                                            deleteEvent(
-                                                                                event.id,
-                                                                            )
-                                                                        }
-                                                                    >
+                                                            <Dialog
+                                                                open={
+                                                                    eventToDelete ===
+                                                                    event.id
+                                                                }
+                                                                onOpenChange={
+                                                                    open =>
+                                                                        !open &&
+                                                                        setEventToDelete(
+                                                                            null,
+                                                                        )
+                                                                }
+                                                            >
+                                                                <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                                                                    <DialogTitle>
                                                                         Delete
-                                                                    </Button>
-                                                                </DialogFooter>
-                                                            </DialogContent>
-                                                        </Dialog>
-                                                    </>
-                                                </div>
-
-                                                {/* Manage Attendees button (bottom-right of event card) */}
-                                                <div className="absolute right-4 bottom-4">
-                                                    <Button asChild variant="secondary" size="sm">
-                                                        <Link href={`/sellables/events/${event.id}/attendees`}>
-                                                            View & Sync <ExternalLink className="ml-2 h-3 w-3" />
-                                                        </Link>
-                                                    </Button>
-                                                </div>
+                                                                        Event
+                                                                    </DialogTitle>
+                                                                    <DialogDescription>
+                                                                        Are you
+                                                                        sure you
+                                                                        want to
+                                                                        delete "
+                                                                        {
+                                                                            event.name
+                                                                        }
+                                                                        "? This
+                                                                        action
+                                                                        cannot
+                                                                        be
+                                                                        undone.
+                                                                    </DialogDescription>
+                                                                    <DialogFooter>
+                                                                        <DialogClose
+                                                                            asChild
+                                                                        >
+                                                                            <Button variant="ghost">
+                                                                                Cancel
+                                                                            </Button>
+                                                                        </DialogClose>
+                                                                        <Button
+                                                                            variant="destructive"
+                                                                            onClick={() =>
+                                                                                deleteEvent(
+                                                                                    event.id,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            Delete
+                                                                        </Button>
+                                                                    </DialogFooter>
+                                                                </DialogContent>
+                                                            </Dialog>
+                                                        </>
                                                     </div>
-
+                                                    {/* Manage Attendees button (bottom-right of event card) */}
+                                                    <div className="absolute bottom-4 right-4">
+                                                        <Button
+                                                            asChild
+                                                            variant="secondary"
+                                                            size="sm"
+                                                        >
+                                                            <Link
+                                                                href={`/sellables/events/${event.id}/attendees`}
+                                                            >
+                                                                View & Sync{' '}
+                                                                <ExternalLink className="ml-2 h-3 w-3" />
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </React.Fragment>
                                 );
                             })}
                         </div>
-                        
                     )}
                 </div>
             </div>
 
             {expiredPagination?.has_more && (
-                <div className="flex justify-center mt-2">
-                    <Button onClick={loadMoreExpired} disabled={loadingExpired}>
-                        {loadingExpired ? 'Loading...' : 'Load more expired events'}
+                <div className="mt-2 flex justify-center">
+                    <Button
+                        onClick={loadMoreExpired}
+                        disabled={loadingExpired}
+                    >
+                        {loadingExpired
+                            ? 'Loading...'
+                            : 'Load more expired events'}
                     </Button>
                 </div>
             )}
 
             {message && (
-                <div className="fixed top-4 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
+                <div className="fixed left-1/2 top-4 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
                     <Alert>
                         <Check />
                         <AlertTitle>{message}</AlertTitle>

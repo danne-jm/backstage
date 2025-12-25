@@ -29,7 +29,6 @@ class DatabaseSeeder extends Seeder
                 'permissions' => '["admin", "view_dashboard", "manage_users", "manage_events", "manage_tickets", "manage_inventory", "manage_sales", "scan_tickets", "view_reports"]',
                 'pinned' => '[{"href": "https://mail.google.com/", "icon": "Mail", "title": "Gmail"}, {"href": "https://drive.google.com/", "icon": "Container", "title": "Google Drive"}, {"href": "https://www.esnleuven.be/", "icon": "Globe", "title": "ESN Leuven Website"}, {"href": "https://esn-leuven.sumupstore.com/", "icon": "ShoppingBag", "title": "ESN Leuven Store"}, {"href": "https://linktr.ee/esnleuven", "icon": "TreeDeciduous", "title": "Linktree"}]',
                 'role' => 'IT Manager',
-                'is_office_worker' => 0,
                 'created_at' => '2025-12-22 20:48:25',
                 'updated_at' => '2025-12-23 00:53:26',
                 'two_factor_secret' => null,
@@ -50,7 +49,6 @@ class DatabaseSeeder extends Seeder
                 'permissions' => '["admin", "view_dashboard", "manage_users", "manage_events", "manage_tickets", "manage_inventory", "manage_sales", "scan_tickets", "view_reports"]',
                 'pinned' => '[{"href": "https://mail.google.com/", "icon": "Mail", "title": "Gmail"}, {"href": "https://drive.google.com/", "icon": "Container", "title": "Google Drive"}, {"href": "https://www.esnleuven.be/", "icon": "Globe", "title": "ESN Leuven Website"}, {"href": "https://esn-leuven.sumupstore.com/", "icon": "ShoppingBag", "title": "ESN Leuven Store"}, {"href": "https://linktr.ee/esnleuven", "icon": "TreeDeciduous", "title": "Linktree"}]',
                 'role' => 'President',
-                'is_office_worker' => 0,
                 'created_at' => '2025-12-22 23:27:03',
                 'updated_at' => '2025-12-22 23:27:03',
                 'two_factor_secret' => null,
@@ -71,7 +69,6 @@ class DatabaseSeeder extends Seeder
                 'permissions' => '["board", "view_dashboard", "manage_events", "manage_tickets", "scan_tickets", "view_reports"]',
                 'pinned' => '[{"href": "https://mail.google.com/", "icon": "Mail", "title": "Gmail"}, {"href": "https://drive.google.com/", "icon": "Container", "title": "Google Drive"}, {"href": "https://www.esnleuven.be/", "icon": "Globe", "title": "ESN Leuven Website"}, {"href": "https://esn-leuven.sumupstore.com/", "icon": "ShoppingBag", "title": "ESN Leuven Store"}, {"href": "https://linktr.ee/esnleuven", "icon": "TreeDeciduous", "title": "Linktree"}]',
                 'role' => 'Marketing Manager',
-                'is_office_worker' => 0,
                 'created_at' => '2025-12-23 00:44:34',
                 'updated_at' => '2025-12-23 00:44:34',
                 'two_factor_secret' => null,
@@ -92,7 +89,6 @@ class DatabaseSeeder extends Seeder
                 'permissions' => '["board", "view_dashboard", "manage_events", "manage_tickets", "scan_tickets", "view_reports"]',
                 'pinned' => '[{"href": "https://mail.google.com/", "icon": "Mail", "title": "Gmail"}, {"href": "https://drive.google.com/", "icon": "Container", "title": "Google Drive"}, {"href": "https://www.esnleuven.be/", "icon": "Globe", "title": "ESN Leuven Website"}, {"href": "https://esn-leuven.sumupstore.com/", "icon": "ShoppingBag", "title": "ESN Leuven Store"}, {"href": "https://linktr.ee/esnleuven", "icon": "TreeDeciduous", "title": "Linktree"}]',
                 'role' => 'Finance Manager',
-                'is_office_worker' => 0,
                 'created_at' => '2025-12-23 10:47:34',
                 'updated_at' => '2025-12-23 10:47:46',
                 'two_factor_secret' => null,
@@ -108,6 +104,7 @@ class DatabaseSeeder extends Seeder
             EventSeeder::class,
             MailTemplateSeeder::class,
             \Database\Seeders\EventTicketsSeeder::class,
+            \Database\Seeders\SalesSeeder::class,
         ]);
     }
 }
