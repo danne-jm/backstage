@@ -63,9 +63,13 @@ class StoreManagerController extends Controller
                 ];
             });
 
+        // Include all online sales from the last 14 days so frontend
+        // aggregations and charts have the full recent dataset to compute
+        // per-sellable totals and series accurately.
+        $from = now()->subDays(14);
         $onlineSales = OnlineSale::with(['product', 'event'])
+            ->where('sold_at', '>=', $from)
             ->orderBy('sold_at', 'desc')
-            ->limit(10)
             ->get();
 
         $onlineSellablesCount = Product::where('is_online_sellable', true)->count() + Event::where('is_online_sellable', true)->count();

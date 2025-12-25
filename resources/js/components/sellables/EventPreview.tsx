@@ -12,32 +12,7 @@ import { ExternalLink } from 'lucide-react';
 import * as React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 
-interface Event {
-    id: number;
-    name: string;
-    description: string | null;
-    event_date: string;
-    start_sell_date: string;
-    end_sell_date: string;
-    price_with_card: number;
-    price_without_card: number;
-    quantity: number | null;
-    responsible_user_id: number;
-    notes: string | null;
-    variable_amount: boolean;
-    quantity_with_card: number | null;
-    quantity_without_card: number | null;
-    google_spreadsheet_id: string | null;
-    responsibleUser?: {
-        id: number;
-        first_name: string;
-        last_name: string;
-    };
-    remaining: number;
-    remaining_with_card: number;
-    remaining_without_card: number;
-    is_online_sellable: boolean;
-}
+import type { Event } from '@/types/sellables';
 
 interface EventPreviewProps {
     event: Event;

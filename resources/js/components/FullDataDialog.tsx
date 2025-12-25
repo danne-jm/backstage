@@ -23,8 +23,8 @@ export default function FullDataDialog({ title = 'Full Data Source', triggerLabe
                 </DialogDescription>
 
                 <div className="mt-4 min-h-0 flex-1 overflow-hidden">
-                    <div className="grid h-full min-h-0 grid-cols-3 gap-4">
-                        <div className="col-span-2 min-h-0">
+                    <div className="grid h-full min-h-0 grid-cols-6 gap-4">
+                        <div className="col-span-5 min-h-0">
                             <div className="h-full max-h-[75vh] overflow-y-auto rounded border">
                                 <table className="w-full table-fixed text-xs">
                                     <thead>
@@ -57,26 +57,51 @@ export default function FullDataDialog({ title = 'Full Data Source', triggerLabe
                                 </div>
 
                                 <div className="mt-3">
-                                    {(() => {
-                                        const emails: string[] = sampleData.map(s => String(s.email ?? '').trim()).filter(Boolean);
+                                {(() => {
+                                        // Determine which field likely contains the recipient email.
+                                        const emailField = (() => {
+                                            // Prefer a header containing "email" (case-insensitive)
+                                            const found = fields.find(f => String(f).toLowerCase().includes('email'));
+                                            return found ?? 'email';
+                                        })();
+
+                                        const emails: string[] = sampleData.map(s => String(s[emailField] ?? '').trim()).filter(Boolean);
                                         const domains: string[] = emails.map(e => e.includes('@') ? e.split('@')[1].toLowerCase() : '');
                                         const domainCounts: Record<string, number> = {};
                                         domains.forEach(d => { if (d) domainCounts[d] = (domainCounts[d] || 0) + 1; });
 
                                         const domainEntries = Object.entries(domainCounts).sort((a,b) => b[1] - a[1]);
 
+                                        // A small curated list of known/common domains to help spot typos
+                                        const known = [
+                                            'gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com', 'live.com', 'icloud.com',
+                                            'student.kuleuven.be', 'kuleuven.be', 'hotmail.co.uk', 'yahoo.co.uk', 'protonmail.com',
+                                            'telenet.be', 'skynet.be', 'ucll.be', 'esnleuven.be', 'example.com'
+                                        ];
+
                                         if (emails.length === 0) return <div className="text-xs text-muted-foreground">No emails available</div>;
 
                                         return (
-                                            <div className="space-y-2 text-xs">
-                                                <div>Total recipients: <strong>{emails.length}</strong></div>
-                                                <div className="space-y-1">
-                                                    {domainEntries.map(([d, count]) => (
-                                                        <div key={d} className="flex items-center justify-between">
-                                                            <div className="truncate">{d}</div>
-                                                            <div className="ml-2 text-muted-foreground">{count}</div>
-                                                        </div>
-                                                    ))}
+                                            <div className="space-y-3 text-xs">
+                                                <div>
+                                                    <div className="text-xs font-medium">Known domains</div>
+                                                    <div className="mt-1 text-xs text-muted-foreground">{known.join(', ')}</div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="text-xs font-medium">Domain counts</div>
+                                                    <ul className="mt-1 list-disc pl-5">
+                                                        {domainEntries.length === 0 ? (
+                                                            <li className="text-muted-foreground">No recipient emails found</li>
+                                                        ) : (
+                                                            domainEntries.map(([d, count]) => (
+                                                                <li key={d} className={"flex items-center justify-between " + (known.includes(d) ? '' : 'text-red-600')}>
+                                                                    <span className="mr-2">{d}</span>
+                                                                    <span className="text-muted-foreground">{count}</span>
+                                                                </li>
+                                                            ))
+                                                        )}
+                                                    </ul>
                                                 </div>
                                             </div>
                                         );

@@ -9,76 +9,16 @@ import { ProductDialog } from '@/components/sellables/ProductDialog';
 import { EventDialog } from '@/components/sellables/EventDialog';
 import { ProductPreview } from '@/components/sellables/ProductPreview';
 import { EventPreview } from '@/components/sellables/EventPreview';
+import type { Product, Event, Sellable, BoardUser, OnlineSale } from '@/types/sellables';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Store Manager',
+        title: 'Store Manager (Integrate real data with SumUp or other POS)',
         href: storeManager().url,
     },
 ];
 
-interface Product {
-    id: number;
-    type: 'product';
-    name: string;
-    description: string | null;
-    price: number;
-    quantity?: number | null;
-    variable_amount?: boolean;
-    quantity_with_card?: number | null;
-    quantity_without_card?: number | null;
-    remaining: number;
-    remaining_with_card?: number;
-    remaining_without_card?: number;
-    is_online_sellable: boolean;
-}
-
-interface Event {
-    id: number;
-    type: 'event';
-    name: string;
-    description: string | null;
-    event_date: string;
-    start_sell_date: string;
-    end_sell_date: string;
-    price_with_card: number;
-    price_without_card: number;
-    quantity: number | null;
-    responsible_user_id?: number | null;
-    notes: string | null;
-    variable_amount: boolean;
-    quantity_with_card: number | null;
-    quantity_without_card: number | null;
-    responsibleUser?: {
-        id: number;
-        first_name: string;
-        last_name: string;
-    };
-    remaining: number;
-    remaining_with_card: number;
-    remaining_without_card: number;
-    is_online_sellable: boolean;
-}
-
-type Sellable = Product | Event;
-
-interface BoardUser {
-    id: number;
-    name: string;
-    email: string;
-}
-
-interface OnlineSale {
-    id: number;
-    product_id: number | null;
-    event_id: number | null;
-    method: string;
-    amount: number;
-    details: any;
-    sold_at: string;
-    product?: Product;
-    event?: Event;
-}
+// types moved to resources/js/types/sellables.ts
 
 export default function StoreManager() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -203,7 +143,58 @@ export default function StoreManager() {
     const totalOffice = sales.reduce((s, r) => s + (r.office_total || 0), 0);
     const totalOnline = sales.reduce((s, r) => s + (r.online_total || 0), 0);
 
+    // (online sellable totals computed below after `sellables` is defined)
+
     const sellables: Sellable[] = [...products, ...events];
+
+    // Compute recent online totals per active online sellable from onlineSales
+    const onlineSellableTotals = (() => {
+        const items = sellables.filter(s => s.is_online_sellable);
+        return items.map(s => {
+            const total = onlineSales.reduce((acc, os) => {
+                const amount = parseFloat(String(os.amount || 0)) || 0;
+                if (s.type === 'product' && os.product_id === s.id) return acc + amount;
+                if (s.type === 'event' && os.event_id === s.id) return acc + amount;
+                return acc;
+            }, 0);
+            return { ...s, total };
+        });
+    })();
+
+    // Prepare per-sellable daily series and colors for chart + legend
+    const palette = [
+        '#3B82F6', // blue
+        '#F97316', // orange
+        '#EF4444', // red
+        '#6366F1', // indigo
+        '#06B6D4', // cyan
+        '#A3E635', // lime
+        '#F59E0B', // amber
+        '#EC4899', // pink
+    ];
+
+    const dateKeys = sales.map(s => s.date);
+
+    const onlineSellableSeries = onlineSellableTotals.map((s, idx) => {
+        const series = dateKeys.map(dk => {
+            const totalForDay = onlineSales.reduce((acc, os) => {
+                const soldDate = (os.sold_at || '').split('T')[0];
+                if (soldDate !== dk) return acc;
+                if (s.type === 'product' && os.product_id === s.id) return acc + (parseFloat(String(os.amount || 0)) || 0);
+                if (s.type === 'event' && os.event_id === s.id) return acc + (parseFloat(String(os.amount || 0)) || 0);
+                return acc;
+            }, 0);
+            return totalForDay;
+        });
+
+        return {
+            ...s,
+            series,
+            color: palette[idx % palette.length],
+        };
+    });
+
+    const seriesMax = Math.max(1, ...onlineSellableSeries.flatMap(s => s.series));
 
     return (
         <>
@@ -213,9 +204,13 @@ export default function StoreManager() {
                     <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                         {/* Sales chart */}
                         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-                            <h3 className="mb-2 text-sm font-semibold">
-                                Sales (last 14 days)
-                            </h3>
+                            <div className="mb-2 flex items-center justify-between">
+                                <h3 className="text-sm font-semibold">Sales (last 14 days)</h3>
+                                {/* total computed from onlineSellableTotals below */}
+                                <div className="text-sm font-medium">
+                                    €{onlineSellableTotals.reduce((acc, s) => acc + (s.total || 0), 0).toFixed(2)}
+                                </div>
+                            </div>
                             {loading ? (
                                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
                             ) : (
@@ -230,79 +225,91 @@ export default function StoreManager() {
                                             const pad = 10;
                                             const w = 300 - pad * 2;
                                             const h = 80 - pad * 2;
-                                            const maxVal = Math.max(
-                                                ...sales.map(s =>
-                                                    Math.max(
-                                                        s.office_total,
-                                                        s.online_total,
-                                                    ),
-                                                ),
-                                                1,
-                                            );
+                                            // Build per-sellable time series for the chart using the sales summary dates
+                                            const dateKeys = sales.map(s => s.date);
 
-                                            const points = sales.map((s, i) => {
-                                                const x =
-                                                    pad +
-                                                    (i /
-                                                        Math.max(
-                                                            1,
-                                                            sales.length - 1,
-                                                        )) *
-                                                        w;
-                                                const yOffice =
-                                                    pad +
-                                                    h -
-                                                    (s.office_total / maxVal) *
-                                                        h;
-                                                const yOnline =
-                                                    pad +
-                                                    h -
-                                                    (s.online_total / maxVal) *
-                                                        h;
-                                                return { x, yOffice, yOnline };
-                                            });
-
-                                            const pathOffice = points
-                                                .map(
-                                                    (p, i) =>
-                                                        `${i === 0 ? 'M' : 'L'} ${p.x} ${p.yOffice}`,
-                                                )
-                                                .join(' ');
-                                            const pathOnline = points
-                                                .map(
-                                                    (p, i) =>
-                                                        `${i === 0 ? 'M' : 'L'} ${p.x} ${p.yOnline}`,
-                                                )
-                                                .join(' ');
-
+                                            // Render each sellable's series using precomputed onlineSellableSeries
                                             return (
                                                 <>
-                                                    <path
-                                                        d={pathOffice}
-                                                        fill="none"
-                                                        stroke="#10B981"
-                                                        strokeWidth={2}
-                                                        strokeOpacity={0.9}
-                                                    />
-                                                    <path
-                                                        d={pathOnline}
-                                                        fill="none"
-                                                        stroke="#3B82F6"
-                                                        strokeWidth={2}
-                                                        strokeOpacity={0.9}
-                                                    />
+                                                    {onlineSellableSeries.map((s, idx) => {
+                                                        const points = s.series.map((val: number, i: number) => {
+                                                            const x = pad + (i / Math.max(1, dateKeys.length - 1)) * w;
+                                                            const y = pad + h - (val / seriesMax) * h;
+                                                            return { x, y };
+                                                        });
+
+                                                        const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+                                                        return (
+                                                            <path
+                                                                key={`series-${idx}`}
+                                                                d={d}
+                                                                fill="none"
+                                                                stroke={s.color}
+                                                                strokeWidth={2}
+                                                                strokeOpacity={0.95}
+                                                            />
+                                                        );
+                                                    })}
                                                 </>
                                             );
                                         })()}
                                     </svg>
-                                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                            <span className="h-2 w-2 rounded-full bg-green-500" />{' '}
-                                            Office: €{totalOffice.toFixed(2)}
+                                    {/* Legend: show a colored swatch per sellable series */}
+                                    {/* <div className="mt-2 text-xs text-muted-foreground">
+                                        {onlineSellableSeries.length > 0 ? (
+                                            <div className="flex flex-wrap gap-4 items-center">
+                                                {onlineSellableSeries.map(s => (
+                                                    <div key={`legend-${s.type}-${s.id}`} className="flex items-center gap-2">
+                                                        <span
+                                                            className="h-2 w-2 rounded-full inline-block"
+                                                            style={{ backgroundColor: s.color }}
+                                                        />
+                                                        <span>{s.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-blue-500" /> Online
+                                            </div>
+                                        )}
+                                    </div> */}
+                                    {/* Individual online sellables (recent online totals computed from onlineSales state) */}
+                                    <div className="mt-3 text-xs">
+                                        <div className="text-muted-foreground mb-1">
+                                            Active online sellables
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="h-2 w-2 rounded-full bg-blue-500" />{' '}
-                                            Online: €{totalOnline.toFixed(2)}
+                                        <div className="space-y-1">
+                                            {onlineSellableTotals.length > 0 ? (
+                                                onlineSellableTotals.map(s => {
+                                                    const total = s.total || 0;
+                                                    const overall = onlineSellableTotals.reduce((a, it) => a + (it.total || 0), 0) || 0;
+                                                    const pct = overall === 0 ? 0 : (total / overall) * 100;
+                                                    const seriesMeta = onlineSellableSeries.find(ss => ss.id === s.id && ss.type === s.type as any) as any;
+                                                    const color = seriesMeta?.color ?? '#6B7280';
+
+                                                    return (
+                                                        <div
+                                                            key={`online-sellable-${s.type}-${s.id}`}
+                                                            className="flex items-center justify-between"
+                                                        >
+                                                            <div className="truncate flex items-center gap-2">
+                                                                <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: color }} />
+                                                                <span>{s.name}</span>
+                                                            </div>
+                                                            <div className="flex items-baseline gap-3">
+                                                                <div className="font-medium">€{total.toFixed(2)}</div>
+                                                                <div className="text-muted-foreground">{pct.toFixed(1)}%</div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="text-muted-foreground">
+                                                    No active online sellables
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -363,23 +370,23 @@ export default function StoreManager() {
                                         s.type === 'product' ? (
                                             <ProductPreview
                                                 key={s.id}
-                                                product={s as Product}
-                                                onEdit={openProductDialog}
-                                                variant="store-manager"
-                                                isOnline={
-                                                    s.is_online_sellable
+                                                product={s}
+                                                onEdit={(p: Product) =>
+                                                    openProductDialog(p)
                                                 }
+                                                variant="store-manager"
+                                                isOnline={s.is_online_sellable}
                                                 onSetOnline={handleSetOnline}
                                             />
                                         ) : (
                                             <EventPreview
                                                 key={s.id}
-                                                event={s as Event}
-                                                onEdit={openEventDialog}
-                                                variant="store-manager"
-                                                isOnline={
-                                                    s.is_online_sellable
+                                                event={s}
+                                                onEdit={(e: Event) =>
+                                                    openEventDialog(e)
                                                 }
+                                                variant="store-manager"
+                                                isOnline={s.is_online_sellable}
                                                 onSetOnline={handleSetOnline}
                                             />
                                         ),
@@ -397,7 +404,7 @@ export default function StoreManager() {
                     {/* Latest Online Sales */}
                     <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                         <h2 className="mb-4 text-lg font-semibold">
-                            Latest Online Sales
+                            Latest Card Sales
                         </h2>
                         {loading ? (
                             <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />

@@ -13,18 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { router } from '@inertiajs/react';
 import * as React from 'react';
-
-interface Product {
-    id: number;
-    name: string;
-    description: string | null;
-    price: number;
-    quantity?: number | null;
-    variable_amount?: boolean;
-    quantity_with_card?: number | null;
-    quantity_without_card?: number | null;
-    remaining: number;
-}
+import type { Product } from '@/types/sellables';
 
 interface ProductDialogProps {
     open: boolean;

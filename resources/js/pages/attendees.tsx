@@ -260,7 +260,8 @@ export default function EventAttendees({ event }: { event: any }) {
                             <CardDescription>Live data from Google Sheets.</CardDescription>
                         </div>
                         <div className="flex items-center">
-                            <FullDataDialog fields={headers} sampleData={sampleData} />
+                            {/* Open full-data view in a fullscreen modal; label changed from 'Manage' to 'Fullscreen' */}
+                            <FullDataDialog title="Full Attendee Data" triggerLabel="Fullscreen" fields={headers} sampleData={sampleData} />
                         </div>
                     </CardHeader>
                     <CardContent>

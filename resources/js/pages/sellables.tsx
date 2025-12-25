@@ -15,6 +15,7 @@ import { Check, ExternalLink } from 'lucide-react';
 import * as React from 'react';
 import { ProductDialog } from '@/components/sellables/ProductDialog';
 import { EventDialog } from '@/components/sellables/EventDialog';
+import type { Product, Event, BoardUser } from '@/types/sellables';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -23,49 +24,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface Product {
-    id: number;
-    name: string;
-    description: string | null;
-    price: number;
-    quantity?: number | null;
-    variable_amount?: boolean;
-    quantity_with_card?: number | null;
-    quantity_without_card?: number | null;
-    remaining: number;
-}
-
-interface Event {
-    id: number;
-    name: string;
-    description: string | null;
-    event_date: string;
-    start_sell_date: string;
-    end_sell_date: string;
-    price_with_card: number;
-    price_without_card: number;
-    quantity: number | null;
-    responsible_user_id: number;
-    notes: string | null;
-    variable_amount: boolean;
-    quantity_with_card: number | null;
-    quantity_without_card: number | null;
-    google_spreadsheet_id: string | null;
-    responsibleUser?: {
-        id: number;
-        first_name: string;
-        last_name: string;
-    };
-    remaining: number;
-    remaining_with_card: number;
-    remaining_without_card: number;
-}
-
-interface BoardUser {
-    id: number;
-    name: string;
-    email: string;
-}
+// types are imported from resources/js/types/sellables.ts
 
 export default function Sellables() {
     // (no manual scroll save/restore) rely on dialog library's default behaviour
