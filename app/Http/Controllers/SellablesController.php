@@ -153,7 +153,7 @@ class SellablesController extends Controller
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
-            'is_online_sellable' => ['required', 'boolean'],
+            'is_online_sellable' => ['sometimes', 'boolean'],
         ]);
 
         if ($validated['variable_amount']) {
@@ -225,7 +225,7 @@ class SellablesController extends Controller
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
-            'is_online_sellable' => ['required', 'boolean'],
+            'is_online_sellable' => ['sometimes', 'boolean'],
         ]);
 
         if ($validated['variable_amount']) {

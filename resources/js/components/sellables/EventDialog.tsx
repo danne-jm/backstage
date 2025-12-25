@@ -98,7 +98,11 @@ export function EventDialog({
                     ? ''
                     : editingEvent.quantity?.toString() || '',
             );
-            setResponsibleUserId(editingEvent.responsible_user_id.toString());
+            setResponsibleUserId(
+                editingEvent.responsible_user_id
+                    ? editingEvent.responsible_user_id.toString()
+                    : '',
+            );
             setNotes(editingEvent.notes || '');
             setVariableAmount(editingEvent.variable_amount);
             setQuantityWithCard(
