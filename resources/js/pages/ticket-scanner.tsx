@@ -1,12 +1,11 @@
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AttendeeDetailsDialog } from '@/components/ticket-scanner/AttendeeDetailsDialog';
+import { AvailableAttendeesList } from '@/components/ticket-scanner/AvailableAttendeesList';
+import { ScannedTicketsList } from '@/components/ticket-scanner/ScannedTicketsList';
+import { ScanResultDialog } from '@/components/ticket-scanner/ScanResultDialog';
+import { ScannedTicketDialog } from '@/components/ticket-scanner/ScannedTicketDialog';
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
 import { CameraOff } from 'lucide-react';
@@ -327,7 +326,7 @@ export default function TicketScanner() {
     React.useEffect(() => {
         return () => {
             if (scannerRef.current) {
-                scannerRef.current.stop().catch(() => {});
+                scannerRef.current.stop().catch(() => { });
             }
         };
     }, []);
@@ -340,12 +339,12 @@ export default function TicketScanner() {
         if (modalOpen) {
             if (scanning) {
                 wasScanningRef.current = true;
-                stopCamera().catch(() => {});
+                stopCamera().catch(() => { });
             }
         } else {
             if (wasScanningRef.current) {
                 wasScanningRef.current = false;
-                startCameraScan().catch(() => {});
+                startCameraScan().catch(() => { });
             }
         }
         // only depend on modalOpen and scanning
@@ -641,701 +640,75 @@ export default function TicketScanner() {
                     </div>
 
                     {/* Remaining tickets / attendees */}
-                    <div className="order-2 flex flex-col rounded-xl border border-sidebar-border/70 p-4 md:order-3 dark:border-sidebar-border">
-                        <h4 className="text-sm font-medium">
-                            {selectedEvent && ticketsLoaded
-                                ? `Available tickets for ${events.find((ev) => ev.id === selectedEvent)?.name ?? ''}`
-                                : 'Available tickets'}
-                        </h4>
-                        <div className="mb-2 text-xs text-muted-foreground">
-                            {selectedEvent && ticketsLoaded
-                                ? tickets.length > 0
-                                    ? `${tickets.length} ticket${tickets.length !== 1 ? 's' : ''} remaining`
-                                    : 'No tickets remaining'
-                                : null}
-                        </div>
-                        <div className="max-h-[220px] flex-1 overflow-y-auto bg-background text-sm">
-                            {attendeeGroups.length === 0 ? (
-                                <div className="text-muted-foreground"></div>
-                            ) : (
-                                <ul className="space-y-1">
-                                    {attendeeGroups.map((attendee, idx) => (
-                                        <li
-                                            key={idx}
-                                            onClick={() =>
-                                                setSelectedAttendee(attendee)
-                                            }
-                                            className="cursor-pointer rounded p-2 transition-colors hover:bg-muted/50"
-                                        >
-                                            <span className="font-medium">
-                                                {attendee.first_name}{' '}
-                                                {attendee.last_name}
-                                            </span>
-                                            <span className="ml-2 text-muted-foreground">
-                                                x{attendee.count}
-                                            </span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </div>
+                    <AvailableAttendeesList
+                        attendeeGroups={attendeeGroups}
+                        onSelectAttendee={setSelectedAttendee}
+                        selectedEventId={selectedEvent}
+                        ticketsLoaded={ticketsLoaded}
+                        eventName={selectedEventObj?.name}
+                        ticketCount={tickets.length}
+                    />
+
                 </div>
 
                 {/* Large scanned tickets area below */}
-                <div className="mt-6 min-h-[50vh] rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                    <div className="mb-3">
-                        <h4 className="text-sm font-medium">
-                            Recently scanned
-                            {ticketsLoaded && selectedEvent
-                                ? ` for ${events.find((ev) => ev.id === selectedEvent)?.name ?? ''}`
-                                : ''}
-                        </h4>
-                        {scannedTickets.length > 0 ? (
-                            <div className="text-xs text-muted-foreground">
-                                {scannedTickets.length} ticket
-                                {scannedTickets.length !== 1 ? 's' : ''} scanned
-                            </div>
-                        ) : (
-                            <div className="text-xs text-muted-foreground">
-                                No scanned tickets yet
-                            </div>
-                        )}
-                    </div>
+                <ScannedTicketsList
+                    scannedTickets={scannedTickets}
+                    ticketsLoaded={ticketsLoaded}
+                    selectedEventId={selectedEvent}
+                    eventName={selectedEventObj?.name}
+                    onSelectTicket={setSelectedScannedTicket}
+                />
 
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-4 lg:grid-cols-4">
-                        {scannedTickets.map((s, i) => {
-                            const rawId = s.ticket_id ?? '';
-                            const prettyId = rawId.replace(
-                                /_[0-9]{6,}_/,
-                                '_…_',
-                            );
-                            const scanCount = s.scan_count || 1;
-                            return (
-                                <div
-                                    key={s.id ?? s.ticket_id ?? i}
-                                    className="cursor-pointer rounded border p-3 transition-colors hover:bg-muted/50"
-                                    onClick={() => setSelectedScannedTicket(s)}
-                                >
-                                    <div className="max-w-full overflow-hidden text-xs text-ellipsis whitespace-nowrap text-muted-foreground">
-                                        {prettyId}
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="font-medium">
-                                            {s.first_name} {s.last_name}
-                                        </div>
-                                        {scanCount > 1 && (
-                                            <span className="ml-2 text-xs text-muted-foreground">
-                                                ×{scanCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {s.email}
-                                    </div>
-                                    <div className="mt-1 text-xs">
-                                        {s.event_name}{' '}
-                                        {s.event_date
-                                            ? `(${new Date(s.event_date).toLocaleString()})`
-                                            : ''}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
 
                 {/* Attendee Details Modal */}
-                <Dialog
+                <AttendeeDetailsDialog
                     open={selectedAttendee !== null}
                     onOpenChange={(open) => !open && setSelectedAttendee(null)}
-                >
-                    <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>Attendee Details</DialogTitle>
-                        </DialogHeader>
-                        {selectedAttendee &&
-                            (() => {
-                                const allTicketsForAttendee =
-                                    getAllTicketsForAttendee(selectedAttendee);
-                                return (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <h3 className="text-lg font-semibold">
-                                                {selectedAttendee.first_name}{' '}
-                                                {selectedAttendee.last_name}
-                                            </h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {selectedAttendee.email}
-                                            </p>
-                                        </div>
+                    attendee={selectedAttendee}
+                    allTickets={
+                        selectedAttendee
+                            ? getAllTicketsForAttendee(selectedAttendee)
+                            : []
+                    }
+                />
 
-                                        <div>
-                                            <h4 className="mb-2 text-sm font-medium">
-                                                Attendee Information
-                                            </h4>
-                                            <div className="space-y-2 rounded border bg-muted/30 p-3">
-                                                {selectedAttendee
-                                                    .tickets[0] && (
-                                                    <>
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className="text-muted-foreground">
-                                                                First Name:
-                                                            </span>
-                                                            <span className="font-medium">
-                                                                {
-                                                                    selectedAttendee
-                                                                        .tickets[0]
-                                                                        .first_name
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className="text-muted-foreground">
-                                                                Last Name:
-                                                            </span>
-                                                            <span className="font-medium">
-                                                                {
-                                                                    selectedAttendee
-                                                                        .tickets[0]
-                                                                        .last_name
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className="text-muted-foreground">
-                                                                Email:
-                                                            </span>
-                                                            <span className="font-medium">
-                                                                {
-                                                                    selectedAttendee
-                                                                        .tickets[0]
-                                                                        .email
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                        {selectedAttendee
-                                                            .tickets[0]
-                                                            .nationality && (
-                                                            <div className="flex justify-between text-sm">
-                                                                <span className="text-muted-foreground">
-                                                                    Nationality:
-                                                                </span>
-                                                                <span className="font-medium">
-                                                                    {
-                                                                        selectedAttendee
-                                                                            .tickets[0]
-                                                                            .nationality
-                                                                    }
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {selectedAttendee
-                                                            .tickets[0]
-                                                            .esn_card !==
-                                                            undefined && (
-                                                            <div className="flex justify-between text-sm">
-                                                                <span className="text-muted-foreground">
-                                                                    ESN Card:
-                                                                </span>
-                                                                <span className="font-medium">
-                                                                    {selectedAttendee
-                                                                        .tickets[0]
-                                                                        .esn_card
-                                                                        ? 'Yes'
-                                                                        : 'No'}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <h4 className="mb-2 text-sm font-medium">
-                                                All Tickets Under This Email (
-                                                {allTicketsForAttendee.length})
-                                            </h4>
-                                            <div className="max-h-[300px] divide-y overflow-y-auto rounded border">
-                                                {allTicketsForAttendee.map(
-                                                    (
-                                                        ticket: any,
-                                                        idx: number,
-                                                    ) => {
-                                                        const rawId =
-                                                            ticket.ticket_id ??
-                                                            '';
-                                                        const prettyId =
-                                                            rawId.replace(
-                                                                /_[0-9]{6,}_/,
-                                                                '_…_',
-                                                            );
-                                                        const isScanned =
-                                                            ticket.scan_count >
-                                                            0;
-                                                        return (
-                                                            <div
-                                                                key={
-                                                                    ticket.id ??
-                                                                    ticket.ticket_id ??
-                                                                    idx
-                                                                }
-                                                                className={`p-3 ${isScanned ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div>
-                                                                        <div className="text-sm font-medium">
-                                                                            {
-                                                                                ticket.first_name
-                                                                            }{' '}
-                                                                            {
-                                                                                ticket.last_name
-                                                                            }
-                                                                        </div>
-                                                                        <div className="text-xs text-muted-foreground">
-                                                                            {
-                                                                                prettyId
-                                                                            }
-                                                                        </div>
-                                                                        <div className="text-xs text-muted-foreground">
-                                                                            {
-                                                                                ticket.email
-                                                                            }
-                                                                        </div>
-                                                                    </div>
-                                                                    {isScanned && (
-                                                                        <span className="text-xs font-medium whitespace-nowrap text-green-600 dark:text-green-400">
-                                                                            ✓
-                                                                            Scanned
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    },
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-                    </DialogContent>
-                </Dialog>
 
                 {/* Scan Result Modal - using Dialog component like attendee modal */}
-                <Dialog
+                <ScanResultDialog
                     open={scanModal !== null}
                     onOpenChange={(open) => {
                         if (!open) setScanModal(null);
                     }}
-                >
-                    <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>
-                                {scanModal?.ticket
-                                    ? `${scanModal.ticket.first_name} ${scanModal.ticket.last_name}`
-                                    : 'Scanned QR'}
-                            </DialogTitle>
-                        </DialogHeader>
-                        {scanModal && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className={`h-3 w-3 rounded-full ${scanModal.status === 'legit' ? 'bg-green-600' : scanModal.status === 'already' ? 'bg-orange-500' : 'bg-red-600'}`}
-                                    />
-                                    <span className="text-sm text-muted-foreground">
-                                        {scanModal.status === 'legit'
-                                            ? 'Legitimate ticket'
-                                            : scanModal.status === 'already'
-                                              ? 'Already scanned'
-                                              : 'Unknown / invalid'}
-                                    </span>
-                                </div>
+                    scanModal={scanModal}
+                    allTickets={
+                        scanModal?.ticket
+                            ? getAllTicketsForAttendee(
+                                scanModal.ticket,
+                                scanModal.ticket,
+                            )
+                            : []
+                    }
+                />
 
-                                {scanModal.ticket ? (
-                                    <div className="space-y-3 rounded border p-3">
-                                        <div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Ticket ID
-                                            </div>
-                                            <div
-                                                className="font-mono text-sm break-words truncate"
-                                                title={scanModal.ticket.ticket_id ?? ''}
-                                            >
-                                                {(() => {
-                                                    const rawId = scanModal.ticket.ticket_id ?? '';
-                                                    // Truncate visually if too long, always show full in tooltip
-                                                    if (rawId.length > 24) {
-                                                        return rawId.slice(0, 12) + '…' + rawId.slice(-8);
-                                                    }
-                                                    return rawId;
-                                                })()}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Name
-                                            </div>
-                                            <div className="font-medium">
-                                                {scanModal.ticket.first_name}{' '}
-                                                {scanModal.ticket.last_name}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Email
-                                            </div>
-                                            <div className="text-sm">
-                                                {scanModal.ticket.email}
-                                            </div>
-                                        </div>
-
-                                        <div className="text-xs text-muted-foreground">
-                                            Event: {
-                                                scanModal.ticket.event_name
-                                                    ? scanModal.ticket.event_name
-                                                    : (() => {
-                                                        // fallback: lookup event by id from events array
-                                                        const evId = scanModal.ticket.event_id ?? scanModal.ticket.event;
-                                                        const found = Array.isArray(events)
-                                                            ? events.find((ev) => ev.id === evId)
-                                                            : null;
-                                                        return found ? found.name : 'Unknown';
-                                                    })()
-                                            }{' '}
-                                            {scanModal.ticket.event_date
-                                                ? `(${new Date(scanModal.ticket.event_date).toLocaleString()})`
-                                                : ''}
-                                        </div>
-
-                                        {/* Show scan history only for repeated scans (status === 'already') */}
-                                        {scanModal.status === 'already' &&
-                                            scanModal.ticket &&
-                                            scanModal.ticket.scan_details &&
-                                            Array.isArray(scanModal.ticket.scan_details) &&
-                                            scanModal.ticket.scan_details.length > 0 && (
-                                                <div className="border-t pt-3">
-                                                    <div className="mb-2 text-xs text-muted-foreground">
-                                                        Scan History
-                                                    </div>
-                                                    <ul className="max-h-40 space-y-2 overflow-y-auto text-xs">
-                                                        {[
-                                                            ...scanModal.ticket.scan_details,
-                                                        ]
-                                                            .reverse()
-                                                            .map((d: any, idx: number) => (
-                                                                <li
-                                                                    key={idx}
-                                                                    className="flex justify-between gap-2"
-                                                                >
-                                                                    <span className="overflow-hidden text-ellipsis">
-                                                                        {d.user_email ?? 'unknown'}
-                                                                    </span>
-                                                                    <span className="whitespace-nowrap text-muted-foreground">
-                                                                        {formatScanDate(d.timestamp)}
-                                                                    </span>
-                                                                </li>
-                                                            ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        {/* All tickets with same email (scanModal) */}
-                                        {scanModal.ticket &&
-                                            (() => {
-                                                const allTicketsForEmail =
-                                                    getAllTicketsForAttendee(
-                                                        scanModal.ticket,
-                                                        scanModal.ticket,
-                                                    );
-                                                if (
-                                                    !allTicketsForEmail ||
-                                                    allTicketsForEmail.length ===
-                                                        0
-                                                )
-                                                    return null;
-                                                return (
-                                                    <div className="border-t pt-3">
-                                                        <div className="mb-2 text-xs text-muted-foreground">
-                                                            All tickets Under
-                                                            This Email (
-                                                            {
-                                                                allTicketsForEmail.length
-                                                            }
-                                                            )
-                                                        </div>
-                                                        <div className="space-y-2 text-sm">
-                                                            {allTicketsForEmail.map(
-                                                                (
-                                                                    ticket: any,
-                                                                    idx: number,
-                                                                ) => (
-                                                                    <div
-                                                                        key={
-                                                                            ticket.id ??
-                                                                            ticket.ticket_id ??
-                                                                            idx
-                                                                        }
-                                                                        className={`rounded p-2 ${ticket.scan_count > 0 ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
-                                                                    >
-                                                                        <div className="flex items-center justify-between">
-                                                                            <div>
-                                                                                <div className="font-medium">
-                                                                                    {
-                                                                                        ticket.first_name
-                                                                                    }{' '}
-                                                                                    {
-                                                                                        ticket.last_name
-                                                                                    }
-                                                                                </div>
-                                                                                <div className="text-xs text-muted-foreground">
-                                                                                    {(
-                                                                                        ticket.ticket_id ??
-                                                                                        ''
-                                                                                    ).replace(
-                                                                                        /_[0-9]{6,}_/,
-                                                                                        '_…_',
-                                                                                    )}
-                                                                                </div>
-                                                                                <div className="text-xs text-muted-foreground">
-                                                                                    {
-                                                                                        ticket.email
-                                                                                    }
-                                                                                </div>
-                                                                            </div>
-                                                                            {ticket.scan_count >
-                                                                                0 && (
-                                                                                <span className="text-xs font-medium whitespace-nowrap text-green-600 dark:text-green-400">
-                                                                                    ✓
-                                                                                    Scanned
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                ),
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })()}
-                                    </div>
-                                ) : (
-                                    <div className="rounded border p-4">
-                                        <div className="text-sm break-words whitespace-pre-wrap">
-                                            {scanModal.raw}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </DialogContent>
-                </Dialog>
 
                 {/* Scanned Ticket Details Modal - same Dialog pattern */}
-                <Dialog
+                <ScannedTicketDialog
                     open={selectedScannedTicket !== null}
                     onOpenChange={(open) =>
                         !open && setSelectedScannedTicket(null)
                     }
-                >
-                    <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>Scanned Ticket Details</DialogTitle>
-                        </DialogHeader>
-                        {selectedScannedTicket && (
-                            <div className="space-y-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold">
-                                        {selectedScannedTicket.first_name}{' '}
-                                        {selectedScannedTicket.last_name}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        {selectedScannedTicket.email}
-                                    </p>
-                                </div>
+                    ticket={selectedScannedTicket}
+                    allTickets={
+                        selectedScannedTicket
+                            ? getAllTicketsForAttendee(
+                                selectedScannedTicket,
+                                selectedScannedTicket,
+                            )
+                            : []
+                    }
+                />
 
-                                <div className="space-y-3 rounded border bg-muted/30 p-3">
-                                    <div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Ticket ID
-                                        </div>
-                                        <div className="font-mono text-sm break-words">
-                                            {(
-                                                selectedScannedTicket.ticket_id ??
-                                                ''
-                                            ).replace(/_[0-9]{6,}_/, '_…_')}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">
-                                            First Name:
-                                        </span>
-                                        <span className="font-medium">
-                                            {selectedScannedTicket.first_name}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">
-                                            Last Name:
-                                        </span>
-                                        <span className="font-medium">
-                                            {selectedScannedTicket.last_name}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">
-                                            Email:
-                                        </span>
-                                        <span className="font-medium">
-                                            {selectedScannedTicket.email}
-                                        </span>
-                                    </div>
-                                    {selectedScannedTicket.nationality && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">
-                                                Nationality:
-                                            </span>
-                                            <span className="font-medium">
-                                                {
-                                                    selectedScannedTicket.nationality
-                                                }
-                                            </span>
-                                        </div>
-                                    )}
-                                    {selectedScannedTicket.esn_card !==
-                                        undefined && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">
-                                                ESN Card:
-                                            </span>
-                                            <span className="font-medium">
-                                                {selectedScannedTicket.esn_card
-                                                    ? 'Yes'
-                                                    : 'No'}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">
-                                            Scan Count:
-                                        </span>
-                                        <span className="font-medium">
-                                            {selectedScannedTicket.scan_count ||
-                                                0}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Always show scan history if present in scanned ticket details modal */}
-                                {selectedScannedTicket.scan_details &&
-                                    Array.isArray(selectedScannedTicket.scan_details) &&
-                                    selectedScannedTicket.scan_details.length > 0 && (
-                                        <div>
-                                            <h4 className="mb-2 text-sm font-medium">
-                                                Scan History
-                                            </h4>
-                                            <div className="max-h-[300px] divide-y overflow-y-auto rounded border">
-                                                {[
-                                                    ...selectedScannedTicket.scan_details,
-                                                ]
-                                                    .reverse()
-                                                    .map((d: any, idx: number) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="flex justify-between gap-2 p-3"
-                                                        >
-                                                            <span className="text-sm">
-                                                                {d.user_email ?? 'unknown'}
-                                                            </span>
-                                                            <span className="text-sm whitespace-nowrap text-muted-foreground">
-                                                                {formatScanDate(d.timestamp)}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                {/* All tickets Under This Email (for scanned ticket details) */}
-                                {selectedScannedTicket &&
-                                    (() => {
-                                        const allTicketsForEmail =
-                                            getAllTicketsForAttendee(
-                                                selectedScannedTicket,
-                                                selectedScannedTicket,
-                                            );
-                                        if (
-                                            !allTicketsForEmail ||
-                                            allTicketsForEmail.length === 0
-                                        )
-                                            return null;
-                                        return (
-                                            <div>
-                                                <h4 className="mb-2 text-sm font-medium">
-                                                    All Tickets Under This Email
-                                                    ({allTicketsForEmail.length}
-                                                    )
-                                                </h4>
-                                                <div className="max-h-[300px] divide-y overflow-y-auto rounded border">
-                                                    {allTicketsForEmail.map(
-                                                        (
-                                                            ticket: any,
-                                                            idx: number,
-                                                        ) => (
-                                                            <div
-                                                                key={
-                                                                    ticket.id ??
-                                                                    ticket.ticket_id ??
-                                                                    idx
-                                                                }
-                                                                className={`p-3 ${ticket.scan_count > 0 ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div>
-                                                                        <div className="text-sm font-medium">
-                                                                            {
-                                                                                ticket.first_name
-                                                                            }{' '}
-                                                                            {
-                                                                                ticket.last_name
-                                                                            }
-                                                                        </div>
-                                                                        <div className="text-xs text-muted-foreground">
-                                                                            {(
-                                                                                ticket.ticket_id ??
-                                                                                ''
-                                                                            ).replace(
-                                                                                /_[0-9]{6,}_/,
-                                                                                '_…_',
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="text-xs text-muted-foreground">
-                                                                            {
-                                                                                ticket.email
-                                                                            }
-                                                                        </div>
-                                                                    </div>
-                                                                    {ticket.scan_count >
-                                                                        0 && (
-                                                                        <span className="text-xs font-medium whitespace-nowrap text-green-600 dark:text-green-400">
-                                                                            ✓
-                                                                            Scanned
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ),
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                            </div>
-                        )}
-                    </DialogContent>
-                </Dialog>
             </div>
         </AppLayout>
     );

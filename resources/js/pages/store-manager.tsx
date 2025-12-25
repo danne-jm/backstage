@@ -9,6 +9,9 @@ import { ProductDialog } from '@/components/sellables/ProductDialog';
 import { EventDialog } from '@/components/sellables/EventDialog';
 import { ProductPreview } from '@/components/sellables/ProductPreview';
 import { EventPreview } from '@/components/sellables/EventPreview';
+import { SalesChart } from '@/components/store-manager/SalesChart';
+import { StoreQuickStats } from '@/components/store-manager/StoreQuickStats';
+import { LatestCardSalesList } from '@/components/store-manager/LatestCardSalesList';
 import type { Product, Event, Sellable, BoardUser, OnlineSale } from '@/types/sellables';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -196,18 +199,6 @@ export default function StoreManager() {
 
     const seriesMax = Math.max(1, ...onlineSellableSeries.flatMap(s => s.series));
 
-    const formatDateTime = (iso?: string | null) => {
-        if (!iso) return 'N/A';
-        const d = new Date(iso);
-        if (isNaN(d.getTime())) return 'N/A';
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const yyyy = d.getFullYear();
-        const hh = String(d.getHours()).padStart(2, '0');
-        const min = String(d.getMinutes()).padStart(2, '0');
-        return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-    };
-
     // Pagination for Latest Card Sales: show up to `pageSize` per page and paginate when there are more
     const pageSize = 100;
     const [onlinePage, setOnlinePage] = useState<number>(1);
@@ -246,145 +237,23 @@ export default function StoreManager() {
                 <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                     <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                         {/* Sales chart */}
-                        <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-                            <div className="mb-2 flex items-center justify-between">
-                                <h3 className="text-sm font-semibold">Sales (last 14 days)</h3>
-                                {/* total computed from onlineSellableTotals below */}
-                                <div className="text-sm font-medium">
-                                    €{onlineSellableTotals.reduce((acc, s) => acc + (s.total || 0), 0).toFixed(2)}
-                                </div>
-                            </div>
-                            {loading ? (
-                                <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                            ) : (
-                                <div className="h-40 w-full">
-                                    <svg
-                                        viewBox="0 0 300 80"
-                                        className="h-full w-full"
-                                    >
-                                        {(() => {
-                                            if (!sales || sales.length === 0)
-                                                return null;
-                                            const pad = 10;
-                                            const w = 300 - pad * 2;
-                                            const h = 80 - pad * 2;
-                                            // Build per-sellable time series for the chart using the sales summary dates
-                                            const dateKeys = sales.map(s => s.date);
-
-                                            // Render each sellable's series using precomputed onlineSellableSeries
-                                            return (
-                                                <>
-                                                    {onlineSellableSeries.map((s, idx) => {
-                                                        const points = s.series.map((val: number, i: number) => {
-                                                            const x = pad + (i / Math.max(1, dateKeys.length - 1)) * w;
-                                                            const y = pad + h - (val / seriesMax) * h;
-                                                            return { x, y };
-                                                        });
-
-                                                        const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-
-                                                        return (
-                                                            <path
-                                                                key={`series-${idx}`}
-                                                                d={d}
-                                                                fill="none"
-                                                                stroke={s.color}
-                                                                strokeWidth={2}
-                                                                strokeOpacity={0.95}
-                                                            />
-                                                        );
-                                                    })}
-                                                </>
-                                            );
-                                        })()}
-                                    </svg>
-                                    {/* Legend removed — using 'Active online sellables' section below to show name, counts and totals */}
-                                    {/* Individual online sellables (recent online totals computed from onlineSales state) */}
-                                    <div className="mt-3 text-xs">
-                                        <div className="text-muted-foreground mb-1">
-                                            Active online sellables
-                                        </div>
-                                        <div className="space-y-1">
-                                            {onlineSellableTotals.length > 0 ? (
-                                                onlineSellableTotals.map(s => {
-                                                    const total = s.total || 0;
-                                                    const overall = onlineSellableTotals.reduce((a, it) => a + (it.total || 0), 0) || 0;
-                                                    const pct = overall === 0 ? 0 : (total / overall) * 100;
-                                                    const seriesMeta = onlineSellableSeries.find(ss => ss.id === s.id && ss.type === s.type as any) as any;
-                                                    const color = seriesMeta?.color ?? '#6B7280';
-                                                    const meta = sellableCounts.find(sc => sc.id === s.id && sc.type === s.type as any);
-                                                    const count = meta?.count ?? 0;
-
-                                                    return (
-                                                        <div
-                                                            key={`online-sellable-${s.type}-${s.id}`}
-                                                            className="flex items-center justify-between"
-                                                        >
-                                                            <div className="truncate flex items-center gap-2">
-                                                                <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: color }} />
-                                                                <span className="flex items-baseline gap-2">
-                                                                    <span>{s.name}</span>
-                                                                    <span className="text-muted-foreground text-xs">x {count}</span>
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-baseline gap-3">
-                                                                <div className="font-medium">€{total.toFixed(2)}</div>
-                                                                <div className="text-muted-foreground">{pct.toFixed(1)}%</div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })
-                                            ) : (
-                                                <div className="text-muted-foreground">
-                                                    No active online sellables
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        <SalesChart
+                            loading={loading}
+                            sales={sales}
+                            onlineSales={onlineSales}
+                            onlineSellableTotals={onlineSellableTotals}
+                            onlineSellableSeries={onlineSellableSeries}
+                            sellableCounts={sellableCounts}
+                            seriesMax={seriesMax}
+                        />
 
                         {/* Quick KPIs */}
-                        <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-                            <h3 className="mb-2 text-sm font-semibold">
-                                Quick Stats
-                            </h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="rounded-md bg-muted/40 p-3">
-                                    <div className="text-xs text-muted-foreground">
-                                        Total Office
-                                    </div>
-                                    <div className="mt-1 text-lg font-medium">
-                                        €{totalOffice.toFixed(2)}
-                                    </div>
-                                </div>
-                                <div className="rounded-md bg-muted/40 p-3">
-                                    <div className="text-xs text-muted-foreground">
-                                        Total Card
-                                    </div>
-                                    <div className="mt-1 text-lg font-medium">
-                                        €{totalOnline.toFixed(2)}
-                                    </div>
-                                </div>
-                                <div className="rounded-md bg-muted/40 p-3">
-                                    <div className="text-xs text-muted-foreground">
-                                        Online Sellables
-                                    </div>
-                                    <div className="mt-1 text-lg font-medium">
-                                        {onlineSellablesCount}
-                                    </div>
-                                </div>
-                                <div className="rounded-md bg-muted/40 p-3">
-                                    <div className="text-xs text-muted-foreground">
-                                        Top Seller
-                                    </div>
-                                    <div className="mt-1 text-lg font-medium">
-                                        {sellables[0]?.name ?? '—'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <StoreQuickStats
+                            totalOffice={totalOffice}
+                            totalOnline={totalOnline}
+                            onlineSellablesCount={onlineSellablesCount}
+                            topSellerName={sellables[0]?.name ?? '—'}
+                        />
 
                         {/* Sellables */}
                         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
@@ -431,50 +300,14 @@ export default function StoreManager() {
                     </div>
 
                     {/* Latest Online Sales */}
-                    <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                        <h2 className="mb-4 text-lg font-semibold">
-                            Latest Card Sales {onlineSales.length > 0 ? <span className="text-muted-foreground">| {visibleOnlineSales.length}</span> : ''}
-                        </h2>
-                        {loading ? (
-                            <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                        ) : (
-                            <div className="space-y-4">
-                                {/* Limit to the 10 most recent sales and make the list vertically scrollable */}
-                                {onlineSales.length > 0 ? (
-                                    <div className="max-h-[70vh] overflow-y-auto space-y-4">
-                                        {visibleOnlineSales.map((sale: any) => (
-                                            <div
-                                                key={sale.id}
-                                                className="flex items-center justify-between rounded-lg border p-4"
-                                            >
-                                                <div>
-                                                    <h3 className="font-medium">
-                                                        {sale.product?.name || sale.event?.name || 'Unknown Item'}
-                                                    </h3>
-                                                    <p className="mt-1 text-sm text-muted-foreground">
-                                                        {formatDateTime(sale.sold_at)}
-                                                    </p>
-                                                </div>
-                                                <div className="text-lg font-medium">€{sale.amount}</div>
-                                            </div>
-                                        ))}
-                                        {/* Pagination controls when there are multiple pages */}
-                                        {totalOnlinePages > 1 && (
-                                            <div className="flex items-center justify-between mt-2">
-                                                <div className="text-sm text-muted-foreground">Page {onlinePage} of {totalOnlinePages}</div>
-                                                <div className="flex items-center gap-2">
-                                                    <button className="rounded px-2 py-1 border bg-background/40 text-sm disabled:opacity-40" disabled={onlinePage <= 1} onClick={() => setOnlinePage(p => Math.max(1, p - 1))}>Prev</button>
-                                                    <button className="rounded px-2 py-1 border bg-background/40 text-sm disabled:opacity-40" disabled={onlinePage >= totalOnlinePages} onClick={() => setOnlinePage(p => Math.min(totalOnlinePages, p + 1))}>Next</button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="text-sm text-muted-foreground">No online sales yet.</div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <LatestCardSalesList
+                        loading={loading}
+                        onlineSales={onlineSales}
+                        visibleOnlineSales={visibleOnlineSales}
+                        onlinePage={onlinePage}
+                        setOnlinePage={setOnlinePage}
+                        totalOnlinePages={totalOnlinePages}
+                    />
                 </div>
             </AppLayout>
 

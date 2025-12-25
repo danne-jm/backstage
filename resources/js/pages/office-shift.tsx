@@ -56,14 +56,14 @@ export default function Office() {
         }
     }).then(res => res.data);
 
-        const { mutate } = useSWR(initialProps.activeShift ? `/office/${initialProps.activeShift.id}` : null, fetcher, {
-            refreshInterval: 2000,
-            onSuccess: (newData) => {
-                if (newData?.props) {
-                    setProps(newData.props);
-                }
+    const { mutate } = useSWR(initialProps.activeShift ? `/office/${initialProps.activeShift.id}` : null, fetcher, {
+        refreshInterval: 2000,
+        onSuccess: (newData) => {
+            if (newData?.props) {
+                setProps(newData.props);
             }
-        });    
+        }
+    });
     const sellables: any[] = Array.isArray(props['sellables'])
         ? props['sellables']
         : [];
@@ -76,10 +76,10 @@ export default function Office() {
 
     const isEventInSellWindow = (item: any) => {
         if (!item) return false;
-        if (item.type !== 'event') return true; 
-        
+        if (item.type !== 'event') return true;
+
         const now = new Date();
-        
+
         if (item.start_sell_date) {
             const start = new Date(item.start_sell_date);
             if (!isNaN(start.getTime()) && now.getTime() < start.getTime()) {
@@ -256,7 +256,7 @@ export default function Office() {
     const [saleEditBreakdown, setSaleEditBreakdown] = React.useState<Record<string, number>>(defaultCashState);
     const [isViewingLiveCashBreakdown, setIsViewingLiveCashBreakdown] = React.useState(false);
     const [isViewingTotalCashBreakdown, setIsViewingTotalCashBreakdown] = React.useState(false);
-    
+
     const openSaleEditModal = (sale: any) => {
         setEditingSale(sale);
         const existing = sale?.breakdown;
@@ -268,7 +268,7 @@ export default function Office() {
             return;
         }
         const amt = Number(sale?.amount ?? 0) || 0;
-        const denominations: Array<{ key: string; value: number }> = [ { key: '50e', value: 50 }, { key: '20e', value: 20 }, { key: '10e', value: 10 }, { key: '5e', value: 5 }, { key: '2e', value: 2 }, { key: '1e', value: 1 }, { key: '50c', value: 0.5 }, { key: '20c', value: 0.2 }, { key: '10c', value: 0.1 }, { key: 'token', value: 0 }];
+        const denominations: Array<{ key: string; value: number }> = [{ key: '50e', value: 50 }, { key: '20e', value: 20 }, { key: '10e', value: 10 }, { key: '5e', value: 5 }, { key: '2e', value: 2 }, { key: '1e', value: 1 }, { key: '50c', value: 0.5 }, { key: '20c', value: 0.2 }, { key: '10c', value: 0.1 }, { key: 'token', value: 0 }];
         let remaining = Math.round(amt * 100) / 100;
         const derived = { ...defaultCashState };
         for (const d of denominations) {
@@ -393,7 +393,7 @@ export default function Office() {
         const ticketLabel = selectedItem.type === 'event' ? (saleTicketType === 'with_card' ? 'With ESNcard' : 'Without ESNcard') : '';
         const tempId = `tmp-${Date.now()}`;
         const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: '', ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined, ticket_label: ticketLabel || undefined };
-        
+
         setSales((prev) => [tempSale, ...(prev || [])]);
         setSubmitting(true);
 
@@ -425,7 +425,7 @@ export default function Office() {
     const addCustomCardSale = () => {
         if (!activeShift || !customAmount || !customDescription) return;
         const isCustom = customSaleItemId === 'custom';
-        const selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId);
+        const selectedItem = isCustom ? null : filteredSellables.find((i: any) => String(i.actual_id) === String(customSaleItemId));
         const amountToUse = String(customAmount);
         const descToUse = String(customDescription || '');
         const itemName = selectedItem ? selectedItem.name : 'Custom Sale';
@@ -505,14 +505,14 @@ export default function Office() {
                                                 </div>
                                             ))}
                                             <div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Calculated total</div><div className="text-lg font-medium">€{computeBreakdownTotal(customCashBreakdown).toFixed(2)}</div></div>
-                                            <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button disabled={submitting} onClick={() => { if (!activeShift) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(customCashBreakdown).toFixed(2)); const isQuick = Boolean(quickSaleContext); let amountToUse = 0; let selectedItem = null; let itemName = 'Custom Sale'; let productIdToSend = null; let itemTypeToSend = 'custom'; let descToUse = String(customDescription || ''); let ticketTypeToSend = undefined; let ticketLabelToSend = undefined; if (isQuick) { selectedItem = filteredSellables.find((i: any) => i.actual_id === quickSaleContext.productId); productIdToSend = quickSaleContext.productId; itemTypeToSend = quickSaleContext.itemType; ticketTypeToSend = quickSaleContext.ticketType; ticketLabelToSend = quickSaleContext.ticketLabel; if (computed > 0) amountToUse = computed; else if (selectedItem) { if (selectedItem.type === 'product') amountToUse = Number(selectedItem.price || 0); else amountToUse = Number(quickSaleContext.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card) || 0; } itemName = selectedItem ? selectedItem.name : 'Quick Sale'; descToUse = ''; } else { amountToUse = computed > 0 ? computed : Number(customAmount || 0); const isCustom = customSaleItemId === 'custom'; selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); productIdToSend = selectedItem ? selectedItem.actual_id : null; itemTypeToSend = selectedItem ? selectedItem.type : 'custom'; itemName = selectedItem ? selectedItem.name : 'Custom Sale'; } const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'cash', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: productIdToSend, item_type: itemTypeToSend, method: 'cash', amount: amountToUse, description: descToUse, ticket_type: ticketTypeToSend, ticket_label: ticketLabelToSend, breakdown: customCashBreakdown }, { onSuccess: () => { setMessage('Sale recorded (Cash)'); setIsCustomCashModalOpen(false); setCustomSaleItemId('custom'); setCustomAmount(''); setCustomDescription(''); }, onError: () => { setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId)); setMessage('Failed to record sale'); }, onFinish: () => { setSubmitting(false); setQuickSaleContext(null); } }); }}>Save</Button></div>
+                                            <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button disabled={submitting} onClick={() => { if (!activeShift) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(customCashBreakdown).toFixed(2)); const isQuick = Boolean(quickSaleContext); let amountToUse = 0; let selectedItem = null; let itemName = 'Custom Sale'; let productIdToSend = null; let itemTypeToSend = 'custom'; let descToUse = String(customDescription || ''); let ticketTypeToSend = undefined; let ticketLabelToSend = undefined; if (isQuick) { selectedItem = filteredSellables.find((i: any) => i.actual_id === quickSaleContext.productId); productIdToSend = quickSaleContext.productId; itemTypeToSend = quickSaleContext.itemType; ticketTypeToSend = quickSaleContext.ticketType; ticketLabelToSend = quickSaleContext.ticketLabel; if (computed > 0) amountToUse = computed; else if (selectedItem) { if (selectedItem.type === 'product') amountToUse = Number(selectedItem.price || 0); else amountToUse = Number(quickSaleContext.ticketType === 'with_card' ? selectedItem.price_with_card : selectedItem.price_without_card) || 0; } itemName = selectedItem ? selectedItem.name : 'Quick Sale'; descToUse = ''; } else { amountToUse = computed > 0 ? computed : Number(customAmount || 0); const isCustom = customSaleItemId === 'custom'; selectedItem = isCustom ? null : filteredSellables.find((i: any) => String(i.actual_id) === String(customSaleItemId)); productIdToSend = selectedItem ? selectedItem.actual_id : null; itemTypeToSend = selectedItem ? selectedItem.type : 'custom'; itemName = selectedItem ? selectedItem.name : 'Custom Sale'; } const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'cash', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: productIdToSend, item_type: itemTypeToSend, method: 'cash', amount: amountToUse, description: descToUse, ticket_type: ticketTypeToSend, ticket_label: ticketLabelToSend, breakdown: customCashBreakdown }, { onSuccess: () => { setMessage('Sale recorded (Cash)'); setIsCustomCashModalOpen(false); setCustomSaleItemId('custom'); setCustomAmount(''); setCustomDescription(''); setQuickSaleContext(null); }, onError: (errors: any) => { setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId)); const stockErr = errors?.stock || errors?.sold_out; if (stockErr) { const text = Array.isArray(stockErr) ? stockErr.join(' | ') : String(stockErr); setSoldOutText(text); setIsSoldOutModalOpen(true); } else { setMessage('Failed to record sale'); } }, onFinish: () => { setSubmitting(false); } }); }}>Save</Button></div>
                                         </div>
                                     </DialogContent>
                                 </Dialog>
                                 {!startCollapsed && (
                                     <div className="mt-2 space-y-2">
-                                                                                 <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">Cash</div><div className="flex items-center gap-2">{editingStart.cash ? (<><Input type="number" step="0.01" className="w-32" value={String(pendingStart?.cash ?? startTotals.cash)} onChange={(e) => setPendingStart((prev) => ({ ...(prev ?? startTotals), cash: Number(e.target.value || 0) }))} /><Button size="sm" onClick={() => { if (!activeShift) return; const originalTotals = { ...startTotals }; const newCash = pendingStart?.cash ?? startTotals.cash; setSubmitting(true); setStartTotals(s => ({ ...s, cash: newCash })); setEditingStart(e => ({ ...e, cash: false })); setPendingStart(null); router.post(`/office/${activeShift.id}/update-start-totals`, { cash: newCash, card: startTotals.card }, { onSuccess: () => { setMessage('Start cash updated'); mutate(); }, onError: () => { setMessage('Failed to update start cash'); setStartTotals(originalTotals); }, onFinish: () => setSubmitting(false) }); }}>Save</Button><Button size="sm" variant="ghost" onClick={() => { setEditingStart((e) => ({ ...e, cash: false })); setPendingStart(null); }}>Cancel</Button></>) : (<><div className="text-lg font-medium">€{Number(startTotals.cash).toFixed(2)}</div><Button size="sm" variant="ghost" disabled={activeShift?.status === 'closed'} onClick={() => openCashModalForStart()}><Pencil className="h-4 w-4" /></Button></>)}</div></div>
-                                                                                <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">Card</div><div className="flex items-center gap-2">{editingStart.card ? (<><Input type="number" step="0.01" className="w-32" value={String(pendingStart?.card ?? startTotals.card)} onChange={(e) => setPendingStart((prev) => ({ ...(prev ?? startTotals), card: Number(e.target.value || 0) }))} /><Button size="sm" onClick={() => { if (!activeShift) return; const originalTotals = { ...startTotals }; const newCard = pendingStart?.card ?? startTotals.card; setSubmitting(true); setStartTotals(s => ({ ...s, card: newCard })); setEditingStart(e => ({ ...e, card: false })); setPendingStart(null); router.post(`/office/${activeShift.id}/update-start-totals`, { cash: startTotals.cash, card: newCard }, { onSuccess: () => { setMessage('Start card updated'); mutate(); }, onError: () => { setMessage('Failed to update start card'); setStartTotals(originalTotals); }, onFinish: () => setSubmitting(false) }); }}>Save</Button><Button size="sm" variant="ghost" onClick={() => { setEditingStart((e) => ({ ...e, card: false })); setPendingStart(null); }}>Cancel</Button></>) : (<><div className="text-lg font-medium">€{Number(startTotals.card).toFixed(2)}</div><Button size="sm" variant="ghost" disabled={activeShift?.status === 'closed'} onClick={() => setEditingStart((e) => ({ ...e, card: true }))}><Pencil className="h-4 w-4" /></Button></>)}</div></div>                                        <Dialog open={isCashModalOpen} onOpenChange={(v) => { setIsCashModalOpen(v); }}>
+                                        <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">Cash</div><div className="flex items-center gap-2">{editingStart.cash ? (<><Input type="number" step="0.01" className="w-32" value={String(pendingStart?.cash ?? startTotals.cash)} onChange={(e) => setPendingStart((prev) => ({ ...(prev ?? startTotals), cash: Number(e.target.value || 0) }))} /><Button size="sm" onClick={() => { if (!activeShift) return; const originalTotals = { ...startTotals }; const newCash = pendingStart?.cash ?? startTotals.cash; setSubmitting(true); setStartTotals(s => ({ ...s, cash: newCash })); setEditingStart(e => ({ ...e, cash: false })); setPendingStart(null); router.post(`/office/${activeShift.id}/update-start-totals`, { cash: newCash, card: startTotals.card }, { onSuccess: () => { setMessage('Start cash updated'); mutate(); }, onError: () => { setMessage('Failed to update start cash'); setStartTotals(originalTotals); }, onFinish: () => setSubmitting(false) }); }}>Save</Button><Button size="sm" variant="ghost" onClick={() => { setEditingStart((e) => ({ ...e, cash: false })); setPendingStart(null); }}>Cancel</Button></>) : (<><div className="text-lg font-medium">€{Number(startTotals.cash).toFixed(2)}</div><Button size="sm" variant="ghost" disabled={activeShift?.status === 'closed'} onClick={() => openCashModalForStart()}><Pencil className="h-4 w-4" /></Button></>)}</div></div>
+                                        <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">Card</div><div className="flex items-center gap-2">{editingStart.card ? (<><Input type="number" step="0.01" className="w-32" value={String(pendingStart?.card ?? startTotals.card)} onChange={(e) => setPendingStart((prev) => ({ ...(prev ?? startTotals), card: Number(e.target.value || 0) }))} /><Button size="sm" onClick={() => { if (!activeShift) return; const originalTotals = { ...startTotals }; const newCard = pendingStart?.card ?? startTotals.card; setSubmitting(true); setStartTotals(s => ({ ...s, card: newCard })); setEditingStart(e => ({ ...e, card: false })); setPendingStart(null); router.post(`/office/${activeShift.id}/update-start-totals`, { cash: startTotals.cash, card: newCard }, { onSuccess: () => { setMessage('Start card updated'); mutate(); }, onError: () => { setMessage('Failed to update start card'); setStartTotals(originalTotals); }, onFinish: () => setSubmitting(false) }); }}>Save</Button><Button size="sm" variant="ghost" onClick={() => { setEditingStart((e) => ({ ...e, card: false })); setPendingStart(null); }}>Cancel</Button></>) : (<><div className="text-lg font-medium">€{Number(startTotals.card).toFixed(2)}</div><Button size="sm" variant="ghost" disabled={activeShift?.status === 'closed'} onClick={() => setEditingStart((e) => ({ ...e, card: true }))}><Pencil className="h-4 w-4" /></Button></>)}</div></div>                                        <Dialog open={isCashModalOpen} onOpenChange={(v) => { setIsCashModalOpen(v); }}>
                                             <DialogContent>
                                                 <DialogTitle>Cash breakdown</DialogTitle><DialogDescription>Enter counts for each denomination.</DialogDescription>
                                                 <div className="mt-4 grid grid-cols-1 gap-3">
@@ -550,19 +550,19 @@ export default function Office() {
                     </section>
 
                     <section className="flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border" style={{ height: revenueHeight ? `${revenueHeight}px` : 'auto', minHeight: revenueHeight ? `${revenueHeight}px` : 'auto' }}>
-                         <h3 className="text-sm font-semibold">{formatShiftTitle(activeShift?.started_at)}</h3>
-                         <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-                             <div className="flex gap-2">
-                                                                 <Button variant="secondary" className="flex-1" disabled={Boolean(activeShift)} onClick={() => { router.post('/office/start', {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: (page) => { setMessage('Shift started'); const newShiftId = page.props.activeShift?.id; if (newShiftId) { router.visit(`/office/${newShiftId}`); } else { router.visit(office().url); } }, onError: () => setMessage('Failed to start shift') }); }}>Start shift</Button>
-                                                                {activeShift?.status === 'open' ? (
-                                                                    <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-1">End shift</Button></DialogTrigger><DialogContent><DialogTitle>End shift?</DialogTitle><DialogDescription>Confirm close.</DialogDescription><DialogFooter className="gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><DialogClose asChild><Button variant="destructive" onClick={() => router.post(`/office/${activeShift?.id}/end`, {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: () => { setMessage('Shift ended'); router.visit(office().url); } })}>End shift</Button></DialogClose></DialogFooter></DialogContent></Dialog>
-                                                                ) : (
-                                                                    <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-1" disabled={!activeShift || activeShift?.status !== 'closed'}>Reopen shift</Button></DialogTrigger><DialogContent><DialogTitle>Reopen?</DialogTitle><DialogDescription>Confirm reopen.</DialogDescription><DialogFooter className="gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><DialogClose asChild><Button disabled={!activeShift || activeShift?.status !== 'closed'} onClick={() => router.post(`/office/${activeShift?.id}/reopen`, {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: () => { setMessage('Shift reopened'); mutate(); } })}>Reopen shift</Button></DialogClose></DialogFooter></DialogContent></Dialog>
-                                                                )}                             </div>
+                        <h3 className="text-sm font-semibold">{formatShiftTitle(activeShift?.started_at)}</h3>
+                        <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+                            <div className="flex gap-2">
+                                <Button variant="secondary" className="flex-1" disabled={Boolean(activeShift)} onClick={() => { router.post('/office/start', {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: (page) => { setMessage('Shift started'); const newShiftId = page.props.activeShift?.id; if (newShiftId) { router.visit(`/office/${newShiftId}`); } else { router.visit(office().url); } }, onError: () => setMessage('Failed to start shift') }); }}>Start shift</Button>
+                                {activeShift?.status === 'open' ? (
+                                    <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-1">End shift</Button></DialogTrigger><DialogContent><DialogTitle>End shift?</DialogTitle><DialogDescription>Confirm close.</DialogDescription><DialogFooter className="gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><DialogClose asChild><Button variant="destructive" onClick={() => router.post(`/office/${activeShift?.id}/end`, {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: () => { setMessage('Shift ended'); router.visit(office().url); } })}>End shift</Button></DialogClose></DialogFooter></DialogContent></Dialog>
+                                ) : (
+                                    <Dialog><DialogTrigger asChild><Button variant="outline" className="flex-1" disabled={!activeShift || activeShift?.status !== 'closed'}>Reopen shift</Button></DialogTrigger><DialogContent><DialogTitle>Reopen?</DialogTitle><DialogDescription>Confirm reopen.</DialogDescription><DialogFooter className="gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><DialogClose asChild><Button disabled={!activeShift || activeShift?.status !== 'closed'} onClick={() => router.post(`/office/${activeShift?.id}/reopen`, {}, { onStart: () => setSubmitting(true), onFinish: () => setSubmitting(false), onSuccess: () => { setMessage('Shift reopened'); mutate(); } })}>Reopen shift</Button></DialogClose></DialogFooter></DialogContent></Dialog>
+                                )}                             </div>
                             <div className="mt-2 border-t pt-2"><div className="flex items-center justify-between"><h4 className="text-xs font-medium">Quick add sale</h4><Link href="/sellables"><Button size="sm" variant="ghost">Manage</Button></Link></div>
                                 <div className="mt-2 grid grid-cols-1 gap-2">
                                     <select value={String(saleProductId ?? '')} onChange={(e) => { const id = Number(e.target.value) || null; setSaleProductId(id); const item = filteredSellables.find((i: any) => i.actual_id === id); if (item) setSaleItemType(item.type); }} className="w-full rounded-md border p-2" disabled={activeShift?.status !== 'open'}>
-                                        {filteredSellables.map((item: any) => { 
+                                        {filteredSellables.map((item: any) => {
                                             const remainingText = getRemainingTextForItem(item);
                                             let label = '';
                                             if (item.type === 'product') {
@@ -572,7 +572,7 @@ export default function Office() {
                                             } else {
                                                 label = `${item.name} — Event (${remainingText})`;
                                             }
-                                            return (<option key={String(item.id ?? item.actual_id)} value={item.actual_id}>{label}</option>); 
+                                            return (<option key={String(item.id ?? item.actual_id)} value={item.actual_id}>{label}</option>);
                                         })}
                                     </select>
                                 </div>
@@ -587,40 +587,40 @@ export default function Office() {
                                     <Button disabled={activeShift?.status !== 'open' || submitting} onClick={addCardSale}>Add Card</Button>
                                     <div className="flex-1" />
                                 </div>
-                                                                </div>
-                                                                
-                                                                <div className="mt-2 border-t pt-2">
-                                                                    <h4 className="text-xs font-medium">Custom sale</h4>
-                                                                    <div className="mt-2 grid grid-cols-1 gap-2">
-                                                                        <select value={customSaleItemId} onChange={(e) => setCustomSaleItemId(e.target.value)} className="rounded-md border p-2" disabled={activeShift?.status !== 'open'}>
-                                                                            <option value="custom">Custom</option>
-                                                                            {filteredSellables.map((item: any) => { 
-                                                                                const remainingText = getRemainingTextForItem(item);
-                                                                                let label = '';
-                                                                                if (item.type === 'product') {
-                                                                                    label = `${item.name} — €${Number(item.price).toFixed(2)} (${remainingText})`;
-                                                                                } else if (item.type === 'event' && item.variable_amount) {
-                                                                                    label = `${item.name} — Event (${getPerTicketBreakdown(item)})`;
-                                                                                } else {
-                                                                                    label = `${item.name} — Event (${remainingText})`;
-                                                                                }
-                                                                                return (<option key={String(item.id ?? item.actual_id)} value={item.actual_id}>{label}</option>); 
-                                                                            })}
-                                                                        </select>
-                                                                        <div className="flex items-center gap-2"><Input type="number" step="0.01" min="0" placeholder="€0.00" value={customAmount} onChange={(e) => { const value = e.target.value; if (value === '' || /^\d*\.?\d*$/.test(value)) setCustomAmount(value); }} disabled={activeShift?.status !== 'open'} /></div>
-                                                                        <Input placeholder="Description (mandatory)" value={customDescription} onChange={(e) => setCustomDescription(e.target.value)} disabled={activeShift?.status !== 'open'} />
-                                                                    </div>
-                                                                    <div className="mt-2 flex items-center gap-2">
-                                                                        <Button disabled={!activeShift || !customDescription || activeShift?.status !== 'open' || submitting} onClick={() => { if (!activeShift || !customDescription) return; openCustomCashModal(null); }}>Add Cash</Button>
-                                                                        <Button disabled={!activeShift || !customAmount || !customDescription || activeShift?.status !== 'open' || submitting} onClick={addCustomCardSale}>Add Card</Button>
-                                                                    </div>                            </div>
-                         </div>
+                            </div>
+
+                            <div className="mt-2 border-t pt-2">
+                                <h4 className="text-xs font-medium">Custom sale</h4>
+                                <div className="mt-2 grid grid-cols-1 gap-2">
+                                    <select value={customSaleItemId} onChange={(e) => setCustomSaleItemId(e.target.value)} className="rounded-md border p-2" disabled={activeShift?.status !== 'open'}>
+                                        <option value="custom">Custom</option>
+                                        {filteredSellables.map((item: any) => {
+                                            const remainingText = getRemainingTextForItem(item);
+                                            let label = '';
+                                            if (item.type === 'product') {
+                                                label = `${item.name} — €${Number(item.price).toFixed(2)} (${remainingText})`;
+                                            } else if (item.type === 'event' && item.variable_amount) {
+                                                label = `${item.name} — Event (${getPerTicketBreakdown(item)})`;
+                                            } else {
+                                                label = `${item.name} — Event (${remainingText})`;
+                                            }
+                                            return (<option key={String(item.id ?? item.actual_id)} value={item.actual_id}>{label}</option>);
+                                        })}
+                                    </select>
+                                    <div className="flex items-center gap-2"><Input type="number" step="0.01" min="0" placeholder="€0.00" value={customAmount} onChange={(e) => { const value = e.target.value; if (value === '' || /^\d*\.?\d*$/.test(value)) setCustomAmount(value); }} disabled={activeShift?.status !== 'open'} /></div>
+                                    <Input placeholder="Description (mandatory)" value={customDescription} onChange={(e) => setCustomDescription(e.target.value)} disabled={activeShift?.status !== 'open'} />
+                                </div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <Button disabled={!activeShift || !customDescription || activeShift?.status !== 'open' || submitting} onClick={() => { if (!activeShift || !customDescription) return; openCustomCashModal(null); }}>Add Cash</Button>
+                                    <Button disabled={!activeShift || !customAmount || !customDescription || activeShift?.status !== 'open' || submitting} onClick={addCustomCardSale}>Add Card</Button>
+                                </div>                            </div>
+                        </div>
                     </section>
                 </div>
-                
+
                 <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-                     <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold">Sales log</h3><div className="text-xs text-muted-foreground">{Array.isArray(sales) ? `${sales.length} sales${sales.length ? ' | ' + summarizeSales(sales) : ''}` : ''}</div></div>
-                     <div className="overflow-x-auto">
+                    <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold">Sales log</h3><div className="text-xs text-muted-foreground">{Array.isArray(sales) ? `${sales.length} sales${sales.length ? ' | ' + summarizeSales(sales) : ''}` : ''}</div></div>
+                    <div className="overflow-x-auto">
                         <div className="max-h-[36rem] overflow-y-auto">
                             <table className="w-full text-sm">
                                 <thead>
@@ -684,7 +684,7 @@ export default function Office() {
                                 </tbody>
                             </table>
                         </div>
-                     </div>
+                    </div>
                     {/* Pagination controls for sales log */}
                     {totalSalesPages > 1 && (
                         <div className="mt-2 flex items-center justify-between">
@@ -697,23 +697,23 @@ export default function Office() {
                             </div>
                         </div>
                     )}
-                     <Dialog open={isSaleEditOpen} onOpenChange={(v) => { setIsSaleEditOpen(v); if (!v) setEditingSale(null); }}>
-                         <DialogContent>
-                             <DialogTitle>Edit cash transaction</DialogTitle><DialogDescription>Adjust cash denominations.</DialogDescription>
-                             <div className="mt-4 grid grid-cols-1 gap-3">
-                                 {denominationConfig.map((d) => (
-                                     <div key={d.key} className="flex items-center justify-between">
-                                         <div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div><div className="text-sm text-muted-foreground">{d.label === 'Pink Token' ? 'jeton' : ''}</div></div><div className="flex items-center gap-2"><Button size="sm" variant="ghost" onClick={() => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: Math.max(0, (prev[d.key] || 0) - 1) }))}>-</Button><input type="number" min={0} value={String(saleEditBreakdown[d.key] ?? 0)} onChange={(e) => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: Math.max(0, Math.floor(Number(e.target.value || 0))) }))} className="w-20 rounded-md border p-1 text-right" /><Button size="sm" onClick={() => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: (prev[d.key] || 0) + 1 }))}>+</Button></div></div>))}
-                                                    <div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Calculated total</div><div className="text-lg font-medium">€{computeBreakdownTotal(saleEditBreakdown).toFixed(2)}</div></div>
-                                 <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button onClick={() => { if (!activeShift || !editingSale) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(saleEditBreakdown).toFixed(2)); const amountToUse = computed > 0 ? computed : Number(editingSale.amount || 0); setSales((prev) => (prev || []).map((x: any) => x.id === editingSale.id ? { ...x, amount: amountToUse } : x)); setIsSaleEditOpen(false); router.post(`/office/${activeShift.id}/update-sale`, { sale_id: editingSale.id, amount: amountToUse, breakdown: saleEditBreakdown }, { onSuccess: () => { setMessage('Sale updated'); mutate(); }, onError: () => { setMessage('Failed to update sale'); mutate(); }, onFinish: () => setSubmitting(false) }); }}>Save</Button></div>
-                             </div>
-                         </DialogContent>
-                     </Dialog>
-                     <div className="mt-6 flex justify-end gap-4">
+                    <Dialog open={isSaleEditOpen} onOpenChange={(v) => { setIsSaleEditOpen(v); if (!v) setEditingSale(null); }}>
+                        <DialogContent>
+                            <DialogTitle>Edit cash transaction</DialogTitle><DialogDescription>Adjust cash denominations.</DialogDescription>
+                            <div className="mt-4 grid grid-cols-1 gap-3">
+                                {denominationConfig.map((d) => (
+                                    <div key={d.key} className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2"><div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">{d.label}</div><div className="text-sm text-muted-foreground">{d.label === 'Pink Token' ? 'jeton' : ''}</div></div><div className="flex items-center gap-2"><Button size="sm" variant="ghost" onClick={() => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: Math.max(0, (prev[d.key] || 0) - 1) }))}>-</Button><input type="number" min={0} value={String(saleEditBreakdown[d.key] ?? 0)} onChange={(e) => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: Math.max(0, Math.floor(Number(e.target.value || 0))) }))} className="w-20 rounded-md border p-1 text-right" /><Button size="sm" onClick={() => setSaleEditBreakdown((prev) => ({ ...prev, [d.key]: (prev[d.key] || 0) + 1 }))}>+</Button></div></div>))}
+                                <div className="flex items-center justify-between border-t pt-2"><div className="text-sm text-muted-foreground">Calculated total</div><div className="text-lg font-medium">€{computeBreakdownTotal(saleEditBreakdown).toFixed(2)}</div></div>
+                                <div className="flex justify-end gap-2"><DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose><Button onClick={() => { if (!activeShift || !editingSale) return; setSubmitting(true); const computed = Number(computeBreakdownTotal(saleEditBreakdown).toFixed(2)); const amountToUse = computed > 0 ? computed : Number(editingSale.amount || 0); setSales((prev) => (prev || []).map((x: any) => x.id === editingSale.id ? { ...x, amount: amountToUse } : x)); setIsSaleEditOpen(false); router.post(`/office/${activeShift.id}/update-sale`, { sale_id: editingSale.id, amount: amountToUse, breakdown: saleEditBreakdown }, { onSuccess: () => { setMessage('Sale updated'); mutate(); }, onError: () => { setMessage('Failed to update sale'); mutate(); }, onFinish: () => setSubmitting(false) }); }}>Save</Button></div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                    <div className="mt-6 flex justify-end gap-4">
                         <div className="text-sm"><div className="flex items-center gap-2 text-muted-foreground"><span>Cash</span><Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setIsViewingLiveCashBreakdown(true)}><HelpCircle className="h-4 w-4" /></Button></div><div className="font-medium">€{cashTotal.toFixed(2)}</div></div>
                         <div className="text-sm"><div className="text-muted-foreground">Card</div><div className="font-medium">€{cardTotal.toFixed(2)}</div></div>
                         <div className="text-sm"><div className="text-muted-foreground">Total</div><div className="font-semibold">€{combinedTotal.toFixed(2)}</div></div>
-                     </div>
+                    </div>
                 </div>
 
                 <Dialog open={isViewingLiveCashBreakdown} onOpenChange={setIsViewingLiveCashBreakdown}>

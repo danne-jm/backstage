@@ -94,23 +94,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('sales/summary', [App\Http\Controllers\SalesController::class, 'summary'])->name('sales.summary');
 
     // Ticketing system: render page with events so the event selector is populated
-    Route::get('ticketing', function () {
-        // Lazily import the Event model here to avoid affecting other route definitions
-        $events = [];
-        try {
-            $events = \App\Models\Event::query()->orderBy('start_sell_date')->get();
-        } catch (\Throwable $e) {
-            // If the Event model/table isn't available yet (during some dev workflows),
-            // fall back to an empty array to keep the page rendering.
-            $events = [];
-        }
-
-        return Inertia::render('ticketing', [
-            'events' => $events,
-            // Pass templates to the frontend
-            'templates' => \App\Models\MailTemplate::all(),
-        ]);
-    })->name('ticketing');
+    Route::get('ticketing', [App\Http\Controllers\TicketingController::class, 'index'])->name('ticketing');
 
     // Fetch attendees for a specific event from Google Sheets (raw data, no parsing)
     Route::get('ticketing/attendees/{event}', function (\App\Models\Event $event) {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OfficeShift;
 use App\Models\OfficeShiftSale;
 use App\Models\OfficeShiftWorker;
+use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\InventoryService;
@@ -261,13 +262,22 @@ class OfficeController extends Controller
                 if ($event->variable_amount) {
                     $ticketType = $data['ticket_type'] ?? null;
                     if ($ticketType === 'with_card' && $event->remaining_with_card === 0) {
+                        if (request()->wantsJson()) {
+                             return response()->json(['errors' => ['stock' => ['Tickets with ESNcard for this event are sold out.']]], 422);
+                        }
                         return redirect()->back()->withErrors(['sold_out' => 'Tickets with ESNcard for this event are sold out.']);
                     }
                     if ($ticketType === 'without_card' && $event->remaining_without_card === 0) {
+                        if (request()->wantsJson()) {
+                             return response()->json(['errors' => ['stock' => ['Tickets without ESNcard for this event are sold out.']]], 422);
+                        }
                         return redirect()->back()->withErrors(['sold_out' => 'Tickets without ESNcard for this event are sold out.']);
                     }
                 } else { // Not variable amount
                     if ($event->remaining === 0) {
+                        if (request()->wantsJson()) {
+                             return response()->json(['errors' => ['stock' => ['This event is sold out.']]], 422);
+                        }
                         return redirect()->back()->withErrors(['sold_out' => 'This event is sold out.']);
                     }
                 }
@@ -280,6 +290,9 @@ class OfficeController extends Controller
             $product = Product::find($data['product_id']);
             if ($product) {
                 if ($product->remaining === 0) {
+                    if (request()->wantsJson()) {
+                         return response()->json(['errors' => ['stock' => ['This product is sold out.']]], 422);
+                    }
                     return redirect()->back()->withErrors(['sold_out' => 'This product is sold out.']);
                 }
                 $itemName = $product->name;
@@ -296,8 +309,8 @@ class OfficeController extends Controller
             'amount' => $data['amount'],
             'description' => $data['description'] ?? $itemDescription,
             'sold_by' => Auth::user()->email ?? 'unknown',
-            'sold_at' => now()->toDateTimeString(),
-            'created_at' => now()->toDateTimeString(),
+            'sold_at' => now()->toIso8601String(),
+            'created_at' => now()->toIso8601String(),
             'ticket_type' => $data['ticket_type'] ?? null,
             'ticket_label' => $data['ticket_label'] ?? null,
         ];
