@@ -94,4 +94,23 @@ class OfficeShift extends Model
     {
         return $this->hasMany(OfficeShiftWorker::class);
     }
+
+    /**
+     * Merge two cash breakdown arrays.
+     *
+     * @param array|null $b1
+     * @param array|null $b2
+     * @return array
+     */
+    public static function mergeBreakdowns(?array $b1, ?array $b2): array
+    {
+        $merged = [];
+        foreach (self::DENOMINATIONS as $denom) {
+            $val1 = isset($b1[$denom]) ? intval($b1[$denom]) : 0;
+            $val2 = isset($b2[$denom]) ? intval($b2[$denom]) : 0;
+            $merged[$denom] = $val1 + $val2;
+        }
+
+        return $merged;
+    }
 }

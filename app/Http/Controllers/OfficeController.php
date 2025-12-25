@@ -2,18 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Event;
 use App\Models\OfficeShift;
 use App\Models\OfficeShiftSale;
 use App\Models\OfficeShiftWorker;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class OfficeController extends Controller
 {
+    protected $inventoryService;
+
+    public function __construct(InventoryService $inventoryService)
+    {
+        $this->inventoryService = $inventoryService;
+    }
+
     public function index(Request $request)
     {
         // Load active shift with relations to prevent N+1 issues
@@ -27,75 +34,8 @@ class OfficeController extends Controller
             ->orderBy('ended_at', 'desc')
             ->first();
 
-        // Prepare products/events list
+        $sellables = $this->inventoryService->getAllSellables();
         $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
-
-        // FIX 1: Include events with NULL end_sell_date (indefinite sales)
-        $events = Event::withCount([
-            'sales',
-            'onlineSales',
-            'sales as sales_with_card_count' => function ($query) {
-                $query->where('snapshot->ticket_type', 'with_card');
-            },
-            'sales as sales_without_card_count' => function ($query) {
-                $query->where('snapshot->ticket_type', 'without_card');
-            },
-            'onlineSales as online_sales_with_card_count' => function ($query) {
-                $query->where('details->ticket_type', 'with_card');
-            },
-            'onlineSales as online_sales_without_card_count' => function ($query) {
-                $query->where('details->ticket_type', 'without_card');
-            },
-        ])->where(function ($query) {
-            $now = now();
-            $query->where(function ($q) use ($now) {
-                $q->where('start_sell_date', '<=', $now)
-                    ->orWhereNull('start_sell_date');
-            });
-            $query->where(function ($q) use ($now) {
-                $q->where('end_sell_date', '>=', $now)
-                    ->orWhereNull('end_sell_date');
-            });
-        })
-            ->orderBy('event_date', 'asc')
-            ->get();
-
-        $sellables = collect([]);
-        foreach ($products as $product) {
-            $sellables->push([
-                'id' => 'product_'.$product->id,
-                'actual_id' => $product->id,
-                'type' => 'product',
-                'name' => $product->name,
-                'description' => $product->description,
-                'price' => $product->price,
-                'remaining' => $product->remaining,
-                'unlimited_quantity' => (bool) ($product->unlimited_quantity ?? false),
-                'unlimited_quantity_with_card' => (bool) ($product->unlimited_quantity_with_card ?? false),
-                'unlimited_quantity_without_card' => (bool) ($product->unlimited_quantity_without_card ?? false),
-            ]);
-        }
-        foreach ($events as $event) {
-            $sellables->push([
-                'id' => 'event_'.$event->id,
-                'actual_id' => $event->id,
-                'type' => 'event',
-                'name' => $event->name,
-                'description' => $event->description,
-                'event_date' => $event->event_date,
-                'start_sell_date' => $event->start_sell_date,
-                'end_sell_date' => $event->end_sell_date,
-                'price_with_card' => $event->price_with_card,
-                'price_without_card' => $event->price_without_card,
-                'remaining' => $event->remaining,
-                'unlimited_quantity' => (bool) ($event->unlimited_quantity ?? false),
-                'remaining_with_card' => $event->remaining_with_card,
-                'unlimited_quantity_with_card' => (bool) ($event->unlimited_quantity_with_card ?? false),
-                'remaining_without_card' => $event->remaining_without_card,
-                'unlimited_quantity_without_card' => (bool) ($event->unlimited_quantity_without_card ?? false),
-                'variable_amount' => $event->variable_amount,
-            ]);
-        }
 
         // Format Active Shift for Frontend
         $activeData = null;
@@ -173,65 +113,8 @@ class OfficeController extends Controller
             'email' => $u->email,
         ])->toArray();
 
+        $sellables = $this->inventoryService->getAllSellables();
         $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
-        $events = Event::withCount([
-            'sales',
-            'onlineSales',
-            'sales as sales_with_card_count' => function ($query) {
-                $query->where('snapshot->ticket_type', 'with_card');
-            },
-            'sales as sales_without_card_count' => function ($query) {
-                $query->where('snapshot->ticket_type', 'without_card');
-            },
-            'onlineSales as online_sales_with_card_count' => function ($query) {
-                $query->where('details->ticket_type', 'with_card');
-            },
-            'onlineSales as online_sales_without_card_count' => function ($query) {
-                $query->where('details->ticket_type', 'without_card');
-            },
-        ])->where(function ($query) {
-            $now = now();
-            $query->where(function ($q) use ($now) {
-                $q->where('start_sell_date', '<=', $now)
-                    ->orWhereNull('start_sell_date');
-            });
-            $query->where(function ($q) use ($now) {
-                $q->where('end_sell_date', '>=', $now)
-                    ->orWhereNull('end_sell_date');
-            });
-        })
-            ->orderBy('event_date', 'asc')
-            ->get();
-
-        $sellables = collect([]);
-        foreach ($products as $p) {
-            $sellables->push([
-                'id' => 'product_'.$p->id,
-                'actual_id' => $p->id,
-                'type' => 'product',
-                'name' => $p->name,
-                'price' => $p->price,
-                'remaining' => $p->remaining,
-                'unlimited_quantity' => (bool) ($p->unlimited_quantity ?? false),
-            ]);
-        }
-        foreach ($events as $e) {
-            $sellables->push([
-                'id' => 'event_'.$e->id,
-                'actual_id' => $e->id,
-                'type' => 'event',
-                'name' => $e->name,
-                'price_with_card' => $e->price_with_card,
-                'price_without_card' => $e->price_without_card,
-                'remaining' => $e->remaining,
-                'unlimited_quantity' => (bool) ($e->unlimited_quantity ?? false),
-                'remaining_with_card' => $e->remaining_with_card,
-                'unlimited_quantity_with_card' => (bool) ($e->unlimited_quantity_with_card ?? false),
-                'remaining_without_card' => $e->remaining_without_card,
-                'unlimited_quantity_without_card' => (bool) ($e->unlimited_quantity_without_card ?? false),
-                'variable_amount' => $e->variable_amount,
-            ]);
-        }
 
         // Calculate previous shift totals
         $previousShift = OfficeShift::where('status', 'closed')->where('id', '<', $office->id)->orderBy('id', 'desc')->first();
@@ -437,7 +320,7 @@ class OfficeController extends Controller
         if ($data['method'] === 'cash') {
             $office->increment('cash_total', $data['amount']);
             if ($saleBreakdown) {
-                $office->cash_breakdown = $this->mergeBreakdowns($office->cash_breakdown, $saleBreakdown);
+            $office->cash_breakdown = OfficeShift::mergeBreakdowns($office->cash_breakdown, $saleBreakdown);
                 $office->save();
             }
         } else {
@@ -514,7 +397,7 @@ class OfficeController extends Controller
             $office->start_cash_breakdown = $cleanBreakdown;
         } else {
             // BUG FIX: Merge the new breakdown with the existing one instead of overwriting.
-            $office->cash_breakdown = $this->mergeBreakdowns(
+            $office->cash_breakdown = OfficeShift::mergeBreakdowns(
                 $office->cash_breakdown,
                 $cleanBreakdown
             );
@@ -545,7 +428,7 @@ class OfficeController extends Controller
 
     public function end(Request $request, OfficeShift $office)
     {
-        $finalBreakdown = $this->mergeBreakdowns(
+        $finalBreakdown = OfficeShift::mergeBreakdowns(
             $office->start_cash_breakdown,
             $office->cash_breakdown
         );
@@ -560,17 +443,7 @@ class OfficeController extends Controller
         return redirect()->route('office');
     }
 
-    private function mergeBreakdowns(?array $b1, ?array $b2): array
-    {
-        $merged = [];
-        foreach (OfficeShift::DENOMINATIONS as $denom) {
-            $val1 = isset($b1[$denom]) ? intval($b1[$denom]) : 0;
-            $val2 = isset($b2[$denom]) ? intval($b2[$denom]) : 0;
-            $merged[$denom] = $val1 + $val2;
-        }
 
-        return $merged;
-    }
 
     public function reopen(Request $request, OfficeShift $office)
     {
@@ -612,7 +485,7 @@ class OfficeController extends Controller
         $newShiftBreakdown = [];
         foreach ($allCashSales as $cashSale) {
             if ($cashSale->breakdown) {
-                $newShiftBreakdown = $this->mergeBreakdowns($newShiftBreakdown, $cashSale->breakdown);
+                $newShiftBreakdown = OfficeShift::mergeBreakdowns($newShiftBreakdown, $cashSale->breakdown);
             }
         }
         $office->cash_breakdown = $newShiftBreakdown;

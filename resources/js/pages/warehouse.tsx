@@ -1,17 +1,12 @@
+import CreateItemDialog from '@/components/warehouse/CreateItemDialog';
+import DeleteItemDialog from '@/components/warehouse/DeleteItemDialog';
+import EditItemDialog from '@/components/warehouse/EditItemDialog';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { warehouse } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     ChevronDownIcon,
     ChevronUpIcon,
@@ -20,7 +15,7 @@ import {
     Plus,
     Search,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -42,19 +37,7 @@ type Item = {
 export default function Warehouse() {
     const { items = [] } = usePage().props as { items?: Item[] };
 
-    const createForm = useForm<{
-        name: string;
-        quantity: number;
-        category: string[];
-        image: File | null;
-    }>({
-        name: '',
-        quantity: 0,
-        category: [], // array of categories
-        image: null,
-    });
-
-    // Server-side filtering & sorting: read initial values from querystring (Inertia props may include them)
+    // Server-side filtering & sorting
     const pageProps: any = usePage().props as any;
     const itemsProp = pageProps.items;
     const categoriesProp: string[] = pageProps.categories ?? [];
@@ -62,8 +45,8 @@ export default function Warehouse() {
     const itemsList: Item[] = Array.isArray(itemsProp?.data)
         ? itemsProp.data
         : Array.isArray(itemsProp)
-          ? itemsProp
-          : [];
+            ? itemsProp
+            : [];
 
     const [search, setSearch] = useState<string>(
         String(new URLSearchParams(window.location.search).get('search') ?? ''),
@@ -100,23 +83,11 @@ export default function Warehouse() {
         return () => clearTimeout(t);
     }, [search, sort.column, sort.dir]);
 
-    // Controlled create dialog
+    // Dialog states
     const [createOpen, setCreateOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-
-    // image previews for create/edit
-    const [createImagePreview, setCreateImagePreview] = useState<string | null>(
-        null,
-    );
-    const [editImagePreview, setEditImagePreview] = useState<string | null>(
-        null,
-    );
-    const [editRemoveImage, setEditRemoveImage] = useState(false);
-
-    const createFileInputRef = useRef<HTMLInputElement | null>(null);
-    const editFileInputRef = useRef<HTMLInputElement | null>(null);
 
     // optimistic UI: per-item optimistic quantities (id => qty)
     const [optimisticQuantities, setOptimisticQuantities] = useState<
@@ -125,133 +96,18 @@ export default function Warehouse() {
     // track which item ids are currently processing (to disable controls / show spinner)
     const [processingIds, setProcessingIds] = useState<number[]>([]);
 
-    // category text states used for input to accept commas and spaces naturally
-    const [createCategoryText, setCreateCategoryText] = useState('');
-
     function openCreate() {
-        setCreateCategoryText('');
-        createForm.reset();
-        createForm.setData('image', null);
-        setCreateImagePreview(null);
         setCreateOpen(true);
     }
 
-    function submitCreate(e: any) {
-        e.preventDefault();
-
-        // simple client-side validation
-        if (!createForm.data.name || createForm.data.name.trim() === '') {
-            return createForm.setError('name', 'Name is required');
-        }
-        if (createForm.data.quantity < 0) {
-            return createForm.setError(
-                'quantity',
-                'Quantity must be 0 or greater',
-            );
-        }
-
-        createForm.transform((data) => ({
-            ...data,
-            category: (createCategoryText || '')
-                .split(',')
-                .map((s) => s.trim())
-                .filter(Boolean),
-        }));
-        createForm.post('/warehouse/items', {
-            preserveState: true,
-            onSuccess: () => {
-                setCreateOpen(false);
-                createForm.reset();
-                setCreateCategoryText('');
-                setCreateImagePreview(null);
-                if (createFileInputRef.current) {
-                    createFileInputRef.current.value = '';
-                }
-            },
-        });
-    }
-
-    // Controlled Edit dialog
-    const editForm = useForm<{
-        name: string;
-        quantity: number;
-        category: string[];
-        image: File | null;
-        remove_image?: boolean;
-    }>({
-        name: '',
-        quantity: 0,
-        category: [],
-        image: null,
-        remove_image: false,
-    });
-    const [editCategoryText, setEditCategoryText] = useState('');
-
     function openEditFor(item: Item) {
         setSelectedItem(item);
-        editForm.reset();
-        editForm.setData({
-            name: item.name,
-            quantity: item.quantity,
-            category: item.category ?? [],
-            image: null,
-            remove_image: false,
-        });
-        setEditCategoryText((item.category || []).join(', '));
-        setEditImagePreview((item as any).image_url ?? null);
-        setEditRemoveImage(false);
         setEditOpen(true);
     }
 
-    function submitEdit(e: any) {
-        e.preventDefault();
-        if (!selectedItem) return;
-        if (!editForm.data.name || editForm.data.name.trim() === '') {
-            return editForm.setError('name', 'Name is required');
-        }
-        if (editForm.data.quantity < 0) {
-            return editForm.setError(
-                'quantity',
-                'Quantity must be 0 or greater',
-            );
-        }
-
-        editForm.transform((data) => ({
-            ...data,
-            category: (editCategoryText || '')
-                .split(',')
-                .map((s) => s.trim())
-                .filter(Boolean),
-        }));
-
-        editForm.put(`/warehouse/items/${selectedItem.id}`, {
-            onSuccess: () => {
-                setEditOpen(false);
-                editForm.reset();
-                setEditCategoryText('');
-                setEditImagePreview(null);
-                setEditRemoveImage(false);
-                if (editFileInputRef.current) {
-                    editFileInputRef.current.value = '';
-                }
-            },
-        });
-    }
-
-    // Controlled Delete dialog
-    const deleteForm = useForm();
     function openDeleteFor(item: Item) {
         setSelectedItem(item);
         setDeleteOpen(true);
-    }
-
-    function submitDelete() {
-        if (!selectedItem) return;
-        deleteForm.delete(`/warehouse/items/${selectedItem.id}`, {
-            onSuccess: () => {
-                setDeleteOpen(false);
-            },
-        });
     }
 
     // change quantity by delta (±1) with optimistic UI and processing state.
@@ -304,8 +160,6 @@ export default function Warehouse() {
             <Head title="Warehouse" />
 
             <div className="p-4">
-                {/* <h1 className="mb-4 text-2xl font-semibold">Inventory</h1> */}
-
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex w-1/2 items-center gap-2">
                         <div className="relative w-full">
@@ -338,254 +192,11 @@ export default function Warehouse() {
                     </div>
                 </div>
 
-                {/* Create Dialog (controlled) */}
-                <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                    <DialogContent>
-                        <DialogTitle>Create item</DialogTitle>
-                        <DialogDescription>
-                            Create a new inventory item.
-                        </DialogDescription>
-
-                        <form onSubmit={submitCreate} className="grid gap-3">
-                            <div>
-                                <Label>Name</Label>
-                                <Input
-                                    value={createForm.data.name}
-                                    onChange={(e) =>
-                                        createForm.setData(
-                                            'name',
-                                            e.target.value,
-                                        )
-                                    }
-                                />
-                                {createForm.errors.name && (
-                                    <div className="mt-1 text-sm text-destructive">
-                                        {createForm.errors.name}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <Label>Quantity</Label>
-                                <Input
-                                    type="number"
-                                    value={String(createForm.data.quantity)}
-                                    onChange={(e) =>
-                                        createForm.setData(
-                                            'quantity',
-                                            Number(e.target.value),
-                                        )
-                                    }
-                                />
-                                {createForm.errors.quantity && (
-                                    <div className="mt-1 text-sm text-destructive">
-                                        {createForm.errors.quantity}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="mb-4">
-                                <Label>Category (comma separated)</Label>
-                                <Input
-                                    value={createCategoryText}
-                                    onChange={(e) =>
-                                        setCreateCategoryText(e.target.value)
-                                    }
-                                />
-                                {createForm.errors.category && (
-                                    <div className="mt-1 text-sm text-destructive">
-                                        {createForm.errors.category}
-                                    </div>
-                                )}
-
-                                {/* reserved area for suggestions to avoid layout shift */}
-                                <div className="mt-2 min-h-[2rem]">
-                                    {/* suggestions rendered below when available and filtered by current token */}
-                                    {categoriesProp &&
-                                        categoriesProp.length > 0 &&
-                                        (() => {
-                                            const existing = createCategoryText
-                                                .split(',')
-                                                .map((s) => s.trim())
-                                                .filter(Boolean);
-                                            const lastToken = (
-                                                createCategoryText
-                                                    .split(',')
-                                                    .pop() || ''
-                                            ).trim();
-                                            const q = lastToken.toLowerCase();
-                                            const lowerExisting = existing.map(
-                                                (e) => e.toLowerCase(),
-                                            );
-
-                                            const suggestions = categoriesProp
-                                                .filter((c) => {
-                                                    const cl = c.toLowerCase();
-                                                    if (
-                                                        lowerExisting.includes(
-                                                            cl,
-                                                        )
-                                                    )
-                                                        return false; // don't suggest already chosen
-                                                    if (!q) return true; // show some suggestions when empty
-                                                    return cl.includes(q);
-                                                })
-                                                .slice(0, 12);
-
-                                            return (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {suggestions.map(
-                                                        (c: string) => (
-                                                            <button
-                                                                type="button"
-                                                                key={c}
-                                                                className="rounded-md border bg-muted/10 px-2 py-1 text-xs"
-                                                                onClick={() => {
-                                                                    // append suggestion to categoryText if not present
-                                                                    const existingNow =
-                                                                        createCategoryText
-                                                                            .split(
-                                                                                ',',
-                                                                            )
-                                                                            .map(
-                                                                                (
-                                                                                    s,
-                                                                                ) =>
-                                                                                    s.trim(),
-                                                                            )
-                                                                            .filter(
-                                                                                Boolean,
-                                                                            );
-                                                                    if (
-                                                                        !existingNow
-                                                                            .map(
-                                                                                (
-                                                                                    x,
-                                                                                ) =>
-                                                                                    x.toLowerCase(),
-                                                                            )
-                                                                            .includes(
-                                                                                c.toLowerCase(),
-                                                                            )
-                                                                    ) {
-                                                                        const next =
-                                                                            existingNow
-                                                                                .concat(
-                                                                                    [
-                                                                                        c,
-                                                                                    ],
-                                                                                )
-                                                                                .join(
-                                                                                    ', ',
-                                                                                );
-                                                                        setCreateCategoryText(
-                                                                            next,
-                                                                        );
-                                                                    }
-                                                                }}
-                                                            >
-                                                                {c}
-                                                            </button>
-                                                        ),
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-                                </div>
-                            </div>
-
-                            <div className="mb-4">
-                                <Label>Image</Label>
-                                <input
-                                    ref={createFileInputRef}
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    capture="environment"
-                                    onChange={(e) => {
-                                        const f = e.target.files?.[0] ?? null;
-                                        // revoke previous preview URL
-                                        if (createImagePreview) {
-                                            try {
-                                                URL.revokeObjectURL(
-                                                    createImagePreview,
-                                                );
-                                            } catch (err) {}
-                                        }
-                                        if (f) {
-                                            const url = URL.createObjectURL(f);
-                                            setCreateImagePreview(url);
-                                        } else {
-                                            setCreateImagePreview(null);
-                                        }
-                                        createForm.setData('image', f);
-                                    }}
-                                />
-                                <div className="mt-2">
-                                    {createImagePreview ? (
-                                        <div className="flex items-center gap-4">
-                                            <img
-                                                src={createImagePreview}
-                                                className="h-20 w-20 rounded object-cover"
-                                            />
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() =>
-                                                        createFileInputRef.current?.click()
-                                                    }
-                                                >
-                                                    Change
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    onClick={() => {
-                                                        createForm.setData(
-                                                            'image',
-                                                            null,
-                                                        );
-                                                        setCreateImagePreview(
-                                                            null,
-                                                        );
-                                                    }}
-                                                >
-                                                    Remove
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <Button
-                                            type="button"
-                                            onClick={() =>
-                                                createFileInputRef.current?.click()
-                                            }
-                                        >
-                                            Add image
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="mt-4 flex justify-end gap-2">
-                                <DialogClose asChild>
-                                    <Button variant="secondary">Cancel</Button>
-                                </DialogClose>
-                                <Button
-                                    type="submit"
-                                    disabled={createForm.processing}
-                                >
-                                    {createForm.processing
-                                        ? 'Creating...'
-                                        : 'Create'}
-                                </Button>
-                            </div>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <CreateItemDialog
+                    open={createOpen}
+                    onOpenChange={setCreateOpen}
+                    categories={categoriesProp}
+                />
 
                 <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
@@ -599,7 +210,7 @@ export default function Warehouse() {
                                                 column: 'name',
                                                 dir:
                                                     s.column === 'name' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -628,7 +239,7 @@ export default function Warehouse() {
                                                 column: 'quantity',
                                                 dir:
                                                     s.column === 'quantity' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -657,7 +268,7 @@ export default function Warehouse() {
                                                 column: 'category',
                                                 dir:
                                                     s.column === 'category' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -679,7 +290,7 @@ export default function Warehouse() {
                                                 column: 'category',
                                                 dir:
                                                     s.column === 'category' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -709,7 +320,7 @@ export default function Warehouse() {
                                                 dir:
                                                     s.column ===
                                                         'last_modified' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -738,7 +349,7 @@ export default function Warehouse() {
                                                 column: 'changed_by',
                                                 dir:
                                                     s.column === 'changed_by' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -859,8 +470,8 @@ export default function Warehouse() {
                                     <td className="px-6 py-4">
                                         {item.last_modified
                                             ? new Date(
-                                                  item.last_modified,
-                                              ).toLocaleString()
+                                                item.last_modified,
+                                            ).toLocaleString()
                                             : '-'}
                                     </td>
                                     <td className="px-6 py-4">
@@ -893,311 +504,23 @@ export default function Warehouse() {
                         </tbody>
                     </table>
                 </div>
-                {/* Edit Dialog (controlled) */}
-                <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                    <DialogContent>
-                        <DialogTitle>Edit item</DialogTitle>
-                        <DialogDescription>
-                            Update the item details below.
-                        </DialogDescription>
 
-                        <form onSubmit={submitEdit} className="grid gap-3">
-                            <div>
-                                <Label>Name</Label>
-                                <Input
-                                    value={editForm.data.name}
-                                    onChange={(e) =>
-                                        editForm.setData('name', e.target.value)
-                                    }
-                                />
-                                {editForm.errors.name && (
-                                    <div className="mt-1 text-sm text-destructive">
-                                        {editForm.errors.name}
-                                    </div>
-                                )}
-                            </div>
+                <EditItemDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    item={selectedItem}
+                    categories={categoriesProp}
+                    onDeleteRequest={(item) => {
+                        setEditOpen(false);
+                        openDeleteFor(item);
+                    }}
+                />
 
-                            <div>
-                                <Label>Quantity</Label>
-                                <Input
-                                    type="number"
-                                    value={String(editForm.data.quantity)}
-                                    onChange={(e) =>
-                                        editForm.setData(
-                                            'quantity',
-                                            Number(e.target.value),
-                                        )
-                                    }
-                                />
-                                {editForm.errors.quantity && (
-                                    <div className="mt-1 text-sm text-destructive">
-                                        {editForm.errors.quantity}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="mb-4">
-                                <Label>Category (comma separated)</Label>
-                                <Input
-                                    value={editCategoryText}
-                                    onChange={(e) =>
-                                        setEditCategoryText(e.target.value)
-                                    }
-                                />
-
-                                {/* reserved area for suggestions to avoid layout shift */}
-                                <div className="mt-2 min-h-[4rem]">
-                                    {categoriesProp &&
-                                        categoriesProp.length > 0 &&
-                                        (() => {
-                                            const existing = editCategoryText
-                                                .split(',')
-                                                .map((s) => s.trim())
-                                                .filter(Boolean);
-                                            const lastToken = (
-                                                editCategoryText
-                                                    .split(',')
-                                                    .pop() || ''
-                                            ).trim();
-                                            const q = lastToken.toLowerCase();
-                                            const lowerExisting = existing.map(
-                                                (e) => e.toLowerCase(),
-                                            );
-
-                                            const suggestions = categoriesProp
-                                                .filter((c) => {
-                                                    const cl = c.toLowerCase();
-                                                    if (
-                                                        lowerExisting.includes(
-                                                            cl,
-                                                        )
-                                                    )
-                                                        return false;
-                                                    if (!q) return true;
-                                                    return cl.includes(q);
-                                                })
-                                                .slice(0, 12);
-
-                                            return (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {suggestions.map(
-                                                        (c: string) => (
-                                                            <button
-                                                                type="button"
-                                                                key={c}
-                                                                className="rounded-md border bg-muted/10 px-2 py-1 text-xs"
-                                                                onClick={() => {
-                                                                    const existingNow =
-                                                                        editCategoryText
-                                                                            .split(
-                                                                                ',',
-                                                                            )
-                                                                            .map(
-                                                                                (
-                                                                                    s,
-                                                                                ) =>
-                                                                                    s.trim(),
-                                                                            )
-                                                                            .filter(
-                                                                                Boolean,
-                                                                            );
-                                                                    if (
-                                                                        !existingNow
-                                                                            .map(
-                                                                                (
-                                                                                    x,
-                                                                                ) =>
-                                                                                    x.toLowerCase(),
-                                                                            )
-                                                                            .includes(
-                                                                                c.toLowerCase(),
-                                                                            )
-                                                                    ) {
-                                                                        const next =
-                                                                            existingNow
-                                                                                .concat(
-                                                                                    [
-                                                                                        c,
-                                                                                    ],
-                                                                                )
-                                                                                .join(
-                                                                                    ', ',
-                                                                                );
-                                                                        setEditCategoryText(
-                                                                            next,
-                                                                        );
-                                                                    }
-                                                                }}
-                                                            >
-                                                                {c}
-                                                            </button>
-                                                        ),
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-                                </div>
-                            </div>
-
-                            <div className="mb-4">
-                                <Label>Image</Label>
-                                <input
-                                    ref={editFileInputRef}
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    capture="environment"
-                                    onChange={(e) => {
-                                        const f = e.target.files?.[0] ?? null;
-                                        if (editImagePreview) {
-                                            try {
-                                                URL.revokeObjectURL(
-                                                    editImagePreview,
-                                                );
-                                            } catch (err) {}
-                                        }
-                                        if (f) {
-                                            const url = URL.createObjectURL(f);
-                                            setEditImagePreview(url);
-                                            setEditRemoveImage(false);
-                                            editForm.setData(
-                                                'remove_image',
-                                                false,
-                                            );
-                                        } else {
-                                            setEditImagePreview(
-                                                (selectedItem as any)
-                                                    ?.image_url ?? null,
-                                            );
-                                        }
-                                        editForm.setData('image', f);
-                                    }}
-                                />
-
-                                <div className="mt-2 flex items-center gap-4">
-                                    {editImagePreview ? (
-                                        <>
-                                            <img
-                                                src={editImagePreview}
-                                                className="h-20 w-20 rounded object-cover"
-                                            />
-                                            <div className="flex flex-col gap-2">
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            editFileInputRef.current?.click()
-                                                        }
-                                                    >
-                                                        Change
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="secondary"
-                                                        onClick={() => {
-                                                            // mark for removal
-                                                            editForm.setData(
-                                                                'image',
-                                                                null,
-                                                            );
-                                                            setEditImagePreview(
-                                                                null,
-                                                            );
-                                                            setEditRemoveImage(
-                                                                true,
-                                                            );
-                                                            editForm.setData(
-                                                                'remove_image',
-                                                                true,
-                                                            );
-                                                        }}
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    Current image
-                                                </div>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <Button
-                                            type="button"
-                                            onClick={() =>
-                                                editFileInputRef.current?.click()
-                                            }
-                                        >
-                                            Add image
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-2">
-                                <div>
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => {
-                                            if (!selectedItem) return;
-                                            // close edit modal and open delete confirmation
-                                            setEditOpen(false);
-                                            openDeleteFor(selectedItem);
-                                        }}
-                                    >
-                                        Delete
-                                    </Button>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <DialogClose asChild>
-                                        <Button variant="secondary">
-                                            Cancel
-                                        </Button>
-                                    </DialogClose>
-                                    <Button
-                                        type="submit"
-                                        disabled={editForm.processing}
-                                    >
-                                        {editForm.processing
-                                            ? 'Saving...'
-                                            : 'Save'}
-                                    </Button>
-                                </div>
-                            </div>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-
-                {/* Delete Dialog (controlled) */}
-                <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                    <DialogContent>
-                        <DialogTitle>Delete item</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete{' '}
-                            {selectedItem?.name ?? ''}? This action cannot be
-                            undone.
-                        </DialogDescription>
-
-                        <div className="mt-4 flex justify-end gap-2">
-                            <DialogClose asChild>
-                                <Button variant="secondary">Cancel</Button>
-                            </DialogClose>
-                            <Button
-                                variant="destructive"
-                                onClick={submitDelete}
-                                disabled={deleteForm.processing}
-                            >
-                                {deleteForm.processing
-                                    ? 'Deleting...'
-                                    : 'Delete'}
-                            </Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <DeleteItemDialog
+                    open={deleteOpen}
+                    onOpenChange={setDeleteOpen}
+                    item={selectedItem}
+                />
             </div>
         </AppLayout>
     );

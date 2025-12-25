@@ -5,11 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\InventoryManagementService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class SellablesController extends Controller
 {
+    protected InventoryManagementService $inventoryService;
+
+    public function __construct(\App\Services\InventoryManagementService $inventoryService)
+    {
+        $this->inventoryService = $inventoryService;
+    }
+
     public function index(\Illuminate\Http\Request $request)
     {
         $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
@@ -179,38 +187,9 @@ class SellablesController extends Controller
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        // Normalize unlimited/quantity semantics
-        if ($validated['variable_amount']) {
-            $validated['quantity'] = null;
-            // quantity_with_card/without_card: if not provided treat as unlimited
-            if (! array_key_exists('quantity_with_card', $validated) || is_null($validated['quantity_with_card'])) {
-                $validated['quantity_with_card'] = null;
-                $validated['unlimited_quantity_with_card'] = true;
-            } else {
-                $validated['unlimited_quantity_with_card'] = false;
-            }
-            if (! array_key_exists('quantity_without_card', $validated) || is_null($validated['quantity_without_card'])) {
-                $validated['quantity_without_card'] = null;
-                $validated['unlimited_quantity_without_card'] = true;
-            } else {
-                $validated['unlimited_quantity_without_card'] = false;
-            }
-            $validated['unlimited_quantity'] = false;
-        } else {
-            // Non-variable: if quantity not provided or empty -> unlimited
-            if (! array_key_exists('quantity', $validated) || $validated['quantity'] === null) {
-                $validated['quantity'] = null;
-                $validated['unlimited_quantity'] = true;
-            } else {
-                $validated['unlimited_quantity'] = false;
-            }
-            $validated['quantity_with_card'] = null;
-            $validated['quantity_without_card'] = null;
-            $validated['unlimited_quantity_with_card'] = false;
-            $validated['unlimited_quantity_without_card'] = false;
-        }
+        $normalized = $this->inventoryService->normalizeInput($validated);
 
-        Product::create($validated);
+        Product::create($normalized);
 
         return redirect()->route('sellables');
     }
@@ -229,36 +208,9 @@ class SellablesController extends Controller
             'is_online_sellable' => ['sometimes', 'boolean'],
         ]);
 
-        // Normalize unlimited/quantity semantics for update
-        if ($validated['variable_amount']) {
-            $validated['quantity'] = null;
-            if (! array_key_exists('quantity_with_card', $validated) || is_null($validated['quantity_with_card'])) {
-                $validated['quantity_with_card'] = null;
-                $validated['unlimited_quantity_with_card'] = true;
-            } else {
-                $validated['unlimited_quantity_with_card'] = false;
-            }
-            if (! array_key_exists('quantity_without_card', $validated) || is_null($validated['quantity_without_card'])) {
-                $validated['quantity_without_card'] = null;
-                $validated['unlimited_quantity_without_card'] = true;
-            } else {
-                $validated['unlimited_quantity_without_card'] = false;
-            }
-            $validated['unlimited_quantity'] = false;
-        } else {
-            if (! array_key_exists('quantity', $validated) || $validated['quantity'] === null) {
-                $validated['quantity'] = null;
-                $validated['unlimited_quantity'] = true;
-            } else {
-                $validated['unlimited_quantity'] = false;
-            }
-            $validated['quantity_with_card'] = null;
-            $validated['quantity_without_card'] = null;
-            $validated['unlimited_quantity_with_card'] = false;
-            $validated['unlimited_quantity_without_card'] = false;
-        }
+        $normalized = $this->inventoryService->normalizeInput($validated);
 
-        $product->update($validated);
+        $product->update($normalized);
     }
 
     public function destroyProduct(Product $product)
@@ -288,36 +240,9 @@ class SellablesController extends Controller
             'google_spreadsheet_id' => ['nullable', 'string'],
         ]);
 
-        // Normalize unlimited/quantity semantics
-        if ($validated['variable_amount']) {
-            $validated['quantity'] = null;
-            if (! array_key_exists('quantity_with_card', $validated) || is_null($validated['quantity_with_card'])) {
-                $validated['quantity_with_card'] = null;
-                $validated['unlimited_quantity_with_card'] = true;
-            } else {
-                $validated['unlimited_quantity_with_card'] = false;
-            }
-            if (! array_key_exists('quantity_without_card', $validated) || is_null($validated['quantity_without_card'])) {
-                $validated['quantity_without_card'] = null;
-                $validated['unlimited_quantity_without_card'] = true;
-            } else {
-                $validated['unlimited_quantity_without_card'] = false;
-            }
-            $validated['unlimited_quantity'] = false;
-        } else {
-            if (! array_key_exists('quantity', $validated) || $validated['quantity'] === null) {
-                $validated['quantity'] = null;
-                $validated['unlimited_quantity'] = true;
-            } else {
-                $validated['unlimited_quantity'] = false;
-            }
-            $validated['quantity_with_card'] = null;
-            $validated['quantity_without_card'] = null;
-            $validated['unlimited_quantity_with_card'] = false;
-            $validated['unlimited_quantity_without_card'] = false;
-        }
+        $normalized = $this->inventoryService->normalizeInput($validated);
 
-        Event::create($validated);
+        Event::create($normalized);
 
         return redirect()->route('sellables');
     }
@@ -343,43 +268,21 @@ class SellablesController extends Controller
             'is_online_sellable' => ['sometimes', 'boolean'],
         ]);
 
-        // Normalize unlimited/quantity semantics for update
-        if ($validated['variable_amount']) {
-            $validated['quantity'] = null;
-            if (! array_key_exists('quantity_with_card', $validated) || is_null($validated['quantity_with_card'])) {
-                $validated['quantity_with_card'] = null;
-                $validated['unlimited_quantity_with_card'] = true;
-            } else {
-                $validated['unlimited_quantity_with_card'] = false;
-            }
-            if (! array_key_exists('quantity_without_card', $validated) || is_null($validated['quantity_without_card'])) {
-                $validated['quantity_without_card'] = null;
-                $validated['unlimited_quantity_without_card'] = true;
-            } else {
-                $validated['unlimited_quantity_without_card'] = false;
-            }
-            $validated['unlimited_quantity'] = false;
-        } else {
-            if (! array_key_exists('quantity', $validated) || $validated['quantity'] === null) {
-                $validated['quantity'] = null;
-                $validated['unlimited_quantity'] = true;
-            } else {
-                $validated['unlimited_quantity'] = false;
-            }
-            $validated['quantity_with_card'] = null;
-            $validated['quantity_without_card'] = null;
-            $validated['unlimited_quantity_with_card'] = false;
-            $validated['unlimited_quantity_without_card'] = false;
-        }
+        $normalized = $this->inventoryService->normalizeInput($validated);
 
         // If google_spreadsheet_id is not provided on update, do not overwrite existing value
         if (array_key_exists('google_spreadsheet_id', $validated) && $validated['google_spreadsheet_id'] === null) {
             // Remove the key so update won't clear the existing value accidentally
-            unset($validated['google_spreadsheet_id']);
+            // However, normalizeInput returns a new array, so we must check normalized or original validated
+            // The service doesn't touch google_spreadsheet_id, so it should be safe to check $normalized
+             if (array_key_exists('google_spreadsheet_id', $normalized) && $normalized['google_spreadsheet_id'] === null) {
+                unset($normalized['google_spreadsheet_id']);
+            }
         }
 
-        $event->update($validated);
+        $event->update($normalized);
     }
+
 
     public function destroyEvent(Event $event)
     {

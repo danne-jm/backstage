@@ -15,6 +15,8 @@ import { Check, ExternalLink } from 'lucide-react';
 import * as React from 'react';
 import { ProductDialog } from '@/components/sellables/ProductDialog';
 import { EventDialog } from '@/components/sellables/EventDialog';
+import { ProductPreview } from '@/components/sellables/ProductPreview';
+import { EventPreview } from '@/components/sellables/EventPreview';
 import type { Product, Event, BoardUser } from '@/types/sellables';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -211,45 +213,6 @@ export default function Sellables() {
         });
     };
 
-    const formatDate = (iso: string) => {
-        const d = new Date(iso);
-        if (isNaN(d.getTime())) return 'N/A';
-        return d.toLocaleDateString(undefined, {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
-    };
-
-    const daysRemaining = (iso: string) => {
-        const now = new Date();
-        const d = new Date(iso);
-        if (isNaN(d.getTime())) return 0;
-        const msPerDay = 1000 * 60 * 60 * 24;
-        // Round up partial days so e.g. 0.1 days => 1 day remaining
-        const diff = Math.ceil((d.getTime() - now.getTime()) / msPerDay);
-        return diff;
-    };
-
-    const sellPeriodMessage = (startIso: string, endIso: string) => {
-        const now = new Date();
-        const start = new Date(startIso);
-        const end = new Date(endIso);
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
-
-        if (now.getTime() < start.getTime()) {
-            const days = daysRemaining(startIso);
-            return `Start selling in ${days} ${days === 1 ? 'day' : 'days'}`;
-        }
-
-        if (now.getTime() <= end.getTime()) {
-            const days = daysRemaining(endIso);
-            return `Stop selling in ${days} ${days === 1 ? 'day' : 'days'}`;
-        }
-
-        return 'Sale ended';
-    };
 
     // No manual scroll restoration required; the dialog implementation
     // used throughout the app preserves focus/scroll reliably (see Ticketing page).
@@ -291,160 +254,15 @@ export default function Sellables() {
                     ) : (
                         <div className="grid gap-4">
                             {products.map(product => (
-                                <div
+                                <ProductPreview
                                     key={product.id}
-                                    className="flex items-center justify-between rounded-lg border p-4"
-                                >
-                                    <div>
-                                        <h3 className="font-medium">
-                                            {product.name}
-                                        </h3>
-                                        {product.description && (
-                                            <p className="mt-1 text-sm text-muted-foreground">
-                                                {product.description}
-                                            </p>
-                                        )}
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            €{product.price}
-                                        </p>
-                                        <div className="mt-1 text-sm">
-                                            {' '}
-                                            {/* Changed to remove inherited muted-foreground */}
-                                            {product.variable_amount ? (
-                                                <>
-                                                    <span className="text-muted-foreground">
-                                                        Qty w/ ESNcard:
-                                                    </span>{' '}
-                                                    {(product.unlimited_quantity_with_card || product.quantity_with_card == null)
-                                                        ? 'Unlimited'
-                                                        : product.quantity_with_card}
-                                                    {(product.unlimited_quantity_with_card || product.quantity_with_card == null) ? false : (
-                                                        product.remaining_with_card !== undefined &&
-                                                        product.remaining_with_card !== null && (
-                                                            <span className="text-gray-500">
-                                                                {' '}
-                                                                |{' '}
-                                                                {product.remaining_with_card}{' '}
-                                                                remain
-                                                            </span>
-                                                        )
-                                                    )}{' '}
-                                                    |{' '}
-                                                    <span className="text-muted-foreground">
-                                                        w/o ESNcard:
-                                                    </span>{' '}
-                                                    {(product.unlimited_quantity_without_card || product.quantity_without_card == null)
-                                                        ? 'Unlimited'
-                                                        : product.quantity_without_card}
-                                                    {(product.unlimited_quantity_without_card || product.quantity_without_card == null) ? false : (
-                                                        product.remaining_without_card !==
-                                                            undefined &&
-                                                        product.remaining_without_card !==
-                                                            null && (
-                                                            <span className="text-gray-500">
-                                                                {' '}
-                                                                |{' '}
-                                                                {
-                                                                    product.remaining_without_card
-                                                                }{' '}
-                                                                remain
-                                                            </span>
-                                                        )
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="text-muted-foreground">
-                                                        Quantity:
-                                                    </span>{' '}
-                                                    {(product.unlimited_quantity || product.quantity == null)
-                                                        ? 'Unlimited'
-                                                        : product.quantity}
-                                                    {(product.unlimited_quantity || product.quantity == null) ? false : (
-                                                        product.remaining !==
-                                                            undefined &&
-                                                        product.remaining !==
-                                                            null && (
-                                                            <span className="text-gray-500">
-                                                                {' '}
-                                                                |{' '}
-                                                                {
-                                                                    product.remaining
-                                                                }{' '}
-                                                                remain
-                                                            </span>
-                                                        )
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() =>
-                                                openProductDialog(product)
-                                            }
-                                        >
-                                            Edit
-                                        </Button>
-                                        <>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="text-muted-foreground hover:bg-muted/30"
-                                                onClick={() =>
-                                                    setProductToDelete(
-                                                        product.id,
-                                                    )
-                                                }
-                                            >
-                                                Remove
-                                            </Button>
-
-                                            <Dialog
-                                                open={
-                                                    productToDelete ===
-                                                    product.id
-                                                }
-                                                onOpenChange={open =>
-                                                    !open &&
-                                                    setProductToDelete(null)
-                                                }
-                                            >
-                                                <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
-                                                    <DialogTitle>
-                                                        Delete Product
-                                                    </DialogTitle>
-                                                    <DialogDescription>
-                                                        Are you sure you want to
-                                                        delete "{product.name}"?
-                                                        This action cannot be
-                                                        undone.
-                                                    </DialogDescription>
-                                                    <DialogFooter>
-                                                        <DialogClose asChild>
-                                                            <Button variant="ghost">
-                                                                Cancel
-                                                            </Button>
-                                                        </DialogClose>
-                                                        <Button
-                                                            variant="destructive"
-                                                            onClick={() =>
-                                                                deleteProduct(
-                                                                    product.id,
-                                                                )
-                                                            }
-                                                        >
-                                                            Delete
-                                                        </Button>
-                                                    </DialogFooter>
-                                                </DialogContent>
-                                            </Dialog>
-                                        </>
-                                    </div>
-                                </div>
+                                    product={product}
+                                    onEdit={openProductDialog}
+                                    onDelete={deleteProduct}
+                                    productToDelete={productToDelete}
+                                    setProductToDelete={setProductToDelete}
+                                    variant="sellables"
+                                />
                             ))}
                         </div>
                     )}
@@ -487,9 +305,9 @@ export default function Sellables() {
                                 const prevEvDate =
                                     idx > 0
                                         ? parseDate(
-                                              orderedEvents[idx - 1]
-                                                  .event_date,
-                                          )
+                                            orderedEvents[idx - 1]
+                                                .event_date,
+                                        )
                                         : null;
                                 const prevIsPast = prevEvDate
                                     ? prevEvDate.getTime() < now.getTime()
@@ -505,245 +323,14 @@ export default function Sellables() {
                                             </div>
                                         )}
 
-                                        <div
-                                            key={event.id}
-                                            className="relative rounded-lg border p-4"
-                                        >
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex-1">
-                                                    <h3 className="font-medium">
-                                                        {event.name}
-                                                    </h3>
-                                                    {event.description && (
-                                                        <p className="mt-1 text-sm text-muted-foreground">
-                                                            {event.description}
-                                                        </p>
-                                                    )}
-                                                    <div className="mt-2 space-y-1 text-sm">
-                                                        <p>
-                                                            <span className="text-muted-foreground">
-                                                                Event Date:
-                                                            </span>{' '}
-                                                            {formatDate(
-                                                                event.event_date,
-                                                            )}
-                                                        </p>
-                                                        <p>
-                                                            <span className="text-muted-foreground">
-                                                                Sell Period:
-                                                            </span>{' '}
-                                                            {formatDate(
-                                                                event.start_sell_date,
-                                                            )}{' '}
-                                                            -{' '}
-                                                            {formatDate(
-                                                                event.end_sell_date,
-                                                            )}
-                                                            <span className="ml-2 text-muted-foreground">
-                                                                |{' '}
-                                                                {sellPeriodMessage(
-                                                                    event.start_sell_date,
-                                                                    event.end_sell_date,
-                                                                )}
-                                                            </span>
-                                                        </p>
-                                                        <p>
-                                                            <span className="text-muted-foreground">
-                                                                Price with ESNcard:
-                                                            </span>{' '}
-                                                            €
-                                                            {
-                                                                event.price_with_card
-                                                            }{' '}
-                                                            |{' '}
-                                                            <span className="text-muted-foreground">
-                                                                without ESNcard:
-                                                            </span>{' '}
-                                                            €
-                                                            {
-                                                                event.price_without_card
-                                                            }
-                                                        </p>
-                                                        {event.variable_amount ? (
-                                                            <p>
-                                                                <span className="text-muted-foreground">
-                                                                    Qty w/ ESNcard:
-                                                                </span>{' '}
-                                                                {(event.unlimited_quantity_with_card || event.quantity_with_card == null)
-                                                                    ? 'Unlimited'
-                                                                    : event.quantity_with_card}
-                                                                {(event.unlimited_quantity_with_card || event.quantity_with_card == null) ? false : (
-                                                                    event.remaining_with_card !== undefined &&
-                                                                    event.remaining_with_card !== null && (
-                                                                        <span className="text-gray-500">
-                                                                            {' '}
-                                                                            |{' '}
-                                                                            {event.remaining_with_card}{' '}
-                                                                            remain
-                                                                        </span>
-                                                                    )
-                                                                )}{' '}
-                                                                |{' '}
-                                                                <span className="text-muted-foreground">
-                                                                    w/o ESNcard:
-                                                                </span>{' '}
-                                                                {(event.unlimited_quantity_without_card || event.quantity_without_card == null)
-                                                                    ? 'Unlimited'
-                                                                    : event.quantity_without_card}
-                                                                {(event.unlimited_quantity_without_card || event.quantity_without_card == null) ? false : (
-                                                                    event.remaining_without_card !== undefined &&
-                                                                    event.remaining_without_card !== null && (
-                                                                        <span className="text-gray-500">
-                                                                            {' '}
-                                                                            |{' '}
-                                                                            {event.remaining_without_card}{' '}
-                                                                            remain
-                                                                        </span>
-                                                                    )
-                                                                )}
-                                                            </p>
-                                                        ) : (
-                                                            <p>
-                                                                <span className="text-muted-foreground">
-                                                                    Quantity:
-                                                                </span>{' '}
-                                                                {(event.unlimited_quantity || event.quantity == null)
-                                                                    ? 'Unlimited'
-                                                                    : event.quantity}
-                                                                {(event.unlimited_quantity || event.quantity == null) ? false : (
-                                                                    event.remaining !== undefined &&
-                                                                    event.remaining !== null && (
-                                                                        <span className="text-gray-500">
-                                                                            {' '}
-                                                                            |{' '}
-                                                                            {event.remaining}{' '}
-                                                                            remain
-                                                                        </span>
-                                                                    )
-                                                                )}
-                                                            </p>
-                                                        )}
-                                                        <p>
-                                                            <span className="text-muted-foreground">
-                                                                Responsible:
-                                                            </span>{' '}
-                                                            {event.responsibleUser
-                                                                ? `${event.responsibleUser.first_name} ${event.responsibleUser.last_name}`
-                                                                : 'N/A'}
-                                                        </p>
-                                                        {event.notes && (
-                                                            <p>
-                                                                <span className="text-muted-foreground">
-                                                                    Notes:
-                                                                </span>{' '}
-                                                                {event.notes}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex h-full flex-col justify-between">
-                                                    {' '}
-                                                    {/* take all remaining height */}
-                                                    <div className="ml-4 flex gap-2">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() =>
-                                                                openEventDialog(
-                                                                    event,
-                                                                )
-                                                            }
-                                                        >
-                                                            Edit
-                                                        </Button>
-                                                        <>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                className="text-muted-foreground hover:bg-muted/30"
-                                                                onClick={() =>
-                                                                    setEventToDelete(
-                                                                        event.id,
-                                                                    )
-                                                                }
-                                                            >
-                                                                Remove
-                                                            </Button>
-
-                                                            <Dialog
-                                                                open={
-                                                                    eventToDelete ===
-                                                                    event.id
-                                                                }
-                                                                onOpenChange={
-                                                                    open =>
-                                                                        !open &&
-                                                                        setEventToDelete(
-                                                                            null,
-                                                                        )
-                                                                }
-                                                            >
-                                                                <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
-                                                                    <DialogTitle>
-                                                                        Delete
-                                                                        Event
-                                                                    </DialogTitle>
-                                                                    <DialogDescription>
-                                                                        Are you
-                                                                        sure you
-                                                                        want to
-                                                                        delete "
-                                                                        {
-                                                                            event.name
-                                                                        }
-                                                                        "? This
-                                                                        action
-                                                                        cannot
-                                                                        be
-                                                                        undone.
-                                                                    </DialogDescription>
-                                                                    <DialogFooter>
-                                                                        <DialogClose
-                                                                            asChild
-                                                                        >
-                                                                            <Button variant="ghost">
-                                                                                Cancel
-                                                                            </Button>
-                                                                        </DialogClose>
-                                                                        <Button
-                                                                            variant="destructive"
-                                                                            onClick={() =>
-                                                                                deleteEvent(
-                                                                                    event.id,
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            Delete
-                                                                        </Button>
-                                                                    </DialogFooter>
-                                                                </DialogContent>
-                                                            </Dialog>
-                                                        </>
-                                                    </div>
-                                                    {/* Manage Attendees button (bottom-right of event card) */}
-                                                    <div className="absolute bottom-4 right-4">
-                                                        <Button
-                                                            asChild
-                                                            variant="secondary"
-                                                            size="sm"
-                                                        >
-                                                            <Link
-                                                                href={`/sellables/events/${event.id}/attendees`}
-                                                            >
-                                                                Manage Attendees
-                                                                <ExternalLink className="ml-2 h-3 w-3" />
-                                                            </Link>
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <EventPreview
+                                            event={event}
+                                            onEdit={openEventDialog}
+                                            onDelete={deleteEvent}
+                                            eventToDelete={eventToDelete}
+                                            setEventToDelete={setEventToDelete}
+                                            variant="sellables"
+                                        />
                                     </React.Fragment>
                                 );
                             })}

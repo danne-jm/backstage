@@ -13,10 +13,11 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react'; // Link imported
+import { Head, Link, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import * as React from 'react';
 import FullDataDialog from '@/components/FullDataDialog';
+import RichTextEditor from '@/components/RichTextEditor';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -80,7 +81,8 @@ export default function Ticketing() {
     const [subject, setSubject] = React.useState<string>(
         'Your ticket information',
     );
-    const bodyRef = React.useRef<HTMLDivElement | null>(null);
+    // Replaced bodyRef with state for the new editor
+    const [editorContent, setEditorContent] = React.useState('');
 
     // Selected event id — default to none so the placeholder shows
     const [selectedEvent, setSelectedEvent] = React.useState<number | null>(
@@ -111,7 +113,7 @@ export default function Ticketing() {
                     // Convert rows to objects using headers (first row)
                     const headers = data.rows[0];
                     const dataRows = data.rows.slice(1);
-                    
+
                     const attendees = dataRows.map((row: any[]) => {
                         const obj: any = {};
                         headers.forEach((header: string, idx: number) => {
@@ -119,13 +121,13 @@ export default function Ticketing() {
                         });
                         return obj;
                     });
-                    
+
                     setSampleData(attendees);
-                    
+
                     // Set default field mappings when data is loaded
                     if (attendees.length > 0) {
                         const availableFields = headers;
-                        
+
                         setFirstNameField(availableFields.find((f: string) => f.toLowerCase().includes('first')) || availableFields[0] || '');
                         setLastNameField(availableFields.find((f: string) => f.toLowerCase().includes('last')) || availableFields[1] || '');
                         setEmailField(availableFields.find((f: string) => f.toLowerCase().includes('email')) || availableFields[2] || '');
@@ -185,14 +187,10 @@ export default function Ticketing() {
 
     // initialize editor with default template if empty
     React.useEffect(() => {
-        if (
-            bodyRef.current &&
-            (!bodyRef.current.innerHTML ||
-                bodyRef.current.innerHTML.trim() === '')
-        ) {
-            bodyRef.current.innerHTML = defaultBodyTemplate;
+        if (!editorContent || editorContent.trim() === '') {
+            setEditorContent(defaultBodyTemplate);
         }
-    }, [bodyRef, defaultBodyTemplate]);
+    }, [defaultBodyTemplate]);
 
     // Mark config as dirty on changes to subject, mappings, mail mode, template, sample user, or skippable columns
     React.useEffect(() => {
@@ -205,20 +203,13 @@ export default function Ticketing() {
         markClean();
     };
 
-    // Mark config as dirty if body changes (contentEditable)
-    React.useEffect(() => {
-        if (!bodyRef.current) return;
-        const handler = () => markDirty();
-        const el = bodyRef.current;
-        el.addEventListener('input', handler);
-        return () => el.removeEventListener('input', handler);
-    }, [bodyRef, markDirty]);
+
 
     // Auto-insert {{qr}} at the bottom of the email when mailMode is set to 'qr'
     React.useEffect(() => {
-        if (mailMode === 'qr' && bodyRef.current) {
+        if (mailMode === 'qr') {
             const qrPlaceholder = '{{qr}}';
-            let html = bodyRef.current.innerHTML || '';
+            let html = editorContent || '';
             if (!html.includes(qrPlaceholder)) {
                 // Insert at the end, with a new paragraph if needed — ensure no extra margins
                 if (!html.trim().endsWith('</p>')) {
@@ -226,176 +217,19 @@ export default function Ticketing() {
                 } else {
                     html += `<span style="display:block;margin:0;">${qrPlaceholder}</span>`;
                 }
-                bodyRef.current.innerHTML = html;
+                setEditorContent(html);
                 markDirty();
             }
         }
-    }, [mailMode, bodyRef, markDirty]);
+    }, [mailMode, markDirty]); // Removed editorContent dependency to avoid loop, but might be tricky.
+    // Logic check: if mailMode becomes 'qr', we append. If user edits, we don't force append again unless removed and mode is toggled?
+    // Original only checked on effect dependency.
 
-    const applyFormat = (cmd: string, value?: string) => {
-        try {
-            bodyRef.current?.focus();
-            document.execCommand(cmd, false, value);
-        } catch (e) {
-            console.warn('Formatting not supported', e);
-        }
-    };
 
-    const insertBulletList = () => {
-        applyFormat('insertUnorderedList');
-    };
 
-    const insertLink = () => {
-        const url = prompt('Enter the URL for the link:');
-        if (!url) return;
-        bodyRef.current?.focus();
-
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-
-            // Only operate inside the editor
-            if (
-                bodyRef.current &&
-                bodyRef.current.contains(range.commonAncestorContainer)
-            ) {
-                try {
-                    // Try native command first
-                    const success = document.execCommand(
-                        'createLink',
-                        false,
-                        url,
-                    );
-
-                    // If execCommand didn't create a link (or to ensure attributes), fallback to manual insertion
-                    setTimeout(() => {
-                        if (!bodyRef.current) return;
-
-                        // If execCommand created a link, ensure attributes are set
-                        const links = bodyRef.current.querySelectorAll('a');
-                        links.forEach((a) => {
-                            a.setAttribute('target', '_blank');
-                            a.setAttribute('rel', 'noopener noreferrer');
-                        });
-
-                        // If execCommand returned false or selection wasn't wrapped, create link manually
-                        const hasLinkInSelection = Array.from(links).some(
-                            (a) => {
-                                try {
-                                    return sel.getRangeAt(0).intersectsNode(a);
-                                } catch (e) {
-                                    return false;
-                                }
-                            },
-                        );
-
-                        if (!hasLinkInSelection && !range.collapsed) {
-                            try {
-                                const contents = range.extractContents();
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.target = '_blank';
-                                a.rel = 'noopener noreferrer';
-                                a.appendChild(contents);
-                                range.insertNode(a);
-
-                                // Collapse selection after the inserted link
-                                sel.removeAllRanges();
-                                const newRange = document.createRange();
-                                newRange.setStartAfter(a);
-                                newRange.collapse(true);
-                                sel.addRange(newRange);
-                            } catch (e) {
-                                // Last-resort manual insertion: replace selection text with a link node
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.target = '_blank';
-                                a.rel = 'noopener noreferrer';
-                                a.textContent = sel.toString();
-                                range.deleteContents();
-                                range.insertNode(a);
-                                sel.removeAllRanges();
-                            }
-                        }
-                    }, 0);
-                } catch (e) {
-                    // If execCommand throws, fallback to manual link creation
-                    try {
-                        const contents = range.extractContents();
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.target = '_blank';
-                        a.rel = 'noopener noreferrer';
-                        a.appendChild(contents);
-                        range.insertNode(a);
-                        sel.removeAllRanges();
-                        const newRange = document.createRange();
-                        newRange.setStartAfter(a);
-                        newRange.collapse(true);
-                        sel.addRange(newRange);
-                    } catch (ex) {
-                        // fallback: append a link at the end
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.target = '_blank';
-                        a.rel = 'noopener noreferrer';
-                        a.textContent = url;
-                        bodyRef.current.appendChild(a);
-                    }
-                }
-                return;
-            }
-        }
-
-        // No selection or outside editor: append link at end
-        if (bodyRef.current) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.textContent = url;
-            bodyRef.current.appendChild(a);
-        }
-    };
-
-    const removeLink = () => {
-        applyFormat('unlink');
-    };
-
-    const setTextColor = () => {
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.style.position = 'fixed';
-        input.style.left = '-9999px';
-        document.body.appendChild(input);
-        input.click();
-        input.oninput = () => {
-            applyFormat('foreColor', input.value);
-            document.body.removeChild(input);
-        };
-        input.onblur = () => {
-            document.body.removeChild(input);
-        };
-    };
-
-    const setBgColor = () => {
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.style.position = 'fixed';
-        input.style.left = '-9999px';
-        document.body.appendChild(input);
-        input.click();
-        input.oninput = () => {
-            applyFormat('hiliteColor', input.value);
-            document.body.removeChild(input);
-        };
-        input.onblur = () => {
-            document.body.removeChild(input);
-        };
-    };
 
     const generateTickets = () => {
-        const bodyHtml = bodyRef.current ? bodyRef.current.innerHTML : '';
+        const bodyHtml = editorContent;
         const eventObj = events.find((ev: any) => ev.id === selectedEvent) ?? null;
         const selectedTemplate = templates.find(t => t.id === Number(selectedTemplateId));
 
@@ -532,42 +366,28 @@ export default function Ticketing() {
                         </div>
 
                         <div>
-                            <Label>Message</Label>
-                            <div className="mb-2 flex flex-wrap items-center gap-2 justify-between">
-                                <div className="flex gap-2">
-                                    <Button onClick={() => applyFormat('bold')} size="sm" variant="outline" aria-label="Bold">B</Button>
-                                    <Button onClick={() => applyFormat('italic')} size="sm" variant="outline" aria-label="Italic">I</Button>
-                                    <Button onClick={() => applyFormat('underline')} size="sm" variant="outline" aria-label="Underline">U</Button>
-                                    <Button onClick={insertBulletList} size="sm" variant="outline" aria-label="Insert list">•</Button>
-                                    <Button onClick={insertLink} size="sm" variant="outline" aria-label="Insert link">🔗</Button>
-                                    <Button onClick={removeLink} size="sm" variant="outline" aria-label="Remove link">⛔</Button>
-                                    <Button onClick={setTextColor} size="sm" variant="outline" aria-label="Text color" style={{ color: '#d97706' }}>A</Button>
-                                    <Button onClick={setBgColor} size="sm" variant="outline" aria-label="Background color" style={{ background: '#fde68a', color: '#222' }}>Bg</Button>
-                                </div>
-                                {/* Template Selector */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Email Template:</span>
-                                    <select
-                                        className="h-8 w-[160px] rounded border text-xs"
-                                        value={selectedTemplateId}
-                                        onChange={(e) => setSelectedTemplateId(e.target.value === 'none' ? 'none' : Number(e.target.value))}
-                                    >
-                                        <option value="none" className=''>No Template</option>
-                                        {templates.map(t => (
-                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div
-                                ref={bodyRef}
-                                contentEditable
-                                suppressContentEditableWarning
-                                className="min-h-[180px] w-full rounded-md border bg-black p-3 text-sm text-foreground"
-                                style={{ overflowY: 'auto' }}
-                            >
-                                {/* ... editor ... */}
-                            </div>
+                            <RichTextEditor
+                                value={editorContent}
+                                onChange={(val) => {
+                                    setEditorContent(val);
+                                    markDirty();
+                                }}
+                                templateSelector={
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-muted-foreground">Email Template:</span>
+                                        <select
+                                            className="h-8 w-[160px] rounded border text-xs"
+                                            value={selectedTemplateId}
+                                            onChange={(e) => setSelectedTemplateId(e.target.value === 'none' ? 'none' : Number(e.target.value))}
+                                        >
+                                            <option value="none" className=''>No Template</option>
+                                            {templates.map(t => (
+                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                }
+                            />
                         </div>
 
                         {/* Responsive event/sample selector and event info section */}
@@ -588,7 +408,7 @@ export default function Ticketing() {
                                         <option value="">
                                             -- Select event --
                                         </option>
-                                            {events.length === 0 ? (
+                                        {events.length === 0 ? (
                                             <option value="">
                                                 No events available
                                             </option>
@@ -831,7 +651,7 @@ export default function Ticketing() {
                                         });
                                     if (
                                         ev.quantity_without_card !==
-                                            undefined &&
+                                        undefined &&
                                         ev.quantity_without_card !== null
                                     )
                                         rows.push({
@@ -1014,7 +834,7 @@ export default function Ticketing() {
                                                             name={`nullable-${f}`}
                                                             checked={
                                                                 !nullableFields[
-                                                                    f
+                                                                f
                                                                 ]
                                                             }
                                                             onChange={() =>
@@ -1038,7 +858,7 @@ export default function Ticketing() {
                                                             name={`nullable-${f}`}
                                                             checked={Boolean(
                                                                 nullableFields[
-                                                                    f
+                                                                f
                                                                 ],
                                                             )}
                                                             onChange={() =>
@@ -1138,18 +958,18 @@ export default function Ticketing() {
                                                                                                 (
                                                                                                     r as any
                                                                                                 )[
-                                                                                                    f
+                                                                                                f
                                                                                                 ] ??
-                                                                                                    '',
+                                                                                                '',
                                                                                             )}
                                                                                         >
                                                                                             {String(
                                                                                                 (
                                                                                                     r as any
                                                                                                 )[
-                                                                                                    f
+                                                                                                f
                                                                                                 ] ??
-                                                                                                    '',
+                                                                                                '',
                                                                                             )}
                                                                                         </span>
                                                                                     </td>
@@ -1188,10 +1008,10 @@ export default function Ticketing() {
                                                                             ) =>
                                                                                 String(
                                                                                     (
-                                                                                                                    s as any
-                                                                                                                )
-                                                                                                                    .email ??
-                                                                                                                    '',
+                                                                                        s as any
+                                                                                    )
+                                                                                        .email ??
+                                                                                    '',
                                                                                 ).trim(),
                                                                         )
                                                                         .filter(
@@ -1204,10 +1024,10 @@ export default function Ticketing() {
                                                                                 '@',
                                                                             )
                                                                                 ? e
-                                                                                      .split(
-                                                                                          '@',
-                                                                                      )[1]
-                                                                                      .toLowerCase()
+                                                                                    .split(
+                                                                                        '@',
+                                                                                    )[1]
+                                                                                    .toLowerCase()
                                                                                 : '',
                                                                     );
                                                                 const domainCounts: Record<
@@ -1288,7 +1108,7 @@ export default function Ticketing() {
                                                                             </div>
                                                                             <ul className="mt-1 list-disc pl-5">
                                                                                 {domainEntries.length ===
-                                                                                0 ? (
+                                                                                    0 ? (
                                                                                     <li className="text-muted-foreground">
                                                                                         No
                                                                                         recipient
@@ -1333,66 +1153,66 @@ export default function Ticketing() {
 
                                                                         {suspicious.length >
                                                                             0 && (
-                                                                            <div>
-                                                                                <div className="text-xs font-medium text-red-600">
-                                                                                    Potential
-                                                                                    typos
-                                                                                </div>
-                                                                                <div className="mt-1 text-xs">
-                                                                                    {suspicious.map(
-                                                                                        ([
-                                                                                            d,
-                                                                                        ]) => (
-                                                                                            <div
-                                                                                                key={
-                                                                                                    d
-                                                                                                }
-                                                                                                className="mb-1"
-                                                                                            >
-                                                                                                <div className="font-medium">
-                                                                                                    {
+                                                                                <div>
+                                                                                    <div className="text-xs font-medium text-red-600">
+                                                                                        Potential
+                                                                                        typos
+                                                                                    </div>
+                                                                                    <div className="mt-1 text-xs">
+                                                                                        {suspicious.map(
+                                                                                            ([
+                                                                                                d,
+                                                                                            ]) => (
+                                                                                                <div
+                                                                                                    key={
                                                                                                         d
                                                                                                     }
-                                                                                                </div>
-                                                                                                <div className="text-muted-foreground">
-                                                                                                    Addresses:
-                                                                                                </div>
-                                                                                                <ul className="mt-1 list-disc pl-5 text-xs">
-                                                                                                    {emails
-                                                                                                        .filter(
-                                                                                                            (
-                                                                                                                e,
-                                                                                                            ) =>
-                                                                                                                e.endsWith(
-                                                                                                                    `@${d}`,
+                                                                                                    className="mb-1"
+                                                                                                >
+                                                                                                    <div className="font-medium">
+                                                                                                        {
+                                                                                                            d
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                    <div className="text-muted-foreground">
+                                                                                                        Addresses:
+                                                                                                    </div>
+                                                                                                    <ul className="mt-1 list-disc pl-5 text-xs">
+                                                                                                        {emails
+                                                                                                            .filter(
+                                                                                                                (
+                                                                                                                    e,
+                                                                                                                ) =>
+                                                                                                                    e.endsWith(
+                                                                                                                        `@${d}`,
+                                                                                                                    ),
+                                                                                                            )
+                                                                                                            .slice(
+                                                                                                                0,
+                                                                                                                5,
+                                                                                                            )
+                                                                                                            .map(
+                                                                                                                (
+                                                                                                                    e,
+                                                                                                                ) => (
+                                                                                                                    <li
+                                                                                                                        key={
+                                                                                                                            e
+                                                                                                                        }
+                                                                                                                    >
+                                                                                                                        {
+                                                                                                                            e
+                                                                                                                        }
+                                                                                                                    </li>
                                                                                                                 ),
-                                                                                                        )
-                                                                                                        .slice(
-                                                                                                            0,
-                                                                                                            5,
-                                                                                                        )
-                                                                                                        .map(
-                                                                                                            (
-                                                                                                                e,
-                                                                                                            ) => (
-                                                                                                                <li
-                                                                                                                    key={
-                                                                                                                        e
-                                                                                                                    }
-                                                                                                                >
-                                                                                                                    {
-                                                                                                                        e
-                                                                                                                    }
-                                                                                                                </li>
-                                                                                                            ),
-                                                                                                        )}
-                                                                                                </ul>
-                                                                                            </div>
-                                                                                        ),
-                                                                                    )}
+                                                                                                            )}
+                                                                                                    </ul>
+                                                                                                </div>
+                                                                                            ),
+                                                                                        )}
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                        )}
+                                                                            )}
                                                                     </div>
                                                                 );
                                                             })()}
@@ -1402,16 +1222,16 @@ export default function Ticketing() {
                                             </div>
                                         </div>
 
-                                                <DialogFooter>
-                                                    <DialogClose asChild>
-                                                        <Button>Close</Button>
-                                                    </DialogClose>
-                                                </DialogFooter>
+                                        <DialogFooter>
+                                            <DialogClose asChild>
+                                                <Button>Close</Button>
+                                            </DialogClose>
+                                        </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
                             </div>
 
-                                    {/* Error content is shown inside the confirmation Dialog (see DialogContent below) */}
+                            {/* Error content is shown inside the confirmation Dialog (see DialogContent below) */}
 
                             <div className="mt-3 text-xs">
                                 <table className="w-full table-fixed text-xs">
@@ -1440,14 +1260,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    firstNameField
+                                                                firstNameField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    firstNameField
+                                                                firstNameField
                                                                 ] ?? '',
                                                             )}
                                                         </span>
@@ -1456,14 +1276,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    lastNameField
+                                                                lastNameField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    lastNameField
+                                                                lastNameField
                                                                 ] ?? '',
                                                             )}
                                                         </span>
@@ -1472,14 +1292,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    emailField
+                                                                emailField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    emailField
+                                                                emailField
                                                                 ] ?? '',
                                                             )}
                                                         </span>
@@ -1535,7 +1355,7 @@ export default function Ticketing() {
 
                                 {showRendered && (
                                     <div className="mt-4 rounded-xl border bg-white p-6 shadow-sm text-gray-900">
-                                        
+
                                         <div
                                             className="prose max-w-none text-black"
                                             dangerouslySetInnerHTML={{

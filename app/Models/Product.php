@@ -46,9 +46,9 @@ class Product extends Model
 
         // If sales_count and online_sales_count are loaded, use them. Otherwise, query.
         if (array_key_exists('sales_count', $this->attributes) && array_key_exists('online_sales_count', $this->attributes)) {
-            return $this->quantity - $this->attributes['sales_count'] - $this->attributes['online_sales_count'];
+            return max(0, $this->quantity - $this->attributes['sales_count'] - $this->attributes['online_sales_count']);
         }
 
-        return $this->quantity - $this->sales()->count() - $this->onlineSales()->count();
+        return max(0, $this->quantity - $this->sales()->count() - $this->onlineSales()->count());
     }
 }
