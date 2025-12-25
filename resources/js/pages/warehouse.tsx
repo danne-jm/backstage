@@ -24,7 +24,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Warehouse',
+        title: 'Inventory',
         href: warehouse().url,
     },
 ];
@@ -304,7 +304,7 @@ export default function Warehouse() {
             <Head title="Warehouse" />
 
             <div className="p-4">
-                <h1 className="mb-4 text-2xl font-semibold">Inventory</h1>
+                {/* <h1 className="mb-4 text-2xl font-semibold">Inventory</h1> */}
 
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex w-1/2 items-center gap-2">

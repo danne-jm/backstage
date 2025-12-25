@@ -73,7 +73,7 @@ export function ProductPreview({
                     {product.variable_amount ? (
                         <>
                             <span className="text-muted-foreground">
-                                Qty w/ Card:
+                                Qty w/ ESNcard:
                             </span>{' '}
                             {(product.unlimited_quantity_with_card || product.quantity_with_card == null)
                                 ? 'Unlimited'
@@ -89,7 +89,7 @@ export function ProductPreview({
                             )}{' '}
                             |{' '}
                             <span className="text-muted-foreground">
-                                w/o Card:
+                                w/o ESNcard:
                             </span>{' '}
                             {(product.unlimited_quantity_without_card || product.quantity_without_card == null)
                                 ? 'Unlimited'

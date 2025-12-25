@@ -4,7 +4,7 @@ import { storeManager } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ProductDialog } from '@/components/sellables/ProductDialog';
 import { EventDialog } from '@/components/sellables/EventDialog';
 import { ProductPreview } from '@/components/sellables/ProductPreview';
@@ -29,6 +29,7 @@ export default function StoreManager() {
         Array<{ date: string; office_total: number; online_total: number }>
     >([]);
     const [onlineSales, setOnlineSales] = useState<OnlineSale[]>([]);
+    const [onlineSalesTotal, setOnlineSalesTotal] = useState<number>(0);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
 
     // Product modal state
@@ -39,10 +40,10 @@ export default function StoreManager() {
     const [eventDialogOpen, setEventDialogOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
-    async function load() {
+    async function load(page: number = 1, size: number = 100) {
         try {
             setLoading(true);
-            const res = await fetch('/store-manager/data', {
+            const res = await fetch(`/store-manager/data?page=${page}&pageSize=${size}`, {
                 credentials: 'same-origin',
             });
             if (res.ok) {
@@ -66,6 +67,7 @@ export default function StoreManager() {
                 if (Array.isArray(json.onlineSales))
                     setOnlineSales(json.onlineSales);
                 setOnlineSellablesCount(json.onlineSellablesCount || 0);
+                setOnlineSalesTotal(Number(json.onlineSalesTotal || 0));
             }
 
             const sres = await fetch('/sales/summary?days=14', {
@@ -82,9 +84,7 @@ export default function StoreManager() {
         }
     }
 
-    useEffect(() => {
-        load();
-    }, []);
+    // (loading is triggered via the useEffect below once page state is defined)
 
     const openProductDialog = (product?: Product) => {
         setEditingProduct(product || null);
@@ -208,6 +208,37 @@ export default function StoreManager() {
         return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
     };
 
+    // Pagination for Latest Card Sales: show up to `pageSize` per page and paginate when there are more
+    const pageSize = 100;
+    const [onlinePage, setOnlinePage] = useState<number>(1);
+
+    const totalOnlinePages = Math.max(1, Math.ceil((onlineSalesTotal || 0) / pageSize));
+
+    const sellableCounts = onlineSellableTotals.map(s => {
+        const count = onlineSales.reduce((acc, os) => {
+            if (s.type === 'product' && os.product_id === s.id) return acc + 1;
+            if (s.type === 'event' && os.event_id === s.id) return acc + 1;
+            return acc;
+        }, 0);
+        return { id: s.id, type: s.type, name: s.name, count };
+    });
+
+    // Server returns the paginated slice already; just sort the returned slice newest-first
+    const visibleOnlineSales = useMemo(() => {
+        return (onlineSales || [])
+            .slice()
+            .sort((a: any, b: any) => {
+                const ta = new Date(a.sold_at ?? a.created_at).getTime() || 0;
+                const tb = new Date(b.sold_at ?? b.created_at).getTime() || 0;
+                return tb - ta; // newest first
+            });
+    }, [onlineSales]);
+
+    // Load store-manager data once on mount and whenever pagination changes.
+    useEffect(() => {
+        load(onlinePage, pageSize);
+    }, [onlinePage, pageSize]);
+
     return (
         <>
             <AppLayout breadcrumbs={breadcrumbs}>
@@ -267,26 +298,7 @@ export default function StoreManager() {
                                             );
                                         })()}
                                     </svg>
-                                    {/* Legend: show a colored swatch per sellable series */}
-                                    {/* <div className="mt-2 text-xs text-muted-foreground">
-                                        {onlineSellableSeries.length > 0 ? (
-                                            <div className="flex flex-wrap gap-4 items-center">
-                                                {onlineSellableSeries.map(s => (
-                                                    <div key={`legend-${s.type}-${s.id}`} className="flex items-center gap-2">
-                                                        <span
-                                                            className="h-2 w-2 rounded-full inline-block"
-                                                            style={{ backgroundColor: s.color }}
-                                                        />
-                                                        <span>{s.name}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <span className="h-2 w-2 rounded-full bg-blue-500" /> Online
-                                            </div>
-                                        )}
-                                    </div> */}
+                                    {/* Legend removed — using 'Active online sellables' section below to show name, counts and totals */}
                                     {/* Individual online sellables (recent online totals computed from onlineSales state) */}
                                     <div className="mt-3 text-xs">
                                         <div className="text-muted-foreground mb-1">
@@ -300,6 +312,8 @@ export default function StoreManager() {
                                                     const pct = overall === 0 ? 0 : (total / overall) * 100;
                                                     const seriesMeta = onlineSellableSeries.find(ss => ss.id === s.id && ss.type === s.type as any) as any;
                                                     const color = seriesMeta?.color ?? '#6B7280';
+                                                    const meta = sellableCounts.find(sc => sc.id === s.id && sc.type === s.type as any);
+                                                    const count = meta?.count ?? 0;
 
                                                     return (
                                                         <div
@@ -308,7 +322,10 @@ export default function StoreManager() {
                                                         >
                                                             <div className="truncate flex items-center gap-2">
                                                                 <span className="h-2 w-2 rounded-full inline-block" style={{ backgroundColor: color }} />
-                                                                <span>{s.name}</span>
+                                                                <span className="flex items-baseline gap-2">
+                                                                    <span>{s.name}</span>
+                                                                    <span className="text-muted-foreground text-xs">x {count}</span>
+                                                                </span>
                                                             </div>
                                                             <div className="flex items-baseline gap-3">
                                                                 <div className="font-medium">€{total.toFixed(2)}</div>
@@ -416,7 +433,7 @@ export default function StoreManager() {
                     {/* Latest Online Sales */}
                     <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                         <h2 className="mb-4 text-lg font-semibold">
-                            Latest Card Sales
+                            Latest Card Sales {onlineSales.length > 0 ? <span className="text-muted-foreground">| {visibleOnlineSales.length}</span> : ''}
                         </h2>
                         {loading ? (
                             <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
@@ -425,7 +442,7 @@ export default function StoreManager() {
                                 {/* Limit to the 10 most recent sales and make the list vertically scrollable */}
                                 {onlineSales.length > 0 ? (
                                     <div className="max-h-[70vh] overflow-y-auto space-y-4">
-                                        {onlineSales.slice(0, 15).map((sale: any) => (
+                                        {visibleOnlineSales.map((sale: any) => (
                                             <div
                                                 key={sale.id}
                                                 className="flex items-center justify-between rounded-lg border p-4"
@@ -441,6 +458,16 @@ export default function StoreManager() {
                                                 <div className="text-lg font-medium">€{sale.amount}</div>
                                             </div>
                                         ))}
+                                        {/* Pagination controls when there are multiple pages */}
+                                        {totalOnlinePages > 1 && (
+                                            <div className="flex items-center justify-between mt-2">
+                                                <div className="text-sm text-muted-foreground">Page {onlinePage} of {totalOnlinePages}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <button className="rounded px-2 py-1 border bg-background/40 text-sm disabled:opacity-40" disabled={onlinePage <= 1} onClick={() => setOnlinePage(p => Math.max(1, p - 1))}>Prev</button>
+                                                    <button className="rounded px-2 py-1 border bg-background/40 text-sm disabled:opacity-40" disabled={onlinePage >= totalOnlinePages} onClick={() => setOnlinePage(p => Math.min(totalOnlinePages, p + 1))}>Next</button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="text-sm text-muted-foreground">No online sales yet.</div>

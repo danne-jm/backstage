@@ -88,6 +88,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // JSON data for the Store Manager page (used by the React page)
     Route::get('store-manager/data', [App\Http\Controllers\StoreManagerController::class, 'data'])->name('store-manager.data');
 
+    // Endpoint to record an online/card sale (creates an OnlineSale and optionally records it on an office shift)
+    Route::post('online-sales', [App\Http\Controllers\OnlineSaleController::class, 'store'])->name('online-sales.store');
     // Sales summary endpoints (office vs online)
     Route::get('sales/summary', [App\Http\Controllers\SalesController::class, 'summary'])->name('sales.summary');
 

@@ -464,7 +464,7 @@ export default function TicketScanner() {
             <Head title="Ticket Scanner" />
 
             <div className="p-2 sm:p-4 md:p-6">
-                <h2 className="mb-4 text-lg font-semibold">Ticket Scanner</h2>
+                {/* <h2 className="mb-4 text-lg font-semibold">Ticket Scanner</h2> */}
 
                 {/* Top grid: three panels (event selector, camera, remaining tickets) */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

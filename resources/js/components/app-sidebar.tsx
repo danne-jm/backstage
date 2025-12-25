@@ -67,12 +67,12 @@ const mainNavItems: NavItem[] = [
         icon: ScanText,
     },
     {
-        title: 'Ticketing Distributor',
+        title: 'Mail Distributor',
         href: ticketing(),
         icon: Ticket,
     },
     {
-        title: 'Basement Inventory',
+        title: 'Inventory',
         href: warehouse(),
         icon: Warehouse,
     },

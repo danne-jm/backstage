@@ -131,6 +131,29 @@ export default function Office() {
         return a.onShift ? -1 : 1;
     });
 
+    // Paginate sales log: show up to pageSize per page with editable page index
+    const pageSize = 100;
+    const [salesPage, setSalesPage] = React.useState<number>(1);
+
+    const totalSalesPages = Math.max(1, Math.ceil(((sales || []).length || 0) / pageSize));
+
+    const visibleSales = React.useMemo(() => {
+        return (sales || [])
+            .slice()
+            .sort((a: any, b: any) => {
+                const ta = new Date(a.sold_at ?? a.created_at).getTime() || 0;
+                const tb = new Date(b.sold_at ?? b.created_at).getTime() || 0;
+                return tb - ta; // newest first
+            })
+            .slice((salesPage - 1) * pageSize, salesPage * pageSize);
+    }, [sales, salesPage]);
+
+    // Keep current page within bounds when sales list changes
+    React.useEffect(() => {
+        if (salesPage > totalSalesPages) setSalesPage(totalSalesPages);
+        if (salesPage < 1) setSalesPage(1);
+    }, [totalSalesPages]);
+
     const [saleProductId, setSaleProductId] = React.useState<number | null>(
         filteredSellables.length ? filteredSellables[0].actual_id : null,
     );
@@ -257,6 +280,10 @@ export default function Office() {
         setIsSaleEditOpen(true);
     };
 
+    // Sold-out modal state
+    const [isSoldOutModalOpen, setIsSoldOutModalOpen] = React.useState(false);
+    const [soldOutText, setSoldOutText] = React.useState('');
+
     const totalCash = Number(startTotals.cash ?? 0) + cashTotal;
     const totalCard = Number(startTotals.card ?? 0) + cardTotal;
     const totalCombined = totalCash + totalCard;
@@ -278,6 +305,53 @@ export default function Office() {
         const month = d.toLocaleDateString(undefined, { month: 'long' });
         const day = dayOrdinal(d.getDate());
         return `${weekday}, ${month} ${day}`;
+    };
+
+    const formatDateTime = (iso?: string | null) => {
+        if (!iso) return 'N/A';
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return 'N/A';
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+    };
+
+    // Helper to compute a human-friendly remaining text for sellables
+    const getRemainingTextForItem = (item: any) => {
+        if (!item) return '0 remaining';
+        // For variable-amount events, prefer per-ticket quantities
+        if (item.type === 'event' && item.variable_amount) {
+            const withUnlimited = Boolean(item.unlimited_quantity_with_card);
+            const withoutUnlimited = Boolean(item.unlimited_quantity_without_card);
+            if (withUnlimited || withoutUnlimited) return 'Unlimited';
+
+            const withQty = Number(item.remaining_with_card ?? item.quantity_with_card ?? 0) || 0;
+            const withoutQty = Number(item.remaining_without_card ?? item.quantity_without_card ?? 0) || 0;
+            const total = withQty + withoutQty;
+            return `${total} remaining`;
+        }
+
+        // Non-variable events or products: check explicit unlimited flags first
+        const isUnlimited = Boolean(item.unlimited_quantity || item.unlimited_quantity_with_card || item.unlimited_quantity_without_card);
+        if (isUnlimited) return 'Unlimited';
+
+        // Prefer explicit `remaining` if present, else fall back to `quantity`
+        const rem = typeof item.remaining === 'number' ? item.remaining : (typeof item.quantity === 'number' ? item.quantity : 0);
+        return `${rem} remaining`;
+    };
+
+    const getPerTicketBreakdown = (item: any) => {
+        if (!item) return '';
+        const withUnlimited = Boolean(item.unlimited_quantity_with_card);
+        const withoutUnlimited = Boolean(item.unlimited_quantity_without_card);
+        const withQty = Number(item.remaining_with_card ?? item.quantity_with_card ?? 0) || 0;
+        const withoutQty = Number(item.remaining_without_card ?? item.quantity_without_card ?? 0) || 0;
+        const withText = withUnlimited ? 'Unlimited' : `${withQty}`;
+        const withoutText = withoutUnlimited ? 'Unlimited' : `${withoutQty}`;
+        return `w/ ESNcard: ${withText} | w/o ESNcard: ${withoutText}`;
     };
 
     const summarizeSales = (sales?: any[]) => {
@@ -398,11 +472,16 @@ export default function Office() {
                                 <div className="mt-2 grid grid-cols-1 gap-2">
                                     <select value={String(saleProductId ?? '')} onChange={(e) => { const id = Number(e.target.value) || null; setSaleProductId(id); const item = filteredSellables.find((i: any) => i.actual_id === id); if (item) setSaleItemType(item.type); }} className="w-full rounded-md border p-2" disabled={activeShift?.status !== 'open'}>
                                         {filteredSellables.map((item: any) => { 
-                                            const remainingText = (item.unlimited_quantity || item.remaining == null) ? 'Unlimited' : `${item.remaining} remaining`;
-                                            const label = item.type === 'product' 
-                                                ? `${item.name} — €${Number(item.price).toFixed(2)} (${remainingText})` 
-                                                : `${item.name} — Event (${remainingText})`; 
-                                            return (<option key={item.id} value={item.actual_id}>{label}</option>); 
+                                            const remainingText = getRemainingTextForItem(item);
+                                            let label = '';
+                                            if (item.type === 'product') {
+                                                label = `${item.name} — €${Number(item.price).toFixed(2)} (${remainingText})`;
+                                            } else if (item.type === 'event' && item.variable_amount) {
+                                                label = `${item.name} — Event (${getPerTicketBreakdown(item)})`;
+                                            } else {
+                                                label = `${item.name} — Event (${remainingText})`;
+                                            }
+                                            return (<option key={String(item.id ?? item.actual_id)} value={item.actual_id}>{label}</option>); 
                                         })}
                                     </select>
                                 </div>
@@ -414,7 +493,34 @@ export default function Office() {
                                 )}
                                 <div className="mt-2 flex items-center gap-2">
                                     <Button disabled={activeShift?.status !== 'open'} onClick={() => { if (!saleProductId || !activeShift) return; const selectedItem = filteredSellables.find((i: any) => i.actual_id === saleProductId); if (!selectedItem) return; openCustomCashModal({ productId: saleProductId, itemType: selectedItem.type, ticketType: saleTicketType, ticketLabel: selectedItem.type === 'event' ? (saleTicketType === 'with_card' ? 'With ESNcard' : 'Without ESNcard') : undefined }); }}>Add Cash</Button>
-                                                                         <Button disabled={activeShift?.status !== 'open'} onClick={() => { if (!saleProductId || !activeShift) return; const selectedItem = filteredSellables.find((i: any) => i.actual_id === saleProductId); if (!selectedItem) return; let amountToUse = '0'; let itemName = selectedItem.name; if (selectedItem.type === 'product') { amountToUse = String(selectedItem.price); } else { amountToUse = saleTicketType === 'with_card' ? String(selectedItem.price_with_card) : String(selectedItem.price_without_card); itemName += ` (${saleTicketType === 'with_card' ? 'with' : 'without'} ESN card)`; } const ticketLabel = selectedItem.type === 'event' ? (saleTicketType === 'with_card' ? 'With ESNcard' : 'Without ESNcard') : ''; const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: '', ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined, ticket_label: ticketLabel || undefined }; setSales((prev) => [tempSale, ...(prev || [])]); setSubmitting(true); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: saleProductId, item_type: selectedItem.type, method: 'card', amount: amountToUse, ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined, ticket_label: ticketLabel || undefined }, { onSuccess: () => { setMessage('Sale recorded (Card)'); mutate(); }, onError: () => { setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId)); setMessage('Failed to record sale'); }, onFinish: () => setSubmitting(false) }); }}>Add Card</Button>
+                                                                        <Button disabled={activeShift?.status !== 'open'} onClick={() => { if (!saleProductId || !activeShift) return; const selectedItem = filteredSellables.find((i: any) => i.actual_id === saleProductId); if (!selectedItem) return; let amountToUse = '0'; let itemName = selectedItem.name; if (selectedItem.type === 'product') { amountToUse = String(selectedItem.price); } else { amountToUse = saleTicketType === 'with_card' ? String(selectedItem.price_with_card) : String(selectedItem.price_without_card); itemName += ` (${saleTicketType === 'with_card' ? 'with' : 'without'} ESN card)`; } const ticketLabel = selectedItem.type === 'event' ? (saleTicketType === 'with_card' ? 'With ESNcard' : 'Without ESNcard') : ''; const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: '', ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined, ticket_label: ticketLabel || undefined }; setSales((prev) => [tempSale, ...(prev || [])]); setSubmitting(true);
+                                                                            // Create an online sale and also record it on the current office shift
+                                                                            axios.post('/online-sales', {
+                                                                                office_shift_id: activeShift?.id,
+                                                                                // For events, send event_id and leave product_id null. For products, send product_id.
+                                                                                product_id: selectedItem.type === 'product' ? saleProductId : null,
+                                                                                event_id: selectedItem.type === 'event' ? saleProductId : null,
+                                                                                method: 'card',
+                                                                                amount: amountToUse,
+                                                                                ticket_type: selectedItem.type === 'event' ? saleTicketType : undefined,
+                                                                                ticket_label: ticketLabel || undefined,
+                                                                            }).then(() => {
+                                                                                setMessage('Sale recorded (Card)');
+                                                                                mutate();
+                                                                            }).catch((err: any) => {
+                                                                                // Remove optimistic temp sale
+                                                                                setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId));
+                                                                                const status = err?.response?.status;
+                                                                                const stockErr = err?.response?.data?.errors?.stock;
+                                                                                if (status === 422 && stockErr) {
+                                                                                    const text = Array.isArray(stockErr) ? stockErr.join(' | ') : String(stockErr);
+                                                                                    setSoldOutText(text);
+                                                                                    setIsSoldOutModalOpen(true);
+                                                                                } else {
+                                                                                    setMessage('Failed to record sale');
+                                                                                }
+                                                                            }).finally(() => setSubmitting(false));
+                                                                        }}>Add Card</Button>
                                                                         <div className="flex-1" />
                                                                     </div>
                                                                 </div>
@@ -425,11 +531,16 @@ export default function Office() {
                                                                         <select value={customSaleItemId} onChange={(e) => setCustomSaleItemId(e.target.value)} className="rounded-md border p-2" disabled={activeShift?.status !== 'open'}>
                                                                             <option value="custom">Custom</option>
                                                                             {filteredSellables.map((item: any) => { 
-                                                                                const remainingText = (item.unlimited_quantity || item.remaining == null) ? 'Unlimited' : `${item.remaining} remaining`;
-                                                                                const label = item.type === 'product' 
-                                                                                    ? `${item.name} — €${Number(item.price).toFixed(2)} (${remainingText})` 
-                                                                                    : `${item.name} — Event (${remainingText})`; 
-                                                                                return (<option key={item.id} value={item.actual_id}>{label}</option>); 
+                                                                                const remainingText = getRemainingTextForItem(item);
+                                                                                let label = '';
+                                                                                if (item.type === 'product') {
+                                                                                    label = `${item.name} — €${Number(item.price).toFixed(2)} (${remainingText})`;
+                                                                                } else if (item.type === 'event' && item.variable_amount) {
+                                                                                    label = `${item.name} — Event (${getPerTicketBreakdown(item)})`;
+                                                                                } else {
+                                                                                    label = `${item.name} — Event (${remainingText})`;
+                                                                                }
+                                                                                return (<option key={String(item.id ?? item.actual_id)} value={item.actual_id}>{label}</option>); 
                                                                             })}
                                                                         </select>
                                                                         <div className="flex items-center gap-2"><Input type="number" step="0.01" min="0" placeholder="€0.00" value={customAmount} onChange={(e) => { const value = e.target.value; if (value === '' || /^\d*\.?\d*$/.test(value)) setCustomAmount(value); }} disabled={activeShift?.status !== 'open'} /></div>
@@ -437,7 +548,34 @@ export default function Office() {
                                                                     </div>
                                                                     <div className="mt-2 flex items-center gap-2">
                                                                         <Button disabled={!activeShift || !customDescription || activeShift?.status !== 'open'} onClick={() => { if (!activeShift || !customDescription) return; openCustomCashModal(null); }}>Add Cash</Button>
-                                                                        <Button disabled={!activeShift || !customAmount || !customDescription || activeShift?.status !== 'open'} onClick={() => { if (!activeShift || !customAmount || !customDescription) return; const isCustom = customSaleItemId === 'custom'; const selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); const amountToUse = String(customAmount); const descToUse = String(customDescription || ''); const itemName = selectedItem ? selectedItem.name : 'Custom Sale'; const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); setSubmitting(true); router.post(`/office/${activeShift?.id}/record-sale`, { product_id: selectedItem ? selectedItem.actual_id : null, item_type: selectedItem ? selectedItem.type : 'custom', method: 'card', amount: amountToUse, description: descToUse }, { onSuccess: () => { setMessage('Custom sale recorded (Card)'); setCustomSaleItemId('custom'); setCustomAmount(''); setCustomDescription(''); mutate(); }, onError: () => { setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId)); setMessage('Failed to record custom sale'); }, onFinish: () => setSubmitting(false) }); }}>Add Card</Button>
+                                                                        <Button disabled={!activeShift || !customAmount || !customDescription || activeShift?.status !== 'open'} onClick={() => { if (!activeShift || !customAmount || !customDescription) return; const isCustom = customSaleItemId === 'custom'; const selectedItem = isCustom ? null : filteredSellables.find((i: any) => i.id === customSaleItemId); const amountToUse = String(customAmount); const descToUse = String(customDescription || ''); const itemName = selectedItem ? selectedItem.name : 'Custom Sale'; const tempId = `tmp-${Date.now()}`; const tempSale: any = { id: tempId, name: itemName, method: 'card', amount: Number(amountToUse), description: descToUse }; setSales((prev) => [tempSale, ...(prev || [])]); setSubmitting(true);
+                                                                            axios.post('/online-sales', {
+                                                                                office_shift_id: activeShift?.id,
+                                                                                // ensure product_id is null for events
+                                                                                product_id: selectedItem && selectedItem.type === 'product' ? selectedItem.actual_id : null,
+                                                                                event_id: selectedItem && selectedItem.type === 'event' ? selectedItem.actual_id : null,
+                                                                                method: 'card',
+                                                                                amount: amountToUse,
+                                                                                description: descToUse,
+                                                                            }).then(() => {
+                                                                                setMessage('Custom sale recorded (Card)');
+                                                                                setCustomSaleItemId('custom');
+                                                                                setCustomAmount('');
+                                                                                setCustomDescription('');
+                                                                                mutate();
+                                                                            }).catch((err: any) => {
+                                                                                setSales((prev) => (prev || []).filter((s: any) => s.id !== tempId));
+                                                                                const status = err?.response?.status;
+                                                                                const stockErr = err?.response?.data?.errors?.stock;
+                                                                                if (status === 422 && stockErr) {
+                                                                                    const text = Array.isArray(stockErr) ? stockErr.join(' | ') : String(stockErr);
+                                                                                    setSoldOutText(text);
+                                                                                    setIsSoldOutModalOpen(true);
+                                                                                } else {
+                                                                                    setMessage('Failed to record custom sale');
+                                                                                }
+                                                                            }).finally(() => setSubmitting(false));
+                                                                        }}>Add Card</Button>
                                                                     </div>                            </div>
                          </div>
                     </section>
@@ -460,7 +598,7 @@ export default function Office() {
                                     </tr>
                                 </thead>
                                 <tbody className="mt-2">
-                                    {(sales || []).slice(0, 12).map((s: any) => (
+                                    {visibleSales.map((s: any) => (
                                         <tr key={String(s.id)} className="border-t">
                                             <td className="py-3 px-1">
                                                 <span className="block max-w-[100%] truncate" title={s.name ?? s.item ?? 'N/A'}>
@@ -497,8 +635,8 @@ export default function Office() {
                                                 </span>
                                             </td>
                                             <td className="py-3 px-1">
-                                                <span className="block max-w-[100%] truncate" title={(s.sold_at ?? s.created_at) ? new Date(s.sold_at ?? s.created_at).toLocaleString() : 'N/A'}>
-                                                    {(s.sold_at ?? s.created_at) ? new Date(s.sold_at ?? s.created_at).toLocaleString() : 'N/A'}
+                                                <span className="block max-w-[100%] truncate" title={formatDateTime(s.sold_at ?? s.created_at)}>
+                                                    {formatDateTime(s.sold_at ?? s.created_at)}
                                                 </span>
                                             </td>
                                             <td className="py-3 px-1">
@@ -510,6 +648,18 @@ export default function Office() {
                             </table>
                         </div>
                      </div>
+                    {/* Pagination controls for sales log */}
+                    {totalSalesPages > 1 && (
+                        <div className="mt-2 flex items-center justify-between">
+                            <div className="text-sm text-muted-foreground">Page</div>
+                            <div className="flex items-center gap-2">
+                                <button className="rounded px-2 py-1 border bg-background/40 text-sm disabled:opacity-40" disabled={salesPage <= 1} onClick={() => setSalesPage(p => Math.max(1, p - 1))}>Prev</button>
+                                <input type="number" min={1} max={totalSalesPages} value={salesPage} onChange={(e) => { const v = Number(e.target.value || 1); setSalesPage(Math.min(Math.max(1, Math.floor(v || 1)), totalSalesPages)); }} className="w-16 rounded-md border p-1 text-center" />
+                                <div className="text-sm text-muted-foreground">of {totalSalesPages}</div>
+                                <button className="rounded px-2 py-1 border bg-background/40 text-sm disabled:opacity-40" disabled={salesPage >= totalSalesPages} onClick={() => setSalesPage(p => Math.min(totalSalesPages, p + 1))}>Next</button>
+                            </div>
+                        </div>
+                    )}
                      <Dialog open={isSaleEditOpen} onOpenChange={(v) => { setIsSaleEditOpen(v); if (!v) setEditingSale(null); }}>
                          <DialogContent>
                              <DialogTitle>Edit cash transaction</DialogTitle><DialogDescription>Adjust cash denominations.</DialogDescription>
@@ -573,6 +723,19 @@ export default function Office() {
                             </div>
                         </div>
                         <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="secondary">Close</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+                {/* Sold-out modal shown when server rejects sale due to stock */}
+                <Dialog open={isSoldOutModalOpen} onOpenChange={setIsSoldOutModalOpen}>
+                    <DialogContent>
+                        <DialogTitle>Cannot add sale</DialogTitle>
+                        <DialogDescription>This item cannot be added because it is sold out.</DialogDescription>
+                        <div className="mt-4">{soldOutText}</div>
+                        <DialogFooter className="mt-4">
                             <DialogClose asChild>
                                 <Button variant="secondary">Close</Button>
                             </DialogClose>

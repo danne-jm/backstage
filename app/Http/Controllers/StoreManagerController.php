@@ -70,13 +70,23 @@ class StoreManagerController extends Controller
                 ];
             });
 
-        // Include all online sales from the last 14 days so frontend
-        // aggregations and charts have the full recent dataset to compute
-        // per-sellable totals and series accurately.
+        // Fetch online sales from the last 14 days. Support server-side
+        // pagination via `page` and `pageSize` query params so the
+        // frontend can request only the slice it needs when the dataset
+        // grows large.
         $from = now()->subDays(14);
-        $onlineSales = OnlineSale::with(['product', 'event'])
-            ->where('sold_at', '>=', $from)
+        $page = max(1, (int) $request->query('page', 1));
+        $pageSize = max(1, min(1000, (int) $request->query('pageSize', 100)));
+
+        $baseQuery = OnlineSale::with(['product', 'event'])
+            ->where('sold_at', '>=', $from);
+
+        $onlineSalesTotal = (int) $baseQuery->count();
+
+        $onlineSales = $baseQuery
             ->orderBy('sold_at', 'desc')
+            ->skip(($page - 1) * $pageSize)
+            ->take($pageSize)
             ->get();
 
         $onlineSellablesCount = Product::where('is_online_sellable', true)->count() + Event::where('is_online_sellable', true)->count();
@@ -94,6 +104,7 @@ class StoreManagerController extends Controller
             'products' => $products,
             'events' => $events,
             'onlineSales' => $onlineSales,
+            'onlineSalesTotal' => $onlineSalesTotal,
             'onlineSellablesCount' => $onlineSellablesCount,
             'boardUsers' => $boardUsers,
         ]);

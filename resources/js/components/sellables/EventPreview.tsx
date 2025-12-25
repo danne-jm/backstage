@@ -146,7 +146,7 @@ export function EventPreview({
                             <div className="flex items-center justify-between">
                                 <div>
                                     <span className="text-muted-foreground">
-                                        Qty w/ Card:
+                                        Qty w/ ESNcard:
                                     </span>{' '}
                                     {(event.unlimited_quantity_with_card || event.quantity_with_card == null)
                                         ? 'Unlimited'
@@ -162,7 +162,7 @@ export function EventPreview({
                                     )}{' '}
                                     |{' '}
                                     <span className="text-muted-foreground">
-                                        w/o Card:
+                                        w/o ESNcard:
                                     </span>{' '}
                                     {(event.unlimited_quantity_without_card || event.quantity_without_card == null)
                                         ? 'Unlimited'

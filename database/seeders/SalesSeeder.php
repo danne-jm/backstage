@@ -517,6 +517,34 @@ class SalesSeeder extends Seeder
             ],
         ]);
 
+        // Create corresponding online sales for previously inserted card payments so quantities
+        // are adjusted consistently. We intentionally do not duplicate office_shift_sales here;
+        // we only create OnlineSale records and adjust product/event quantities using the
+        // SaleService logic.
+        try {
+            $service = app(\App\Services\SaleService::class);
+            $cardSales = DB::table('office_shift_sales')->where('method', 'card')->get();
+            foreach ($cardSales as $cs) {
+                $snapshot = json_decode($cs->snapshot ?? 'null', true) ?? [];
+                $payload = [
+                    'product_id' => $cs->product_id,
+                    'event_id' => $cs->event_id,
+                    'method' => 'card',
+                    'amount' => $cs->amount,
+                    'ticket_type' => $snapshot['ticket_type'] ?? null,
+                    'ticket_label' => $snapshot['ticket_label'] ?? null,
+                    'sold_at' => $cs->sold_at ?? $cs->created_at,
+                    // Do not attach office_shift_id to avoid creating duplicate OfficeShiftSale
+                ];
+
+                // Create the OnlineSale and let the service adjust quantities
+                $service->createOnlineSale($payload);
+            }
+        } catch (\Throwable $e) {
+            // If SaleService isn't available or something goes wrong during seeding,
+            // fail gracefully — seeding should still complete.
+        }
+
         // Insert office shift workers
         DB::table('office_shift_workers')->insert([
             ['id' => 47, 'office_shift_id' => 27, 'user_id' => 1, 'role' => 'IT Manager', 'created_at' => '2025-12-23 23:50:32', 'updated_at' => '2025-12-23 23:50:32'],
