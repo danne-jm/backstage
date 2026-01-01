@@ -1,3 +1,4 @@
+import { CategorySelector } from './CategorySelector';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -22,7 +23,6 @@ export default function CreateItemDialog({
     onOpenChange,
     categories,
 }: CreateItemDialogProps) {
-    const [categoryText, setCategoryText] = useState('');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -48,20 +48,11 @@ export default function CreateItemDialog({
             return form.setError('quantity', 'Quantity must be 0 or greater');
         }
 
-        form.transform((data) => ({
-            ...data,
-            category: (categoryText || '')
-                .split(',')
-                .map((s) => s.trim())
-                .filter(Boolean),
-        }));
-
         form.post('/warehouse/items', {
             preserveState: true,
             onSuccess: () => {
                 onOpenChange(false);
                 form.reset();
-                setCategoryText('');
                 setImagePreview(null);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
@@ -111,88 +102,17 @@ export default function CreateItemDialog({
                     </div>
 
                     <div className="mb-4">
-                        <Label>Category (comma separated)</Label>
-                        <Input
-                            value={categoryText}
-                            onChange={(e) => setCategoryText(e.target.value)}
+                        <Label>Category</Label>
+                        <CategorySelector
+                            selected={form.data.category}
+                            onChange={(cats) => form.setData('category', cats)}
+                            options={categories}
                         />
                         {form.errors.category && (
                             <div className="mt-1 text-sm text-destructive">
                                 {form.errors.category}
                             </div>
                         )}
-
-                        <div className="mt-2 min-h-[2rem]">
-                            {categories &&
-                                categories.length > 0 &&
-                                (() => {
-                                    const existing = categoryText
-                                        .split(',')
-                                        .map((s) => s.trim())
-                                        .filter(Boolean);
-                                    const lastToken = (
-                                        categoryText.split(',').pop() || ''
-                                    ).trim();
-                                    const q = lastToken.toLowerCase();
-                                    const lowerExisting = existing.map((e) =>
-                                        e.toLowerCase(),
-                                    );
-
-                                    const suggestions = categories
-                                        .filter((c) => {
-                                            const cl = c.toLowerCase();
-                                            if (lowerExisting.includes(cl))
-                                                return false;
-                                            if (!q) return true;
-                                            return cl.includes(q);
-                                        })
-                                        .slice(0, 12);
-
-                                    if (suggestions.length === 0) return null;
-
-                                    return (
-                                        <div className="flex flex-wrap gap-2">
-                                            {suggestions.map((c) => (
-                                                <button
-                                                    type="button"
-                                                    key={c}
-                                                    className="rounded-md border bg-muted/10 px-2 py-1 text-xs"
-                                                    onClick={() => {
-                                                        const existingNow =
-                                                            categoryText
-                                                                .split(',')
-                                                                .map((s) =>
-                                                                    s.trim(),
-                                                                )
-                                                                .filter(
-                                                                    Boolean,
-                                                                );
-                                                        if (
-                                                            !existingNow
-                                                                .map((x) =>
-                                                                    x.toLowerCase(),
-                                                                )
-                                                                .includes(
-                                                                    c.toLowerCase(),
-                                                                )
-                                                        ) {
-                                                            const next =
-                                                                existingNow
-                                                                    .concat([c])
-                                                                    .join(', ');
-                                                            setCategoryText(
-                                                                next,
-                                                            );
-                                                        }
-                                                    }}
-                                                >
-                                                    {c}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    );
-                                })()}
-                        </div>
                     </div>
 
                     <div className="mb-4">
