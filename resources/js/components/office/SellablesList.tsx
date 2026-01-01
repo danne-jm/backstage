@@ -1,13 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface SellablesListProps {
     sellables: any[];
-    height?: number | null;
+    className?: string; // changed
 }
 
-export function SellablesList({ sellables, height }: SellablesListProps) {
+export function SellablesList({ sellables, className }: SellablesListProps) {
     const daysRemaining = (iso?: string | null) => {
         if (!iso) return 0;
         const d = new Date(iso);
@@ -42,10 +43,10 @@ export function SellablesList({ sellables, height }: SellablesListProps) {
 
     return (
         <section
-            className="flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border"
-            style={{
-                height: height ? `${height}px` : 'auto',
-            }}
+            className={cn(
+                "flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border",
+                className
+            )}
         >
             <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold">Sellables</h3>

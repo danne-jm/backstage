@@ -82,33 +82,11 @@ export default function Office() {
 
     const [message, setMessage] = React.useState('');
 
-    const lastShiftRef = React.useRef<HTMLDivElement>(null);
-    const [lastShiftHeight, setLastShiftHeight] = React.useState<number | null>(null);
-
     React.useEffect(() => {
         if (!message) return undefined;
         const t = setTimeout(() => setMessage(''), 4000);
         return () => clearTimeout(t);
     }, [message]);
-
-    React.useEffect(() => {
-        if (!lastShiftRef.current) return;
-        const updateHeight = () => {
-            if (lastShiftRef.current) {
-                const height = lastShiftRef.current.getBoundingClientRect().height;
-                setLastShiftHeight(height);
-            }
-        };
-        const initialTimer = setTimeout(updateHeight, 0);
-        const resizeObserver = new ResizeObserver(() => {
-            requestAnimationFrame(updateHeight);
-        });
-        resizeObserver.observe(lastShiftRef.current);
-        return () => {
-            clearTimeout(initialTimer);
-            resizeObserver.disconnect();
-        };
-    }, [lastShift]);
 
     const filteredPastShifts = (pastShifts || []).filter((s: any) => s.id !== lastShift?.id && s.id !== activeShift?.id);
 
@@ -116,10 +94,10 @@ export default function Office() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Office" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="grid gap-4 md:grid-cols-3 md:items-start">
-                    <LastShiftSummary ref={lastShiftRef} lastShift={lastShift} />
-                    <SellablesList sellables={orderedSellables} height={lastShiftHeight} />
-                    <OfficeShiftStatus activeShift={activeShift} height={lastShiftHeight} />
+                <div className="grid gap-4 md:grid-cols-3">
+                    <LastShiftSummary lastShift={lastShift} className="h-full min-h-[20rem]" />
+                    <SellablesList sellables={orderedSellables} className="h-full min-h-[20rem]" />
+                    <OfficeShiftStatus activeShift={activeShift} className="h-full min-h-[20rem]" />
                 </div>
                 {message && (<div className="fixed top-4 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform"><Alert><Check /><AlertTitle>{message}</AlertTitle></Alert></div>)}
 

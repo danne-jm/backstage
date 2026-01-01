@@ -16,21 +16,28 @@ import {
     formatTimestamp,
 } from './utils';
 
+import { cn } from '@/lib/utils';
+// ... imports
+
 interface LastShiftSummaryProps {
     lastShift: any;
+    className?: string; // Add className prop
 }
 
 export const LastShiftSummary = forwardRef<
     HTMLDivElement,
     LastShiftSummaryProps
->(({ lastShift }, ref) => {
+>(({ lastShift, className }, ref) => {
     const [isViewingStartBreakdown, setIsViewingStartBreakdown] = useState(false);
     const [isViewingEndBreakdown, setIsViewingEndBreakdown] = useState(false);
 
     return (
         <section
             ref={ref}
-            className="flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border"
+            className={cn(
+                "flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border",
+                className
+            )}
         >
             <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold">Last Office Shift</h3>

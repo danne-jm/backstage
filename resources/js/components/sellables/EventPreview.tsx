@@ -278,7 +278,7 @@ export function EventPreview({
                 )}
             </div>
             {variant === 'sellables' && (
-                <div className="absolute bottom-4 right-4">
+                <div className="mt-4 sm:absolute sm:bottom-4 sm:right-4 sm:mt-0">
                     <Button asChild variant="secondary" size="sm">
                         <Link
                             href={`/sellables/events/${event.id}/attendees`}

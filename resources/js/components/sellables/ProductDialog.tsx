@@ -120,7 +120,7 @@ export function ProductDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] w-full max-w-lg overflow-y-auto px-2 sm:max-w-xl sm:px-6 md:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl">
+            <DialogContent className="max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6">
                 <DialogTitle>
                     {editingProduct ? 'Edit Product' : 'Add Product'}
                 </DialogTitle>
@@ -188,7 +188,7 @@ export function ProductDialog({
                         </Label>
                     </div>
                     {productVariableAmount && (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <Label htmlFor="product-quantity-with-card">
                                     Quantity with ESNcard

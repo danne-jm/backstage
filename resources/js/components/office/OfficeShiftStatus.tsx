@@ -2,22 +2,23 @@ import { Button } from '@/components/ui/button';
 import { Link, router } from '@inertiajs/react';
 import React from 'react';
 import { formatTimestamp } from './utils';
+import { cn } from '@/lib/utils';
 
 interface OfficeShiftStatusProps {
     activeShift: any;
-    height?: number | null;
+    className?: string; // Add className prop
 }
 
 export function OfficeShiftStatus({
     activeShift,
-    height,
+    className, // Destructure className
 }: OfficeShiftStatusProps) {
     return (
         <section
-            className="flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border"
-            style={{
-                height: height ? `${height}px` : 'auto',
-            }}
+            className={cn(
+                "flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border",
+                className
+            )}
         >
             <h3 className="mb-3 text-sm font-semibold">Office Shift Status</h3>
             {activeShift ? (
