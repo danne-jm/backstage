@@ -81,4 +81,18 @@ class GoogleSheetsService
             throw new Exception('Failed to read sheet data: '.$e->getMessage());
         }
     }
+
+    public function updateRow(string $spreadsheetId, string $range, array $values): void
+    {
+        try {
+            $body = new \Google\Service\Sheets\ValueRange([
+                'values' => [$values],
+            ]);
+            $params = ['valueInputOption' => 'USER_ENTERED'];
+            $this->service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
+        } catch (\Throwable $e) {
+            Log::error('Google Data Update Error: '.$e->getMessage());
+            throw new Exception('Failed to update sheet data: '.$e->getMessage());
+        }
+    }
 }

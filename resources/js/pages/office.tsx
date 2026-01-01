@@ -25,6 +25,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Office() {
     const { props: initialProps, version } = usePage<SharedData>();
     const [props, setProps] = React.useState(initialProps);
+    // Cast to any to avoid type errors since auth is guaranteed by middleware but maybe missing in SharedData type
+    const { auth } = initialProps as any;
+    const permissions = auth?.user?.permissions || [];
+    const canCreate = permissions.includes('admin') || permissions.includes('create_office');
+    const canDelete = permissions.includes('admin') || permissions.includes('delete_office');
 
     const fetcher = (url: string) => axios.get(url, {
         headers: {
@@ -97,13 +102,13 @@ export default function Office() {
                 <div className="grid gap-4 md:grid-cols-3">
                     <LastShiftSummary lastShift={lastShift} className="h-full min-h-[20rem]" />
                     <SellablesList sellables={orderedSellables} className="h-full min-h-[20rem]" />
-                    <OfficeShiftStatus activeShift={activeShift} className="h-full min-h-[20rem]" />
+                    <OfficeShiftStatus activeShift={activeShift} className="h-full min-h-[20rem]" canCreate={canCreate} />
                 </div>
                 {message && (<div className="fixed top-4 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform"><Alert><Check /><AlertTitle>{message}</AlertTitle></Alert></div>)}
 
                 <PreviousShiftSalesLog lastShift={lastShift} staffMap={staffMap} />
 
-                <PastShiftsList shifts={filteredPastShifts} setMessage={setMessage} />
+                <PastShiftsList shifts={filteredPastShifts} setMessage={setMessage} canDelete={canDelete} />
             </div>
         </AppLayout>
     );

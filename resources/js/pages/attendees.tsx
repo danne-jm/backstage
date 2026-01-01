@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { Loader2, Save, RotateCw } from 'lucide-react';
+import { Loader2, Save, RotateCw, Pencil } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
+import { type SharedData } from '@/types';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 
 export default function EventAttendees({ event }: { event: any }) {
@@ -17,10 +19,18 @@ export default function EventAttendees({ event }: { event: any }) {
     const [sheetName, setSheetName] = React.useState(event.google_sheet_name || '');
     const [availableSheets, setAvailableSheets] = React.useState<string[]>([]);
     const [loadingSheets, setLoadingSheets] = React.useState(false);
-    
+
     // Dynamic sheet data: headers and rows
     const [headers, setHeaders] = React.useState<string[]>([]);
     const [rows, setRows] = React.useState<any[][]>([]);
+
+    const { auth } = usePage<SharedData>().props;
+    const permissions = auth.user?.permissions || [];
+    const canUpdateAttendee = permissions.includes('admin') || permissions.includes('update_event_attendee');
+
+    const [editingRowIndex, setEditingRowIndex] = React.useState<number | null>(null);
+    const [editingRowData, setEditingRowData] = React.useState<string[]>([]);
+    const [savingRow, setSavingRow] = React.useState(false);
 
     // Derived sample data (array of objects) for easier rendering in the Manage dialog
     const sampleData = React.useMemo(() => {
@@ -46,7 +56,7 @@ export default function EventAttendees({ event }: { event: any }) {
             // Validate response
             if (res.data && Array.isArray(res.data.sheets)) {
                 setAvailableSheets(res.data.sheets);
-                
+
                 // If no sheets found, clear the sheet name in state and database
                 if (res.data.sheets.length === 0) {
                     setSheetName('');
@@ -64,7 +74,7 @@ export default function EventAttendees({ event }: { event: any }) {
                 } else {
                     // Determine which sheet to use
                     let selectedSheet: string;
-                    
+
                     // If current sheetName is still in the available sheets, keep it
                     if (sheetName && res.data.sheets.includes(sheetName)) {
                         selectedSheet = sheetName;
@@ -72,7 +82,7 @@ export default function EventAttendees({ event }: { event: any }) {
                         // Otherwise, use the first available sheet and update state
                         selectedSheet = res.data.sheets[0];
                         setSheetName(selectedSheet);
-                        
+
                         // Update database with the new sheet name
                         router.post(`/sellables/events/${event.id}/attendees/config`, {
                             google_spreadsheet_id: spreadsheetId,
@@ -82,11 +92,11 @@ export default function EventAttendees({ event }: { event: any }) {
                             preserveScroll: true
                         });
                     }
-                    
+
                     if (!silent) {
                         toast.success('Sheets loaded');
                     }
-                    
+
                     // Fetch and log sheet data with the correct sheet name
                     fetchSheetData(selectedSheet);
                 }
@@ -133,7 +143,7 @@ export default function EventAttendees({ event }: { event: any }) {
                 const sheetRows: any[][] = res.data.rows;
                 const sheetHeaders = sheetRows[0]; // First row is headers
                 const dataRows = sheetRows.slice(1); // Rest are data
-                
+
                 setHeaders(sheetHeaders);
                 setRows(dataRows);
             } else {
@@ -194,7 +204,7 @@ export default function EventAttendees({ event }: { event: any }) {
 
 
             <div className="flex h-full flex-col gap-6 p-6">
-                
+
                 {/* Configuration Card */}
                 <Card>
                     <CardHeader>
@@ -206,10 +216,10 @@ export default function EventAttendees({ event }: { event: any }) {
                             <div className="space-y-2">
                                 <Label>Spreadsheet ID</Label>
                                 <div className="flex gap-2">
-                                    <Input 
-                                        value={spreadsheetId} 
-                                        onChange={(e) => setSpreadsheetId(e.target.value)} 
-                                        placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..." 
+                                    <Input
+                                        value={spreadsheetId}
+                                        onChange={(e) => setSpreadsheetId(e.target.value)}
+                                        placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..."
                                     />
                                     <Button variant="outline" size="icon" onClick={() => fetchSheets(false)} disabled={loadingSheets}>
                                         {loadingSheets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />}
@@ -222,7 +232,7 @@ export default function EventAttendees({ event }: { event: any }) {
 
                             <div className="space-y-2">
                                 <Label>Sheet Name</Label>
-                                <select 
+                                <select
                                     className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                                     value={sheetName}
                                     onChange={(e) => {
@@ -279,6 +289,7 @@ export default function EventAttendees({ event }: { event: any }) {
                                             {headers.map((header, idx) => (
                                                 <TableHead key={idx}>{header}</TableHead>
                                             ))}
+                                            {canUpdateAttendee && <TableHead className="w-[50px]"></TableHead>}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -287,6 +298,20 @@ export default function EventAttendees({ event }: { event: any }) {
                                                 {row.map((cell, cellIdx) => (
                                                     <TableCell key={cellIdx}>{cell ?? ''}</TableCell>
                                                 ))}
+                                                {canUpdateAttendee && (
+                                                    <TableCell>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => {
+                                                                setEditingRowIndex(rowIdx);
+                                                                setEditingRowData([...row]);
+                                                            }}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                )}
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -296,6 +321,74 @@ export default function EventAttendees({ event }: { event: any }) {
                     </CardContent>
                 </Card>
             </div>
+
+            <Dialog open={editingRowIndex !== null} onOpenChange={(open) => !open && setEditingRowIndex(null)}>
+                <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Edit Attendee</DialogTitle>
+                        <DialogDescription>
+                            Update details for row {editingRowIndex !== null ? editingRowIndex + 2 : ''}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        {headers.map((header, idx) => (
+                            <div key={idx} className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor={`col-${idx}`} className="text-right">
+                                    {header}
+                                </Label>
+                                <Input
+                                    id={`col-${idx}`}
+                                    value={editingRowData[idx] ?? ''}
+                                    onChange={(e) => {
+                                        const newData = [...editingRowData];
+                                        newData[idx] = e.target.value;
+                                        setEditingRowData(newData);
+                                    }}
+                                    className="col-span-3"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditingRowIndex(null)} disabled={savingRow}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                if (editingRowIndex === null) return;
+                                setSavingRow(true);
+                                try {
+                                    // Row index 0 in `rows` is actually Row 2 in sheet (after header)
+                                    // Make sure range covers the whole row. "SheetName!A{row}:ZZ{row}"
+                                    // We can just use "SheetName!A{row}" and Google Sheets will update cells starting there.
+                                    const sheetRowNumber = editingRowIndex + 2;
+                                    const range = `${sheetName}!A${sheetRowNumber}`;
+
+                                    await axios.post(`/sellables/events/${event.id}/attendees/update`, {
+                                        spreadsheet_id: spreadsheetId,
+                                        range: range,
+                                        values: editingRowData
+                                    });
+
+                                    toast.success('Attendee updated successfully');
+                                    setEditingRowIndex(null);
+                                    // Refresh data
+                                    fetchSheetData(sheetName);
+                                } catch (e) {
+                                    console.error(e);
+                                    toast.error('Failed to update attendee');
+                                } finally {
+                                    setSavingRow(false);
+                                }
+                            }}
+                            disabled={savingRow}
+                        >
+                            {savingRow && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

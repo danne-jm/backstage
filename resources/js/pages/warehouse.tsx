@@ -35,125 +35,100 @@ type Item = {
 };
 
 export default function Warehouse() {
-    const { items = [] } = usePage().props as { items?: Item[] };
+    const { items: paginatedItems, auth } = usePage().props as unknown as { items: any, auth: any };
+    const items: Item[] = paginatedItems?.data || [];
+    const permissions = auth.user?.permissions || [];
+    const canCreate = permissions.includes('admin') || permissions.includes('create_item');
+    const canUpdate = permissions.includes('admin') || permissions.includes('update_item');
+    const canDelete = permissions.includes('admin') || permissions.includes('delete_item');
 
-    // Server-side filtering & sorting
-    const pageProps: any = usePage().props as any;
-    const itemsProp = pageProps.items;
-    const categoriesProp: string[] = pageProps.categories ?? [];
+    const props = usePage().props as any;
+    const categoriesProp: string[] = props.categories || [];
 
-    const itemsList: Item[] = Array.isArray(itemsProp?.data)
-        ? itemsProp.data
-        : Array.isArray(itemsProp)
-            ? itemsProp
-            : [];
-
-    const [search, setSearch] = useState<string>(
-        String(new URLSearchParams(window.location.search).get('search') ?? ''),
-    );
-    const [sort, setSort] = useState<{
-        column: string | null;
-        dir: 'asc' | 'desc';
-    }>({
-        column: new URLSearchParams(window.location.search).get('sort_col'),
-        dir:
-            (new URLSearchParams(window.location.search).get('sort_dir') as
-                | 'asc'
-                | 'desc') ?? 'asc',
+    const [search, setSearch] = useState('');
+    const [sort, setSort] = useState<{ column: keyof Item | null; dir: 'asc' | 'desc' }>({
+        column: null,
+        dir: 'asc',
     });
 
-    // debounce search and update server-side results
-    useEffect(() => {
-        const t = setTimeout(() => {
-            router.get(
-                '/warehouse',
-                {
-                    search: search || undefined,
-                    sort_col: sort.column || undefined,
-                    sort_dir: sort.dir || undefined,
-                },
-                {
-                    preserveState: true,
-                    replace: true,
-                    only: ['items', 'categories'],
-                },
-            );
-        }, 300);
-
-        return () => clearTimeout(t);
-    }, [search, sort.column, sort.dir]);
-
-    // Dialog states
     const [createOpen, setCreateOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
-    // optimistic UI: per-item optimistic quantities (id => qty)
-    const [optimisticQuantities, setOptimisticQuantities] = useState<
-        Record<number, number>
-    >({});
-    // track which item ids are currently processing (to disable controls / show spinner)
     const [processingIds, setProcessingIds] = useState<number[]>([]);
+    const [optimisticQuantities, setOptimisticQuantities] = useState<Record<number, number>>({});
 
-    function openCreate() {
-        setCreateOpen(true);
-    }
+    const openCreate = () => setCreateOpen(true);
 
-    function openEditFor(item: Item) {
+    const openEditFor = (item: Item) => {
         setSelectedItem(item);
         setEditOpen(true);
-    }
+    };
 
-    function openDeleteFor(item: Item) {
+    const openDeleteFor = (item: Item) => {
         setSelectedItem(item);
         setDeleteOpen(true);
-    }
+    };
 
-    // change quantity by delta (±1) with optimistic UI and processing state.
-    function changeQuantity(item: Item, delta: number) {
-        const currentQty = optimisticQuantities[item.id] ?? item.quantity;
-        const newQty = currentQty + delta;
-        if (newQty < 0) return; // prevent negative quantities
+    const changeQuantity = (item: Item, delta: number) => {
+        const newQty = (optimisticQuantities[item.id] ?? item.quantity) + delta;
+        if (newQty < 0) return;
 
-        const prevQty = currentQty;
+        setOptimisticQuantities(prev => ({ ...prev, [item.id]: newQty }));
+        setProcessingIds(prev => [...prev, item.id]);
 
-        // optimistic update
-        setOptimisticQuantities((m) => ({ ...m, [item.id]: newQty }));
-        setProcessingIds((p) =>
-            p.includes(item.id) ? p : p.concat([item.id]),
-        );
-
-        router.put(
-            `/warehouse/items/${item.id}`,
-            {
-                name: item.name,
-                quantity: newQty,
-                category: item.category ?? [],
+        router.put(`/warehouse/items/${item.id}`, {
+            ...item,
+            quantity: newQty
+        }, {
+            preserveScroll: true,
+            onError: () => {
+                setOptimisticQuantities(prev => {
+                    const next = { ...prev };
+                    delete next[item.id];
+                    return next;
+                });
             },
-            {
-                preserveState: true,
-                onSuccess: () => {
-                    // server will send updated props; clear optimistic value for this item so UI uses server value
-                    setOptimisticQuantities((m) => {
-                        const copy = { ...m };
-                        delete copy[item.id];
-                        return copy;
-                    });
-                },
-                onError: () => {
-                    // revert optimistic change on error
-                    setOptimisticQuantities((m) => ({
-                        ...m,
-                        [item.id]: prevQty,
-                    }));
-                },
-                onFinish: () => {
-                    setProcessingIds((p) => p.filter((id) => id !== item.id));
-                },
-            },
+            onFinish: () => {
+                setProcessingIds(prev => prev.filter(id => id !== item.id));
+                setOptimisticQuantities(prev => {
+                    const next = { ...prev };
+                    delete next[item.id];
+                    return next;
+                });
+            }
+        });
+    };
+
+    const itemsList = (items || []).filter(item => {
+        if (!search) return true;
+        const s = search.toLowerCase();
+        return (
+            item.name.toLowerCase().includes(s) ||
+            (item.category || []).some(cat => cat.toLowerCase().includes(s)) ||
+            (item.changed_by || '').toLowerCase().includes(s) ||
+            String(item.quantity).includes(s)
         );
-    }
+    }).sort((a, b) => {
+        if (!sort.column) return 0;
+        const valA = a[sort.column];
+        const valB = b[sort.column];
+
+        if (sort.column === 'category') {
+            // simplified array comparison
+            const strA = (a.category || []).join(', ');
+            const strB = (b.category || []).join(', ');
+            return sort.dir === 'asc' ? strA.localeCompare(strB) : strB.localeCompare(strA);
+        }
+
+        if (valA === valB) return 0;
+        if (valA === null || valA === undefined) return 1;
+        if (valB === null || valB === undefined) return -1;
+
+        const cmp = valA < valB ? -1 : 1;
+        return sort.dir === 'asc' ? cmp : -cmp;
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -162,6 +137,7 @@ export default function Warehouse() {
             <div className="p-4">
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex w-1/2 items-center gap-2">
+                        {/* ... search input ... */}
                         <div className="relative w-full">
                             <Input
                                 placeholder="Search by name, category, email or quantity"
@@ -188,10 +164,11 @@ export default function Warehouse() {
                     </div>
 
                     <div>
-                        <Button onClick={openCreate}>Create Item</Button>
+                        {canCreate && <Button onClick={openCreate}>Create Item</Button>}
                     </div>
                 </div>
 
+                {/* ... Dialogs ... */}
                 <CreateItemDialog
                     open={createOpen}
                     onOpenChange={setCreateOpen}
@@ -200,8 +177,10 @@ export default function Warehouse() {
 
                 <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
+                        {/* ... thead ... */}
                         <thead className="bg-gray-50 dark:bg-transparent">
                             <tr>
+                                {/* ... headers ... */}
                                 <th className="px-6 py-3 text-left text-xs font-medium uppercase">
                                     <button
                                         className="flex items-center gap-2"
@@ -375,6 +354,7 @@ export default function Warehouse() {
                                 </th>
                             </tr>
                         </thead>
+
                         <tbody className="divide-y divide-gray-200 bg-white dark:divide-neutral-700 dark:bg-transparent">
                             {itemsList.map((item: Item) => (
                                 <tr key={item.id}>
@@ -383,16 +363,18 @@ export default function Warehouse() {
                                             <div className="truncate">
                                                 {item.name}
                                             </div>
-                                            <button
-                                                type="button"
-                                                className="ml-2 text-muted-foreground hover:text-foreground sm:hidden"
-                                                aria-label={`Edit ${item.name}`}
-                                                onClick={() =>
-                                                    openEditFor(item)
-                                                }
-                                            >
-                                                <Pencil size={14} />
-                                            </button>
+                                            {canUpdate && (
+                                                <button
+                                                    type="button"
+                                                    className="ml-2 text-muted-foreground hover:text-foreground sm:hidden"
+                                                    aria-label={`Edit ${item.name}`}
+                                                    onClick={() =>
+                                                        openEditFor(item)
+                                                    }
+                                                >
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -404,6 +386,7 @@ export default function Warehouse() {
                                                     changeQuantity(item, -1)
                                                 }
                                                 disabled={
+                                                    !canUpdate ||
                                                     (optimisticQuantities[
                                                         item.id
                                                     ] ?? item.quantity) <= 0 ||
@@ -434,7 +417,7 @@ export default function Warehouse() {
                                                 onClick={() =>
                                                     changeQuantity(item, 1)
                                                 }
-                                                disabled={processingIds.includes(
+                                                disabled={!canUpdate || processingIds.includes(
                                                     item.id,
                                                 )}
                                                 aria-label={`Increase quantity for ${item.name}`}
@@ -479,24 +462,28 @@ export default function Warehouse() {
                                     </td>
                                     <td className="hidden px-6 py-4 sm:table-cell">
                                         <div className="flex gap-2">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() =>
-                                                    openEditFor(item)
-                                                }
-                                            >
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="destructive"
-                                                onClick={() =>
-                                                    openDeleteFor(item)
-                                                }
-                                            >
-                                                Delete
-                                            </Button>
+                                            {canUpdate && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() =>
+                                                        openEditFor(item)
+                                                    }
+                                                >
+                                                    Edit
+                                                </Button>
+                                            )}
+                                            {canDelete && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() =>
+                                                        openDeleteFor(item)
+                                                    }
+                                                >
+                                                    Delete
+                                                </Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

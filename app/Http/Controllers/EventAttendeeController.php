@@ -74,4 +74,24 @@ class EventAttendeeController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+    public function update(Request $request, Event $event)
+    {
+        $request->validate([
+            'spreadsheet_id' => ['required', 'string'], // In case it differs from event default, though usually same
+            'range' => ['required', 'string'], // e.g. "Sheet1!A2:E2"
+            'values' => ['required', 'array'],
+        ]);
+
+        try {
+            $service = new GoogleSheetsService;
+            $service->updateRow(
+                $request->input('spreadsheet_id'),
+                $request->input('range'),
+                $request->input('values')
+            );
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }

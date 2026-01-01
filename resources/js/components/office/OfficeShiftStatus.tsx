@@ -11,8 +11,9 @@ interface OfficeShiftStatusProps {
 
 export function OfficeShiftStatus({
     activeShift,
-    className, // Destructure className
-}: OfficeShiftStatusProps) {
+    className,
+    canCreate = true, // Default to true if not provided
+}: OfficeShiftStatusProps & { canCreate?: boolean }) {
     return (
         <section
             className={cn(
@@ -61,13 +62,15 @@ export function OfficeShiftStatus({
                             workers
                         </div>
                     </div>
-                    <Button
-                        className="w-full"
-                        variant="default"
-                        onClick={() => router.post('/office/start')}
-                    >
-                        Start Office Shift
-                    </Button>
+                    {canCreate && (
+                        <Button
+                            className="w-full"
+                            variant="default"
+                            onClick={() => router.post('/office/start')}
+                        >
+                            Start Office Shift
+                        </Button>
+                    )}
                 </div>
             )}
         </section>

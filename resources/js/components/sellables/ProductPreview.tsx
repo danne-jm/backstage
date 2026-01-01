@@ -14,7 +14,7 @@ import type { Product } from '@/types/sellables';
 
 interface ProductPreviewProps {
     product: Product;
-    onEdit: (product: Product) => void;
+    onEdit?: (product: Product) => void;
     onDelete?: (productId: number) => void;
     productToDelete?: number | null;
     setProductToDelete?: (id: number | null) => void;
@@ -40,9 +40,11 @@ export function ProductPreview({
                     <h3 className="font-medium">{product.name}</h3>
 
                     <div className="flex items-center gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => onEdit(product)}>
-                            Edit
-                        </Button>
+                        {onEdit && (
+                            <Button size="sm" variant="ghost" onClick={() => onEdit(product)}>
+                                Edit
+                            </Button>
+                        )}
                         {variant === 'sellables' && onDelete && setProductToDelete && (
                             <>
                                 <Button

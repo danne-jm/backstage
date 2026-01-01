@@ -16,9 +16,10 @@ import { formatTimestamp } from './utils';
 interface PastShiftsListProps {
     shifts: any[];
     setMessage: (msg: string) => void;
+    canDelete?: boolean;
 }
 
-export function PastShiftsList({ shifts, setMessage }: PastShiftsListProps) {
+export function PastShiftsList({ shifts, setMessage, canDelete = true }: PastShiftsListProps) {
     return (
         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
             <h3 className="mb-4 text-sm font-semibold">All Office Shifts</h3>
@@ -61,75 +62,77 @@ export function PastShiftsList({ shifts, setMessage }: PastShiftsListProps) {
                                         Review
                                     </Button>
                                 </Link>
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-muted-foreground hover:bg-muted/30"
-                                        >
-                                            Remove
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogTitle>
-                                            Delete this office shift?
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            Deleting a shift will permanently
-                                            remove its sales and worker history.
-                                            This action cannot be undone. Are
-                                            you sure?
-                                        </DialogDescription>
-                                        <DialogFooter className="gap-2">
-                                            <DialogClose asChild>
-                                                <Button variant="secondary">
-                                                    Cancel
-                                                </Button>
-                                            </DialogClose>
-                                            <DialogClose asChild>
-                                                <Button
-                                                    variant="destructive"
-                                                    onClick={() => {
-                                                        router.post(
-                                                            `/office/${s.id}/delete`,
-                                                            {},
-                                                            {
-                                                                preserveScroll: true,
-                                                                onStart: () => { },
-                                                                onSuccess: () => {
-                                                                    setMessage(
-                                                                        'Shift deleted',
-                                                                    );
-                                                                    setTimeout(
-                                                                        () =>
-                                                                            router.get(
-                                                                                office()
-                                                                                    .url,
-                                                                                {},
-                                                                                {
-                                                                                    preserveScroll: true,
-                                                                                    preserveState: true,
-                                                                                    replace: true,
-                                                                                },
-                                                                            ),
-                                                                        500,
-                                                                    );
+                                {canDelete && (
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="text-muted-foreground hover:bg-muted/30"
+                                            >
+                                                Remove
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogTitle>
+                                                Delete this office shift?
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Deleting a shift will permanently
+                                                remove its sales and worker history.
+                                                This action cannot be undone. Are
+                                                you sure?
+                                            </DialogDescription>
+                                            <DialogFooter className="gap-2">
+                                                <DialogClose asChild>
+                                                    <Button variant="secondary">
+                                                        Cancel
+                                                    </Button>
+                                                </DialogClose>
+                                                <DialogClose asChild>
+                                                    <Button
+                                                        variant="destructive"
+                                                        onClick={() => {
+                                                            router.post(
+                                                                `/office/${s.id}/delete`,
+                                                                {},
+                                                                {
+                                                                    preserveScroll: true,
+                                                                    onStart: () => { },
+                                                                    onSuccess: () => {
+                                                                        setMessage(
+                                                                            'Shift deleted',
+                                                                        );
+                                                                        setTimeout(
+                                                                            () =>
+                                                                                router.get(
+                                                                                    office()
+                                                                                        .url,
+                                                                                    {},
+                                                                                    {
+                                                                                        preserveScroll: true,
+                                                                                        preserveState: true,
+                                                                                        replace: true,
+                                                                                    },
+                                                                                ),
+                                                                            500,
+                                                                        );
+                                                                    },
+                                                                    onError: () =>
+                                                                        setMessage(
+                                                                            'Failed to delete shift',
+                                                                        ),
                                                                 },
-                                                                onError: () =>
-                                                                    setMessage(
-                                                                        'Failed to delete shift',
-                                                                    ),
-                                                            },
-                                                        );
-                                                    }}
-                                                >
-                                                    Delete
-                                                </Button>
-                                            </DialogClose>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
+                                                            );
+                                                        }}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                )}
                             </div>
                         </div>
                     ))}

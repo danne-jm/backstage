@@ -16,7 +16,7 @@ import type { Event } from '@/types/sellables';
 
 interface EventPreviewProps {
     event: Event;
-    onEdit: (event: Event) => void;
+    onEdit?: (event: Event) => void;
     onDelete?: (eventId: number) => void;
     eventToDelete?: number | null;
     setEventToDelete?: (id: number | null) => void;
@@ -82,9 +82,11 @@ export function EventPreview({
                         <h3 className="font-medium">{event.name}</h3>
 
                         <div className="flex items-center gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => onEdit(event)}>
-                                Edit
-                            </Button>
+                            {onEdit && (
+                                <Button size="sm" variant="ghost" onClick={() => onEdit(event)}>
+                                    Edit
+                                </Button>
+                            )}
 
                             {variant === 'sellables' && onDelete && setEventToDelete && (
                                 <>

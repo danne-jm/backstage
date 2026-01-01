@@ -33,12 +33,12 @@ export default function Users() {
         { title: 'User management', href: '/settings/users' },
     ];
     const { users, auth, availablePermissions, rolePresets } = usePage().props as any;
-    
+
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any | null>(null);
-    
+
     // Permission Template State ('Administrator' | 'Board' | 'Guest')
     const [permissionLevel, setPermissionLevel] = useState<string>('Guest');
 
@@ -52,7 +52,7 @@ export default function Users() {
     });
 
     const myPermissions = auth?.user?.permissions || [];
-    const hasAdminPermission = Array.isArray(myPermissions) && 
+    const hasAdminPermission = Array.isArray(myPermissions) &&
         (myPermissions.includes('admin') || myPermissions.includes('manage_users'));
 
     if (!hasAdminPermission) {
@@ -86,7 +86,7 @@ export default function Users() {
     const determineLevel = (userPermissions: string[]) => {
         const adminSet = rolePresets['Administrator'] || [];
         const boardSet = rolePresets['Board'] || [];
-        
+
         // Simple array comparison logic
         const sortAndStr = (arr: string[]) => [...arr].sort().join(',');
         const userStr = sortAndStr(userPermissions);
@@ -100,13 +100,13 @@ export default function Users() {
     const openAddModal = () => {
         setSelectedUser(null);
         setPermissionLevel('Guest');
-        setForm({ 
-            first_name: '', 
-            last_name: '', 
-            email: '', 
-            role: 'Anonymous', 
-            password: '', 
-            permissions: rolePresets['Guest'] || [] 
+        setForm({
+            first_name: '',
+            last_name: '',
+            email: '',
+            role: 'Anonymous',
+            password: '',
+            permissions: rolePresets['Guest'] || []
         });
         setAddModalOpen(true);
     };
@@ -120,7 +120,7 @@ export default function Users() {
             last_name: user.last_name || '',
             email: user.email || '',
             role: user.role || '',
-            password: '', 
+            password: '',
             permissions: user.permissions || [],
         });
         setEditModalOpen(true);
@@ -222,8 +222,8 @@ export default function Users() {
                                     onClick={() => handleLevelChange(level)}
                                     className={cn(
                                         "inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-                                        isActive 
-                                            ? "bg-background text-foreground shadow-sm" 
+                                        isActive
+                                            ? "bg-background text-foreground shadow-sm"
                                             : "hover:bg-background/50 hover:text-foreground"
                                     )}
                                 >
@@ -242,32 +242,69 @@ export default function Users() {
 
             {/* Granular Permissions - Only show if Guest is selected */}
             {permissionLevel === 'Guest' && (
-                <div className="space-y-3 rounded-md border p-3 bg-muted/20 animate-in fade-in zoom-in-95 duration-200">
+                <div className="space-y-4 rounded-md border p-3 bg-muted/20 animate-in fade-in zoom-in-95 duration-200 max-h-[350px] overflow-y-auto">
                     <Label className="text-xs uppercase text-muted-foreground">Additional Permissions</Label>
-                    <div className="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
-                        {availablePermissions.map((perm: any) => {
-                            // Hide "core" guest permissions and role identity permissions to avoid confusion
-                            if (['guest', 'view_dashboard', 'admin', 'board'].includes(perm.value)) return null;
+
+                    {/* Helper to group permissions by category */}
+                    {(() => {
+                        const categories = {
+                            'Dashboard': ['view_dashboard'],
+                            'Office Shifts': ['view_office', 'create_office', 'update_office', 'delete_office'],
+                            'Store Manager': ['view_store_manager', 'update_store_settings'],
+                            'Sellables': [
+                                'view_sellables',
+                                'create_product', 'update_product', 'delete_product',
+                                'create_event', 'update_event', 'delete_event',
+                                'view_event_attendees', 'update_event_attendee',
+                            ],
+                            'Inventory': ['view_inventory', 'create_item', 'update_item', 'delete_item'],
+                            'Ticket Scanner': ['view_ticket_scanner', 'scan_tickets'],
+                            'Ticket Distributor': ['view_ticket_distributor', 'send_tickets'],
+                            'Mail Distributor': ['view_mail_distributor', 'send_mails', 'create_mail_templates'],
+                            'Settings': [
+                                'view_settings_profile', 'update_settings_profile', 'delete_account',
+                                'view_settings_password', 'update_settings_password',
+                                'view_settings_2fa', 'update_settings_2fa',
+                                'view_settings_google', 'update_settings_google',
+                                'view_settings_appearance',
+                                'view_settings_footer', 'update_settings_footer',
+                                'view_settings_users', 'create_user', 'update_user', 'delete_user'
+                            ],
+                        };
+
+                        return Object.entries(categories).map(([catName, permKeys]) => {
+                            const perms = permKeys
+                                .map(key => availablePermissions.find((p: any) => p.value === key))
+                                .filter(Boolean);
+
+                            if (perms.length === 0) return null;
 
                             return (
-                                <div key={perm.value} className="flex items-start space-x-2">
-                                    <Checkbox
-                                        id={`perm-${perm.value}`}
-                                        checked={form.permissions.includes(perm.value)}
-                                        onCheckedChange={() => togglePermission(perm.value)}
-                                    />
-                                    <div className="grid gap-1.5 leading-none">
-                                        <label
-                                            htmlFor={`perm-${perm.value}`}
-                                            className="text-sm font-medium leading-none cursor-pointer"
-                                        >
-                                            {perm.label}
-                                        </label>
+                                <div key={catName} className="space-y-2">
+                                    <h4 className="text-xs font-semibold text-foreground/70 border-b pb-1">{catName}</h4>
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        {perms.map((perm: any) => (
+                                            <div key={perm.value} className="flex items-start space-x-2">
+                                                <Checkbox
+                                                    id={`perm-${perm.value}`}
+                                                    checked={form.permissions.includes(perm.value)}
+                                                    onCheckedChange={() => togglePermission(perm.value)}
+                                                />
+                                                <div className="grid gap-1.5 leading-none">
+                                                    <label
+                                                        htmlFor={`perm-${perm.value}`}
+                                                        className="text-sm font-medium leading-none cursor-pointer"
+                                                    >
+                                                        {perm.label}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             );
-                        })}
-                    </div>
+                        });
+                    })()}
                 </div>
             )}
 
@@ -297,9 +334,9 @@ export default function Users() {
                         title="User Management"
                         description="Manage users, define job titles, and assign system permissions."
                     />
-                    
+
                     <Button onClick={openAddModal}>Add User</Button>
-                    
+
                     <div className="w-full overflow-hidden rounded-md border">
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-full">
@@ -391,7 +428,7 @@ export default function Users() {
                             <DialogHeader>
                                 <DialogTitle>Delete User</DialogTitle>
                                 <DialogDescription>
-                                    Are you sure you want to delete <strong>{selectedUser?.first_name} {selectedUser?.last_name}</strong>? 
+                                    Are you sure you want to delete <strong>{selectedUser?.first_name} {selectedUser?.last_name}</strong>?
                                     This action cannot be undone.
                                 </DialogDescription>
                             </DialogHeader>

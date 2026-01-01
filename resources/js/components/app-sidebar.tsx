@@ -67,7 +67,7 @@ const mainNavItems: NavItem[] = [
         icon: ScanText,
     },
     {
-        title: 'Mail Distributor',
+        title: 'Ticket Distributor',
         href: ticketing(),
         icon: Ticket,
     },
@@ -140,7 +140,28 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain
+                    items={mainNavItems.filter(item => {
+                        const permissions = auth?.user?.permissions || [];
+                        const permissionMap: Record<string, string> = {
+                            'Dashboard': 'view_dashboard',
+                            'Office Shifts': 'view_office',
+                            'Sellables': 'view_sellables',
+                            'Ticket Scanner': 'view_ticket_scanner',
+                            'Ticket Distributor': 'view_ticket_distributor',
+                            'Inventory': 'view_inventory',
+                            'Store Manager': 'view_store_manager',
+                        };
+
+                        // Admin override
+                        if (permissions.includes('admin')) return true;
+
+                        const requiredPerm = permissionMap[item.title];
+                        if (!requiredPerm) return true; // Default allow if not mapped
+
+                        return permissions.includes(requiredPerm);
+                    })}
+                />
             </SidebarContent>
 
             <SidebarFooter>

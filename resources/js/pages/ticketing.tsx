@@ -34,6 +34,9 @@ export default function Ticketing() {
         </Link>
     );
     const props = usePage<SharedData & { templates: any[] }>().props;
+    const permissions = props.auth?.user?.permissions || [];
+    const canSend = permissions.includes('admin') || permissions.includes('send_tickets');
+
     const events: any[] = Array.isArray(props['events']) ? props['events'] : [];
     const templates: any[] = Array.isArray(props['templates']) ? props['templates'] : [];
 
@@ -469,11 +472,12 @@ export default function Ticketing() {
                                     </Button>
                                     <Button
                                         onClick={() => setConfirmOpen(true)}
-                                        className={`w-full md:w-auto transition-opacity ${isEmailConfigDirty ? 'opacity-50 pointer-events-none cursor-not-allowed' : ''}`}
-                                        disabled={sending || isEmailConfigDirty}
+                                        className={`w-full md:w-auto transition-opacity ${isEmailConfigDirty || !canSend ? 'opacity-50 pointer-events-none cursor-not-allowed' : ''}`}
+                                        disabled={sending || isEmailConfigDirty || !canSend}
                                         variant="destructive"
-                                        tabIndex={isEmailConfigDirty ? -1 : 0}
-                                        aria-disabled={isEmailConfigDirty}
+                                        tabIndex={isEmailConfigDirty || !canSend ? -1 : 0}
+                                        aria-disabled={isEmailConfigDirty || !canSend}
+                                        title={!canSend ? "You do not have permission to distribute tickets" : ""}
                                     >
                                         {sending ? (
                                             <svg className="animate-spin -ml-1 mr-0 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

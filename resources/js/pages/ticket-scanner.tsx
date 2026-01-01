@@ -21,6 +21,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function TicketScanner() {
     const props: any = usePage().props;
+    const permissions = props.auth?.user?.permissions || [];
+    const canScan = permissions.includes('admin') || permissions.includes('scan_tickets');
+
     const events: any[] = Array.isArray(props.events) ? props.events : [];
     const initialTickets: any[] = [];
 
@@ -540,7 +543,7 @@ export default function TicketScanner() {
                             <div
                                 role="tablist"
                                 aria-orientation="horizontal"
-                                className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground"
+                                className={`inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground ${!canScan ? 'opacity-50 pointer-events-none' : ''}`}
                             >
                                 <button
                                     type="button"
@@ -601,6 +604,7 @@ export default function TicketScanner() {
                                 <Label>Manual ticket id</Label>
                                 <div className="mt-1 flex gap-3">
                                     <Input
+                                        disabled={!canScan}
                                         style={{ flexBasis: '70%' }}
                                         id="manual-ticket"
                                         placeholder="Paste ticket id or QR payload"
@@ -619,6 +623,7 @@ export default function TicketScanner() {
                                         }}
                                     />
                                     <Button
+                                        disabled={!canScan}
                                         style={{ flexBasis: '30%' }}
                                         onClick={async () => {
                                             const el = document.getElementById(

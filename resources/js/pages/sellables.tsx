@@ -39,6 +39,16 @@ export default function Sellables() {
         ? props['events']
         : [];
     const expiredPaginationProp: any = props['expired_pagination'] ?? null;
+    const { auth } = usePage().props as unknown as { auth: any };
+    const permissions = auth?.user?.permissions || [];
+    const canCreateProduct = permissions.includes('admin') || permissions.includes('create_product');
+    const canUpdateProduct = permissions.includes('admin') || permissions.includes('update_product');
+    const canDeleteProduct = permissions.includes('admin') || permissions.includes('delete_product');
+
+    const canCreateEvent = permissions.includes('admin') || permissions.includes('create_event');
+    const canUpdateEvent = permissions.includes('admin') || permissions.includes('update_event');
+    const canDeleteEvent = permissions.includes('admin') || permissions.includes('delete_event');
+
     const boardUsers: BoardUser[] = Array.isArray(props['boardUsers'])
         ? props['boardUsers']
         : [];
@@ -229,9 +239,11 @@ export default function Sellables() {
                 <div>
                     <div className="mb-4 flex items-center justify-between">
                         <h2 className="text-2xl font-semibold">Products</h2>
-                        <Button onClick={() => openProductDialog()}>
-                            Add Product
-                        </Button>
+                        {canCreateProduct && (
+                            <Button onClick={() => openProductDialog()}>
+                                Add Product
+                            </Button>
+                        )}
                     </div>
 
                     <ProductDialog
@@ -257,8 +269,8 @@ export default function Sellables() {
                                 <ProductPreview
                                     key={product.id}
                                     product={product}
-                                    onEdit={openProductDialog}
-                                    onDelete={deleteProduct}
+                                    onEdit={canUpdateProduct ? openProductDialog : undefined}
+                                    onDelete={canDeleteProduct ? deleteProduct : undefined}
                                     productToDelete={productToDelete}
                                     setProductToDelete={setProductToDelete}
                                     variant="sellables"
@@ -272,9 +284,11 @@ export default function Sellables() {
                 <div>
                     <div className="mb-4 flex items-center justify-between">
                         <h2 className="text-2xl font-semibold">Events</h2>
-                        <Button onClick={() => openEventDialog()}>
-                            Add Event
-                        </Button>
+                        {canCreateEvent && (
+                            <Button onClick={() => openEventDialog()}>
+                                Add Event
+                            </Button>
+                        )}
                     </div>
 
                     <EventDialog
@@ -325,8 +339,8 @@ export default function Sellables() {
 
                                         <EventPreview
                                             event={event}
-                                            onEdit={openEventDialog}
-                                            onDelete={deleteEvent}
+                                            onEdit={canUpdateEvent ? openEventDialog : undefined}
+                                            onDelete={canDeleteEvent ? deleteEvent : undefined}
                                             eventToDelete={eventToDelete}
                                             setEventToDelete={setEventToDelete}
                                             variant="sellables"

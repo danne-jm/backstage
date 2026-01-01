@@ -1,8 +1,8 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { storeManager } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
 
 import { useEffect, useState, useMemo } from 'react';
 import { ProductDialog } from '@/components/sellables/ProductDialog';
@@ -34,6 +34,10 @@ export default function StoreManager() {
     const [onlineSales, setOnlineSales] = useState<OnlineSale[]>([]);
     const [onlineSalesTotal, setOnlineSalesTotal] = useState<number>(0);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
+
+    const { auth } = usePage<SharedData>().props;
+    const permissions = auth?.user?.permissions || [];
+    const canUpdateStore = permissions.includes('admin') || permissions.includes('update_store_settings');
 
     // Product modal state
     const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -274,7 +278,7 @@ export default function StoreManager() {
                                                 }
                                                 variant="store-manager"
                                                 isOnline={s.is_online_sellable}
-                                                onSetOnline={handleSetOnline}
+                                                onSetOnline={canUpdateStore ? handleSetOnline : undefined}
                                             />
                                         ) : (
                                             <EventPreview
@@ -285,7 +289,7 @@ export default function StoreManager() {
                                                 }
                                                 variant="store-manager"
                                                 isOnline={s.is_online_sellable}
-                                                onSetOnline={handleSetOnline}
+                                                onSetOnline={canUpdateStore ? handleSetOnline : undefined}
                                             />
                                         ),
                                     )}
