@@ -45,58 +45,60 @@ export function SalesChart({
             {loading ? (
                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
             ) : (
-                <div className="h-40 w-full">
-                    <svg viewBox="0 0 300 80" className="h-full w-full">
-                        {(() => {
-                            if (!sales || sales.length === 0) return null;
-                            const pad = 10;
-                            const w = 300 - pad * 2;
-                            const h = 80 - pad * 2;
-                            const dateKeys = sales.map((s) => s.date);
+                <>
+                    <div className="h-40 w-full">
+                        <svg viewBox="0 0 300 80" className="h-full w-full">
+                            {(() => {
+                                if (!sales || sales.length === 0) return null;
+                                const pad = 10;
+                                const w = 300 - pad * 2;
+                                const h = 80 - pad * 2;
+                                const dateKeys = sales.map((s) => s.date);
 
-                            return (
-                                <>
-                                    {onlineSellableSeries.map((s, idx) => {
-                                        const points = s.series.map(
-                                            (val: number, i: number) => {
-                                                const x =
-                                                    pad +
-                                                    (i /
-                                                        Math.max(
-                                                            1,
-                                                            dateKeys.length - 1,
-                                                        )) *
-                                                    w;
-                                                const y =
-                                                    pad +
-                                                    h -
-                                                    (val / seriesMax) * h;
-                                                return { x, y };
-                                            },
-                                        );
+                                return (
+                                    <>
+                                        {onlineSellableSeries.map((s, idx) => {
+                                            const points = s.series.map(
+                                                (val: number, i: number) => {
+                                                    const x =
+                                                        pad +
+                                                        (i /
+                                                            Math.max(
+                                                                1,
+                                                                dateKeys.length - 1,
+                                                            )) *
+                                                        w;
+                                                    const y =
+                                                        pad +
+                                                        h -
+                                                        (val / seriesMax) * h;
+                                                    return { x, y };
+                                                },
+                                            );
 
-                                        const d = points
-                                            .map(
-                                                (p, i) =>
-                                                    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`,
-                                            )
-                                            .join(' ');
+                                            const d = points
+                                                .map(
+                                                    (p, i) =>
+                                                        `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`,
+                                                )
+                                                .join(' ');
 
-                                        return (
-                                            <path
-                                                key={`series-${idx}`}
-                                                d={d}
-                                                fill="none"
-                                                stroke={s.color}
-                                                strokeWidth={2}
-                                                strokeOpacity={0.95}
-                                            />
-                                        );
-                                    })}
-                                </>
-                            );
-                        })()}
-                    </svg>
+                                            return (
+                                                <path
+                                                    key={`series-${idx}`}
+                                                    d={d}
+                                                    fill="none"
+                                                    stroke={s.color}
+                                                    strokeWidth={2}
+                                                    strokeOpacity={0.95}
+                                                />
+                                            );
+                                        })}
+                                    </>
+                                );
+                            })()}
+                        </svg>
+                    </div>
                     <div className="mt-3 text-xs">
                         <div className="mb-1 text-muted-foreground">
                             Active online sellables
@@ -167,7 +169,7 @@ export function SalesChart({
                             )}
                         </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );

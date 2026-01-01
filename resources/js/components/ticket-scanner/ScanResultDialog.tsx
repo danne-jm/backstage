@@ -58,55 +58,86 @@ export function ScanResultDialog({
                     </div>
 
                     {scanModal.ticket ? (
-                        <div className="space-y-3 rounded border p-3">
+                        <div className="space-y-3 rounded border bg-muted/30 p-3">
                             <div>
                                 <div className="text-xs text-muted-foreground">
                                     Ticket ID
                                 </div>
-                                <div
-                                    className="truncate break-words font-mono text-sm"
-                                    title={scanModal.ticket.ticket_id ?? ''}
-                                >
+                                <div className="break-all font-mono text-sm">
                                     {(() => {
-                                        const rawId =
-                                            scanModal.ticket.ticket_id ?? '';
-                                        if (rawId.length > 24) {
+                                        const code =
+                                            scanModal.ticket.ticket_code ??
+                                            scanModal.ticket.ticket_id ??
+                                            '';
+                                        const parts = code.split('_to_');
+                                        if (parts.length > 1) {
                                             return (
-                                                rawId.slice(0, 12) +
-                                                '…' +
-                                                rawId.slice(-8)
+                                                '...' +
+                                                parts.slice(1).join('_to_')
                                             );
                                         }
-                                        return rawId;
+                                        return code.replace(
+                                            /_[0-9]{6,}_/,
+                                            '_…_',
+                                        );
                                     })()}
                                 </div>
                             </div>
 
-                            <div>
-                                <div className="text-xs text-muted-foreground">
-                                    Name
-                                </div>
-                                <div className="font-medium">
-                                    {scanModal.ticket.first_name}{' '}
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                    First Name:
+                                </span>
+                                <span className="font-medium">
+                                    {scanModal.ticket.first_name}
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                    Last Name:
+                                </span>
+                                <span className="font-medium">
                                     {scanModal.ticket.last_name}
-                                </div>
+                                </span>
                             </div>
-
-                            <div>
-                                <div className="text-xs text-muted-foreground">
-                                    Email
-                                </div>
-                                <div className="text-sm">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                    Email:
+                                </span>
+                                <span className="font-medium break-all">
                                     {scanModal.ticket.email}
-                                </div>
+                                </span>
                             </div>
 
-                            <div className="text-xs text-muted-foreground">
-                                Event:{' '}
-                                {scanModal.ticket.event_name || 'Unknown'}{' '}
-                                {scanModal.ticket.event_date
-                                    ? `(${new Date(scanModal.ticket.event_date).toLocaleString()})`
-                                    : ''}
+                            {scanModal.ticket.nationality && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">
+                                        Nationality:
+                                    </span>
+                                    <span className="font-medium">
+                                        {scanModal.ticket.nationality}
+                                    </span>
+                                </div>
+                            )}
+                            {scanModal.ticket.esn_card !== undefined && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">
+                                        ESN Card:
+                                    </span>
+                                    <span className="font-medium">
+                                        {scanModal.ticket.esn_card
+                                            ? 'Yes'
+                                            : 'No'}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                    Scan Count:
+                                </span>
+                                <span className="font-medium">
+                                    {scanModal.ticket.scan_count || 0}
+                                </span>
                             </div>
 
                             {scanModal.status === 'already' &&
@@ -123,13 +154,13 @@ export function ScanResultDialog({
                                                 .map((d: any, idx: number) => (
                                                     <li
                                                         key={idx}
-                                                        className="flex justify-between gap-2"
+                                                        className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2"
                                                     >
-                                                        <span className="truncate overflow-ellipsis">
+                                                        <span className="truncate overflow-ellipsis break-all">
                                                             {d.user_email ??
                                                                 'unknown'}
                                                         </span>
-                                                        <span className="whitespace-nowrap text-muted-foreground">
+                                                        <span className="text-muted-foreground">
                                                             {formatScanDate(
                                                                 d.timestamp,
                                                             )}
@@ -156,22 +187,44 @@ export function ScanResultDialog({
                                                 }
                                                 className={`rounded p-2 ${ticket.scan_count > 0 ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
                                             >
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                     <div>
                                                         <div className="font-medium">
                                                             {ticket.first_name}{' '}
                                                             {ticket.last_name}
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {(
-                                                                ticket.ticket_id ??
-                                                                ''
-                                                            ).replace(
-                                                                /_[0-9]{6,}_/,
-                                                                '_…_',
-                                                            )}
+                                                        <div className="text-xs text-muted-foreground break-all">
+                                                            {(() => {
+                                                                const code =
+                                                                    ticket.ticket_code ??
+                                                                    ticket.ticket_id ??
+                                                                    '';
+                                                                const parts =
+                                                                    code.split(
+                                                                        '_to_',
+                                                                    );
+                                                                if (
+                                                                    parts.length >
+                                                                    1
+                                                                ) {
+                                                                    return (
+                                                                        '...' +
+                                                                        parts
+                                                                            .slice(
+                                                                                1,
+                                                                            )
+                                                                            .join(
+                                                                                '_to_',
+                                                                            )
+                                                                    );
+                                                                }
+                                                                return code.replace(
+                                                                    /_[0-9]{6,}_/,
+                                                                    '_…_',
+                                                                );
+                                                            })()}
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground">
+                                                        <div className="text-xs text-muted-foreground break-all">
                                                             {ticket.email}
                                                         </div>
                                                     </div>

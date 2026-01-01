@@ -54,7 +54,7 @@ export function ScannedTicketsList({
                                 <div className="font-medium">
                                     {s.first_name} {s.last_name}
                                 </div>
-                                {scanCount > 1 && (
+                                {scanCount >= 1 && (
                                     <span className="ml-2 text-xs text-muted-foreground">
                                         ×{scanCount}
                                     </span>

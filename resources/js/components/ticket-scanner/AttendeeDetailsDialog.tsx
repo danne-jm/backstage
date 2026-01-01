@@ -41,10 +41,10 @@ export function AttendeeDetailsDialog({
                         <h4 className="mb-2 text-sm font-medium">
                             Attendee Information
                         </h4>
-                        <div className="space-y-2 rounded border bg-muted/30 p-3">
+                        <div className="space-y-3 rounded border bg-muted/30 p-3">
                             {allTickets[0] && (
                                 <>
-                                    <div className="flex justify-between text-sm">
+                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
                                         <span className="text-muted-foreground">
                                             First Name:
                                         </span>
@@ -52,7 +52,7 @@ export function AttendeeDetailsDialog({
                                             {allTickets[0].first_name}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between text-sm">
+                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
                                         <span className="text-muted-foreground">
                                             Last Name:
                                         </span>
@@ -60,11 +60,11 @@ export function AttendeeDetailsDialog({
                                             {allTickets[0].last_name}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between text-sm">
+                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
                                         <span className="text-muted-foreground">
                                             Email:
                                         </span>
-                                        <span className="font-medium">
+                                        <span className="font-medium break-all">
                                             {allTickets[0].email}
                                         </span>
                                     </div>
@@ -83,16 +83,30 @@ export function AttendeeDetailsDialog({
                                     key={t.id || t.ticket_code || idx}
                                     className={`rounded border p-3 ${t.scan_count > 0 ? 'border-green-200 bg-green-50/50 dark:border-green-900/30 dark:bg-green-900/10' : 'bg-card'}`}
                                 >
-                                    <div className="flex items-start justify-between">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                         <div>
-                                            <div className="text-sm font-medium">
-                                                {t.ticket_code}
+                                            <div className="text-sm font-medium break-all">
+                                                {(() => {
+                                                    const code =
+                                                        t.ticket_code ?? '';
+                                                    const parts =
+                                                        code.split('_to_');
+                                                    if (parts.length > 1) {
+                                                        return (
+                                                            '...' +
+                                                            parts
+                                                                .slice(1)
+                                                                .join('_to_')
+                                                        );
+                                                    }
+                                                    return code;
+                                                })()}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
                                                 {t.event_name}
                                             </div>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-left sm:text-right">
                                             <div
                                                 className={`text-xs font-medium ${t.scan_count > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}
                                             >
@@ -110,35 +124,7 @@ export function AttendeeDetailsDialog({
                                             )}
                                         </div>
                                     </div>
-                                    {t.scan_details &&
-                                        t.scan_details.length > 0 && (
-                                            <div className="mt-2 border-t pt-2">
-                                                <div className="mb-1 text-xs font-medium text-muted-foreground">
-                                                    Scan History:
-                                                </div>
-                                                <div className="max-h-24 overflow-y-auto">
-                                                    {t.scan_details.map(
-                                                        (
-                                                            d: any,
-                                                            dIdx: number,
-                                                        ) => (
-                                                            <div
-                                                                key={dIdx}
-                                                                className="flex justify-between text-[10px]"
-                                                            >
-                                                                <span>
-                                                                    {d.timestamp}
-                                                                </span>
-                                                                <span className="text-muted-foreground">
-                                                                    {d.user_email ||
-                                                                        'System'}
-                                                                </span>
-                                                            </div>
-                                                        ),
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
+
                                 </div>
                             ))}
                         </div>

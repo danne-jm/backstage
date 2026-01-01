@@ -143,7 +143,7 @@ export function EventPreview({
                             €{event.price_without_card}
                         </p>
                         {event.variable_amount ? (
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <span className="text-muted-foreground">
                                         Qty w/ ESNcard:
@@ -169,7 +169,7 @@ export function EventPreview({
                                         : event.quantity_without_card}
                                     {(event.unlimited_quantity_without_card || event.quantity_without_card == null) ? false : (
                                         event.remaining_without_card !==
-                                            undefined &&
+                                        undefined &&
                                         event.remaining_without_card !== null && (
                                             <span className="text-gray-500">
                                                 {' '}
@@ -181,7 +181,7 @@ export function EventPreview({
                                 </div>
 
                                 {variant === 'store-manager' && onSetOnline && (
-                                    <div className="flex items-center space-x-2 ml-4">
+                                    <div className="flex items-center space-x-2 sm:ml-4 shrink-0">
                                         <Checkbox
                                             id={`online-${event.id}`}
                                             checked={isOnline}
@@ -189,7 +189,7 @@ export function EventPreview({
                                         />
                                         <label
                                             htmlFor={`online-${event.id}`}
-                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 whitespace-nowrap"
                                         >
                                             Sell Online
                                         </label>
@@ -197,7 +197,7 @@ export function EventPreview({
                                 )}
                             </div>
                         ) : (
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <span className="text-muted-foreground">
                                         Quantity:
@@ -217,7 +217,7 @@ export function EventPreview({
                                 </div>
 
                                 {variant === 'store-manager' && onSetOnline && (
-                                    <div className="flex items-center space-x-2 ml-4">
+                                    <div className="flex items-center space-x-2 sm:ml-4 shrink-0">
                                         <Checkbox
                                             id={`online-${event.id}`}
                                             checked={isOnline}
@@ -225,7 +225,7 @@ export function EventPreview({
                                         />
                                         <label
                                             htmlFor={`online-${event.id}`}
-                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 whitespace-nowrap"
                                         >
                                             Sell Online
                                         </label>

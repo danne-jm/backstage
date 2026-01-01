@@ -49,15 +49,27 @@ export function ScannedTicketDialog({
                             <div className="text-xs text-muted-foreground">
                                 Ticket ID
                             </div>
-                            <div className="break-words font-mono text-sm">
-                                {(ticket.ticket_id ?? '').replace(
-                                    /_[0-9]{6,}_/,
-                                    '_…_',
-                                )}
+                            <div className="break-all font-mono text-sm">
+                                {(() => {
+                                    const code =
+                                        ticket.ticket_code ??
+                                        ticket.ticket_id ??
+                                        '';
+                                    const parts = code.split('_to_');
+                                    if (parts.length > 1) {
+                                        return (
+                                            '...' + parts.slice(1).join('_to_')
+                                        );
+                                    }
+                                    return code.replace(
+                                        /_[0-9]{6,}_/,
+                                        '_…_',
+                                    );
+                                })()}
                             </div>
                         </div>
 
-                        <div className="flex justify-between text-sm">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
                             <span className="text-muted-foreground">
                                 First Name:
                             </span>
@@ -65,7 +77,7 @@ export function ScannedTicketDialog({
                                 {ticket.first_name}
                             </span>
                         </div>
-                        <div className="flex justify-between text-sm">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
                             <span className="text-muted-foreground">
                                 Last Name:
                             </span>
@@ -73,9 +85,9 @@ export function ScannedTicketDialog({
                                 {ticket.last_name}
                             </span>
                         </div>
-                        <div className="flex justify-between text-sm">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
                             <span className="text-muted-foreground">Email:</span>
-                            <span className="font-medium">{ticket.email}</span>
+                            <span className="font-medium break-all">{ticket.email}</span>
                         </div>
                         {ticket.nationality && (
                             <div className="flex justify-between text-sm">
@@ -120,12 +132,12 @@ export function ScannedTicketDialog({
                                         .map((d: any, idx: number) => (
                                             <div
                                                 key={idx}
-                                                className="flex justify-between gap-2 p-3"
+                                                className="flex flex-col sm:flex-row sm:justify-between gap-1 p-3"
                                             >
-                                                <span className="text-sm">
+                                                <span className="text-sm break-all">
                                                     {d.user_email ?? 'unknown'}
                                                 </span>
-                                                <span className="whitespace-nowrap text-sm text-muted-foreground">
+                                                <span className="text-sm text-muted-foreground">
                                                     {formatScanDate(d.timestamp)}
                                                 </span>
                                             </div>
@@ -146,20 +158,36 @@ export function ScannedTicketDialog({
                                         key={t.id ?? t.ticket_id ?? idx}
                                         className={`p-3 ${t.scan_count > 0 ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
                                     >
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                             <div>
                                                 <div className="text-sm font-medium">
                                                     {t.first_name} {t.last_name}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {(
-                                                        t.ticket_id ?? ''
-                                                    ).replace(
-                                                        /_[0-9]{6,}_/,
-                                                        '_…_',
-                                                    )}
+                                                <div className="text-xs text-muted-foreground break-all">
+                                                    {(() => {
+                                                        const code =
+                                                            t.ticket_code ??
+                                                            t.ticket_id ??
+                                                            '';
+                                                        const parts =
+                                                            code.split('_to_');
+                                                        if (parts.length > 1) {
+                                                            return (
+                                                                '...' +
+                                                                parts
+                                                                    .slice(1)
+                                                                    .join(
+                                                                        '_to_',
+                                                                    )
+                                                            );
+                                                        }
+                                                        return code.replace(
+                                                            /_[0-9]{6,}_/,
+                                                            '_…_',
+                                                        );
+                                                    })()}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className="text-xs text-muted-foreground break-all">
                                                     {t.email}
                                                 </div>
                                             </div>

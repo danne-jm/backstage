@@ -68,65 +68,65 @@ export function ProductPreview({
                     <span className="text-muted-foreground">Price:</span>{' '}
                     <span className="text-foreground">€{product.price}</span>
                 </div>
-                <div className="mt-1 text-sm flex items-center justify-between">
+                <div className="mt-1 text-sm flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                    {product.variable_amount ? (
-                        <>
-                            <span className="text-muted-foreground">
-                                Qty w/ ESNcard:
-                            </span>{' '}
-                            {(product.unlimited_quantity_with_card || product.quantity_with_card == null)
-                                ? 'Unlimited'
-                                : product.quantity_with_card}
-                            {(product.unlimited_quantity_with_card || product.quantity_with_card == null) ? false : (
-                                product.remaining_with_card !== undefined &&
-                                product.remaining_with_card !== null && (
-                                    <span className="text-gray-500">
-                                        {' '}
-                                        | {product.remaining_with_card} remain
-                                    </span>
-                                )
-                            )}{' '}
-                            |{' '}
-                            <span className="text-muted-foreground">
-                                w/o ESNcard:
-                            </span>{' '}
-                            {(product.unlimited_quantity_without_card || product.quantity_without_card == null)
-                                ? 'Unlimited'
-                                : product.quantity_without_card}
-                            {(product.unlimited_quantity_without_card || product.quantity_without_card == null) ? false : (
-                                product.remaining_without_card !== undefined &&
-                                product.remaining_without_card !== null && (
-                                    <span className="text-gray-500">
-                                        {' '}
-                                        | {product.remaining_without_card} remain
-                                    </span>
-                                )
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            <span className="text-muted-foreground">
-                                Quantity:
-                            </span>{' '}
-                            {(product.unlimited_quantity || product.quantity == null)
-                                ? 'Unlimited'
-                                : product.quantity}
-                            {(product.unlimited_quantity || product.quantity == null) ? false : (
-                                product.remaining !== undefined &&
-                                product.remaining !== null && (
-                                    <span className="text-gray-500">
-                                        {' '}
-                                        | {product.remaining} remain
-                                    </span>
-                                )
-                            )}
-                        </>
-                    )}
+                        {product.variable_amount ? (
+                            <>
+                                <span className="text-muted-foreground">
+                                    Qty w/ ESNcard:
+                                </span>{' '}
+                                {(product.unlimited_quantity_with_card || product.quantity_with_card == null)
+                                    ? 'Unlimited'
+                                    : product.quantity_with_card}
+                                {(product.unlimited_quantity_with_card || product.quantity_with_card == null) ? false : (
+                                    product.remaining_with_card !== undefined &&
+                                    product.remaining_with_card !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {product.remaining_with_card} remain
+                                        </span>
+                                    )
+                                )}{' '}
+                                |{' '}
+                                <span className="text-muted-foreground">
+                                    w/o ESNcard:
+                                </span>{' '}
+                                {(product.unlimited_quantity_without_card || product.quantity_without_card == null)
+                                    ? 'Unlimited'
+                                    : product.quantity_without_card}
+                                {(product.unlimited_quantity_without_card || product.quantity_without_card == null) ? false : (
+                                    product.remaining_without_card !== undefined &&
+                                    product.remaining_without_card !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {product.remaining_without_card} remain
+                                        </span>
+                                    )
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-muted-foreground">
+                                    Quantity:
+                                </span>{' '}
+                                {(product.unlimited_quantity || product.quantity == null)
+                                    ? 'Unlimited'
+                                    : product.quantity}
+                                {(product.unlimited_quantity || product.quantity == null) ? false : (
+                                    product.remaining !== undefined &&
+                                    product.remaining !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {product.remaining} remain
+                                        </span>
+                                    )
+                                )}
+                            </>
+                        )}
                     </div>
 
                     {variant === 'store-manager' && onSetOnline && (
-                        <div className="flex items-center space-x-2 ml-4">
+                        <div className="flex items-center space-x-2 sm:ml-4 shrink-0">
                             <Checkbox
                                 id={`online-${product.id}`}
                                 checked={isOnline}
@@ -134,7 +134,7 @@ export function ProductPreview({
                             />
                             <label
                                 htmlFor={`online-${product.id}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 whitespace-nowrap"
                             >
                                 Sell Online
                             </label>

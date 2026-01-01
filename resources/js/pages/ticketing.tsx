@@ -236,7 +236,11 @@ export default function Ticketing() {
         const buildEmailHtml = (innerHtml: string, ev: any | null) => {
             // Use Template from DB if selected
             if (selectedTemplate) {
-                let tmpl = selectedTemplate.html_content;
+                let tmpl = selectedTemplate.html_content || '';
+
+                // Fix for visible line break characters (\n) appearing in some templates
+                // We replace literal "\n" with <br /> so they render as breaks, not text.
+                tmpl = tmpl.replace(/\\n/g, '<br />').replace(/\\r/g, '');
                 // Replace template-level variables
                 const eventTitle = ev ? ev.name : '';
                 // Support start_date OR event_date depending on the model
