@@ -69,7 +69,8 @@ class OfficeController extends Controller
             })->sortByDesc('created_at')->values()->all();
         }
 
-        $pastShifts = OfficeShift::whereNotNull('ended_at')
+        $pastShifts = OfficeShift::with(['workers.user'])
+            ->whereNotNull('ended_at')
             ->orderBy('ended_at', 'desc')
             ->limit(10)
             ->get()
@@ -80,6 +81,10 @@ class OfficeController extends Controller
                 'status' => $s->status,
                 'total_cash' => $s->total_cash,
                 'total_card' => $s->total_card,
+                'workers' => $s->workers->map(fn ($w) => [
+                    'id' => $w->user->id,
+                    'name' => $w->user->name,
+                ]),
             ]);
 
         $staffCollection = User::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'role', 'email']);

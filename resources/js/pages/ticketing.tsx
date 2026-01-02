@@ -1,3 +1,4 @@
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -16,6 +17,7 @@ import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import * as React from 'react';
+import { Check, TriangleAlert } from 'lucide-react';
 import FullDataDialog from '@/components/FullDataDialog';
 import RichTextEditor from '@/components/RichTextEditor';
 
@@ -348,12 +350,33 @@ export default function Ticketing() {
         }
     };
 
+    // Google connection warning
+    const [showGoogleWarning, setShowGoogleWarning] = React.useState(false);
+    const gmailConnected = Boolean(props.auth?.user?.gmail_connected);
+
+    React.useEffect(() => {
+        if (!gmailConnected) {
+            setShowGoogleWarning(true);
+            const timer = setTimeout(() => setShowGoogleWarning(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [gmailConnected]);
+
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} headerActions={headerActions}>
             <Head title="Ticket Distributor" />
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                {/* Google Connection Warning */}
+                {showGoogleWarning && (
+                    <div className="fixed top-14 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
+                        <Alert variant="destructive" className="bg-red-100 text-red-900 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-900">
+                            <TriangleAlert className="h-4 w-4" />
+                            <AlertTitle>Google account not connected — you cannot distribute emails</AlertTitle>
+                        </Alert>
+                    </div>
+                )}
                 {/* Success banner (replaces alert/toast fallback) */}
                 {successMessage && (
                     <div className="fixed right-6 top-20 z-50">

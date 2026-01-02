@@ -7,11 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { Loader2, Save, RotateCw, Pencil } from 'lucide-react';
+import { Loader2, Save, RotateCw, Pencil, TriangleAlert } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 import { type SharedData } from '@/types';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 
 
 export default function EventAttendees({ event }: { event: any }) {
@@ -192,6 +193,20 @@ export default function EventAttendees({ event }: { event: any }) {
 
 
 
+    // Google connection warning
+    const [showGoogleWarning, setShowGoogleWarning] = React.useState(false);
+    // Explicitly cast to any or check property existence as SharedData might differ
+    const gmailConnected = Boolean((auth.user as any)?.gmail_connected);
+
+    React.useEffect(() => {
+        if (!gmailConnected) {
+            setShowGoogleWarning(true);
+            const timer = setTimeout(() => setShowGoogleWarning(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [gmailConnected]);
+
+
     return (
         <AppLayout breadcrumbs={[
             { title: 'Sellables', href: '/sellables' },
@@ -201,9 +216,16 @@ export default function EventAttendees({ event }: { event: any }) {
         ]}>
             <Head title={`Attendees - ${event.name}`} />
 
-
-
-            <div className="flex h-full flex-col gap-6 p-6">
+            <div className="relative flex h-full flex-col gap-6 p-6">
+                {/* Google Connection Warning */}
+                {showGoogleWarning && (
+                    <div className="fixed top-14 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
+                        <Alert variant="destructive" className="bg-red-100 text-red-900 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-900">
+                            <TriangleAlert className="h-4 w-4" />
+                            <AlertTitle>Google account not connected — you cannot sync attendees</AlertTitle>
+                        </Alert>
+                    </div>
+                )}
 
                 {/* Configuration Card */}
                 <Card>
