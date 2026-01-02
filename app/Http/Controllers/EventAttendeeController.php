@@ -63,6 +63,7 @@ class EventAttendeeController extends Controller
         try {
             $service = new GoogleSheetsService;
             $data = $service->getSheetData($spreadsheetId, $sheetName);
+            $data = $event->filterRows($data);
 
             return response()->json([
                 'spreadsheet_id' => $spreadsheetId,
@@ -93,5 +94,17 @@ class EventAttendeeController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+    public function updateFilter(Request $request, Event $event)
+    {
+        $data = $request->validate([
+            'filter_config' => ['nullable', 'array'],
+        ]);
+
+        $event->update([
+            'attendee_filter_config' => $data['filter_config'],
+        ]);
+
+        return back()->with('success', 'Filter configuration updated.');
     }
 }

@@ -85,6 +85,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('attendees', [App\Http\Controllers\EventAttendeeController::class, 'index'])->name('events.attendees');
         Route::post('attendees/config', [App\Http\Controllers\EventAttendeeController::class, 'updateConfiguration'])->name('events.attendees.config')
             ->middleware('permission:update_event');
+        Route::post('attendees/filter', [App\Http\Controllers\EventAttendeeController::class, 'updateFilter'])->name('events.attendees.filter')
+            ->middleware('permission:update_event');
         Route::get('sheets', [App\Http\Controllers\EventAttendeeController::class, 'listSheets'])->name('events.sheets');
         Route::get('sheet-data', [App\Http\Controllers\EventAttendeeController::class, 'getSheetData'])->name('events.sheet-data');
         Route::post('attendees/update', [App\Http\Controllers\EventAttendeeController::class, 'update'])->name('events.attendees.update')
@@ -142,6 +144,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             // Fetch raw data from Google Sheets
             $service = new \App\Services\GoogleSheetsService;
             $rows = $service->getSheetData($event->google_spreadsheet_id, $event->google_sheet_name);
+
+            // Apply Filtering Logic
+            $rows = $event->filterRows($rows);
 
             return response()->json([
                 'success' => true,

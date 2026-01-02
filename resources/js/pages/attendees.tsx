@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { Loader2, Save, RotateCw, Pencil, TriangleAlert } from 'lucide-react';
+import { Loader2, Save, RotateCw, TriangleAlert, Filter, Plus, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
 import { type SharedData } from '@/types';
@@ -28,10 +28,6 @@ export default function EventAttendees({ event }: { event: any }) {
     const { auth } = usePage<SharedData>().props;
     const permissions = auth.user?.permissions || [];
     const canUpdateAttendee = permissions.includes('admin') || permissions.includes('update_event_attendee');
-
-    const [editingRowIndex, setEditingRowIndex] = React.useState<number | null>(null);
-    const [editingRowData, setEditingRowData] = React.useState<string[]>([]);
-    const [savingRow, setSavingRow] = React.useState(false);
 
     // Derived sample data (array of objects) for easier rendering in the Manage dialog
     const sampleData = React.useMemo(() => {
@@ -191,7 +187,41 @@ export default function EventAttendees({ event }: { event: any }) {
         }
     }, []); // Run once on mount
 
+    // Filter Config State
+    const [filterConfig, setFilterConfig] = React.useState<any[]>(event.attendee_filter_config || []);
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
+    const saveFilterConfig = () => {
+        router.post(
+            `/sellables/events/${event.id}/attendees/filter`,
+            { filter_config: filterConfig },
+            {
+                onSuccess: () => {
+                    toast.success('Filter configuration saved');
+                    setIsFilterOpen(false);
+                    // Refresh data immediately
+                    if (sheetName) {
+                        fetchSheetData(sheetName);
+                    }
+                },
+                onError: () => toast.error('Failed to save filter')
+            }
+        );
+    };
+
+    const addFilterRule = () => {
+        setFilterConfig([...filterConfig, { column: '', operator: 'equals', value: '' }]);
+    };
+
+    const removeFilterRule = (index: number) => {
+        setFilterConfig(filterConfig.filter((_, i) => i !== index));
+    };
+
+    const updateFilterRule = (index: number, field: string, value: string) => {
+        const newConfig = [...filterConfig];
+        newConfig[index] = { ...newConfig[index], [field]: value };
+        setFilterConfig(newConfig);
+    };
 
     // Google connection warning
     const [showGoogleWarning, setShowGoogleWarning] = React.useState(false);
@@ -291,7 +321,15 @@ export default function EventAttendees({ event }: { event: any }) {
                             <CardTitle className="mb-1">Attendees ({rows.length})</CardTitle>
                             <CardDescription>Live data from Google Sheets.</CardDescription>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" onClick={() => setIsFilterOpen(true)} className="relative">
+                                <Filter className="h-4 w-4" />
+                                {filterConfig.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                                        {filterConfig.length}
+                                    </span>
+                                )}
+                            </Button>
                             {/* Open full-data view in a fullscreen modal; label changed from 'Manage' to 'Fullscreen' */}
                             <FullDataDialog title="Full Attendee Data" triggerLabel="Fullscreen" fields={headers} sampleData={sampleData} />
                         </div>
@@ -311,7 +349,6 @@ export default function EventAttendees({ event }: { event: any }) {
                                             {headers.map((header, idx) => (
                                                 <TableHead key={idx}>{header}</TableHead>
                                             ))}
-                                            {canUpdateAttendee && <TableHead className="w-[50px]"></TableHead>}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -320,20 +357,6 @@ export default function EventAttendees({ event }: { event: any }) {
                                                 {row.map((cell, cellIdx) => (
                                                     <TableCell key={cellIdx}>{cell ?? ''}</TableCell>
                                                 ))}
-                                                {canUpdateAttendee && (
-                                                    <TableCell>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => {
-                                                                setEditingRowIndex(rowIdx);
-                                                                setEditingRowData([...row]);
-                                                            }}
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
-                                                )}
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -344,70 +367,68 @@ export default function EventAttendees({ event }: { event: any }) {
                 </Card>
             </div>
 
-            <Dialog open={editingRowIndex !== null} onOpenChange={(open) => !open && setEditingRowIndex(null)}>
-                <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg">
+            <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Edit Attendee</DialogTitle>
+                        <DialogTitle>Filter Configuration</DialogTitle>
                         <DialogDescription>
-                            Update details for row {editingRowIndex !== null ? editingRowIndex + 2 : ''}.
+                            Define rules for identifying valid attendees. Only attendees matching ALL rules will receive emails.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        {headers.map((header, idx) => (
-                            <div key={idx} className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor={`col-${idx}`} className="text-right">
-                                    {header}
-                                </Label>
-                                <Input
-                                    id={`col-${idx}`}
-                                    value={editingRowData[idx] ?? ''}
-                                    onChange={(e) => {
-                                        const newData = [...editingRowData];
-                                        newData[idx] = e.target.value;
-                                        setEditingRowData(newData);
-                                    }}
-                                    className="col-span-3"
-                                />
+
+                    <div className="space-y-4 py-4">
+                        {filterConfig.length === 0 && (
+                            <div className="text-center text-sm text-muted-foreground">
+                                No filter rules set. All attendees will be imported.
+                            </div>
+                        )}
+                        {filterConfig.map((rule, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                                <div className="grid flex-1 grid-cols-3 gap-2">
+                                    <select
+                                        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={rule.column}
+                                        onChange={(e) => updateFilterRule(idx, 'column', e.target.value)}
+                                    >
+                                        <option value="" disabled>Select Column</option>
+                                        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                                    </select>
+
+                                    <select
+                                        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={rule.operator}
+                                        onChange={(e) => updateFilterRule(idx, 'operator', e.target.value)}
+                                    >
+                                        <option value="equals">Equals</option>
+                                        <option value="contains">Contains</option>
+                                        <option value="not_contains">Does not contain</option>
+                                        <option value="is_checked">Is Checked</option>
+                                        <option value="is_not_checked">Is Not Checked</option>
+                                        <option value="is_empty">Is Empty</option>
+                                        <option value="is_not_empty">Is Not Empty</option>
+                                    </select>
+
+                                    {!['is_checked', 'is_not_checked', 'is_empty', 'is_not_empty'].includes(rule.operator) && (
+                                        <Input
+                                            placeholder="Value..."
+                                            value={rule.value}
+                                            onChange={(e) => updateFilterRule(idx, 'value', e.target.value)}
+                                        />
+                                    )}
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => removeFilterRule(idx)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
                             </div>
                         ))}
+                        <Button variant="outline" size="sm" onClick={addFilterRule} className="w-full border-dashed">
+                            <Plus className="mr-2 h-4 w-4" /> Add Rule
+                        </Button>
                     </div>
+
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingRowIndex(null)} disabled={savingRow}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={async () => {
-                                if (editingRowIndex === null) return;
-                                setSavingRow(true);
-                                try {
-                                    // Row index 0 in `rows` is actually Row 2 in sheet (after header)
-                                    // Make sure range covers the whole row. "SheetName!A{row}:ZZ{row}"
-                                    // We can just use "SheetName!A{row}" and Google Sheets will update cells starting there.
-                                    const sheetRowNumber = editingRowIndex + 2;
-                                    const range = `${sheetName}!A${sheetRowNumber}`;
-
-                                    await axios.post(`/sellables/events/${event.id}/attendees/update`, {
-                                        spreadsheet_id: spreadsheetId,
-                                        range: range,
-                                        values: editingRowData
-                                    });
-
-                                    toast.success('Attendee updated successfully');
-                                    setEditingRowIndex(null);
-                                    // Refresh data
-                                    fetchSheetData(sheetName);
-                                } catch (e) {
-                                    console.error(e);
-                                    toast.error('Failed to update attendee');
-                                } finally {
-                                    setSavingRow(false);
-                                }
-                            }}
-                            disabled={savingRow}
-                        >
-                            {savingRow && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Changes
-                        </Button>
+                        <Button variant="secondary" onClick={() => setIsFilterOpen(false)}>Cancel</Button>
+                        <Button onClick={saveFilterConfig}>Save Configuration</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -27,6 +27,7 @@ class Event extends Model
         'google_spreadsheet_id',
         'google_sheet_name',
         'is_online_sellable',
+        'attendee_filter_config',
     ];
 
     protected $appends = ['remaining', 'remaining_with_card', 'remaining_without_card'];
@@ -43,6 +44,7 @@ class Event extends Model
             'unlimited_quantity' => 'boolean',
             'unlimited_quantity_with_card' => 'boolean',
             'unlimited_quantity_without_card' => 'boolean',
+            'attendee_filter_config' => 'array',
         ];
     }
 
@@ -156,5 +158,89 @@ class Event extends Model
         }
 
         return max(0, $this->quantity - $this->sales()->count() - $this->onlineSales()->count());
+    }
+    public function filterRows(array $rows): array
+    {
+        $filterConfig = $this->attendee_filter_config;
+
+        if (! $filterConfig || ! is_array($filterConfig) || count($rows) <= 1) {
+            return $rows;
+        }
+
+        $headers = array_map('trim', $rows[0]); // Normalize headers
+        $filteredRows = [$rows[0]]; // Keep header
+
+        // Slice to get data rows
+        $dataRows = array_slice($rows, 1);
+
+        foreach ($dataRows as $row) {
+            $match = true;
+            foreach ($filterConfig as $rule) {
+                $column = $rule['column'] ?? null;
+                $operator = $rule['operator'] ?? null;
+                $value = $rule['value'] ?? null;
+
+                if (! $column || ! $operator) {
+                    continue;
+                }
+
+                $columnIndex = array_search($column, $headers);
+                if ($columnIndex === false) {
+                    continue;
+                }
+
+                $cellValue = isset($row[$columnIndex]) ? trim($row[$columnIndex]) : '';
+
+                switch ($operator) {
+                    case 'equals':
+                        if (strcasecmp($cellValue, $value) !== 0) {
+                            $match = false;
+                        }
+                        break;
+                    case 'contains':
+                        if (stripos($cellValue, $value) === false) {
+                            $match = false;
+                        }
+                        break;
+                    case 'not_contains':
+                        if (stripos($cellValue, $value) !== false) {
+                            $match = false;
+                        }
+                        break;
+                    case 'is_checked':
+                        $isChecked = strtoupper($cellValue) === 'TRUE';
+                        if (! $isChecked) {
+                            $match = false;
+                        }
+                        break;
+                    case 'is_not_checked':
+                        $isChecked = strtoupper($cellValue) === 'TRUE';
+                        if ($isChecked) {
+                            $match = false;
+                        }
+                        break;
+                    case 'is_empty':
+                        if ($cellValue !== '') {
+                            $match = false;
+                        }
+                        break;
+                    case 'is_not_empty':
+                        if ($cellValue === '') {
+                            $match = false;
+                        }
+                        break;
+                }
+
+                if (! $match) {
+                    break;
+                }
+            }
+
+            if ($match) {
+                $filteredRows[] = $row;
+            }
+        }
+
+        return array_values($filteredRows);
     }
 }
