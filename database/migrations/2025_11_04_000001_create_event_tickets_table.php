@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         // Make migration safe to run when the table already exists (useful for dev environments)
-        if (! Schema::connection('tickets')->hasTable('event_tickets')) {
+        if (! Schema::hasTable('event_tickets')) {
             // Create the table on the 'tickets' connection and avoid cross-connection FKs
-            Schema::connection('tickets')->create('event_tickets', function (Blueprint $table) {
+            Schema::create('event_tickets', function (Blueprint $table) {
                 $table->id();
                 // store event_id as a plain nullable unsignedBigInteger; do not add a FK
                 $table->unsignedBigInteger('event_id')->nullable();
@@ -38,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::connection('tickets')->dropIfExists('event_tickets');
+        Schema::dropIfExists('event_tickets');
     }
 };

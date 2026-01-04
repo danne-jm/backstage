@@ -83,45 +83,7 @@ return [
             ]) : [],
         ],
 
-        'attendees' => [
-            'driver' => 'mysql',
-            'url' => env('DB_ATTENDEES_URL'),
-            'host' => env('DB_ATTENDEES_HOST', '127.0.0.1'),
-            'port' => env('DB_ATTENDEES_PORT', '3306'),
-            'database' => env('DB_ATTENDEES_DATABASE', 'attendees'),
-            'username' => env('DB_ATTENDEES_USERNAME', 'root'),
-            'password' => env('DB_ATTENDEES_PASSWORD', ''),
-            'unix_socket' => env('DB_ATTENDEES_SOCKET', ''),
-            'charset' => env('DB_CHARSET', 'utf8mb4'),
-            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
-        ],
 
-        'tickets' => [
-            'driver' => 'mysql',
-            'url' => env('DB_TICKETS_URL'),
-            'host' => env('DB_TICKETS_HOST', '127.0.0.1'),
-            'port' => env('DB_TICKETS_PORT', '3306'),
-            'database' => env('DB_TICKETS_DATABASE', 'tickets'),
-            'username' => env('DB_TICKETS_USERNAME', 'root'),
-            'password' => env('DB_TICKETS_PASSWORD', ''),
-            'unix_socket' => env('DB_TICKETS_SOCKET', ''),
-            'charset' => env('DB_CHARSET', 'utf8mb4'),
-            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
-        ],
 
         'pgsql' => [
             'driver' => 'pgsql',

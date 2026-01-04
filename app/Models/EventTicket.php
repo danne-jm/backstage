@@ -10,7 +10,7 @@ class EventTicket extends Model
     use HasFactory;
 
     // Store tickets in the separate 'tickets' connection
-    protected $connection = 'tickets';
+
 
     protected $table = 'event_tickets';
 

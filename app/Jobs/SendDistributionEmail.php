@@ -101,7 +101,7 @@ class SendDistributionEmail implements ShouldQueue
                     $event = Event::find($eventId);
                     if ($event) {
                         $tableName = Ticket::generateTableName($event);
-                        DB::connection('tickets')->table($tableName)
+                        DB::table($tableName)
                             ->where('ticket_id', $ticketId)
                             ->update(['unique_trait' => $ticketCode, 'updated_at' => now()]);
                         Log::info('SendDistributionEmail: persisted ticket_code to tickets DB', ['ticket_id' => $ticketId]);

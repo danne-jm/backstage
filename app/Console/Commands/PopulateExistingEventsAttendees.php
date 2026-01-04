@@ -42,14 +42,14 @@ class PopulateExistingEventsAttendees extends Command
             $tableName = \App\Models\EventAttendee::generateTableName($event);
 
             // Skip if table already exists
-            if (Schema::connection('attendees')->hasTable($tableName)) {
+            if (Schema::hasTable($tableName)) {
                 $this->warn("Table {$tableName} already exists. Skipping.");
 
                 continue;
             }
 
             // Create table
-            Schema::connection('attendees')->create($tableName, function ($table) {
+            Schema::create($tableName, function ($table) {
                 $table->id();
                 $table->string('first_name');
                 $table->string('last_name');
@@ -69,7 +69,7 @@ class PopulateExistingEventsAttendees extends Command
             ];
 
             foreach ($dummyData as $data) {
-                DB::connection('attendees')->table($tableName)->insert(array_merge($data, [
+                DB::table($tableName)->insert(array_merge($data, [
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]));
