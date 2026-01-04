@@ -24,11 +24,6 @@ class CheckPermission
         // Use the expanded permissions to account for Permission Levels (e.g. 'board')
         $userPermissions = $user->getExpandedPermissions();
 
-        // Admin override
-        if (in_array('admin', $userPermissions)) {
-            return $next($request);
-        }
-
         // Specific permission check
         if (in_array($permission, $userPermissions)) {
             return $next($request);

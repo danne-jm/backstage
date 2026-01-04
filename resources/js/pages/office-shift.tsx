@@ -111,6 +111,13 @@ export default function Office() {
         }
     }, [activeShift]);
 
+    React.useEffect(() => {
+        if (message) {
+            const timer = setTimeout(() => setMessage(''), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [message]);
+
     const staffMap = React.useMemo(
         () => new Map((props['staff'] || []).map((s: any) => [s.email, s.name])),
         [props['staff']],

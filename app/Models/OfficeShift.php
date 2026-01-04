@@ -8,6 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class OfficeShift extends Model
 {
     use HasFactory;
+    use \Spatie\Activitylog\Traits\LogsActivity;
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['*'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     // Define the canonical list of denominations (notes first, then coins)
     public const DENOMINATIONS = [
