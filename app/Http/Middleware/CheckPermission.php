@@ -21,7 +21,8 @@ class CheckPermission
             abort(403, 'Unauthorized');
         }
 
-        $userPermissions = $user->permissions ?? [];
+        // Use the expanded permissions to account for Permission Levels (e.g. 'board')
+        $userPermissions = $user->getExpandedPermissions();
 
         // Admin override
         if (in_array('admin', $userPermissions)) {

@@ -34,5 +34,22 @@ class AppServiceProvider extends ServiceProvider
         // Register observers to propagate non-price updates into saved sales snapshots
         Product::observe(ProductObserver::class);
         Event::observe(EventObserver::class);
+
+        // EIM: Audit Logging for Authentication
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
+            activity('auth')
+                ->causedBy($event->user)
+                ->event('login')
+                ->log('User logged in');
+        });
+
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Logout::class, function ($event) {
+            if ($event->user) {
+                activity('auth')
+                    ->causedBy($event->user)
+                    ->event('logout')
+                    ->log('User logged out');
+            }
+        });
     }
 }

@@ -59,6 +59,16 @@ class GmailOAuthController extends Controller
         $providerId = $socialUser->id ?? null;
         $email = $socialUser->getEmail();
 
+        // Security: Enforce allowed domains for Google Login
+        $allowedOrigins = array_filter(array_map('trim', explode(',', env('EMAIL_ALLOWED_ORIGINS', ''))));
+        if (! empty($allowedOrigins)) {
+            $domain = substr(strrchr($email, "@"), 1);
+            if (! in_array($domain, $allowedOrigins)) {
+                Log::warning("Google Login blocked for domain: $domain (Email: $email)");
+                return redirect()->route('home')->withErrors('Login is restricted to authorized domains only.');
+            }
+        }
+
         // Try to pull first/last name from raw user data if available
         $firstName = $socialUser->user['given_name'] ?? null;
         $lastName = $socialUser->user['family_name'] ?? null;

@@ -13,6 +13,15 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use \Spatie\Activitylog\Traits\LogsActivity;
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['role', 'permissions', 'email', 'first_name', 'last_name', 'pinned'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -81,6 +90,32 @@ class User extends Authenticatable
             'role' => 'string',
             'pinned' => 'array',
         ];
+    }
+
+    /**
+     * Get all permissions for the user, expanding any "Permission Levels"
+     * (e.g. 'administrator', 'board') into their granular permissions.
+     *
+     * @return array<string>
+     */
+    public function getExpandedPermissions(): array
+    {
+        $permissions = $this->permissions ?? [];
+        $expanded = [];
+        $levels = config('permissions.levels', []);
+
+        foreach ($permissions as $permission) {
+            // If the permission is a "Level" (group), add all its sub-permissions
+            if (isset($levels[$permission])) {
+                $expanded = array_merge($expanded, $levels[$permission]);
+            }
+            
+            // Always add the permission itself (e.g. 'view_dashboard' or 'board')
+            // This ensures we keep the original tag too.
+            $expanded[] = $permission;
+        }
+
+        return array_unique($expanded);
     }
 
     /**
