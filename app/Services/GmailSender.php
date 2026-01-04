@@ -57,7 +57,7 @@ class GmailSender
         // Provide the refresh token and refresh to get a valid access token
         try {
             $token = $client->refreshToken($refreshToken);
-            
+
             // CHECK: Did Google rotate the refresh token?
             if (isset($token['refresh_token']) && $token['refresh_token'] !== $refreshToken) {
                 $this->logger->info('GmailSender: New refresh token received, updating user record', ['user_id' => $user->id]);

@@ -1,6 +1,5 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { OnlineSale, Sellable } from '@/types/sellables';
-import React from 'react';
 
 interface SalesChartProps {
     loading: boolean;
@@ -65,9 +64,10 @@ export function SalesChart({
                                                         (i /
                                                             Math.max(
                                                                 1,
-                                                                dateKeys.length - 1,
+                                                                dateKeys.length -
+                                                                    1,
                                                             )) *
-                                                        w;
+                                                            w;
                                                     const y =
                                                         pad +
                                                         h -
@@ -120,8 +120,7 @@ export function SalesChart({
                                         onlineSellableSeries.find(
                                             (ss) =>
                                                 ss.id === s.id &&
-                                                (ss.type as any) ===
-                                                s.type,
+                                                (ss.type as any) === s.type,
                                         );
                                     const color =
                                         seriesMeta?.color ?? '#6B7280';
@@ -137,7 +136,7 @@ export function SalesChart({
                                             key={`online-sellable-${s.type}-${s.id}`}
                                             className="flex items-center justify-between"
                                         >
-                                            <div className="flex truncate items-center gap-2">
+                                            <div className="flex items-center gap-2 truncate">
                                                 <span
                                                     className="inline-block h-2 w-2 rounded-full"
                                                     style={{

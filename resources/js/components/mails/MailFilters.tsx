@@ -78,7 +78,7 @@ export function MailFilters({
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Events</SelectItem>
-                        {events.map(event => (
+                        {events.map((event) => (
                             <SelectItem key={event.id} value={String(event.id)}>
                                 {event.name}
                             </SelectItem>
@@ -95,7 +95,7 @@ export function MailFilters({
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Senders</SelectItem>
-                        {senders.map(sender => (
+                        {senders.map((sender) => (
                             <SelectItem
                                 key={sender.id}
                                 value={String(sender.id)}
@@ -109,13 +109,13 @@ export function MailFilters({
                 <Input
                     type="date"
                     value={startDateFilter}
-                    onChange={e => setStartDateFilter(e.target.value)}
+                    onChange={(e) => setStartDateFilter(e.target.value)}
                     placeholder="Start date"
                 />
                 <Input
                     type="date"
                     value={endDateFilter}
-                    onChange={e => setEndDateFilter(e.target.value)}
+                    onChange={(e) => setEndDateFilter(e.target.value)}
                     placeholder="End date"
                 />
             </div>

@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Link } from '@inertiajs/react';
 import { Eye } from 'lucide-react';
-import React, { forwardRef, useState } from 'react';
+import { forwardRef, useState } from 'react';
 import {
     computeBreakdownTotal,
     denominationConfig,
@@ -28,15 +28,16 @@ export const LastShiftSummary = forwardRef<
     HTMLDivElement,
     LastShiftSummaryProps
 >(({ lastShift, className }, ref) => {
-    const [isViewingStartBreakdown, setIsViewingStartBreakdown] = useState(false);
+    const [isViewingStartBreakdown, setIsViewingStartBreakdown] =
+        useState(false);
     const [isViewingEndBreakdown, setIsViewingEndBreakdown] = useState(false);
 
     return (
         <section
             ref={ref}
             className={cn(
-                "flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border",
-                className
+                'flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border',
+                className,
             )}
         >
             <div className="mb-3 flex items-center justify-between">
@@ -73,10 +74,10 @@ export const LastShiftSummary = forwardRef<
                         </div>
                         <div className="text-sm">
                             {Array.isArray(lastShift.workers) &&
-                                lastShift.workers.length > 0
+                            lastShift.workers.length > 0
                                 ? lastShift.workers
-                                    .map((w: any) => w.name)
-                                    .join(', ')
+                                      .map((w: any) => w.name)
+                                      .join(', ')
                                 : 'None'}
                         </div>
                     </div>
@@ -186,7 +187,7 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.start_cash_breakdown ||
-                                            {},
+                                                {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>
@@ -222,10 +223,8 @@ export const LastShiftSummary = forwardRef<
                                         </div>
                                         <div className="text-sm font-medium">
                                             {Number(
-                                                (
-                                                    lastShift?.end_of_shift_cash_breakdown ||
-                                                    {}
-                                                )[d.key] ?? 0,
+                                                (lastShift?.end_of_shift_cash_breakdown ||
+                                                    {})[d.key] ?? 0,
                                             )}
                                         </div>
                                     </div>
@@ -238,7 +237,7 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.end_of_shift_cash_breakdown ||
-                                            {},
+                                                {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>

@@ -1,6 +1,5 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { OnlineSale } from '@/types/sellables';
-import React from 'react';
 
 interface LatestCardSalesListProps {
     loading: boolean;

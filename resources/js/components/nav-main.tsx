@@ -13,7 +13,10 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
     const page = usePage();
     // Allow pages to force which sidebar item is active by setting
     // document.documentElement.dataset.activeSidebar to a path (e.g. '/sellables').
-    const forcedActive = typeof document !== 'undefined' ? document.documentElement.dataset.activeSidebar : undefined;
+    const forcedActive =
+        typeof document !== 'undefined'
+            ? document.documentElement.dataset.activeSidebar
+            : undefined;
 
     return (
         <SidebarGroup className="px-2 py-0">
@@ -28,9 +31,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     ? resolveUrl(item.href).startsWith(
                                           resolveUrl(forcedActive),
                                       )
-                                    : page.url.startsWith(
-                                          resolveUrl(item.href),
-                                      )
+                                    : page.url.startsWith(resolveUrl(item.href))
                             }
                             tooltip={{ children: item.title }}
                         >

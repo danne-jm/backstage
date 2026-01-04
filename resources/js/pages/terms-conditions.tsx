@@ -1,5 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
-import { home } from '@/routes';
+import { Head } from '@inertiajs/react';
 
 export default function TermsAndConditions() {
     return (
@@ -26,7 +25,7 @@ export default function TermsAndConditions() {
                     <h1 className="mb-8 text-4xl font-semibold">
                         Terms and Conditions
                     </h1>
-                    <div className="prose prose-stone max-w-none dark:prose-invert">
+                    <div className="prose prose-stone dark:prose-invert max-w-none">
                         <p className="text-[#706f6c] dark:text-[#A1A09A]">
                             Last updated: December 22, 2025
                         </p>
@@ -58,9 +57,9 @@ export default function TermsAndConditions() {
                             <ul className="mb-4 ml-6 list-disc space-y-2 text-[#706f6c] dark:text-[#A1A09A]">
                                 <li>Modify or copy the materials</li>
                                 <li>
-                                    Use the materials for any commercial purpose,
-                                    or for any public display (commercial or
-                                    non-commercial)
+                                    Use the materials for any commercial
+                                    purpose, or for any public display
+                                    (commercial or non-commercial)
                                 </li>
                                 <li>
                                     Attempt to decompile or reverse engineer any
@@ -86,11 +85,11 @@ export default function TermsAndConditions() {
                                 provided on an 'as is' basis. We make no
                                 warranties, expressed or implied, and hereby
                                 disclaim and negate all other warranties
-                                including, without limitation, implied warranties
-                                or conditions of merchantability, fitness for a
-                                particular purpose, or non-infringement of
-                                intellectual property or other violation of
-                                rights.
+                                including, without limitation, implied
+                                warranties or conditions of merchantability,
+                                fitness for a particular purpose, or
+                                non-infringement of intellectual property or
+                                other violation of rights.
                             </p>
                         </section>
 
@@ -115,13 +114,13 @@ export default function TermsAndConditions() {
                                 5. Accuracy of Materials
                             </h2>
                             <p className="mb-4 leading-relaxed text-[#706f6c] dark:text-[#A1A09A]">
-                                The materials appearing in this application could
-                                include technical, typographical, or photographic
-                                errors. We do not warrant that any of the
-                                materials on its application are accurate,
-                                complete, or current. We may make changes to the
-                                materials contained in this application at any
-                                time without notice.
+                                The materials appearing in this application
+                                could include technical, typographical, or
+                                photographic errors. We do not warrant that any
+                                of the materials on its application are
+                                accurate, complete, or current. We may make
+                                changes to the materials contained in this
+                                application at any time without notice.
                             </p>
                         </section>
 

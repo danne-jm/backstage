@@ -7,9 +7,7 @@ use Illuminate\Http\Request;
 
 class OnlineSaleController extends Controller
 {
-    public function __construct(protected SaleService $service)
-    {
-    }
+    public function __construct(protected SaleService $service) {}
 
     /**
      * Store a new online sale. Accepts optional office_shift_id to also record it on a shift.

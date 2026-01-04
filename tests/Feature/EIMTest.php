@@ -31,14 +31,14 @@ class EIMTest extends TestCase
         $user = User::factory()->create([
             'permissions' => ['administrator'],
         ]);
-        
+
         $expanded = $user->getExpandedPermissions();
 
         // Administrator should have all permissions explicitly
         $this->assertContains('view_dashboard', $expanded);
         $this->assertContains('create_user', $expanded);
         $this->assertContains('delete_office', $expanded);
-        
+
         // Verify access to a protected route
         $response = $this->actingAs($user)->get('/dashboard');
         $response->assertStatus(200);
@@ -47,7 +47,7 @@ class EIMTest extends TestCase
     public function test_activity_logging_on_user_update()
     {
         $user = User::factory()->create();
-        
+
         // Act: Update user
         $user->first_name = 'ChangedName';
         $user->save();
@@ -58,20 +58,20 @@ class EIMTest extends TestCase
             'subject_id' => $user->id,
             'description' => 'updated',
         ]);
-        
+
         // Fetch the specific update log
         $activity = Activity::where('subject_id', $user->id)
             ->where('description', 'updated')
             ->first();
-            
+
         $this->assertEquals('ChangedName', $activity->properties['attributes']['first_name']);
     }
 
     public function test_auth_event_logging()
     {
-        // We need to ensure the listener is working. 
+        // We need to ensure the listener is working.
         // Note: RefreshDatabase might clear logs, so we check after login.
-        
+
         // Disable 2FA so we don't get redirected to challenge
         $user = User::factory()->withoutTwoFactor()->create([
             'permissions' => ['guest'],
@@ -110,7 +110,7 @@ class EIMTest extends TestCase
             'responsible_user_id' => $user->id,
         ]);
         $event->save();
-        
+
         $event->name = 'New Event Name';
         $event->save();
 
@@ -126,9 +126,9 @@ class EIMTest extends TestCase
             'name' => 'Old Item',
             'quantity' => 10,
         ]);
-        
+
         $item->update(['name' => 'New Item']);
-        
+
         $this->assertDatabaseHas('activity_log', [
             'subject_type' => \App\Models\Item::class,
             'subject_id' => $item->id,
@@ -137,8 +137,8 @@ class EIMTest extends TestCase
 
         // Check MailTemplate logging
         $template = \App\Models\MailTemplate::create([
-            'name' => 'Test Template', 
-            'html_content' => '<p>Hi</p>'
+            'name' => 'Test Template',
+            'html_content' => '<p>Hi</p>',
         ]);
         $template->update(['name' => 'Updated Template']);
         $this->assertDatabaseHas('activity_log', [
@@ -187,7 +187,7 @@ class EIMTest extends TestCase
             ->where('subject_id', $event->id)
             ->where('description', 'updated')
             ->first();
-            
+
         $this->assertEquals('New Event Name', $log->properties['attributes']['name']);
         $this->assertEquals('Old Name', $log->properties['old']['name']);
     }

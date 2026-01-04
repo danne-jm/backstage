@@ -52,7 +52,7 @@ enum UserPermission: string
     // Event Attendees
     case VIEW_EVENT_ATTENDEES = 'view_event_attendees';
     case UPDATE_EVENT_ATTENDEE = 'update_event_attendee';
-    
+
     // Settings
     case VIEW_SETTINGS_PROFILE = 'view_settings_profile';
     case UPDATE_SETTINGS_PROFILE = 'update_settings_profile';
@@ -135,7 +135,7 @@ enum UserPermission: string
             // Event Attendees
             self::VIEW_EVENT_ATTENDEES => 'View Event Attendees',
             self::UPDATE_EVENT_ATTENDEE => 'Update Attendee Details',
-            
+
             // Settings
             self::VIEW_SETTINGS_PROFILE => 'View Profile (& Settings Home)',
             self::UPDATE_SETTINGS_PROFILE => 'Update Profile',

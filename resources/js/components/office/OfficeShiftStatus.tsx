@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { Link, router } from '@inertiajs/react';
-import React from 'react';
-import { formatTimestamp } from './utils';
 import { cn } from '@/lib/utils';
+import { Link, router } from '@inertiajs/react';
+import { formatTimestamp } from './utils';
 
 interface OfficeShiftStatusProps {
     activeShift: any;
@@ -17,8 +16,8 @@ export function OfficeShiftStatus({
     return (
         <section
             className={cn(
-                "flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border",
-                className
+                'flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border',
+                className,
             )}
         >
             <h3 className="mb-3 text-sm font-semibold">Office Shift Status</h3>
@@ -38,10 +37,10 @@ export function OfficeShiftStatus({
                         </div>
                         <div className="mt-1 text-sm">
                             {Array.isArray(activeShift.workers) &&
-                                activeShift.workers.length > 0
+                            activeShift.workers.length > 0
                                 ? activeShift.workers
-                                    .map((w: any) => w.name)
-                                    .join(', ')
+                                      .map((w: any) => w.name)
+                                      .join(', ')
                                 : 'None'}
                         </div>
                     </div>

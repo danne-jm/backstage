@@ -11,9 +11,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import type { Product } from '@/types/sellables';
 import { router } from '@inertiajs/react';
 import * as React from 'react';
-import type { Product } from '@/types/sellables';
 
 interface ProductDialogProps {
     open: boolean;
@@ -32,7 +32,7 @@ export function ProductDialog({
     const [productPrice, setProductPrice] = React.useState('');
     const [productDescription, setProductDescription] = React.useState('');
     const [productQuantity, setProductQuantity] = React.useState('');
-    const [productUnlimited, setProductUnlimited] = React.useState(false);
+
     const [productVariableAmount, setProductVariableAmount] =
         React.useState(false);
     const [productQuantityWithCard, setProductQuantityWithCard] =
@@ -50,7 +50,7 @@ export function ProductDialog({
                     ? ''
                     : editingProduct.quantity?.toString() || '',
             );
-            setProductUnlimited(Boolean(editingProduct.unlimited_quantity));
+            // setProductUnlimited(Boolean(editingProduct.unlimited_quantity));
             setProductVariableAmount(Boolean(editingProduct.variable_amount));
             setProductQuantityWithCard(
                 editingProduct.unlimited_quantity_with_card
@@ -67,7 +67,7 @@ export function ProductDialog({
             setProductPrice('');
             setProductDescription('');
             setProductQuantity('');
-            setProductUnlimited(false);
+            // setProductUnlimited(false);
             setProductVariableAmount(false);
             setProductQuantityWithCard('');
             setProductQuantityWithoutCard('');
@@ -86,19 +86,23 @@ export function ProductDialog({
                 : productQuantity
                     ? parseInt(productQuantity)
                     : null,
-            unlimited_quantity: productVariableAmount ? false : !productQuantity,
+            unlimited_quantity: productVariableAmount
+                ? false
+                : !productQuantity,
             quantity_with_card:
                 productVariableAmount && productQuantityWithCard
                     ? parseInt(productQuantityWithCard)
                     : null,
-            unlimited_quantity_with_card:
-                productVariableAmount ? (!productQuantityWithCard) : false,
+            unlimited_quantity_with_card: productVariableAmount
+                ? !productQuantityWithCard
+                : false,
             quantity_without_card:
                 productVariableAmount && productQuantityWithoutCard
                     ? parseInt(productQuantityWithoutCard)
                     : null,
-            unlimited_quantity_without_card:
-                productVariableAmount ? (!productQuantityWithoutCard) : false,
+            unlimited_quantity_without_card: productVariableAmount
+                ? !productQuantityWithoutCard
+                : false,
         };
 
         if (editingProduct) {
@@ -135,7 +139,7 @@ export function ProductDialog({
                         <Input
                             id="product-name"
                             value={productName}
-                            onChange={e => setProductName(e.target.value)}
+                            onChange={(e) => setProductName(e.target.value)}
                         />
                     </div>
                     <div>
@@ -145,7 +149,7 @@ export function ProductDialog({
                         <Textarea
                             id="product-description"
                             value={productDescription}
-                            onChange={e =>
+                            onChange={(e) =>
                                 setProductDescription(e.target.value)
                             }
                         />
@@ -157,7 +161,7 @@ export function ProductDialog({
                             type="number"
                             step="0.01"
                             value={productPrice}
-                            onChange={e => setProductPrice(e.target.value)}
+                            onChange={(e) => setProductPrice(e.target.value)}
                         />
                     </div>
                     <div>
@@ -168,14 +172,14 @@ export function ProductDialog({
                             id="product-quantity"
                             type="number"
                             value={productQuantity}
-                            onChange={e => setProductQuantity(e.target.value)}
+                            onChange={(e) => setProductQuantity(e.target.value)}
                         />
                     </div>
                     <div className="flex items-center space-x-2">
                         <Checkbox
                             id="product-variable-amount"
                             checked={productVariableAmount}
-                            onCheckedChange={checked =>
+                            onCheckedChange={(checked) =>
                                 setProductVariableAmount(checked === true)
                             }
                         />
@@ -183,8 +187,8 @@ export function ProductDialog({
                             htmlFor="product-variable-amount"
                             className="cursor-pointer"
                         >
-                            Variable Amount (separate quantities for with/without
-                            ESNcard)
+                            Variable Amount (separate quantities for
+                            with/without ESNcard)
                         </Label>
                     </div>
                     {productVariableAmount && (
@@ -197,7 +201,7 @@ export function ProductDialog({
                                     id="product-quantity-with-card"
                                     type="number"
                                     value={productQuantityWithCard}
-                                    onChange={e =>
+                                    onChange={(e) =>
                                         setProductQuantityWithCard(
                                             e.target.value,
                                         )
@@ -212,7 +216,7 @@ export function ProductDialog({
                                     id="product-quantity-without-card"
                                     type="number"
                                     value={productQuantityWithoutCard}
-                                    onChange={e =>
+                                    onChange={(e) =>
                                         setProductQuantityWithoutCard(
                                             e.target.value,
                                         )

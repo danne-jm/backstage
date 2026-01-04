@@ -32,14 +32,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Office overview dashboard
     Route::get('office', [App\Http\Controllers\OfficeController::class, 'index'])->name('office')
         ->middleware('permission:view_office');
-    
+
     Route::post('office/start', [App\Http\Controllers\OfficeController::class, 'start'])->name('office.start')
         ->middleware('permission:create_office');
 
     // Active office shift management page
     Route::middleware(['permission:view_office'])->prefix('office/{office}')->group(function () {
         Route::get('', [App\Http\Controllers\OfficeController::class, 'show'])->name('office.show');
-        
+
         // Updates to a shift
         Route::middleware('permission:update_office')->group(function () {
             Route::post('add-worker', [App\Http\Controllers\OfficeController::class, 'addWorker'])->name('office.add-worker');
@@ -62,7 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['permission:view_sellables'])->group(function () {
         Route::get('sellables', [App\Http\Controllers\SellablesController::class, 'index'])->name('sellables');
         Route::get('sellables/expired', [App\Http\Controllers\SellablesController::class, 'expired'])->name('sellables.expired');
-        
+
         // Products
         Route::post('sellables/products', [App\Http\Controllers\SellablesController::class, 'storeProduct'])->name('sellables.products.store')
             ->middleware('permission:create_product');
@@ -70,7 +70,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('permission:update_product');
         Route::delete('sellables/products/{product}', [App\Http\Controllers\SellablesController::class, 'destroyProduct'])->name('sellables.products.destroy')
             ->middleware('permission:delete_product');
-            
+
         // Events
         Route::post('sellables/events', [App\Http\Controllers\SellablesController::class, 'storeEvent'])->name('sellables.events.store')
             ->middleware('permission:create_event');

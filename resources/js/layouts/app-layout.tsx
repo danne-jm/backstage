@@ -8,8 +8,16 @@ interface AppLayoutProps {
     headerActions?: ReactNode; // New prop
 }
 
-export default ({ children, breadcrumbs, headerActions, ...props }: AppLayoutProps) => ( // Updated props
-    <AppLayoutTemplate breadcrumbs={breadcrumbs} headerActions={headerActions} {...props}> {/* Pass new prop */}
+export default (
+    { children, breadcrumbs, headerActions, ...props }: AppLayoutProps, // Updated props
+) => (
+    <AppLayoutTemplate
+        breadcrumbs={breadcrumbs}
+        headerActions={headerActions}
+        {...props}
+    >
+        {' '}
+        {/* Pass new prop */}
         {children}
     </AppLayoutTemplate>
 );

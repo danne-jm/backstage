@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Link } from '@inertiajs/react';
-import React from 'react';
 import { cn } from '@/lib/utils';
+import { Link } from '@inertiajs/react';
 
 interface SellablesListProps {
     sellables: any[];
@@ -44,8 +43,8 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
     return (
         <section
             className={cn(
-                "flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border",
-                className
+                'flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border',
+                className,
             )}
         >
             <div className="mb-3 flex items-center justify-between">
@@ -82,9 +81,9 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
                                 <div className="mt-1 text-xs text-muted-foreground">
                                     {item.type === 'event'
                                         ? sellPeriodMessage(
-                                            item.start_sell_date,
-                                            item.end_sell_date,
-                                        )
+                                              item.start_sell_date,
+                                              item.end_sell_date,
+                                          )
                                         : ''}
                                 </div>
                             </div>

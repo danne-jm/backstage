@@ -4,7 +4,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import * as React from 'react';
 
 interface ScannedTicketDialogProps {
     open: boolean;
@@ -49,7 +48,7 @@ export function ScannedTicketDialog({
                             <div className="text-xs text-muted-foreground">
                                 Ticket ID
                             </div>
-                            <div className="break-all font-mono text-sm">
+                            <div className="font-mono text-sm break-all">
                                 {(() => {
                                     const code =
                                         ticket.ticket_code ??
@@ -61,15 +60,12 @@ export function ScannedTicketDialog({
                                             '...' + parts.slice(1).join('_to_')
                                         );
                                     }
-                                    return code.replace(
-                                        /_[0-9]{6,}_/,
-                                        '_…_',
-                                    );
+                                    return code.replace(/_[0-9]{6,}_/, '_…_');
                                 })()}
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                        <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <span className="text-muted-foreground">
                                 First Name:
                             </span>
@@ -77,7 +73,7 @@ export function ScannedTicketDialog({
                                 {ticket.first_name}
                             </span>
                         </div>
-                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                        <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <span className="text-muted-foreground">
                                 Last Name:
                             </span>
@@ -85,9 +81,13 @@ export function ScannedTicketDialog({
                                 {ticket.last_name}
                             </span>
                         </div>
-                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
-                            <span className="text-muted-foreground">Email:</span>
-                            <span className="font-medium break-all">{ticket.email}</span>
+                        <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                            <span className="text-muted-foreground">
+                                Email:
+                            </span>
+                            <span className="font-medium break-all">
+                                {ticket.email}
+                            </span>
                         </div>
                         {ticket.nationality && (
                             <div className="flex justify-between text-sm">
@@ -132,13 +132,15 @@ export function ScannedTicketDialog({
                                         .map((d: any, idx: number) => (
                                             <div
                                                 key={idx}
-                                                className="flex flex-col sm:flex-row sm:justify-between gap-1 p-3"
+                                                className="flex flex-col gap-1 p-3 sm:flex-row sm:justify-between"
                                             >
                                                 <span className="text-sm break-all">
                                                     {d.user_email ?? 'unknown'}
                                                 </span>
                                                 <span className="text-sm text-muted-foreground">
-                                                    {formatScanDate(d.timestamp)}
+                                                    {formatScanDate(
+                                                        d.timestamp,
+                                                    )}
                                                 </span>
                                             </div>
                                         ))}
@@ -149,8 +151,8 @@ export function ScannedTicketDialog({
                     {allTickets.length > 0 && (
                         <div>
                             <h4 className="mb-2 text-sm font-medium">
-                                All Tickets Under This Email ({allTickets.length}
-                                )
+                                All Tickets Under This Email (
+                                {allTickets.length})
                             </h4>
                             <div className="max-h-[300px] divide-y overflow-y-auto rounded border">
                                 {allTickets.map((t, idx) => (
@@ -163,7 +165,7 @@ export function ScannedTicketDialog({
                                                 <div className="text-sm font-medium">
                                                     {t.first_name} {t.last_name}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground break-all">
+                                                <div className="text-xs break-all text-muted-foreground">
                                                     {(() => {
                                                         const code =
                                                             t.ticket_code ??
@@ -187,12 +189,12 @@ export function ScannedTicketDialog({
                                                         );
                                                     })()}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground break-all">
+                                                <div className="text-xs break-all text-muted-foreground">
                                                     {t.email}
                                                 </div>
                                             </div>
                                             {t.scan_count > 0 && (
-                                                <span className="whitespace-nowrap text-xs font-medium text-green-600 dark:text-green-400">
+                                                <span className="text-xs font-medium whitespace-nowrap text-green-600 dark:text-green-400">
                                                     ✓ Scanned
                                                 </span>
                                             )}

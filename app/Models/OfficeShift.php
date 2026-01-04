@@ -106,10 +106,6 @@ class OfficeShift extends Model
 
     /**
      * Merge two cash breakdown arrays.
-     *
-     * @param array|null $b1
-     * @param array|null $b2
-     * @return array
      */
     public static function mergeBreakdowns(?array $b1, ?array $b2): array
     {

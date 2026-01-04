@@ -141,15 +141,15 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain
-                    items={mainNavItems.filter(item => {
+                    items={mainNavItems.filter((item) => {
                         const permissions = auth?.user?.permissions || [];
                         const permissionMap: Record<string, string> = {
-                            'Dashboard': 'view_dashboard',
+                            Dashboard: 'view_dashboard',
                             'Office Shifts': 'view_office',
-                            'Sellables': 'view_sellables',
+                            Sellables: 'view_sellables',
                             'Ticket Scanner': 'view_ticket_scanner',
                             'Ticket Distributor': 'view_ticket_distributor',
-                            'Inventory': 'view_inventory',
+                            Inventory: 'view_inventory',
                             'Store Manager': 'view_store_manager',
                         };
 

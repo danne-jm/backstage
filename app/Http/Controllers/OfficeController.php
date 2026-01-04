@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use App\Models\OfficeShift;
 use App\Models\OfficeShiftSale;
 use App\Models\OfficeShiftWorker;
-use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\InventoryService;
@@ -268,21 +268,24 @@ class OfficeController extends Controller
                     $ticketType = $data['ticket_type'] ?? null;
                     if ($ticketType === 'with_card' && $event->remaining_with_card === 0) {
                         if (request()->wantsJson()) {
-                             return response()->json(['errors' => ['stock' => ['Tickets with ESNcard for this event are sold out.']]], 422);
+                            return response()->json(['errors' => ['stock' => ['Tickets with ESNcard for this event are sold out.']]], 422);
                         }
+
                         return redirect()->back()->withErrors(['sold_out' => 'Tickets with ESNcard for this event are sold out.']);
                     }
                     if ($ticketType === 'without_card' && $event->remaining_without_card === 0) {
                         if (request()->wantsJson()) {
-                             return response()->json(['errors' => ['stock' => ['Tickets without ESNcard for this event are sold out.']]], 422);
+                            return response()->json(['errors' => ['stock' => ['Tickets without ESNcard for this event are sold out.']]], 422);
                         }
+
                         return redirect()->back()->withErrors(['sold_out' => 'Tickets without ESNcard for this event are sold out.']);
                     }
                 } else { // Not variable amount
                     if ($event->remaining === 0) {
                         if (request()->wantsJson()) {
-                             return response()->json(['errors' => ['stock' => ['This event is sold out.']]], 422);
+                            return response()->json(['errors' => ['stock' => ['This event is sold out.']]], 422);
                         }
+
                         return redirect()->back()->withErrors(['sold_out' => 'This event is sold out.']);
                     }
                 }
@@ -296,8 +299,9 @@ class OfficeController extends Controller
             if ($product) {
                 if ($product->remaining === 0) {
                     if (request()->wantsJson()) {
-                         return response()->json(['errors' => ['stock' => ['This product is sold out.']]], 422);
+                        return response()->json(['errors' => ['stock' => ['This product is sold out.']]], 422);
                     }
+
                     return redirect()->back()->withErrors(['sold_out' => 'This product is sold out.']);
                 }
                 $itemName = $product->name;
@@ -338,7 +342,7 @@ class OfficeController extends Controller
         if ($data['method'] === 'cash') {
             $office->increment('cash_total', $data['amount']);
             if ($saleBreakdown) {
-            $office->cash_breakdown = OfficeShift::mergeBreakdowns($office->cash_breakdown, $saleBreakdown);
+                $office->cash_breakdown = OfficeShift::mergeBreakdowns($office->cash_breakdown, $saleBreakdown);
                 $office->save();
             }
         } else {
@@ -460,8 +464,6 @@ class OfficeController extends Controller
 
         return redirect()->route('office');
     }
-
-
 
     public function reopen(Request $request, OfficeShift $office)
     {

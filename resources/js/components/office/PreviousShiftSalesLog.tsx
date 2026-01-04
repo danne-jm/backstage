@@ -8,7 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Eye } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     computeBreakdownTotal,
     denominationConfig,
@@ -25,7 +25,8 @@ export function PreviousShiftSalesLog({
     staffMap,
 }: PreviousShiftSalesLogProps) {
     const [viewingSale, setViewingSale] = useState<any | null>(null);
-    const [isViewingSalesBreakdown, setIsViewingSalesBreakdown] = useState(false);
+    const [isViewingSalesBreakdown, setIsViewingSalesBreakdown] =
+        useState(false);
 
     const cashSalesTotal =
         lastShift?.sales
@@ -109,7 +110,7 @@ export function PreviousShiftSalesLog({
                                                                 €
                                                                 {Number(
                                                                     sale.amount ??
-                                                                    0,
+                                                                        0,
                                                                 ).toFixed(2)}
                                                             </span>
                                                             {String(
@@ -168,12 +169,12 @@ export function PreviousShiftSalesLog({
                                                                 ''
                                                             }
                                                         >
-                                                            {sale.sold_at ??
-                                                                sale.created_at
+                                                            {(sale.sold_at ??
+                                                            sale.created_at)
                                                                 ? new Date(
-                                                                    sale.sold_at ??
-                                                                    sale.created_at,
-                                                                ).toLocaleString()
+                                                                      sale.sold_at ??
+                                                                          sale.created_at,
+                                                                  ).toLocaleString()
                                                                 : 'N/A'}
                                                         </span>
                                                     </td>
@@ -246,10 +247,8 @@ export function PreviousShiftSalesLog({
                                             </div>
                                             <div className="text-sm font-medium">
                                                 {Number(
-                                                    (
-                                                        lastShift?.cash_breakdown ||
-                                                        {}
-                                                    )[d.key] ?? 0,
+                                                    (lastShift?.cash_breakdown ||
+                                                        {})[d.key] ?? 0,
                                                 )}
                                             </div>
                                         </div>

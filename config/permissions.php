@@ -16,12 +16,12 @@ return [
     */
 
     'levels' => [
-        
+
         // Administrator
         'administrator' => [
             // Dashboard
             'view_dashboard',
-            
+
             // Office
             'view_office', 'create_office', 'update_office', 'delete_office',
 
@@ -58,7 +58,7 @@ return [
         // Board members have access to all management features except dangerous settings
         'board' => [
             'view_dashboard',
-            
+
             // Office
             'view_office',
             'create_office',
@@ -91,15 +91,15 @@ return [
             'send_tickets',
             'view_mail_distributor',
 
-             // Settings - Board can view profile/password/appearance/footer/google/2fa
-             'view_settings_profile', 'update_settings_profile',
-             'view_settings_password', 'update_settings_password',
-             'view_settings_appearance',
-             'update_settings_footer', 'view_settings_footer',
-             'view_settings_google', 'update_settings_google',
-             'view_settings_2fa',
-             
-             // Board typically cannot manage users or delete accounts
+            // Settings - Board can view profile/password/appearance/footer/google/2fa
+            'view_settings_profile', 'update_settings_profile',
+            'view_settings_password', 'update_settings_password',
+            'view_settings_appearance',
+            'update_settings_footer', 'view_settings_footer',
+            'view_settings_google', 'update_settings_google',
+            'view_settings_2fa',
+
+            // Board typically cannot manage users or delete accounts
         ],
 
         // Guest level is empty/basic by default, usually customizable per user

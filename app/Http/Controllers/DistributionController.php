@@ -2,19 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\SendDistributionEmail;
-use App\Models\Event;
-use App\Models\Mail;
-use App\Models\Ticket;
-use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class DistributionController extends Controller
 {

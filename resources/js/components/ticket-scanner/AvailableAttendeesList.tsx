@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 interface AvailableAttendeesListProps {
     attendeeGroups: any[];
     onSelectAttendee: (attendee: any) => void;
@@ -18,7 +16,7 @@ export function AvailableAttendeesList({
     ticketCount,
 }: AvailableAttendeesListProps) {
     return (
-        <div className="order-2 flex flex-col rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border md:order-3">
+        <div className="order-2 flex flex-col rounded-xl border border-sidebar-border/70 p-4 md:order-3 dark:border-sidebar-border">
             <h4 className="text-sm font-medium">
                 {selectedEventId && ticketsLoaded
                     ? `Available tickets for ${eventName ?? ''}`
@@ -31,7 +29,7 @@ export function AvailableAttendeesList({
                         : 'No tickets remaining'
                     : null}
             </div>
-            <div className="flex-1 overflow-y-auto bg-background text-sm max-h-[220px]">
+            <div className="max-h-[220px] flex-1 overflow-y-auto bg-background text-sm">
                 {attendeeGroups.length === 0 ? (
                     <div className="text-muted-foreground"></div>
                 ) : (

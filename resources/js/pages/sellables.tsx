@@ -1,23 +1,15 @@
+import { EventDialog } from '@/components/sellables/EventDialog';
+import { EventPreview } from '@/components/sellables/EventPreview';
+import { ProductDialog } from '@/components/sellables/ProductDialog';
+import { ProductPreview } from '@/components/sellables/ProductPreview';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, router, usePage, Link } from '@inertiajs/react';
-import { Check, ExternalLink } from 'lucide-react';
+import type { BoardUser, Event, Product } from '@/types/sellables';
+import { Head, router, usePage } from '@inertiajs/react';
+import { Check } from 'lucide-react';
 import * as React from 'react';
-import { ProductDialog } from '@/components/sellables/ProductDialog';
-import { EventDialog } from '@/components/sellables/EventDialog';
-import { ProductPreview } from '@/components/sellables/ProductPreview';
-import { EventPreview } from '@/components/sellables/EventPreview';
-import type { Product, Event, BoardUser } from '@/types/sellables';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -35,19 +27,27 @@ export default function Sellables() {
     const products: Product[] = Array.isArray(props['products'])
         ? props['products']
         : [];
-    const events: Event[] = Array.isArray(props['events'])
-        ? props['events']
-        : [];
+    const eventsRaw = props['events'];
+    const events: Event[] = React.useMemo(
+        () => (Array.isArray(eventsRaw) ? eventsRaw : []),
+        [eventsRaw],
+    );
     const expiredPaginationProp: any = props['expired_pagination'] ?? null;
     const { auth } = usePage().props as unknown as { auth: any };
     const permissions = auth?.user?.permissions || [];
-    const canCreateProduct = permissions.includes('admin') || permissions.includes('create_product');
-    const canUpdateProduct = permissions.includes('admin') || permissions.includes('update_product');
-    const canDeleteProduct = permissions.includes('admin') || permissions.includes('delete_product');
+    const canCreateProduct =
+        permissions.includes('admin') || permissions.includes('create_product');
+    const canUpdateProduct =
+        permissions.includes('admin') || permissions.includes('update_product');
+    const canDeleteProduct =
+        permissions.includes('admin') || permissions.includes('delete_product');
 
-    const canCreateEvent = permissions.includes('admin') || permissions.includes('create_event');
-    const canUpdateEvent = permissions.includes('admin') || permissions.includes('update_event');
-    const canDeleteEvent = permissions.includes('admin') || permissions.includes('delete_event');
+    const canCreateEvent =
+        permissions.includes('admin') || permissions.includes('create_event');
+    const canUpdateEvent =
+        permissions.includes('admin') || permissions.includes('update_event');
+    const canDeleteEvent =
+        permissions.includes('admin') || permissions.includes('delete_event');
 
     const boardUsers: BoardUser[] = Array.isArray(props['boardUsers'])
         ? props['boardUsers']
@@ -69,15 +69,15 @@ export default function Sellables() {
     // props to pick up newly expired events or remove ones that became not
     // expired.
 
-    const [expiredEventsState, setExpiredEventsState] = React.useState<
-        Event[]
-    >(() => {
-        // initialize from props.events
-        return (events || []).filter(ev => {
-            const d = parseDate(ev.event_date);
-            return !d ? true : d.getTime() < Date.now();
-        });
-    });
+    const [expiredEventsState, setExpiredEventsState] = React.useState<Event[]>(
+        () => {
+            // initialize from props.events
+            return (events || []).filter((ev) => {
+                const d = parseDate(ev.event_date);
+                return !d ? true : d.getTime() < Date.now();
+            });
+        },
+    );
 
     const [expiredPagination, setExpiredPagination] = React.useState<any>(
         expiredPaginationProp ?? {
@@ -93,7 +93,7 @@ export default function Sellables() {
 
     // Recompute not-expired events from props so ordering updates when props.events changes
     const notExpiredEvents = React.useMemo(() => {
-        const list = (events || []).filter(ev => {
+        const list = (events || []).filter((ev) => {
             const d = parseDate(ev.event_date);
             return d ? d.getTime() >= Date.now() : false;
         });
@@ -108,20 +108,20 @@ export default function Sellables() {
     // events from props and remove ones that are now not expired.
     React.useEffect(() => {
         const nowMs = Date.now();
-        const expiredFromProps = (events || []).filter(ev => {
+        const expiredFromProps = (events || []).filter((ev) => {
             const d = parseDate(ev.event_date);
             return !d ? true : d.getTime() < nowMs;
         });
 
-        setExpiredEventsState(prev => {
+        setExpiredEventsState((prev) => {
             // Map previous expired entries by id for quick lookup/merge
-            const map = new Map<number, Event>(prev.map(e => [e.id, e]));
+            const map = new Map<number, Event>(prev.map((e) => [e.id, e]));
 
             // Replace/add entries coming from props (these are authoritative)
-            expiredFromProps.forEach(e => map.set(e.id, e));
+            expiredFromProps.forEach((e) => map.set(e.id, e));
 
             // Remove entries that appear in props but are not expired anymore
-            (events || []).forEach(e => {
+            (events || []).forEach((e) => {
                 const d = parseDate(e.event_date);
                 if (d && d.getTime() >= nowMs && map.has(e.id)) {
                     map.delete(e.id);
@@ -154,10 +154,8 @@ export default function Sellables() {
             );
             if (!res.ok) throw new Error('Failed to load');
             const json = await res.json();
-            const newItems: Event[] = Array.isArray(json.data)
-                ? json.data
-                : [];
-            setExpiredEventsState(prev => [...prev, ...newItems]);
+            const newItems: Event[] = Array.isArray(json.data) ? json.data : [];
+            setExpiredEventsState((prev) => [...prev, ...newItems]);
             setExpiredPagination(json.pagination ?? { has_more: false });
         } catch (e) {
             // swallow for now or show a message
@@ -223,7 +221,6 @@ export default function Sellables() {
         });
     };
 
-
     // No manual scroll restoration required; the dialog implementation
     // used throughout the app preserves focus/scroll reliably (see Ticketing page).
 
@@ -265,12 +262,20 @@ export default function Sellables() {
                         </div>
                     ) : (
                         <div className="grid gap-4">
-                            {products.map(product => (
+                            {products.map((product) => (
                                 <ProductPreview
                                     key={product.id}
                                     product={product}
-                                    onEdit={canUpdateProduct ? openProductDialog : undefined}
-                                    onDelete={canDeleteProduct ? deleteProduct : undefined}
+                                    onEdit={
+                                        canUpdateProduct
+                                            ? openProductDialog
+                                            : undefined
+                                    }
+                                    onDelete={
+                                        canDeleteProduct
+                                            ? deleteProduct
+                                            : undefined
+                                    }
                                     productToDelete={productToDelete}
                                     setProductToDelete={setProductToDelete}
                                     variant="sellables"
@@ -319,8 +324,7 @@ export default function Sellables() {
                                 const prevEvDate =
                                     idx > 0
                                         ? parseDate(
-                                            orderedEvents[idx - 1]
-                                                .event_date,
+                                            orderedEvents[idx - 1].event_date,
                                         )
                                         : null;
                                 const prevIsPast = prevEvDate
@@ -339,8 +343,16 @@ export default function Sellables() {
 
                                         <EventPreview
                                             event={event}
-                                            onEdit={canUpdateEvent ? openEventDialog : undefined}
-                                            onDelete={canDeleteEvent ? deleteEvent : undefined}
+                                            onEdit={
+                                                canUpdateEvent
+                                                    ? openEventDialog
+                                                    : undefined
+                                            }
+                                            onDelete={
+                                                canDeleteEvent
+                                                    ? deleteEvent
+                                                    : undefined
+                                            }
                                             eventToDelete={eventToDelete}
                                             setEventToDelete={setEventToDelete}
                                             variant="sellables"
@@ -355,10 +367,7 @@ export default function Sellables() {
 
             {expiredPagination?.has_more && (
                 <div className="mt-2 flex justify-center">
-                    <Button
-                        onClick={loadMoreExpired}
-                        disabled={loadingExpired}
-                    >
+                    <Button onClick={loadMoreExpired} disabled={loadingExpired}>
                         {loadingExpired
                             ? 'Loading...'
                             : 'Load more expired events'}
@@ -367,7 +376,7 @@ export default function Sellables() {
             )}
 
             {message && (
-                <div className="fixed left-1/2 top-4 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
+                <div className="fixed top-4 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
                     <Alert>
                         <Check />
                         <AlertTitle>{message}</AlertTitle>

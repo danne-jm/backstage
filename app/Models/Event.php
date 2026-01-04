@@ -171,6 +171,7 @@ class Event extends Model
 
         return max(0, $this->quantity - $this->sales()->count() - $this->onlineSales()->count());
     }
+
     public function filterRows(array $rows): array
     {
         $filterConfig = $this->attendee_filter_config;

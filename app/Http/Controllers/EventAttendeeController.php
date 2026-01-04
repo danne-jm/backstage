@@ -75,6 +75,7 @@ class EventAttendeeController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
     public function update(Request $request, Event $event)
     {
         $request->validate([
@@ -90,11 +91,13 @@ class EventAttendeeController extends Controller
                 $request->input('range'),
                 $request->input('values')
             );
+
             return response()->json(['success' => true]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
     public function updateFilter(Request $request, Event $event)
     {
         $data = $request->validate([

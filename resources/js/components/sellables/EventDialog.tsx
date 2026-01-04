@@ -18,11 +18,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { router, Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import * as React from 'react';
 
-import type { Event, BoardUser } from '@/types/sellables';
+import type { BoardUser, Event } from '@/types/sellables';
 
 interface EventDialogProps {
     open: boolean;
@@ -47,7 +47,7 @@ export function EventDialog({
     const [priceWithCard, setPriceWithCard] = React.useState('');
     const [priceWithoutCard, setPriceWithoutCard] = React.useState('');
     const [quantity, setQuantity] = React.useState('');
-    const [unlimitedQuantity, setUnlimitedQuantity] = React.useState(false);
+
     const [responsibleUserId, setResponsibleUserId] = React.useState('');
     const [notes, setNotes] = React.useState('');
     const [variableAmount, setVariableAmount] = React.useState(false);
@@ -69,7 +69,7 @@ export function EventDialog({
                     ? ''
                     : editingEvent.quantity?.toString() || '',
             );
-            setUnlimitedQuantity(Boolean(editingEvent.unlimited_quantity));
+            // setUnlimitedQuantity(Boolean(editingEvent.unlimited_quantity));
             setResponsibleUserId(
                 editingEvent.responsible_user_id
                     ? editingEvent.responsible_user_id.toString()
@@ -87,7 +87,7 @@ export function EventDialog({
                     ? ''
                     : editingEvent.quantity_without_card?.toString() || '',
             );
-            setUnlimitedQuantity(Boolean(editingEvent.unlimited_quantity));
+            // setUnlimitedQuantity(Boolean(editingEvent.unlimited_quantity));
             setGoogleSpreadsheetId(editingEvent.google_spreadsheet_id || '');
         } else {
             setEventName('');
@@ -98,7 +98,7 @@ export function EventDialog({
             setPriceWithCard('');
             setPriceWithoutCard('');
             setQuantity('');
-            setUnlimitedQuantity(false);
+            // setUnlimitedQuantity(false);
             setResponsibleUserId('');
             setNotes('');
             setVariableAmount(false);
@@ -130,14 +130,16 @@ export function EventDialog({
                 variableAmount && quantityWithCard
                     ? parseInt(quantityWithCard)
                     : null,
-            unlimited_quantity_with_card:
-                variableAmount ? (!quantityWithCard) : false,
+            unlimited_quantity_with_card: variableAmount
+                ? !quantityWithCard
+                : false,
             quantity_without_card:
                 variableAmount && quantityWithoutCard
                     ? parseInt(quantityWithoutCard)
                     : null,
-            unlimited_quantity_without_card:
-                variableAmount ? (!quantityWithoutCard) : false,
+            unlimited_quantity_without_card: variableAmount
+                ? !quantityWithoutCard
+                : false,
         };
 
         // For updates: avoid clearing google_spreadsheet_id accidentally when editing from contexts
@@ -183,7 +185,7 @@ export function EventDialog({
                         <Input
                             id="event-name"
                             value={eventName}
-                            onChange={e => setEventName(e.target.value)}
+                            onChange={(e) => setEventName(e.target.value)}
                         />
                     </div>
                     <div>
@@ -193,7 +195,9 @@ export function EventDialog({
                         <Textarea
                             id="event-description"
                             value={eventDescription}
-                            onChange={e => setEventDescription(e.target.value)}
+                            onChange={(e) =>
+                                setEventDescription(e.target.value)
+                            }
                         />
                     </div>
                     <div>
@@ -202,7 +206,7 @@ export function EventDialog({
                             id="event-date"
                             type="date"
                             value={eventDate}
-                            onChange={e => setEventDate(e.target.value)}
+                            onChange={(e) => setEventDate(e.target.value)}
                         />
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -214,7 +218,9 @@ export function EventDialog({
                                 id="start-sell-date"
                                 type="date"
                                 value={startSellDate}
-                                onChange={e => setStartSellDate(e.target.value)}
+                                onChange={(e) =>
+                                    setStartSellDate(e.target.value)
+                                }
                             />
                         </div>
                         <div>
@@ -223,7 +229,7 @@ export function EventDialog({
                                 id="end-sell-date"
                                 type="date"
                                 value={endSellDate}
-                                onChange={e => setEndSellDate(e.target.value)}
+                                onChange={(e) => setEndSellDate(e.target.value)}
                             />
                         </div>
                     </div>
@@ -237,7 +243,9 @@ export function EventDialog({
                                 type="number"
                                 step="0.01"
                                 value={priceWithCard}
-                                onChange={e => setPriceWithCard(e.target.value)}
+                                onChange={(e) =>
+                                    setPriceWithCard(e.target.value)
+                                }
                             />
                         </div>
                         <div>
@@ -249,7 +257,7 @@ export function EventDialog({
                                 type="number"
                                 step="0.01"
                                 value={priceWithoutCard}
-                                onChange={e =>
+                                onChange={(e) =>
                                     setPriceWithoutCard(e.target.value)
                                 }
                             />
@@ -267,7 +275,7 @@ export function EventDialog({
                                 <SelectValue placeholder="Select a board member" />
                             </SelectTrigger>
                             <SelectContent>
-                                {boardUsers.map(user => (
+                                {boardUsers.map((user) => (
                                     <SelectItem
                                         key={user.id}
                                         value={user.id.toString()}
@@ -282,7 +290,7 @@ export function EventDialog({
                         <Checkbox
                             id="variable-amount"
                             checked={variableAmount}
-                            onCheckedChange={checked =>
+                            onCheckedChange={(checked) =>
                                 setVariableAmount(checked === true)
                             }
                         />
@@ -290,8 +298,8 @@ export function EventDialog({
                             htmlFor="variable-amount"
                             className="cursor-pointer"
                         >
-                            Variable Amount (separate quantities for with/without
-                            ESNcard)
+                            Variable Amount (separate quantities for
+                            with/without ESNcard)
                         </Label>
                     </div>
                     {variableAmount ? (
@@ -304,7 +312,7 @@ export function EventDialog({
                                     id="quantity-with-card"
                                     type="number"
                                     value={quantityWithCard}
-                                    onChange={e =>
+                                    onChange={(e) =>
                                         setQuantityWithCard(e.target.value)
                                     }
                                 />
@@ -317,7 +325,7 @@ export function EventDialog({
                                     id="quantity-without-card"
                                     type="number"
                                     value={quantityWithoutCard}
-                                    onChange={e =>
+                                    onChange={(e) =>
                                         setQuantityWithoutCard(e.target.value)
                                     }
                                 />
@@ -332,7 +340,7 @@ export function EventDialog({
                                 id="quantity"
                                 type="number"
                                 value={quantity}
-                                onChange={e => setQuantity(e.target.value)}
+                                onChange={(e) => setQuantity(e.target.value)}
                             />
                         </div>
                     )}
@@ -341,18 +349,17 @@ export function EventDialog({
                         <Textarea
                             id="notes"
                             value={notes}
-                            onChange={e => setNotes(e.target.value)}
+                            onChange={(e) => setNotes(e.target.value)}
                         />
                     </div>
                     {!editingEvent && (
                         <div className="grid gap-2">
                             <Label>
-                                Google Spreadsheet ID (Eventually
-                                necessary...)
+                                Google Spreadsheet ID (Eventually necessary...)
                             </Label>
                             <Input
                                 value={googleSpreadsheetId}
-                                onChange={e =>
+                                onChange={(e) =>
                                     setGoogleSpreadsheetId(e.target.value)
                                 }
                                 placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBkJ..."
@@ -367,11 +374,7 @@ export function EventDialog({
                             <div className="text-sm font-medium">
                                 Manage Attendees
                             </div>
-                            <Button
-                                asChild
-                                variant="secondary"
-                                size="sm"
-                            >
+                            <Button asChild variant="secondary" size="sm">
                                 <Link
                                     href={`/sellables/events/${editingEvent.id}/attendees`}
                                 >

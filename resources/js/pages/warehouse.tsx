@@ -1,8 +1,8 @@
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import CreateItemDialog from '@/components/warehouse/CreateItemDialog';
 import DeleteItemDialog from '@/components/warehouse/DeleteItemDialog';
 import EditItemDialog from '@/components/warehouse/EditItemDialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 import { warehouse } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
@@ -15,7 +15,7 @@ import {
     Plus,
     Search,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -35,18 +35,27 @@ type Item = {
 };
 
 export default function Warehouse() {
-    const { items: paginatedItems, auth } = usePage().props as unknown as { items: any, auth: any };
+    const { items: paginatedItems, auth } = usePage().props as unknown as {
+        items: any;
+        auth: any;
+    };
     const items: Item[] = paginatedItems?.data || [];
     const permissions = auth.user?.permissions || [];
-    const canCreate = permissions.includes('admin') || permissions.includes('create_item');
-    const canUpdate = permissions.includes('admin') || permissions.includes('update_item');
-    const canDelete = permissions.includes('admin') || permissions.includes('delete_item');
+    const canCreate =
+        permissions.includes('admin') || permissions.includes('create_item');
+    const canUpdate =
+        permissions.includes('admin') || permissions.includes('update_item');
+    const canDelete =
+        permissions.includes('admin') || permissions.includes('delete_item');
 
     const props = usePage().props as any;
     const categoriesProp: string[] = props.categories || [];
 
     const [search, setSearch] = useState('');
-    const [sort, setSort] = useState<{ column: keyof Item | null; dir: 'asc' | 'desc' }>({
+    const [sort, setSort] = useState<{
+        column: keyof Item | null;
+        dir: 'asc' | 'desc';
+    }>({
         column: null,
         dir: 'asc',
     });
@@ -57,7 +66,9 @@ export default function Warehouse() {
     const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
     const [processingIds, setProcessingIds] = useState<number[]>([]);
-    const [optimisticQuantities, setOptimisticQuantities] = useState<Record<number, number>>({});
+    const [optimisticQuantities, setOptimisticQuantities] = useState<
+        Record<number, number>
+    >({});
 
     const openCreate = () => setCreateOpen(true);
 
@@ -75,60 +86,72 @@ export default function Warehouse() {
         const newQty = (optimisticQuantities[item.id] ?? item.quantity) + delta;
         if (newQty < 0) return;
 
-        setOptimisticQuantities(prev => ({ ...prev, [item.id]: newQty }));
-        setProcessingIds(prev => [...prev, item.id]);
+        setOptimisticQuantities((prev) => ({ ...prev, [item.id]: newQty }));
+        setProcessingIds((prev) => [...prev, item.id]);
 
-        router.put(`/warehouse/items/${item.id}`, {
-            ...item,
-            quantity: newQty
-        }, {
-            preserveScroll: true,
-            onError: () => {
-                setOptimisticQuantities(prev => {
-                    const next = { ...prev };
-                    delete next[item.id];
-                    return next;
-                });
+        router.put(
+            `/warehouse/items/${item.id}`,
+            {
+                ...item,
+                quantity: newQty,
             },
-            onFinish: () => {
-                setProcessingIds(prev => prev.filter(id => id !== item.id));
-                setOptimisticQuantities(prev => {
-                    const next = { ...prev };
-                    delete next[item.id];
-                    return next;
-                });
-            }
-        });
+            {
+                preserveScroll: true,
+                onError: () => {
+                    setOptimisticQuantities((prev) => {
+                        const next = { ...prev };
+                        delete next[item.id];
+                        return next;
+                    });
+                },
+                onFinish: () => {
+                    setProcessingIds((prev) =>
+                        prev.filter((id) => id !== item.id),
+                    );
+                    setOptimisticQuantities((prev) => {
+                        const next = { ...prev };
+                        delete next[item.id];
+                        return next;
+                    });
+                },
+            },
+        );
     };
 
-    const itemsList = (items || []).filter(item => {
-        if (!search) return true;
-        const s = search.toLowerCase();
-        return (
-            item.name.toLowerCase().includes(s) ||
-            (item.category || []).some(cat => cat.toLowerCase().includes(s)) ||
-            (item.changed_by || '').toLowerCase().includes(s) ||
-            String(item.quantity).includes(s)
-        );
-    }).sort((a, b) => {
-        if (!sort.column) return 0;
-        const valA = a[sort.column];
-        const valB = b[sort.column];
+    const itemsList = (items || [])
+        .filter((item) => {
+            if (!search) return true;
+            const s = search.toLowerCase();
+            return (
+                item.name.toLowerCase().includes(s) ||
+                (item.category || []).some((cat) =>
+                    cat.toLowerCase().includes(s),
+                ) ||
+                (item.changed_by || '').toLowerCase().includes(s) ||
+                String(item.quantity).includes(s)
+            );
+        })
+        .sort((a, b) => {
+            if (!sort.column) return 0;
+            const valA = a[sort.column];
+            const valB = b[sort.column];
 
-        if (sort.column === 'category') {
-            // simplified array comparison
-            const strA = (a.category || []).join(', ');
-            const strB = (b.category || []).join(', ');
-            return sort.dir === 'asc' ? strA.localeCompare(strB) : strB.localeCompare(strA);
-        }
+            if (sort.column === 'category') {
+                // simplified array comparison
+                const strA = (a.category || []).join(', ');
+                const strB = (b.category || []).join(', ');
+                return sort.dir === 'asc'
+                    ? strA.localeCompare(strB)
+                    : strB.localeCompare(strA);
+            }
 
-        if (valA === valB) return 0;
-        if (valA === null || valA === undefined) return 1;
-        if (valB === null || valB === undefined) return -1;
+            if (valA === valB) return 0;
+            if (valA === null || valA === undefined) return 1;
+            if (valB === null || valB === undefined) return -1;
 
-        const cmp = valA < valB ? -1 : 1;
-        return sort.dir === 'asc' ? cmp : -cmp;
-    });
+            const cmp = valA < valB ? -1 : 1;
+            return sort.dir === 'asc' ? cmp : -cmp;
+        });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -164,7 +187,9 @@ export default function Warehouse() {
                     </div>
 
                     <div>
-                        {canCreate && <Button onClick={openCreate}>Create Item</Button>}
+                        {canCreate && (
+                            <Button onClick={openCreate}>Create Item</Button>
+                        )}
                     </div>
                 </div>
 
@@ -417,9 +442,12 @@ export default function Warehouse() {
                                                 onClick={() =>
                                                     changeQuantity(item, 1)
                                                 }
-                                                disabled={!canUpdate || processingIds.includes(
-                                                    item.id,
-                                                )}
+                                                disabled={
+                                                    !canUpdate ||
+                                                    processingIds.includes(
+                                                        item.id,
+                                                    )
+                                                }
                                                 aria-label={`Increase quantity for ${item.name}`}
                                             >
                                                 {processingIds.includes(

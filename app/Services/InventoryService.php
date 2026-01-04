@@ -10,8 +10,6 @@ class InventoryService
 {
     /**
      * Get all sellable products with their current status.
-     *
-     * @return Collection
      */
     public function getSellableProducts(): Collection
     {
@@ -21,7 +19,7 @@ class InventoryService
 
         return $products->map(function ($product) {
             return [
-                'id' => 'product_' . $product->id,
+                'id' => 'product_'.$product->id,
                 'actual_id' => $product->id,
                 'type' => 'product',
                 'name' => $product->name,
@@ -37,8 +35,6 @@ class InventoryService
 
     /**
      * Get all currently sellable events.
-     *
-     * @return Collection
      */
     public function getSellableEvents(): Collection
     {
@@ -73,7 +69,7 @@ class InventoryService
 
         return $events->map(function ($event) {
             return [
-                'id' => 'event_' . $event->id,
+                'id' => 'event_'.$event->id,
                 'actual_id' => $event->id,
                 'type' => 'event',
                 'name' => $event->name,
@@ -96,8 +92,6 @@ class InventoryService
 
     /**
      * Get a combined collection of all sellables (products + events).
-     *
-     * @return Collection
      */
     public function getAllSellables(): Collection
     {

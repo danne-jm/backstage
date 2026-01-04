@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { format } from 'date-fns';
 
 interface MailTicketDetailsProps {
@@ -44,9 +43,9 @@ export function MailTicketDetails({
                             </span>{' '}
                             {ticketData.scanned_at
                                 ? format(
-                                    new Date(ticketData.scanned_at),
-                                    'yyyy-MM-dd HH:mm',
-                                )
+                                      new Date(ticketData.scanned_at),
+                                      'yyyy-MM-dd HH:mm',
+                                  )
                                 : 'Not scanned'}
                         </div>
                         {ticketData.scan_details && (

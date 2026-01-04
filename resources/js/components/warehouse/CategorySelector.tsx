@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
@@ -106,24 +105,22 @@ export function CategorySelector({
                 onKeyDown={handleKeyDown}
             />
             <div className="flex flex-wrap gap-2">
-                {filteredOptions.length > 0 ? (
-                    filteredOptions.map((opt) => (
-                        <button
-                            key={opt}
-                            type="button"
-                            onClick={() => handleToggle(opt)}
-                            className="rounded-md border border-input bg-background px-3 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                        >
-                            {opt}
-                        </button>
-                    ))
-                ) : (
-                    inputValue && (
-                        <div className="text-sm text-muted-foreground">
-                            Press Enter to add "{inputValue}"
-                        </div>
-                    )
-                )}
+                {filteredOptions.length > 0
+                    ? filteredOptions.map((opt) => (
+                          <button
+                              key={opt}
+                              type="button"
+                              onClick={() => handleToggle(opt)}
+                              className="rounded-md border border-input bg-background px-3 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                          >
+                              {opt}
+                          </button>
+                      ))
+                    : inputValue && (
+                          <div className="text-sm text-muted-foreground">
+                              Press Enter to add "{inputValue}"
+                          </div>
+                      )}
             </div>
         </div>
     );

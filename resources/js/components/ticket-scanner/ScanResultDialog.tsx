@@ -4,7 +4,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import * as React from 'react';
 
 interface ScanResultDialogProps {
     open: boolean;
@@ -52,8 +51,8 @@ export function ScanResultDialog({
                             {scanModal.status === 'legit'
                                 ? 'Legitimate ticket'
                                 : scanModal.status === 'already'
-                                    ? 'Already scanned'
-                                    : 'Unknown / invalid'}
+                                  ? 'Already scanned'
+                                  : 'Unknown / invalid'}
                         </span>
                     </div>
 
@@ -63,7 +62,7 @@ export function ScanResultDialog({
                                 <div className="text-xs text-muted-foreground">
                                     Ticket ID
                                 </div>
-                                <div className="break-all font-mono text-sm">
+                                <div className="font-mono text-sm break-all">
                                     {(() => {
                                         const code =
                                             scanModal.ticket.ticket_code ??
@@ -84,7 +83,7 @@ export function ScanResultDialog({
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                            <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                 <span className="text-muted-foreground">
                                     First Name:
                                 </span>
@@ -92,7 +91,7 @@ export function ScanResultDialog({
                                     {scanModal.ticket.first_name}
                                 </span>
                             </div>
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                            <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                 <span className="text-muted-foreground">
                                     Last Name:
                                 </span>
@@ -100,7 +99,7 @@ export function ScanResultDialog({
                                     {scanModal.ticket.last_name}
                                 </span>
                             </div>
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                            <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                 <span className="text-muted-foreground">
                                     Email:
                                 </span>
@@ -154,9 +153,9 @@ export function ScanResultDialog({
                                                 .map((d: any, idx: number) => (
                                                     <li
                                                         key={idx}
-                                                        className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2"
+                                                        className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-2"
                                                     >
-                                                        <span className="truncate overflow-ellipsis break-all">
+                                                        <span className="truncate break-all overflow-ellipsis">
                                                             {d.user_email ??
                                                                 'unknown'}
                                                         </span>
@@ -193,7 +192,7 @@ export function ScanResultDialog({
                                                             {ticket.first_name}{' '}
                                                             {ticket.last_name}
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground break-all">
+                                                        <div className="text-xs break-all text-muted-foreground">
                                                             {(() => {
                                                                 const code =
                                                                     ticket.ticket_code ??
@@ -224,12 +223,12 @@ export function ScanResultDialog({
                                                                 );
                                                             })()}
                                                         </div>
-                                                        <div className="text-xs text-muted-foreground break-all">
+                                                        <div className="text-xs break-all text-muted-foreground">
                                                             {ticket.email}
                                                         </div>
                                                     </div>
                                                     {ticket.scan_count > 0 && (
-                                                        <span className="whitespace-nowrap text-xs font-medium text-green-600 dark:text-green-400">
+                                                        <span className="text-xs font-medium whitespace-nowrap text-green-600 dark:text-green-400">
                                                             ✓ Scanned
                                                         </span>
                                                     )}
@@ -242,7 +241,7 @@ export function ScanResultDialog({
                         </div>
                     ) : (
                         <div className="rounded border p-4">
-                            <div className="break-words whitespace-pre-wrap text-sm">
+                            <div className="text-sm break-words whitespace-pre-wrap">
                                 {scanModal.raw}
                             </div>
                         </div>

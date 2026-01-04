@@ -14,7 +14,9 @@ test('two factor settings page can be rendered', function () {
         'confirmPassword' => true,
     ]);
 
-    $user = User::factory()->withoutTwoFactor()->create();
+    $user = User::factory()->withoutTwoFactor()->create([
+        'permissions' => ['view_settings_2fa'],
+    ]);
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
@@ -30,7 +32,7 @@ test('two factor settings page requires password confirmation when enabled', fun
         $this->markTestSkipped('Two-factor authentication is not enabled.');
     }
 
-    $user = User::factory()->create();
+    $user = User::factory()->create(['permissions' => ['view_settings_2fa']]);
 
     Features::twoFactorAuthentication([
         'confirm' => true,
@@ -48,7 +50,7 @@ test('two factor settings page does not requires password confirmation when disa
         $this->markTestSkipped('Two-factor authentication is not enabled.');
     }
 
-    $user = User::factory()->create();
+    $user = User::factory()->create(['permissions' => ['view_settings_2fa']]);
 
     Features::twoFactorAuthentication([
         'confirm' => true,

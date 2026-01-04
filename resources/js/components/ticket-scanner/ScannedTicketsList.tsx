@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 interface ScannedTicketsListProps {
     scannedTickets: any[];
     ticketsLoaded: boolean;
@@ -47,7 +45,7 @@ export function ScannedTicketsList({
                             className="cursor-pointer rounded border p-3 transition-colors hover:bg-muted/50"
                             onClick={() => onSelectTicket(s)}
                         >
-                            <div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-muted-foreground">
+                            <div className="max-w-full overflow-hidden text-xs text-ellipsis whitespace-nowrap text-muted-foreground">
                                 {prettyId}
                             </div>
                             <div className="flex items-center justify-between">

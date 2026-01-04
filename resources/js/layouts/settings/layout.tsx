@@ -14,9 +14,7 @@ const googlePath = '/settings/google';
 // footer settings page uses a static path; the route helper may not exist in all environments
 const editFooterPath = '/settings/footer';
 
-
-function getSidebarNavItems() {
-    const { auth } = usePage().props as any;
+function getSidebarNavItems(auth: any) {
     const items: NavItem[] = [
         {
             title: 'Profile',
@@ -41,7 +39,8 @@ function getSidebarNavItems() {
     ];
     // Check if user has 'admin' in permissions array
     const permissions = auth?.user?.permissions || [];
-    const hasAdminPermission = Array.isArray(permissions) && permissions.includes('admin');
+    const hasAdminPermission =
+        Array.isArray(permissions) && permissions.includes('admin');
     if (hasAdminPermission) {
         items.push({
             title: 'Users',
@@ -59,17 +58,20 @@ function getSidebarNavItems() {
             title: 'Footer',
             href: editFooterPath,
             icon: null,
-        }
+        },
     );
     return items;
 }
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
+    const { auth } = usePage().props as any;
     if (typeof window === 'undefined') {
         return null;
     }
+
+
     const currentPath = window.location.pathname;
-    const sidebarNavItems = getSidebarNavItems();
+    const sidebarNavItems = getSidebarNavItems(auth);
     return (
         <div className="px-4 py-6">
             <Heading
@@ -104,9 +106,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                 </aside>
                 <Separator className="my-6 lg:hidden" />
                 <div className="flex-1">
-                    <section className="space-y-12">
-                        {children}
-                    </section>
+                    <section className="space-y-12">{children}</section>
                 </div>
             </div>
         </div>

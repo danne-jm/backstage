@@ -40,9 +40,9 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
         ->name('two-factor.show')
         ->middleware('permission:view_settings_2fa');
-        
-    // 2FA actions usually hit standard Fortify routes, but the page itself is guarded here. 
-    // Actual 2FA enable/disable might need generic guards if they aren't in this file, 
+
+    // 2FA actions usually hit standard Fortify routes, but the page itself is guarded here.
+    // Actual 2FA enable/disable might need generic guards if they aren't in this file,
     // but typically they are POST to /user/two-factor-authentication etc. guarded by Fortify.
     // We strictly guard the VIEW page here.
 

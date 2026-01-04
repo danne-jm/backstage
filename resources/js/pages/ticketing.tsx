@@ -1,3 +1,4 @@
+import RichTextEditor from '@/components/RichTextEditor';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,10 +17,8 @@ import { ticketing } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import axios from 'axios';
+import { TriangleAlert } from 'lucide-react';
 import * as React from 'react';
-import { Check, TriangleAlert } from 'lucide-react';
-import FullDataDialog from '@/components/FullDataDialog';
-import RichTextEditor from '@/components/RichTextEditor';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -32,21 +31,28 @@ export default function Ticketing() {
     // Header action: All Mails button (right side of breadcrumb bar)
     const headerActions = (
         <Link href="/mails">
-            <Button variant="outline" className="ml-4">All Mails</Button>
+            <Button variant="outline" className="ml-4">
+                All Mails
+            </Button>
         </Link>
     );
     const props = usePage<SharedData & { templates: any[] }>().props;
     const permissions = props.auth?.user?.permissions || [];
-    const canSend = permissions.includes('admin') || permissions.includes('send_tickets');
+    const canSend =
+        permissions.includes('admin') || permissions.includes('send_tickets');
 
     const events: any[] = Array.isArray(props['events']) ? props['events'] : [];
-    const templates: any[] = Array.isArray(props['templates']) ? props['templates'] : [];
+    const templates: any[] = Array.isArray(props['templates'])
+        ? props['templates']
+        : [];
 
     // State to hold the attendee data fetched from the backend
     const [sampleData, setSampleData] = React.useState<any[]>([]);
 
     // Template State
-    const [selectedTemplateId, setSelectedTemplateId] = React.useState<number | 'none'>('none');
+    const [selectedTemplateId, setSelectedTemplateId] = React.useState<
+        number | 'none'
+    >('none');
 
     const fields = React.useMemo(
         () => (sampleData.length ? Object.keys(sampleData[0]) : []),
@@ -114,7 +120,11 @@ export default function Ticketing() {
         })
             .then((response) => response.json())
             .then((data) => {
-                if (data.success && Array.isArray(data.rows) && data.rows.length > 0) {
+                if (
+                    data.success &&
+                    Array.isArray(data.rows) &&
+                    data.rows.length > 0
+                ) {
                     // Convert rows to objects using headers (first row)
                     const headers = data.rows[0];
                     const dataRows = data.rows.slice(1);
@@ -133,13 +143,34 @@ export default function Ticketing() {
                     if (attendees.length > 0) {
                         const availableFields = headers;
 
-                        setFirstNameField(availableFields.find((f: string) => f.toLowerCase().includes('first')) || availableFields[0] || '');
-                        setLastNameField(availableFields.find((f: string) => f.toLowerCase().includes('last')) || availableFields[1] || '');
-                        setEmailField(availableFields.find((f: string) => f.toLowerCase().includes('email')) || availableFields[2] || '');
+                        setFirstNameField(
+                            availableFields.find((f: string) =>
+                                f.toLowerCase().includes('first'),
+                            ) ||
+                            availableFields[0] ||
+                            '',
+                        );
+                        setLastNameField(
+                            availableFields.find((f: string) =>
+                                f.toLowerCase().includes('last'),
+                            ) ||
+                            availableFields[1] ||
+                            '',
+                        );
+                        setEmailField(
+                            availableFields.find((f: string) =>
+                                f.toLowerCase().includes('email'),
+                            ) ||
+                            availableFields[2] ||
+                            '',
+                        );
                         setSelectedSampleIndex(0);
                     }
                 } else {
-                    console.error('Failed to fetch attendees or no data:', data.message);
+                    console.error(
+                        'Failed to fetch attendees or no data:',
+                        data.message,
+                    );
                     setSampleData([]);
                 }
             })
@@ -165,10 +196,15 @@ export default function Ticketing() {
 
     // Error state shown inside the confirm Dialog (overwrites confirm content)
     const [errorInConfirm, setErrorInConfirm] = React.useState(false);
-    const [errorDetails, setErrorDetails] = React.useState<{ title: string; list: string[] }>({ title: '', list: [] });
+    const [errorDetails, setErrorDetails] = React.useState<{
+        title: string;
+        list: string[];
+    }>({ title: '', list: [] });
 
     // Success banner (replaces alert/toast fallback)
-    const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = React.useState<string | null>(
+        null,
+    );
 
     // Default email template (initial editor content)
     const defaultBodyTemplate = React.useMemo(() => {
@@ -195,20 +231,29 @@ export default function Ticketing() {
         if (!editorContent || editorContent.trim() === '') {
             setEditorContent(defaultBodyTemplate);
         }
-    }, [defaultBodyTemplate]);
+    }, [defaultBodyTemplate, editorContent]);
 
     // Mark config as dirty on changes to subject, mappings, mail mode, template, sample user, or skippable columns
     React.useEffect(() => {
         markDirty();
-    }, [subject, firstNameField, lastNameField, emailField, mailMode, defaultBodyTemplate, selectedTemplateId, selectedSampleIndex, nullableFields]);
+    }, [
+        subject,
+        firstNameField,
+        lastNameField,
+        emailField,
+        mailMode,
+        defaultBodyTemplate,
+        selectedTemplateId,
+        selectedSampleIndex,
+        nullableFields,
+        markDirty,
+    ]);
 
     // Mark config as clean when preview is generated
     const handleGenerateTickets = () => {
         generateTickets();
         markClean();
     };
-
-
 
     // Auto-insert {{qr}} at the bottom of the email when mailMode is set to 'qr'
     React.useEffect(() => {
@@ -226,17 +271,18 @@ export default function Ticketing() {
                 markDirty();
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mailMode, markDirty]); // Removed editorContent dependency to avoid loop, but might be tricky.
     // Logic check: if mailMode becomes 'qr', we append. If user edits, we don't force append again unless removed and mode is toggled?
     // Original only checked on effect dependency.
 
-
-
-
     const generateTickets = () => {
         const bodyHtml = editorContent;
-        const eventObj = events.find((ev: any) => ev.id === selectedEvent) ?? null;
-        const selectedTemplate = templates.find(t => t.id === Number(selectedTemplateId));
+        const eventObj =
+            events.find((ev: any) => ev.id === selectedEvent) ?? null;
+        const selectedTemplate = templates.find(
+            (t) => t.id === Number(selectedTemplateId),
+        );
 
         const buildEmailHtml = (innerHtml: string, ev: any | null) => {
             // Use Template from DB if selected
@@ -250,7 +296,9 @@ export default function Ticketing() {
                 const eventTitle = ev ? ev.name : '';
                 // Support start_date OR event_date depending on the model
                 const rawDate = ev ? (ev.start_date ?? ev.event_date) : null;
-                const eventDate = rawDate ? new Date(rawDate).toLocaleDateString() : '';
+                const eventDate = rawDate
+                    ? new Date(rawDate).toLocaleDateString()
+                    : '';
                 tmpl = tmpl.replace(/{{event_name}}/g, eventTitle);
                 tmpl = tmpl.replace(/{{event_date}}/g, eventDate);
                 // Inject the user content into {{body}}; wrap in a preview-scoped container so styles don't leak
@@ -269,15 +317,28 @@ export default function Ticketing() {
             fields.forEach((field) => {
                 const placeholder = `{{${field}}}`;
                 const value = String((row as any)[field] ?? '');
-                personalizedBody = personalizedBody.replaceAll(placeholder, value);
+                personalizedBody = personalizedBody.replaceAll(
+                    placeholder,
+                    value,
+                );
             });
             // Note: We leave {{qr}} intact here so the backend can find it.
             // The frontend preview (below) will handle mocking it.
             if (eventObj) {
-                personalizedBody = personalizedBody.replaceAll('{{event_name}}', eventObj.name || '');
-                const rawDate = eventObj ? (eventObj.start_date ?? eventObj.event_date) : null;
-                const formattedEventDate = rawDate ? new Date(rawDate).toLocaleDateString() : '';
-                personalizedBody = personalizedBody.replaceAll('{{event_date}}', formattedEventDate);
+                personalizedBody = personalizedBody.replaceAll(
+                    '{{event_name}}',
+                    eventObj.name || '',
+                );
+                const rawDate = eventObj
+                    ? (eventObj.start_date ?? eventObj.event_date)
+                    : null;
+                const formattedEventDate = rawDate
+                    ? new Date(rawDate).toLocaleDateString()
+                    : '';
+                personalizedBody = personalizedBody.replaceAll(
+                    '{{event_date}}',
+                    formattedEventDate,
+                );
             }
             return {
                 first_name: String((row as any)[firstNameField] ?? ''),
@@ -285,7 +346,9 @@ export default function Ticketing() {
                 email: String((row as any)[emailField] ?? ''),
                 event_id: selectedEvent,
                 event_name: eventObj ? eventObj.name : null,
-                event_date: eventObj ? (eventObj.start_date ?? eventObj.event_date) : null,
+                event_date: eventObj
+                    ? (eventObj.start_date ?? eventObj.event_date)
+                    : null,
                 subject,
                 body: buildEmailHtml(personalizedBody, eventObj),
             };
@@ -302,13 +365,7 @@ export default function Ticketing() {
         return () => clearTimeout(t);
     }, [successMessage]);
 
-    // Helper to read a cookie value
-    const getCookie = (name: string): string | null => {
-        const match = document.cookie
-            .split('; ')
-            .find((row) => row.startsWith(name + '='));
-        return match ? (match.split('=')[1] ?? null) : null;
-    };
+
 
     // Replace sendDistribution and proceedSendDistribution with a single distribute function using axios
     const distribute = async () => {
@@ -320,7 +377,9 @@ export default function Ticketing() {
             });
             if (response.data.queued) {
                 // show a subtle in-page success banner instead of alert/toast fallback
-                setSuccessMessage(`Distribution started! Sent ${response.data.sent_count} emails.`);
+                setSuccessMessage(
+                    `Distribution started! Sent ${response.data.sent_count} emails.`,
+                );
                 setGenerated([]);
                 setConfirmOpen(false);
                 setErrorInConfirm(false);
@@ -362,7 +421,6 @@ export default function Ticketing() {
         }
     }, [gmailConnected]);
 
-
     return (
         <AppLayout breadcrumbs={breadcrumbs} headerActions={headerActions}>
             <Head title="Ticket Distributor" />
@@ -371,15 +429,21 @@ export default function Ticketing() {
                 {/* Google Connection Warning */}
                 {showGoogleWarning && (
                     <div className="fixed top-14 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
-                        <Alert variant="destructive" className="bg-red-100 text-red-900 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-900">
+                        <Alert
+                            variant="destructive"
+                            className="border-red-200 bg-red-100 text-red-900 dark:border-red-900 dark:bg-red-900/30 dark:text-red-200"
+                        >
                             <TriangleAlert className="h-4 w-4" />
-                            <AlertTitle>Google account not connected — you cannot distribute emails</AlertTitle>
+                            <AlertTitle>
+                                Google account not connected — you cannot
+                                distribute emails
+                            </AlertTitle>
                         </Alert>
                     </div>
                 )}
                 {/* Success banner (replaces alert/toast fallback) */}
                 {successMessage && (
-                    <div className="fixed right-6 top-20 z-50">
+                    <div className="fixed top-20 right-6 z-50">
                         <div className="rounded-md bg-emerald-600 px-4 py-2 text-white shadow">
                             {successMessage}
                         </div>
@@ -404,15 +468,29 @@ export default function Ticketing() {
                                 }}
                                 templateSelector={
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs text-muted-foreground">Email Template:</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Email Template:
+                                        </span>
                                         <select
                                             className="h-8 w-[160px] rounded border text-xs"
                                             value={selectedTemplateId}
-                                            onChange={(e) => setSelectedTemplateId(e.target.value === 'none' ? 'none' : Number(e.target.value))}
+                                            onChange={(e) =>
+                                                setSelectedTemplateId(
+                                                    e.target.value === 'none'
+                                                        ? 'none'
+                                                        : Number(
+                                                            e.target.value,
+                                                        ),
+                                                )
+                                            }
                                         >
-                                            <option value="none" className=''>No Template</option>
-                                            {templates.map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            <option value="none" className="">
+                                                No Template
+                                            </option>
+                                            {templates.map((t) => (
+                                                <option key={t.id} value={t.id}>
+                                                    {t.name}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
@@ -444,11 +522,19 @@ export default function Ticketing() {
                                             </option>
                                         ) : (
                                             events.map((ev: any) => {
-                                                const rawDate = ev ? (ev.start_date ?? ev.event_date) : null;
+                                                const rawDate = ev
+                                                    ? (ev.start_date ??
+                                                        ev.event_date)
+                                                    : null;
                                                 return (
-                                                    <option key={ev.id} value={ev.id}>
+                                                    <option
+                                                        key={ev.id}
+                                                        value={ev.id}
+                                                    >
                                                         {ev.name}{' '}
-                                                        {rawDate ? `(${String(rawDate).slice(0, 10)})` : ''}
+                                                        {rawDate
+                                                            ? `(${String(rawDate).slice(0, 10)})`
+                                                            : ''}
                                                     </option>
                                                 );
                                             })
@@ -478,7 +564,11 @@ export default function Ticketing() {
                                     >
                                         {sampleData.map((s, i) => (
                                             <option key={i} value={i}>
-                                                {String(s[firstNameField] ?? '')} {String(s[lastNameField] ?? '')} — {String(s[emailField] ?? '')}
+                                                {String(
+                                                    s[firstNameField] ?? '',
+                                                )}{' '}
+                                                {String(s[lastNameField] ?? '')}{' '}
+                                                — {String(s[emailField] ?? '')}
                                             </option>
                                         ))}
                                     </select>
@@ -495,17 +585,47 @@ export default function Ticketing() {
                                     </Button>
                                     <Button
                                         onClick={() => setConfirmOpen(true)}
-                                        className={`w-full md:w-auto transition-opacity ${isEmailConfigDirty || !canSend ? 'opacity-50 pointer-events-none cursor-not-allowed' : ''}`}
-                                        disabled={sending || isEmailConfigDirty || !canSend}
+                                        className={`w-full transition-opacity md:w-auto ${isEmailConfigDirty || !canSend ? 'pointer-events-none cursor-not-allowed opacity-50' : ''}`}
+                                        disabled={
+                                            sending ||
+                                            isEmailConfigDirty ||
+                                            !canSend
+                                        }
                                         variant="destructive"
-                                        tabIndex={isEmailConfigDirty || !canSend ? -1 : 0}
-                                        aria-disabled={isEmailConfigDirty || !canSend}
-                                        title={!canSend ? "You do not have permission to distribute tickets" : ""}
+                                        tabIndex={
+                                            isEmailConfigDirty || !canSend
+                                                ? -1
+                                                : 0
+                                        }
+                                        aria-disabled={
+                                            isEmailConfigDirty || !canSend
+                                        }
+                                        title={
+                                            !canSend
+                                                ? 'You do not have permission to distribute tickets'
+                                                : ''
+                                        }
                                     >
                                         {sending ? (
-                                            <svg className="animate-spin -ml-1 mr-0 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                            <svg
+                                                className="mr-0 -ml-1 h-4 w-4 animate-spin text-current"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle
+                                                    className="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    strokeWidth="4"
+                                                ></circle>
+                                                <path
+                                                    className="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                ></path>
                                             </svg>
                                         ) : (
                                             'Distribute (real)'
@@ -520,29 +640,41 @@ export default function Ticketing() {
                                         if (!open) {
                                             // clear any error state when dialog is closed so re-trying restarts clean
                                             setErrorInConfirm(false);
-                                            setErrorDetails({ title: '', list: [] });
+                                            setErrorDetails({
+                                                title: '',
+                                                list: [],
+                                            });
                                         }
                                     }}
                                 >
                                     <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
                                         {errorInConfirm ? (
                                             <>
-                                                <DialogTitle className="text-white">❌ {errorDetails.title}</DialogTitle>
+                                                <DialogTitle className="text-white">
+                                                    ❌ {errorDetails.title}
+                                                </DialogTitle>
                                                 <DialogDescription>
-                                                    The following issues prevented distribution:
+                                                    The following issues
+                                                    prevented distribution:
                                                 </DialogDescription>
 
-                                                <div className="max-h-[300px] overflow-y-auto mt-3 p-4 text-sm text-foreground border border-dotted border-muted/30 bg-transparent">
-                                                    <ul className="list-disc pl-4 space-y-1">
-                                                        {errorDetails.list.map((err, i) => (
-                                                            <li key={i}>{err}</li>
-                                                        ))}
+                                                <div className="mt-3 max-h-[300px] overflow-y-auto border border-dotted border-muted/30 bg-transparent p-4 text-sm text-foreground">
+                                                    <ul className="list-disc space-y-1 pl-4">
+                                                        {errorDetails.list.map(
+                                                            (err, i) => (
+                                                                <li key={i}>
+                                                                    {err}
+                                                                </li>
+                                                            ),
+                                                        )}
                                                     </ul>
                                                 </div>
 
                                                 <DialogFooter>
                                                     <DialogClose asChild>
-                                                        <Button variant="ghost">Close</Button>
+                                                        <Button variant="ghost">
+                                                            Close
+                                                        </Button>
                                                     </DialogClose>
                                                 </DialogFooter>
                                             </>
@@ -552,21 +684,29 @@ export default function Ticketing() {
                                                     Confirm distribution
                                                 </DialogTitle>
                                                 <DialogDescription>
-                                                    You are about to distribute the
-                                                    prepared email to{' '}
-                                                    <strong>{(generated ?? []).length}</strong>{' '}
-                                                    recipients. This will enqueue
-                                                    background jobs to send the
-                                                    messages.
+                                                    You are about to distribute
+                                                    the prepared email to{' '}
+                                                    <strong>
+                                                        {
+                                                            (generated ?? [])
+                                                                .length
+                                                        }
+                                                    </strong>{' '}
+                                                    recipients. This will
+                                                    enqueue background jobs to
+                                                    send the messages.
                                                     {/* sample recipients removed — not valuable */}
                                                     Do you want to proceed?
                                                 </DialogDescription>
 
                                                 <div className="mt-4 text-xs text-muted-foreground">
-                                                    Queued sending is recommended for
-                                                    large recipient lists and will run
+                                                    Queued sending is
+                                                    recommended for large
+                                                    recipient lists and will run
                                                     in the background (run{' '}
-                                                    <code>php artisan queue:work</code>{' '}
+                                                    <code>
+                                                        php artisan queue:work
+                                                    </code>{' '}
                                                     to process).
                                                 </div>
 
@@ -582,9 +722,26 @@ export default function Ticketing() {
                                                         disabled={sending}
                                                     >
                                                         {sending ? (
-                                                            <svg className="animate-spin -ml-1 mr-0 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden>
-                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                                            <svg
+                                                                className="mr-0 -ml-1 h-4 w-4 animate-spin text-current"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                                aria-hidden
+                                                            >
+                                                                <circle
+                                                                    className="opacity-25"
+                                                                    cx="12"
+                                                                    cy="12"
+                                                                    r="10"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="4"
+                                                                ></circle>
+                                                                <path
+                                                                    className="opacity-75"
+                                                                    fill="currentColor"
+                                                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                                                ></path>
                                                             </svg>
                                                         ) : (
                                                             'Confirm & Queue'
@@ -628,22 +785,31 @@ export default function Ticketing() {
                                             value: String(ev.name),
                                         });
                                     {
-                                        const rawDate = ev ? (ev.start_date ?? ev.event_date) : null;
+                                        const rawDate = ev
+                                            ? (ev.start_date ?? ev.event_date)
+                                            : null;
                                         if (rawDate)
                                             rows.push({
                                                 label: 'Event date',
-                                                value: String(rawDate).slice(0, 10),
+                                                value: String(rawDate).slice(
+                                                    0,
+                                                    10,
+                                                ),
                                             });
                                     }
                                     if (ev.start_sell_date)
                                         rows.push({
                                             label: 'Start selling',
-                                            value: String(ev.start_sell_date).slice(0, 10),
+                                            value: String(
+                                                ev.start_sell_date,
+                                            ).slice(0, 10),
                                         });
                                     if (ev.end_sell_date)
                                         rows.push({
                                             label: 'End selling',
-                                            value: String(ev.end_sell_date).slice(0, 10),
+                                            value: String(
+                                                ev.end_sell_date,
+                                            ).slice(0, 10),
                                         });
                                     if (ev.price_with_card !== undefined)
                                         rows.push({
@@ -838,10 +1004,15 @@ export default function Ticketing() {
                                     {mailMode === 'qr' && (
                                         <div className="space-y-2 text-xs text-muted-foreground">
                                             <div>
-                                                Event name and date will be taken directly from the selected event. No need to enter them here.
+                                                Event name and date will be
+                                                taken directly from the selected
+                                                event. No need to enter them
+                                                here.
                                             </div>
                                             <div>
-                                                Use <code>{'{{qr}}'}</code> in your message where you want the QR image to appear.
+                                                Use <code>{'{{qr}}'}</code> in
+                                                your message where you want the
+                                                QR image to appear.
                                             </div>
                                         </div>
                                     )}
@@ -1348,7 +1519,9 @@ export default function Ticketing() {
 
             <div>
                 <div className="px-4 pb-4">
-                    <h4 className="text-sm font-semibold">Generated Payload Preview</h4>
+                    <h4 className="text-sm font-semibold">
+                        Generated Payload Preview
+                    </h4>
                     <div className="pt-2">
                         <div
                             role="tablist"
@@ -1385,18 +1558,22 @@ export default function Ticketing() {
                                 )}
 
                                 {showRendered && (
-                                    <div className="mt-4 rounded-xl border bg-white p-6 shadow-sm text-gray-900">
-
+                                    <div className="mt-4 rounded-xl border bg-white p-6 text-gray-900 shadow-sm">
                                         <div
                                             className="prose max-w-none text-black"
                                             dangerouslySetInnerHTML={{
                                                 __html: (() => {
-                                                    const user = sampleData[selectedSampleIndex as number];
-                                                    let html = generated[Number(selectedSampleIndex)]?.body ?? '';
+
+                                                    let html =
+                                                        generated[
+                                                            Number(
+                                                                selectedSampleIndex,
+                                                            )
+                                                        ]?.body ?? '';
                                                     // Mock QR code for preview
                                                     html = html.replace(
                                                         /{{qr}}/g,
-                                                        '<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:0;font-weight:bold;text-align:center;display:block;">QR PREVIEW</div>'
+                                                        '<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:0;font-weight:bold;text-align:center;display:block;">QR PREVIEW</div>',
                                                     );
                                                     return html;
                                                 })(),
@@ -1407,7 +1584,8 @@ export default function Ticketing() {
                             </div>
                         ) : (
                             <div className="text-sm text-muted-foreground">
-                                No preview generated yet. Click Generate Preview.
+                                No preview generated yet. Click Generate
+                                Preview.
                             </div>
                         )}
                     </div>

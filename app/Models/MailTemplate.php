@@ -15,5 +15,6 @@ class MailTemplate extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
+
     protected $fillable = ['name', 'html_content'];
 }

@@ -3,12 +3,12 @@
 namespace App\Services;
 
 use App\Models\Event;
-use App\Models\OnlineSale;
 use App\Models\OfficeShift;
 use App\Models\OfficeShiftSale;
+use App\Models\OnlineSale;
 use App\Models\Product;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SaleService
@@ -110,7 +110,7 @@ class SaleService
                 $product = Product::find($productId);
                 if ($product) {
                     // If product has per-card quantities, prefer decrementing quantity_with_card when present
-                    if (!empty($product->quantity_with_card) || $product->unlimited_quantity_with_card === false) {
+                    if (! empty($product->quantity_with_card) || $product->unlimited_quantity_with_card === false) {
                         if (! $product->unlimited_quantity_with_card && ! is_null($product->quantity_with_card)) {
                             $product->quantity_with_card = max(0, intval($product->quantity_with_card) - 1);
                             $product->save();

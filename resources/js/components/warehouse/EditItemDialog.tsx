@@ -1,4 +1,3 @@
-import { CategorySelector } from './CategorySelector';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -11,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { CategorySelector } from './CategorySelector';
 
 // Simplified Item type matching the one in the parent
 interface Item {
@@ -39,7 +39,7 @@ export default function EditItemDialog({
     onDeleteRequest,
 }: EditItemDialogProps) {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [removeImage, setRemoveImage] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const form = useForm<{
@@ -66,9 +66,11 @@ export default function EditItemDialog({
                 image: null,
                 remove_image: false,
             });
+             
             setImagePreview(item.image_url ?? null);
-            setRemoveImage(false);
+            // setRemoveImage(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, item]);
 
     function submit(e: React.FormEvent) {
@@ -92,7 +94,7 @@ export default function EditItemDialog({
                 onOpenChange(false);
                 form.reset();
                 setImagePreview(null);
-                setRemoveImage(false);
+                // setRemoveImage(false);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
@@ -162,12 +164,14 @@ export default function EditItemDialog({
                                 if (imagePreview) {
                                     try {
                                         URL.revokeObjectURL(imagePreview);
-                                    } catch (err) { }
+                                    } catch {
+                                        // ignore
+                                    }
                                 }
                                 if (f) {
                                     const url = URL.createObjectURL(f);
                                     setImagePreview(url);
-                                    setRemoveImage(false);
+                                    // setRemoveImage(false);
                                     form.setData('remove_image', false);
                                 } else {
                                     setImagePreview(item?.image_url ?? null);
@@ -202,7 +206,7 @@ export default function EditItemDialog({
                                                 onClick={() => {
                                                     form.setData('image', null);
                                                     setImagePreview(null);
-                                                    setRemoveImage(true);
+                                                    // setRemoveImage(true);
                                                     form.setData(
                                                         'remove_image',
                                                         true,

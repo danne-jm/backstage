@@ -29,20 +29,18 @@ export function Breadcrumbs({
                                             <BreadcrumbPage>
                                                 {item.title}
                                             </BreadcrumbPage>
-                                        ) : (
-                                            // If href is provided, render a clickable link.
-                                            // If not, render a plain page item (non-clickable).
-                                            item.href ? (
-                                                <BreadcrumbLink asChild>
-                                                    <Link href={item.href}>
-                                                        {item.title}
-                                                    </Link>
-                                                </BreadcrumbLink>
-                                            ) : (
-                                                <BreadcrumbPage>
+                                        ) : // If href is provided, render a clickable link.
+                                        // If not, render a plain page item (non-clickable).
+                                        item.href ? (
+                                            <BreadcrumbLink asChild>
+                                                <Link href={item.href}>
                                                     {item.title}
-                                                </BreadcrumbPage>
-                                            )
+                                                </Link>
+                                            </BreadcrumbLink>
+                                        ) : (
+                                            <BreadcrumbPage>
+                                                {item.title}
+                                            </BreadcrumbPage>
                                         )}
                                     </BreadcrumbItem>
                                     {!isLast && <BreadcrumbSeparator />}

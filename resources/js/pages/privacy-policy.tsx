@@ -1,5 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
-import { home } from '@/routes';
+import { Head } from '@inertiajs/react';
 
 export default function PrivacyPolicy() {
     return (
@@ -26,7 +25,7 @@ export default function PrivacyPolicy() {
                     <h1 className="mb-8 text-4xl font-semibold">
                         Privacy Policy
                     </h1>
-                    <div className="prose prose-stone max-w-none dark:prose-invert">
+                    <div className="prose prose-stone dark:prose-invert max-w-none">
                         <p className="text-[#706f6c] dark:text-[#A1A09A]">
                             Last updated: December 22, 2025
                         </p>
@@ -60,14 +59,16 @@ export default function PrivacyPolicy() {
                                 We use the information we collect to:
                             </p>
                             <ul className="mb-4 ml-6 list-disc space-y-2 text-[#706f6c] dark:text-[#A1A09A]">
-                                <li>Provide, maintain, and improve our services</li>
+                                <li>
+                                    Provide, maintain, and improve our services
+                                </li>
                                 <li>
                                     Process transactions and send related
                                     information
                                 </li>
                                 <li>
-                                    Send you technical notices, updates, security
-                                    alerts, and support messages
+                                    Send you technical notices, updates,
+                                    security alerts, and support messages
                                 </li>
                                 <li>
                                     Respond to your comments, questions, and
@@ -90,17 +91,15 @@ export default function PrivacyPolicy() {
                             </h2>
                             <p className="mb-4 leading-relaxed text-[#706f6c] dark:text-[#A1A09A]">
                                 We do not share, sell, rent, or trade your
-                                personal information with third parties for their
-                                commercial purposes. We may share your information
-                                in the following situations:
+                                personal information with third parties for
+                                their commercial purposes. We may share your
+                                information in the following situations:
                             </p>
                             <ul className="mb-4 ml-6 list-disc space-y-2 text-[#706f6c] dark:text-[#A1A09A]">
+                                <li>With your consent or at your direction</li>
                                 <li>
-                                    With your consent or at your direction
-                                </li>
-                                <li>
-                                    With service providers who perform services on
-                                    our behalf
+                                    With service providers who perform services
+                                    on our behalf
                                 </li>
                                 <li>
                                     To comply with laws or respond to legal
@@ -135,11 +134,11 @@ export default function PrivacyPolicy() {
                                 5. Data Retention
                             </h2>
                             <p className="mb-4 leading-relaxed text-[#706f6c] dark:text-[#A1A09A]">
-                                We store your personal information for as long as
-                                necessary to provide you with our services, or for
-                                other important purposes such as complying with
-                                legal obligations, resolving disputes, and
-                                enforcing our agreements.
+                                We store your personal information for as long
+                                as necessary to provide you with our services,
+                                or for other important purposes such as
+                                complying with legal obligations, resolving
+                                disputes, and enforcing our agreements.
                             </p>
                         </section>
 
@@ -160,15 +159,16 @@ export default function PrivacyPolicy() {
                                     information
                                 </li>
                                 <li>
-                                    Request deletion of your personal information
+                                    Request deletion of your personal
+                                    information
                                 </li>
                                 <li>
                                     Object to or restrict certain processing of
                                     your information
                                 </li>
                                 <li>
-                                    Withdraw consent where we rely on your consent
-                                    to process your information
+                                    Withdraw consent where we rely on your
+                                    consent to process your information
                                 </li>
                             </ul>
                         </section>
@@ -179,11 +179,11 @@ export default function PrivacyPolicy() {
                             </h2>
                             <p className="mb-4 leading-relaxed text-[#706f6c] dark:text-[#A1A09A]">
                                 We use cookies and similar tracking technologies
-                                to collect and track information about your use of
-                                our services. You can control cookies through your
-                                browser settings, but please note that disabling
-                                cookies may affect the functionality of our
-                                services.
+                                to collect and track information about your use
+                                of our services. You can control cookies through
+                                your browser settings, but please note that
+                                disabling cookies may affect the functionality
+                                of our services.
                             </p>
                         </section>
 
@@ -194,10 +194,10 @@ export default function PrivacyPolicy() {
                             <p className="mb-4 leading-relaxed text-[#706f6c] dark:text-[#A1A09A]">
                                 Our services are not directed to children under
                                 the age of 13, and we do not knowingly collect
-                                personal information from children under 13. If we
-                                learn that we have collected personal information
-                                from a child under 13, we will take steps to
-                                delete such information.
+                                personal information from children under 13. If
+                                we learn that we have collected personal
+                                information from a child under 13, we will take
+                                steps to delete such information.
                             </p>
                         </section>
 
@@ -207,9 +207,9 @@ export default function PrivacyPolicy() {
                             </h2>
                             <p className="mb-4 leading-relaxed text-[#706f6c] dark:text-[#A1A09A]">
                                 We may update this Privacy Policy from time to
-                                time. We will notify you of any changes by posting
-                                the new Privacy Policy on this page and updating
-                                the "Last updated" date.
+                                time. We will notify you of any changes by
+                                posting the new Privacy Policy on this page and
+                                updating the "Last updated" date.
                             </p>
                         </section>
 
@@ -219,8 +219,9 @@ export default function PrivacyPolicy() {
                             </h2>
                             <p className="mb-4 leading-relaxed text-[#706f6c] dark:text-[#A1A09A]">
                                 If you have any questions about this Privacy
-                                Policy, please contact us through the appropriate
-                                channels provided in our application.
+                                Policy, please contact us through the
+                                appropriate channels provided in our
+                                application.
                             </p>
                         </section>
                     </div>

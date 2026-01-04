@@ -3,8 +3,8 @@
 use App\Models\User;
 
 it('returns json from distribution endpoint', function () {
-    // create an in-memory user instance and act as them (no DB persistence required)
-    $user = User::factory()->make();
+    // create a user instance and act as them
+    $user = User::factory()->create(['permissions' => ['send_tickets']]);
     $this->actingAs($user);
 
     $recipients = [

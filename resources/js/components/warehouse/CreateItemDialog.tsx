@@ -1,4 +1,3 @@
-import { CategorySelector } from './CategorySelector';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -11,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm } from '@inertiajs/react';
 import { useRef, useState } from 'react';
+import { CategorySelector } from './CategorySelector';
 
 interface CreateItemDialogProps {
     open: boolean;
@@ -128,7 +128,9 @@ export default function CreateItemDialog({
                                 if (imagePreview) {
                                     try {
                                         URL.revokeObjectURL(imagePreview);
-                                    } catch (err) { }
+                                    } catch {
+                                        // ignore
+                                    }
                                 }
                                 if (f) {
                                     const url = URL.createObjectURL(f);

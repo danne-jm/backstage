@@ -13,13 +13,11 @@ import { Form, Head } from '@inertiajs/react';
 interface LoginProps {
     status?: string;
     canResetPassword: boolean;
-    canRegister: boolean;
 }
 
 export default function Login({
     status,
     canResetPassword,
-    canRegister,
 }: LoginProps) {
     return (
         <AuthLayout

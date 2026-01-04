@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\MailTemplate;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

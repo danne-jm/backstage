@@ -9,12 +9,19 @@ export default function AppSidebarLayout({
     children,
     breadcrumbs = [],
     headerActions, // New prop
-}: PropsWithChildren<{ breadcrumbs?: BreadcrumbItem[]; headerActions?: ReactNode }>) {
+}: PropsWithChildren<{
+    breadcrumbs?: BreadcrumbItem[];
+    headerActions?: ReactNode;
+}>) {
     return (
         <AppShell variant="sidebar">
             <AppSidebar />
             <AppContent variant="sidebar" className="overflow-x-hidden">
-                <AppSidebarHeader breadcrumbs={breadcrumbs} headerActions={headerActions} /> {/* Pass new prop */}
+                <AppSidebarHeader
+                    breadcrumbs={breadcrumbs}
+                    headerActions={headerActions}
+                />{' '}
+                {/* Pass new prop */}
                 {children}
             </AppContent>
         </AppShell>

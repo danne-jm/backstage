@@ -4,7 +4,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import * as React from 'react';
 
 interface AttendeeDetailsDialogProps {
     open: boolean;
@@ -44,7 +43,7 @@ export function AttendeeDetailsDialog({
                         <div className="space-y-3 rounded border bg-muted/30 p-3">
                             {allTickets[0] && (
                                 <>
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-muted-foreground">
                                             First Name:
                                         </span>
@@ -52,7 +51,7 @@ export function AttendeeDetailsDialog({
                                             {allTickets[0].first_name}
                                         </span>
                                     </div>
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-muted-foreground">
                                             Last Name:
                                         </span>
@@ -60,7 +59,7 @@ export function AttendeeDetailsDialog({
                                             {allTickets[0].last_name}
                                         </span>
                                     </div>
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-sm">
+                                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-muted-foreground">
                                             Email:
                                         </span>
@@ -124,7 +123,6 @@ export function AttendeeDetailsDialog({
                                             )}
                                         </div>
                                     </div>
-
                                 </div>
                             ))}
                         </div>

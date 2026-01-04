@@ -1,9 +1,26 @@
 import { MailFilters } from '@/components/mails/MailFilters';
 import { MailTicketDetails } from '@/components/mails/MailTicketDetails';
 import { Button } from '@/components/ui/button';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink } from '@/components/ui/pagination';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+} from '@/components/ui/pagination';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
@@ -20,12 +37,14 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Mails() {
-    const { props } = usePage<SharedData & {
-        mails: any;
-        events: any[];
-        senders: any[];
-        filters: any;
-    }>();
+    const { props } = usePage<
+        SharedData & {
+            mails: any;
+            events: any[];
+            senders: any[];
+            filters: any;
+        }
+    >();
 
     const { mails, events, senders, filters } = props;
 
@@ -40,8 +59,9 @@ export default function Mails() {
         } else {
             setExpandedRow(mailId);
             setLoadingTicket(true);
-            axios.get(`/mails/${mailId}/ticket`)
-                .then(res => {
+            axios
+                .get(`/mails/${mailId}/ticket`)
+                .then((res) => {
                     setTicketData(res.data);
                 })
                 .catch(() => {
@@ -68,7 +88,6 @@ export default function Mails() {
                     totalMails={mails.total}
                 />
 
-
                 <div className="rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
                     <Table>
                         <TableHeader>
@@ -89,8 +108,18 @@ export default function Mails() {
                                     <TableRow>
                                         <TableCell>
                                             {isQrMail(mail) ? (
-                                                <Button variant="ghost" size="sm" onClick={() => toggleRow(mail.id)}>
-                                                    {expandedRow === mail.id ? <ChevronDown /> : <ChevronRight />}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        toggleRow(mail.id)
+                                                    }
+                                                >
+                                                    {expandedRow === mail.id ? (
+                                                        <ChevronDown />
+                                                    ) : (
+                                                        <ChevronRight />
+                                                    )}
                                                 </Button>
                                             ) : (
                                                 <div className="w-6"></div>
@@ -105,31 +134,59 @@ export default function Mails() {
                                                 </div>
                                             )}
                                         </TableCell>
-                                        <TableCell>{mail.recipient_email}</TableCell>
+                                        <TableCell>
+                                            {mail.recipient_email}
+                                        </TableCell>
                                         <TableCell>{mail.subject}</TableCell>
                                         <TableCell>
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <span className="truncate max-w-[150px] block">
-                                                            {mail.body ? mail.body.substring(0, 50) + (mail.body.length > 50 ? '...' : '') : 'N/A'}
+                                                        <span className="block max-w-[150px] truncate">
+                                                            {mail.body
+                                                                ? mail.body.substring(
+                                                                      0,
+                                                                      50,
+                                                                  ) +
+                                                                  (mail.body
+                                                                      .length >
+                                                                  50
+                                                                      ? '...'
+                                                                      : '')
+                                                                : 'N/A'}
                                                         </span>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="max-w-md p-2 bg-gray-800 text-white rounded shadow-lg">
+                                                    <TooltipContent className="max-w-md rounded bg-gray-800 p-2 text-white shadow-lg">
                                                         <p>{mail.body}</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
                                         </TableCell>
-                                        <TableCell>{mail.event?.name || 'N/A'}</TableCell>
-                                        <TableCell>{mail.user ? mail.user.email : 'N/A'}</TableCell>
-                                        <TableCell>{format(new Date(mail.created_at), 'yyyy-MM-dd HH:mm')}</TableCell>
+                                        <TableCell>
+                                            {mail.event?.name || 'N/A'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {mail.user
+                                                ? mail.user.email
+                                                : 'N/A'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {format(
+                                                new Date(mail.created_at),
+                                                'yyyy-MM-dd HH:mm',
+                                            )}
+                                        </TableCell>
                                     </TableRow>
                                     {expandedRow === mail.id && (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="p-0">
-                                                <MailTicketDetails loading={loadingTicket} ticketData={ticketData} />
-
+                                            <TableCell
+                                                colSpan={8}
+                                                className="p-0"
+                                            >
+                                                <MailTicketDetails
+                                                    loading={loadingTicket}
+                                                    ticketData={ticketData}
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -139,9 +196,12 @@ export default function Mails() {
                     </Table>
                     <div className="mt-4">
                         <Pagination>
-                            <PaginationContent className="gap-3 md:gap-4 lg:gap-6 flex-wrap">
+                            <PaginationContent className="flex-wrap gap-3 md:gap-4 lg:gap-6">
                                 {mails.links.map((link: any, index: number) => (
-                                    <PaginationItem key={index} className="mx-2 md:mx-3 lg:mx-4">
+                                    <PaginationItem
+                                        key={index}
+                                        className="mx-2 md:mx-3 lg:mx-4"
+                                    >
                                         <PaginationLink
                                             size="default"
                                             href={link.url || '#'}

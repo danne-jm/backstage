@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface StoreQuickStatsProps {
     totalOffice: number;
     totalOnline: number;

@@ -275,14 +275,13 @@ class SellablesController extends Controller
             // Remove the key so update won't clear the existing value accidentally
             // However, normalizeInput returns a new array, so we must check normalized or original validated
             // The service doesn't touch google_spreadsheet_id, so it should be safe to check $normalized
-             if (array_key_exists('google_spreadsheet_id', $normalized) && $normalized['google_spreadsheet_id'] === null) {
+            if (array_key_exists('google_spreadsheet_id', $normalized) && $normalized['google_spreadsheet_id'] === null) {
                 unset($normalized['google_spreadsheet_id']);
             }
         }
 
         $event->update($normalized);
     }
-
 
     public function destroyEvent(Event $event)
     {

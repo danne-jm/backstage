@@ -13,6 +13,7 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
+
     use \Spatie\Activitylog\Traits\LogsActivity;
 
     public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
@@ -28,7 +29,7 @@ class User extends Authenticatable
                 'theme',
                 'password_hash',
                 'gmail_provider_email',
-                'two_factor_confirmed_at'
+                'two_factor_confirmed_at',
             ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
@@ -120,7 +121,7 @@ class User extends Authenticatable
             if (isset($levels[$permission])) {
                 $expanded = array_merge($expanded, $levels[$permission]);
             }
-            
+
             // Always add the permission itself (e.g. 'view_dashboard' or 'board')
             // This ensures we keep the original tag too.
             $expanded[] = $permission;

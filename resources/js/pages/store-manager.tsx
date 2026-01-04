@@ -4,15 +4,21 @@ import { storeManager } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 
-import { useEffect, useState, useMemo } from 'react';
-import { ProductDialog } from '@/components/sellables/ProductDialog';
 import { EventDialog } from '@/components/sellables/EventDialog';
-import { ProductPreview } from '@/components/sellables/ProductPreview';
 import { EventPreview } from '@/components/sellables/EventPreview';
+import { ProductDialog } from '@/components/sellables/ProductDialog';
+import { ProductPreview } from '@/components/sellables/ProductPreview';
+import { LatestCardSalesList } from '@/components/store-manager/LatestCardSalesList';
 import { SalesChart } from '@/components/store-manager/SalesChart';
 import { StoreQuickStats } from '@/components/store-manager/StoreQuickStats';
-import { LatestCardSalesList } from '@/components/store-manager/LatestCardSalesList';
-import type { Product, Event, Sellable, BoardUser, OnlineSale } from '@/types/sellables';
+import type {
+    BoardUser,
+    Event,
+    OnlineSale,
+    Product,
+    Sellable,
+} from '@/types/sellables';
+import { useEffect, useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -37,7 +43,9 @@ export default function StoreManager() {
 
     const { auth } = usePage<SharedData>().props;
     const permissions = auth?.user?.permissions || [];
-    const canUpdateStore = permissions.includes('admin') || permissions.includes('update_store_settings');
+    const canUpdateStore =
+        permissions.includes('admin') ||
+        permissions.includes('update_store_settings');
 
     // Product modal state
     const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -50,9 +58,12 @@ export default function StoreManager() {
     async function load(page: number = 1, size: number = 100) {
         try {
             setLoading(true);
-            const res = await fetch(`/store-manager/data?page=${page}&pageSize=${size}`, {
-                credentials: 'same-origin',
-            });
+            const res = await fetch(
+                `/store-manager/data?page=${page}&pageSize=${size}`,
+                {
+                    credentials: 'same-origin',
+                },
+            );
             if (res.ok) {
                 const json = await res.json();
                 if (Array.isArray(json.products))
@@ -103,11 +114,8 @@ export default function StoreManager() {
         setEventDialogOpen(true);
     };
 
-    const handleSetOnline = async (
-        sellableId: number,
-        isOnline: boolean,
-    ) => {
-        const sellable = sellables.find(s => s.id === sellableId);
+    const handleSetOnline = async (sellableId: number, isOnline: boolean) => {
+        const sellable = sellables.find((s) => s.id === sellableId);
         if (!sellable) return;
 
         const url =
@@ -156,12 +164,14 @@ export default function StoreManager() {
 
     // Compute recent online totals per active online sellable from onlineSales
     const onlineSellableTotals = (() => {
-        const items = sellables.filter(s => s.is_online_sellable);
-        return items.map(s => {
+        const items = sellables.filter((s) => s.is_online_sellable);
+        return items.map((s) => {
             const total = onlineSales.reduce((acc, os) => {
                 const amount = parseFloat(String(os.amount || 0)) || 0;
-                if (s.type === 'product' && os.product_id === s.id) return acc + amount;
-                if (s.type === 'event' && os.event_id === s.id) return acc + amount;
+                if (s.type === 'product' && os.product_id === s.id)
+                    return acc + amount;
+                if (s.type === 'event' && os.event_id === s.id)
+                    return acc + amount;
                 return acc;
             }, 0);
             return { ...s, total };
@@ -180,15 +190,17 @@ export default function StoreManager() {
         '#EC4899', // pink
     ];
 
-    const dateKeys = sales.map(s => s.date);
+    const dateKeys = sales.map((s) => s.date);
 
     const onlineSellableSeries = onlineSellableTotals.map((s, idx) => {
-        const series = dateKeys.map(dk => {
+        const series = dateKeys.map((dk) => {
             const totalForDay = onlineSales.reduce((acc, os) => {
                 const soldDate = (os.sold_at || '').split('T')[0];
                 if (soldDate !== dk) return acc;
-                if (s.type === 'product' && os.product_id === s.id) return acc + (parseFloat(String(os.amount || 0)) || 0);
-                if (s.type === 'event' && os.event_id === s.id) return acc + (parseFloat(String(os.amount || 0)) || 0);
+                if (s.type === 'product' && os.product_id === s.id)
+                    return acc + (parseFloat(String(os.amount || 0)) || 0);
+                if (s.type === 'event' && os.event_id === s.id)
+                    return acc + (parseFloat(String(os.amount || 0)) || 0);
                 return acc;
             }, 0);
             return totalForDay;
@@ -201,15 +213,21 @@ export default function StoreManager() {
         };
     });
 
-    const seriesMax = Math.max(1, ...onlineSellableSeries.flatMap(s => s.series));
+    const seriesMax = Math.max(
+        1,
+        ...onlineSellableSeries.flatMap((s) => s.series),
+    );
 
     // Pagination for Latest Card Sales: show up to `pageSize` per page and paginate when there are more
     const pageSize = 100;
     const [onlinePage, setOnlinePage] = useState<number>(1);
 
-    const totalOnlinePages = Math.max(1, Math.ceil((onlineSalesTotal || 0) / pageSize));
+    const totalOnlinePages = Math.max(
+        1,
+        Math.ceil((onlineSalesTotal || 0) / pageSize),
+    );
 
-    const sellableCounts = onlineSellableTotals.map(s => {
+    const sellableCounts = onlineSellableTotals.map((s) => {
         const count = onlineSales.reduce((acc, os) => {
             if (s.type === 'product' && os.product_id === s.id) return acc + 1;
             if (s.type === 'event' && os.event_id === s.id) return acc + 1;
@@ -220,13 +238,11 @@ export default function StoreManager() {
 
     // Server returns the paginated slice already; just sort the returned slice newest-first
     const visibleOnlineSales = useMemo(() => {
-        return (onlineSales || [])
-            .slice()
-            .sort((a: any, b: any) => {
-                const ta = new Date(a.sold_at ?? a.created_at).getTime() || 0;
-                const tb = new Date(b.sold_at ?? b.created_at).getTime() || 0;
-                return tb - ta; // newest first
-            });
+        return (onlineSales || []).slice().sort((a: any, b: any) => {
+            const ta = new Date(a.sold_at ?? a.created_at).getTime() || 0;
+            const tb = new Date(b.sold_at ?? b.created_at).getTime() || 0;
+            return tb - ta; // newest first
+        });
     }, [onlineSales]);
 
     // Load store-manager data once on mount and whenever pagination changes.
@@ -268,7 +284,7 @@ export default function StoreManager() {
                                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
                             ) : (
                                 <div className="max-h-96 space-y-2 overflow-y-auto">
-                                    {sellables.map(s =>
+                                    {sellables.map((s) =>
                                         s.type === 'product' ? (
                                             <ProductPreview
                                                 key={s.id}
@@ -278,7 +294,11 @@ export default function StoreManager() {
                                                 }
                                                 variant="store-manager"
                                                 isOnline={s.is_online_sellable}
-                                                onSetOnline={canUpdateStore ? handleSetOnline : undefined}
+                                                onSetOnline={
+                                                    canUpdateStore
+                                                        ? handleSetOnline
+                                                        : undefined
+                                                }
                                             />
                                         ) : (
                                             <EventPreview
@@ -289,7 +309,11 @@ export default function StoreManager() {
                                                 }
                                                 variant="store-manager"
                                                 isOnline={s.is_online_sellable}
-                                                onSetOnline={canUpdateStore ? handleSetOnline : undefined}
+                                                onSetOnline={
+                                                    canUpdateStore
+                                                        ? handleSetOnline
+                                                        : undefined
+                                                }
                                             />
                                         ),
                                     )}

@@ -1,16 +1,16 @@
+import { AttendeeDetailsDialog } from '@/components/ticket-scanner/AttendeeDetailsDialog';
+import { AvailableAttendeesList } from '@/components/ticket-scanner/AvailableAttendeesList';
+import { ScannedTicketDialog } from '@/components/ticket-scanner/ScannedTicketDialog';
+import { ScannedTicketsList } from '@/components/ticket-scanner/ScannedTicketsList';
+import { ScanResultDialog } from '@/components/ticket-scanner/ScanResultDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AttendeeDetailsDialog } from '@/components/ticket-scanner/AttendeeDetailsDialog';
-import { AvailableAttendeesList } from '@/components/ticket-scanner/AvailableAttendeesList';
-import { ScannedTicketsList } from '@/components/ticket-scanner/ScannedTicketsList';
-import { ScanResultDialog } from '@/components/ticket-scanner/ScanResultDialog';
-import { ScannedTicketDialog } from '@/components/ticket-scanner/ScannedTicketDialog';
 import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import { CameraOff } from 'lucide-react';
 import * as React from 'react';
-import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -18,14 +18,19 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/ticket-scanner',
     },
 ];
+const initialTickets: any[] = [];
 
 export default function TicketScanner() {
     const props: any = usePage().props;
     const permissions = props.auth?.user?.permissions || [];
-    const canScan = permissions.includes('admin') || permissions.includes('scan_tickets');
+    const canScan =
+        permissions.includes('admin') || permissions.includes('scan_tickets');
 
-    const events: any[] = Array.isArray(props.events) ? props.events : [];
-    const initialTickets: any[] = [];
+    const events: any[] = React.useMemo(
+        () => (Array.isArray(props.events) ? props.events : []),
+        [props.events],
+    );
+
 
     // Only show events happening within the next 14 days (inclusive)
     // Assumption: "within 14 days of current day" means from now up to now + 14 days.
@@ -46,18 +51,7 @@ export default function TicketScanner() {
     );
 
     // Format scan date as DD/MM/YYYY
-    const formatScanDate = (iso?: string | null): string => {
-        if (!iso) return '';
-        const d = new Date(iso);
-        if (Number.isNaN(d.getTime())) return '';
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        const hours = String(d.getHours()).padStart(2, '0');
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        const seconds = String(d.getSeconds()).padStart(2, '0');
-        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-    };
+
 
     const selectedEventObj = React.useMemo(() => {
         return events.find((ev) => ev.id === selectedEvent) ?? null;
@@ -160,7 +154,7 @@ export default function TicketScanner() {
         if (scanning) {
             try {
                 await stopCamera();
-            } catch (e) {
+            } catch {
                 // ignore
             }
         }
@@ -301,7 +295,7 @@ export default function TicketScanner() {
                         await verifyTicket(decodedText);
                     }
                 },
-                (errorMessage) => {
+                () => {
                     // Error callback - fires when no QR code is detected (can be ignored)
                 },
             );
@@ -351,6 +345,7 @@ export default function TicketScanner() {
             }
         }
         // only depend on modalOpen and scanning
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [modalOpen]);
 
     // Group tickets by attendee (first_name + last_name + email) - show available attendees in sidebar
@@ -514,7 +509,9 @@ export default function TicketScanner() {
                                 </div>
                                 {selectedEventObj.event_date && (
                                     <div className="text-xs text-muted-foreground">
-                                        {String(selectedEventObj.event_date).slice(0, 10)}
+                                        {String(
+                                            selectedEventObj.event_date,
+                                        ).slice(0, 10)}
                                     </div>
                                 )}
                                 {selectedEventObj.location && (
@@ -543,7 +540,7 @@ export default function TicketScanner() {
                             <div
                                 role="tablist"
                                 aria-orientation="horizontal"
-                                className={`inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground ${!canScan ? 'opacity-50 pointer-events-none' : ''}`}
+                                className={`inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground ${!canScan ? 'pointer-events-none opacity-50' : ''}`}
                             >
                                 <button
                                     type="button"
@@ -653,7 +650,6 @@ export default function TicketScanner() {
                         eventName={selectedEventObj?.name}
                         ticketCount={tickets.length}
                     />
-
                 </div>
 
                 {/* Large scanned tickets area below */}
@@ -664,7 +660,6 @@ export default function TicketScanner() {
                     eventName={selectedEventObj?.name}
                     onSelectTicket={setSelectedScannedTicket}
                 />
-
 
                 {/* Attendee Details Modal */}
                 <AttendeeDetailsDialog
@@ -677,7 +672,6 @@ export default function TicketScanner() {
                             : []
                     }
                 />
-
 
                 {/* Scan Result Modal - using Dialog component like attendee modal */}
                 <ScanResultDialog
@@ -696,7 +690,6 @@ export default function TicketScanner() {
                     }
                 />
 
-
                 {/* Scanned Ticket Details Modal - same Dialog pattern */}
                 <ScannedTicketDialog
                     open={selectedScannedTicket !== null}
@@ -713,7 +706,6 @@ export default function TicketScanner() {
                             : []
                     }
                 />
-
             </div>
         </AppLayout>
     );

@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { office } from '@/routes';
 import { Link, router } from '@inertiajs/react';
-import React from 'react';
 import { formatTimestamp } from './utils';
 
 interface PastShiftsListProps {
@@ -19,7 +18,11 @@ interface PastShiftsListProps {
     canDelete?: boolean;
 }
 
-export function PastShiftsList({ shifts, setMessage, canDelete = true }: PastShiftsListProps) {
+export function PastShiftsList({
+    shifts,
+    setMessage,
+    canDelete = true,
+}: PastShiftsListProps) {
     return (
         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
             <h3 className="mb-4 text-sm font-semibold">All Office Shifts</h3>
@@ -37,14 +40,14 @@ export function PastShiftsList({ shifts, setMessage, canDelete = true }: PastShi
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                     {Array.isArray(s.workers) &&
-                                        s.workers.length > 0
+                                    s.workers.length > 0
                                         ? s.workers
-                                            .map((w: any) => w.name)
-                                            .slice(0, 3)
-                                            .join(', ')
+                                              .map((w: any) => w.name)
+                                              .slice(0, 3)
+                                              .join(', ')
                                         : 'No workers'}
                                     {Array.isArray(s.workers) &&
-                                        s.workers.length > 3
+                                    s.workers.length > 3
                                         ? ` +${s.workers.length - 3} more`
                                         : ''}
                                 </div>
@@ -78,10 +81,10 @@ export function PastShiftsList({ shifts, setMessage, canDelete = true }: PastShi
                                                 Delete this office shift?
                                             </DialogTitle>
                                             <DialogDescription>
-                                                Deleting a shift will permanently
-                                                remove its sales and worker history.
-                                                This action cannot be undone. Are
-                                                you sure?
+                                                Deleting a shift will
+                                                permanently remove its sales and
+                                                worker history. This action
+                                                cannot be undone. Are you sure?
                                             </DialogDescription>
                                             <DialogFooter className="gap-2">
                                                 <DialogClose asChild>
@@ -98,30 +101,33 @@ export function PastShiftsList({ shifts, setMessage, canDelete = true }: PastShi
                                                                 {},
                                                                 {
                                                                     preserveScroll: true,
-                                                                    onStart: () => { },
-                                                                    onSuccess: () => {
-                                                                        setMessage(
-                                                                            'Shift deleted',
-                                                                        );
-                                                                        setTimeout(
-                                                                            () =>
-                                                                                router.get(
-                                                                                    office()
-                                                                                        .url,
-                                                                                    {},
-                                                                                    {
-                                                                                        preserveScroll: true,
-                                                                                        preserveState: true,
-                                                                                        replace: true,
-                                                                                    },
-                                                                                ),
-                                                                            500,
-                                                                        );
-                                                                    },
-                                                                    onError: () =>
-                                                                        setMessage(
-                                                                            'Failed to delete shift',
-                                                                        ),
+                                                                    onStart:
+                                                                        () => {},
+                                                                    onSuccess:
+                                                                        () => {
+                                                                            setMessage(
+                                                                                'Shift deleted',
+                                                                            );
+                                                                            setTimeout(
+                                                                                () =>
+                                                                                    router.get(
+                                                                                        office()
+                                                                                            .url,
+                                                                                        {},
+                                                                                        {
+                                                                                            preserveScroll: true,
+                                                                                            preserveState: true,
+                                                                                            replace: true,
+                                                                                        },
+                                                                                    ),
+                                                                                500,
+                                                                            );
+                                                                        },
+                                                                    onError:
+                                                                        () =>
+                                                                            setMessage(
+                                                                                'Failed to delete shift',
+                                                                            ),
                                                                 },
                                                             );
                                                         }}

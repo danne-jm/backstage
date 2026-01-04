@@ -4,7 +4,10 @@ use App\Models\Item;
 use App\Models\User;
 
 it('creates an item and sets last_modified and changed_by', function () {
-    $user = User::factory()->create(['email' => 'tester@example.com']);
+    $user = User::factory()->create([
+        'email' => 'tester@example.com',
+        'permissions' => ['create_item', 'view_inventory'],
+    ]);
 
     $this->actingAs($user)
         ->post(route('warehouse.items.store'), [
