@@ -43,7 +43,14 @@ class GoogleSheetsService
 
         try {
             // This might throw if the token was revoked by the user externally
-            $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
+            $token = $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
+
+            // CHECK: Did Google rotate the refresh token?
+            if (isset($token['refresh_token']) && $token['refresh_token'] !== $refreshToken) {
+                $user->forceFill([
+                    'gmail_refresh_token' => encrypt($token['refresh_token']),
+                ])->save();
+            }
         } catch (\Throwable $e) {
             Log::error('Google Refresh Token Error: '.$e->getMessage());
             throw new Exception('Failed to authenticate with Google. Token may be expired.');
