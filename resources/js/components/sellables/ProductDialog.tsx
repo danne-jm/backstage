@@ -84,8 +84,8 @@ export function ProductDialog({
             quantity: productVariableAmount
                 ? null
                 : productQuantity
-                    ? parseInt(productQuantity)
-                    : null,
+                  ? parseInt(productQuantity)
+                  : null,
             unlimited_quantity: productVariableAmount
                 ? false
                 : !productQuantity,

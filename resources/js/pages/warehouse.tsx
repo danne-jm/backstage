@@ -4,7 +4,6 @@ import CreateItemDialog from '@/components/warehouse/CreateItemDialog';
 import DeleteItemDialog from '@/components/warehouse/DeleteItemDialog';
 import EditItemDialog from '@/components/warehouse/EditItemDialog';
 import AppLayout from '@/layouts/app-layout';
-import { warehouse } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import {
@@ -16,13 +15,7 @@ import {
     Search,
 } from 'lucide-react';
 import { useState } from 'react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Inventory',
-        href: warehouse().url,
-    },
-];
+import { route } from 'ziggy-js';
 
 type Item = {
     id: number;
@@ -35,6 +28,13 @@ type Item = {
 };
 
 export default function Warehouse() {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Inventory',
+            href: route('warehouse'),
+        },
+    ];
+
     const { items: paginatedItems, auth } = usePage().props as unknown as {
         items: any;
         auth: any;
@@ -214,7 +214,7 @@ export default function Warehouse() {
                                                 column: 'name',
                                                 dir:
                                                     s.column === 'name' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -243,7 +243,7 @@ export default function Warehouse() {
                                                 column: 'quantity',
                                                 dir:
                                                     s.column === 'quantity' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -272,7 +272,7 @@ export default function Warehouse() {
                                                 column: 'category',
                                                 dir:
                                                     s.column === 'category' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -294,7 +294,7 @@ export default function Warehouse() {
                                                 column: 'category',
                                                 dir:
                                                     s.column === 'category' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -324,7 +324,7 @@ export default function Warehouse() {
                                                 dir:
                                                     s.column ===
                                                         'last_modified' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -353,7 +353,7 @@ export default function Warehouse() {
                                                 column: 'changed_by',
                                                 dir:
                                                     s.column === 'changed_by' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -481,8 +481,8 @@ export default function Warehouse() {
                                     <td className="px-6 py-4">
                                         {item.last_modified
                                             ? new Date(
-                                                item.last_modified,
-                                            ).toLocaleString()
+                                                  item.last_modified,
+                                              ).toLocaleString()
                                             : '-'}
                                     </td>
                                     <td className="px-6 py-4">

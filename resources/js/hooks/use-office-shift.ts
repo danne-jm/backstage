@@ -95,7 +95,10 @@ export const useOfficeShift = () => {
         return true;
     }, []);
 
-    const filteredSellables = React.useMemo(() => sellables.filter((s) => isEventInSellWindow(s)), [sellables, isEventInSellWindow]);
+    const filteredSellables = React.useMemo(
+        () => sellables.filter((s) => isEventInSellWindow(s)),
+        [sellables, isEventInSellWindow],
+    );
 
     const [workers, setWorkers] = React.useState<any[]>([]);
     const [sales, setSales] = React.useState<any[]>([]);
@@ -115,13 +118,7 @@ export const useOfficeShift = () => {
         [rawStaff],
     );
     const staffMap = React.useMemo(
-        () =>
-            new Map(
-                staff.map((s: any) => [
-                    s.email,
-                    s.name,
-                ]),
-            ),
+        () => new Map(staff.map((s: any) => [s.email, s.name])),
         [staff],
     );
 

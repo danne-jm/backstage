@@ -1,8 +1,8 @@
 import LaravelLogo from '@/components/vectors/LaravelLogo';
 import WelcomeArtwork from '@/components/vectors/WelcomeArtwork';
-import { dashboard, login, privacyPolicy, termsConditions } from '@/routes';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 
 export default function Welcome() {
     const { auth } = usePage<SharedData>().props;
@@ -21,7 +21,7 @@ export default function Welcome() {
                     <nav className="flex items-center justify-end gap-4">
                         {auth.user ? (
                             <Link
-                                href={dashboard()}
+                                href={route('dashboard')}
                                 className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                             >
                                 Dashboard
@@ -29,7 +29,7 @@ export default function Welcome() {
                         ) : (
                             <>
                                 <Link
-                                    href={login()}
+                                    href={route('login')}
                                     className="inline-block rounded-sm border border-transparent px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#19140035] dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
                                 >
                                     Log in
@@ -135,14 +135,14 @@ export default function Welcome() {
                 <footer className="w-full max-w-[335px] py-6 text-center text-xs text-[#706f6c] lg:max-w-4xl dark:text-[#A1A09A]">
                     <div className="flex items-center justify-center gap-4">
                         <Link
-                            href={termsConditions()}
+                            href={route('terms-conditions')}
                             className="hover:text-[#1b1b18] hover:underline dark:hover:text-[#EDEDEC]"
                         >
                             Terms & Conditions
                         </Link>
                         <span>·</span>
                         <Link
-                            href={privacyPolicy()}
+                            href={route('privacy-policy')}
                             className="hover:text-[#1b1b18] hover:underline dark:hover:text-[#EDEDEC]"
                         >
                             Privacy Policy

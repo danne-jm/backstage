@@ -1,8 +1,8 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
-import { storeManager } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 
 import { EventDialog } from '@/components/sellables/EventDialog';
 import { EventPreview } from '@/components/sellables/EventPreview';
@@ -20,16 +20,16 @@ import type {
 } from '@/types/sellables';
 import { useEffect, useMemo, useState } from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Store Manager (Integrate real data with SumUp or other POS)',
-        href: storeManager().url,
-    },
-];
-
 // types moved to resources/js/types/sellables.ts
 
 export default function StoreManager() {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Store Manager (Integrate real data with SumUp or other POS)',
+            href: route('store-manager'),
+        },
+    ];
+
     const [products, setProducts] = useState<Product[]>([]);
     const [events, setEvents] = useState<Event[]>([]);
     const [boardUsers, setBoardUsers] = useState<BoardUser[]>([]);

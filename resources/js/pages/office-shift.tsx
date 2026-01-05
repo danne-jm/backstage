@@ -11,20 +11,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
-import { office } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { Check, Eye, HelpCircle, Pencil } from 'lucide-react';
 import * as React from 'react';
 import useSWR from 'swr';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Office Shifts',
-        href: office().url,
-    },
-];
+import { route } from 'ziggy-js';
 
 const denominationConfig = [
     { key: '50e', label: '€50' },
@@ -54,6 +47,13 @@ const mergeBreakdowns = (b1: any, b2: any): Record<string, number> => {
 };
 
 export default function Office() {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Office Shifts',
+            href: route('office'),
+        },
+    ];
+
     const { props: initialProps, version } = usePage<SharedData>();
     const [props, setProps] = React.useState(initialProps);
 
@@ -88,7 +88,6 @@ export default function Office() {
     );
     const activeShift: any = props['activeShift'] ?? null;
 
-
     const isEventInSellWindow = React.useCallback((item: any) => {
         if (!item) return false;
         if (item.type !== 'event') return true;
@@ -112,7 +111,10 @@ export default function Office() {
         return true;
     }, []);
 
-    const filteredSellables = React.useMemo(() => sellables.filter((s) => isEventInSellWindow(s)), [sellables, isEventInSellWindow]);
+    const filteredSellables = React.useMemo(
+        () => sellables.filter((s) => isEventInSellWindow(s)),
+        [sellables, isEventInSellWindow],
+    );
 
     const [workers, setWorkers] = React.useState<any[]>([]);
     const [sales, setSales] = React.useState<any[]>([]);
@@ -641,8 +643,8 @@ export default function Office() {
         const selectedItem = isCustom
             ? null
             : filteredSellables.find(
-                (i: any) => String(i.actual_id) === String(customSaleItemId),
-            );
+                  (i: any) => String(i.actual_id) === String(customSaleItemId),
+              );
         const amountToUse = String(customAmount);
         const descToUse = String(customDescription || '');
         const itemName = selectedItem ? selectedItem.name : 'Custom Sale';
@@ -748,7 +750,7 @@ export default function Office() {
                                                         !activeShift ||
                                                         submitting ||
                                                         activeShift?.status ===
-                                                        'closed'
+                                                            'closed'
                                                     }
                                                     onClick={() => {
                                                         if (!activeShift)
@@ -819,7 +821,7 @@ export default function Office() {
                                                         disabled={
                                                             submitting ||
                                                             activeShift?.status ===
-                                                            'closed'
+                                                                'closed'
                                                         }
                                                         onClick={() => {
                                                             if (!activeShift)
@@ -863,15 +865,15 @@ export default function Office() {
                                                                                 (
                                                                                     prev,
                                                                                 ) => [
-                                                                                        {
-                                                                                            id: member.id,
-                                                                                            name: member.name,
-                                                                                            role: member.role,
-                                                                                            email: member.email,
-                                                                                        },
-                                                                                        ...(prev ||
-                                                                                            []),
-                                                                                    ],
+                                                                                    {
+                                                                                        id: member.id,
+                                                                                        name: member.name,
+                                                                                        role: member.role,
+                                                                                        email: member.email,
+                                                                                    },
+                                                                                    ...(prev ||
+                                                                                        []),
+                                                                                ],
                                                                             );
                                                                             setMessage(
                                                                                 'Failed to remove worker',
@@ -958,7 +960,7 @@ export default function Office() {
                                                                                         .key
                                                                                 ] ||
                                                                                     0) -
-                                                                                1,
+                                                                                    1,
                                                                             ),
                                                                     }),
                                                                 )
@@ -971,7 +973,7 @@ export default function Office() {
                                                             min={0}
                                                             value={String(
                                                                 customCashBreakdown[
-                                                                d.key
+                                                                    d.key
                                                                 ] ?? 0,
                                                             )}
                                                             onChange={(e) =>
@@ -986,7 +988,7 @@ export default function Office() {
                                                                                         e
                                                                                             .target
                                                                                             .value ||
-                                                                                        0,
+                                                                                            0,
                                                                                     ),
                                                                                 ),
                                                                             ),
@@ -1059,7 +1061,7 @@ export default function Office() {
                                                             'custom';
                                                         let descToUse = String(
                                                             customDescription ||
-                                                            '',
+                                                                '',
                                                         );
                                                         let ticketTypeToSend =
                                                             undefined;
@@ -1093,7 +1095,7 @@ export default function Office() {
                                                                     amountToUse =
                                                                         Number(
                                                                             selectedItem.price ||
-                                                                            0,
+                                                                                0,
                                                                         );
                                                                 else
                                                                     amountToUse =
@@ -1114,9 +1116,9 @@ export default function Office() {
                                                                 computed > 0
                                                                     ? computed
                                                                     : Number(
-                                                                        customAmount ||
-                                                                        0,
-                                                                    );
+                                                                          customAmount ||
+                                                                              0,
+                                                                      );
                                                             const isCustom =
                                                                 customSaleItemId ===
                                                                 'custom';
@@ -1124,16 +1126,16 @@ export default function Office() {
                                                                 isCustom
                                                                     ? null
                                                                     : filteredSellables.find(
-                                                                        (
-                                                                            i: any,
-                                                                        ) =>
-                                                                            String(
-                                                                                i.actual_id,
-                                                                            ) ===
-                                                                            String(
-                                                                                customSaleItemId,
-                                                                            ),
-                                                                    );
+                                                                          (
+                                                                              i: any,
+                                                                          ) =>
+                                                                              String(
+                                                                                  i.actual_id,
+                                                                              ) ===
+                                                                              String(
+                                                                                  customSaleItemId,
+                                                                              ),
+                                                                      );
                                                             productIdToSend =
                                                                 selectedItem
                                                                     ? selectedItem.actual_id
@@ -1231,11 +1233,11 @@ export default function Office() {
                                                                                 stockErr,
                                                                             )
                                                                                 ? stockErr.join(
-                                                                                    ' | ',
-                                                                                )
+                                                                                      ' | ',
+                                                                                  )
                                                                                 : String(
-                                                                                    stockErr,
-                                                                                );
+                                                                                      stockErr,
+                                                                                  );
                                                                         setSoldOutText(
                                                                             text,
                                                                         );
@@ -1279,7 +1281,7 @@ export default function Office() {
                                                             className="w-32"
                                                             value={String(
                                                                 pendingStart?.cash ??
-                                                                startTotals.cash,
+                                                                    startTotals.cash,
                                                             )}
                                                             onChange={(e) =>
                                                                 setPendingStart(
@@ -1290,7 +1292,7 @@ export default function Office() {
                                                                             e
                                                                                 .target
                                                                                 .value ||
-                                                                            0,
+                                                                                0,
                                                                         ),
                                                                     }),
                                                                 )
@@ -1304,9 +1306,9 @@ export default function Office() {
                                                                 )
                                                                     return;
                                                                 const originalTotals =
-                                                                {
-                                                                    ...startTotals,
-                                                                };
+                                                                    {
+                                                                        ...startTotals,
+                                                                    };
                                                                 const newCash =
                                                                     pendingStart?.cash ??
                                                                     startTotals.cash;
@@ -1418,7 +1420,7 @@ export default function Office() {
                                                             className="w-32"
                                                             value={String(
                                                                 pendingStart?.card ??
-                                                                startTotals.card,
+                                                                    startTotals.card,
                                                             )}
                                                             onChange={(e) =>
                                                                 setPendingStart(
@@ -1429,7 +1431,7 @@ export default function Office() {
                                                                             e
                                                                                 .target
                                                                                 .value ||
-                                                                            0,
+                                                                                0,
                                                                         ),
                                                                     }),
                                                                 )
@@ -1443,9 +1445,9 @@ export default function Office() {
                                                                 )
                                                                     return;
                                                                 const originalTotals =
-                                                                {
-                                                                    ...startTotals,
-                                                                };
+                                                                    {
+                                                                        ...startTotals,
+                                                                    };
                                                                 const newCard =
                                                                     pendingStart?.card ??
                                                                     startTotals.card;
@@ -1578,7 +1580,7 @@ export default function Office() {
                                                                     </div>
                                                                     <div className="text-sm text-muted-foreground">
                                                                         {d.label ===
-                                                                            'Pink Token'
+                                                                        'Pink Token'
                                                                             ? 'jeton'
                                                                             : ''}
                                                                     </div>
@@ -1601,7 +1603,7 @@ export default function Office() {
                                                                                                     .key
                                                                                             ] ||
                                                                                                 0) -
-                                                                                            1,
+                                                                                                1,
                                                                                         ),
                                                                                 }),
                                                                             )
@@ -1614,10 +1616,10 @@ export default function Office() {
                                                                         min={0}
                                                                         value={String(
                                                                             cashBreakdown[
-                                                                            d
-                                                                                .key
+                                                                                d
+                                                                                    .key
                                                                             ] ??
-                                                                            0,
+                                                                                0,
                                                                         )}
                                                                         onChange={(
                                                                             e,
@@ -1635,7 +1637,7 @@ export default function Office() {
                                                                                                     e
                                                                                                         .target
                                                                                                         .value ||
-                                                                                                    0,
+                                                                                                        0,
                                                                                                 ),
                                                                                             ),
                                                                                         ),
@@ -1693,9 +1695,9 @@ export default function Office() {
                                                                 )
                                                                     return;
                                                                 const originalTotals =
-                                                                {
-                                                                    ...startTotals,
-                                                                };
+                                                                    {
+                                                                        ...startTotals,
+                                                                    };
                                                                 const newCash =
                                                                     Number(
                                                                         computeBreakdownTotal(
@@ -1925,7 +1927,7 @@ export default function Office() {
                                                         );
                                                     } else {
                                                         router.visit(
-                                                            office().url,
+                                                            route('office'),
                                                         );
                                                     }
                                                 },
@@ -1986,8 +1988,9 @@ export default function Office() {
                                                                                 'Shift ended',
                                                                             );
                                                                             router.visit(
-                                                                                office()
-                                                                                    .url,
+                                                                                route(
+                                                                                    'office',
+                                                                                ),
                                                                             );
                                                                         },
                                                                 },
@@ -2009,7 +2012,7 @@ export default function Office() {
                                                 disabled={
                                                     !activeShift ||
                                                     activeShift?.status !==
-                                                    'closed'
+                                                        'closed'
                                                 }
                                             >
                                                 Reopen shift
@@ -2031,7 +2034,7 @@ export default function Office() {
                                                         disabled={
                                                             !activeShift ||
                                                             activeShift?.status !==
-                                                            'closed'
+                                                                'closed'
                                                         }
                                                         onClick={() =>
                                                             router.post(
@@ -2072,7 +2075,7 @@ export default function Office() {
                                     <h4 className="text-xs font-medium">
                                         Quick add sale
                                     </h4>
-                                    <Link href="/sellables">
+                                    <Link href={route('sellables')}>
                                         <Button size="sm" variant="ghost">
                                             Manage
                                         </Button>
@@ -2114,7 +2117,7 @@ export default function Office() {
                                                 <option
                                                     key={String(
                                                         item.id ??
-                                                        item.actual_id,
+                                                            item.actual_id,
                                                     )}
                                                     value={item.actual_id}
                                                 >
@@ -2209,9 +2212,9 @@ export default function Office() {
                                                 ticketType: saleTicketType,
                                                 ticketLabel:
                                                     selectedItem.type ===
-                                                        'event'
+                                                    'event'
                                                         ? saleTicketType ===
-                                                            'with_card'
+                                                          'with_card'
                                                             ? 'With ESNcard'
                                                             : 'Without ESNcard'
                                                         : undefined,
@@ -2267,7 +2270,7 @@ export default function Office() {
                                                 <option
                                                     key={String(
                                                         item.id ??
-                                                        item.actual_id,
+                                                            item.actual_id,
                                                     )}
                                                     value={item.actual_id}
                                                 >
@@ -2415,28 +2418,28 @@ export default function Office() {
                                                         s.method,
                                                     ).toLowerCase() ===
                                                         'cash' && (
-                                                            <>
-                                                                <Button
-                                                                    size="icon"
-                                                                    variant="ghost"
-                                                                    className="h-4 w-4"
-                                                                    onClick={() =>
-                                                                        activeShift?.status ===
+                                                        <>
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="h-4 w-4"
+                                                                onClick={() =>
+                                                                    activeShift?.status ===
                                                                         'open' &&
-                                                                        openSaleEditModal(
-                                                                            s,
-                                                                        )
-                                                                    }
-                                                                    aria-label="Edit cash sale"
-                                                                    disabled={
-                                                                        activeShift?.status !==
-                                                                        'open'
-                                                                    }
-                                                                >
-                                                                    <Pencil className="h-3 w-3" />
-                                                                </Button>
-                                                            </>
-                                                        )}
+                                                                    openSaleEditModal(
+                                                                        s,
+                                                                    )
+                                                                }
+                                                                aria-label="Edit cash sale"
+                                                                disabled={
+                                                                    activeShift?.status !==
+                                                                    'open'
+                                                                }
+                                                            >
+                                                                <Pencil className="h-3 w-3" />
+                                                            </Button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-1 py-3">
@@ -2445,7 +2448,7 @@ export default function Office() {
                                                     title={
                                                         s.item_type === 'custom'
                                                             ? (s.description ??
-                                                                '')
+                                                              '')
                                                             : ''
                                                     }
                                                 >
@@ -2475,12 +2478,12 @@ export default function Office() {
                                                     className="block max-w-[100%] truncate"
                                                     title={formatDateTime(
                                                         s.sold_at ??
-                                                        s.created_at,
+                                                            s.created_at,
                                                     )}
                                                 >
                                                     {formatDateTime(
                                                         s.sold_at ??
-                                                        s.created_at,
+                                                            s.created_at,
                                                     )}
                                                 </span>
                                             </td>
@@ -2491,7 +2494,7 @@ export default function Office() {
                                                     disabled={
                                                         submitting ||
                                                         activeShift?.status !==
-                                                        'open'
+                                                            'open'
                                                     }
                                                     onClick={() => {
                                                         if (
@@ -2525,10 +2528,10 @@ export default function Office() {
                                                                         (
                                                                             prev,
                                                                         ) => [
-                                                                                s,
-                                                                                ...(prev ||
-                                                                                    []),
-                                                                            ],
+                                                                            s,
+                                                                            ...(prev ||
+                                                                                []),
+                                                                        ],
                                                                     );
                                                                     setMessage(
                                                                         'Failed to remove sale',
@@ -2652,7 +2655,7 @@ export default function Office() {
                                                 min={0}
                                                 value={String(
                                                     saleEditBreakdown[d.key] ??
-                                                    0,
+                                                        0,
                                                 )}
                                                 onChange={(e) =>
                                                     setSaleEditBreakdown(
@@ -2664,7 +2667,7 @@ export default function Office() {
                                                                     Number(
                                                                         e.target
                                                                             .value ||
-                                                                        0,
+                                                                            0,
                                                                     ),
                                                                 ),
                                                             ),
@@ -2722,16 +2725,16 @@ export default function Office() {
                                                 computed > 0
                                                     ? computed
                                                     : Number(
-                                                        editingSale.amount ||
-                                                        0,
-                                                    );
+                                                          editingSale.amount ||
+                                                              0,
+                                                      );
                                             setSales((prev) =>
                                                 (prev || []).map((x: any) =>
                                                     x.id === editingSale.id
                                                         ? {
-                                                            ...x,
-                                                            amount: amountToUse,
-                                                        }
+                                                              ...x,
+                                                              amount: amountToUse,
+                                                          }
                                                         : x,
                                                 ),
                                             );
@@ -2827,7 +2830,7 @@ export default function Office() {
                                     <div className="text-sm font-medium">
                                         {Number(
                                             (activeShift?.cash_breakdown || {})[
-                                            d.key
+                                                d.key
                                             ] ?? 0,
                                         )}
                                     </div>
@@ -2876,7 +2879,7 @@ export default function Office() {
                                     <div className="text-sm font-medium">
                                         {Number(
                                             (totalCashBreakdown || {})[d.key] ??
-                                            0,
+                                                0,
                                         )}
                                     </div>
                                 </div>

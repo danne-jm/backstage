@@ -120,8 +120,8 @@ export function EventDialog({
             quantity: variableAmount
                 ? null
                 : quantity
-                    ? parseInt(quantity)
-                    : null,
+                  ? parseInt(quantity)
+                  : null,
             unlimited_quantity: variableAmount ? false : !quantity,
             responsible_user_id: parseInt(responsibleUserId),
             notes: notes || null,

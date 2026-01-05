@@ -6,19 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
-import { store } from '@/routes/login';
-import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/react';
+import { route } from 'ziggy-js';
+
+import { Head } from '@inertiajs/react';
+
+// Use a standard HTML form or Inertia's useForm hook, but here we keep the imported Form if it is indeed from inertia (Inertia 2.0 might have it).
+// Actually, let's keep Form import but remove wayfinder imports.
+import { Form } from '@inertiajs/react';
 
 interface LoginProps {
     status?: string;
     canResetPassword: boolean;
 }
 
-export default function Login({
-    status,
-    canResetPassword,
-}: LoginProps) {
+export default function Login({ status, canResetPassword }: LoginProps) {
     return (
         <AuthLayout
             title="Log in to your account"
@@ -27,7 +28,8 @@ export default function Login({
             <Head title="Log in" />
 
             <Form
-                {...store.form()}
+                action={route('login')}
+                method="post"
                 resetOnSuccess={['password']}
                 className="flex flex-col gap-6"
             >
@@ -54,7 +56,7 @@ export default function Login({
                                     <Label htmlFor="password">Password</Label>
                                     {canResetPassword && (
                                         <TextLink
-                                            href={request()}
+                                            href={route('password.request')}
                                             className="ml-auto text-sm"
                                             tabIndex={5}
                                         >
@@ -104,7 +106,7 @@ export default function Login({
                                     }}
                                 >
                                     <a
-                                        href="/auth/google/redirect"
+                                        href={route('gmail.connect')}
                                         className="gg"
                                         tabIndex={6}
                                         style={{

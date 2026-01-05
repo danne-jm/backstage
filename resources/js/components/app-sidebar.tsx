@@ -10,15 +10,6 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import {
-    dashboard,
-    office,
-    sellables,
-    storeManager,
-    ticketing,
-    ticketScanner,
-    warehouse,
-} from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
@@ -43,50 +34,52 @@ import {
     Warehouse,
 } from 'lucide-react';
 import * as React from 'react';
+import { route } from 'ziggy-js';
 import AppLogo from './app-logo';
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Office Shifts',
-        href: office(),
-        icon: Building2,
-    },
-    {
-        title: 'Sellables',
-        href: sellables(),
-        icon: ShoppingBag,
-    },
-    {
-        title: 'Ticket Scanner',
-        href: ticketScanner(),
-        icon: ScanText,
-    },
-    {
-        title: 'Ticket Distributor',
-        href: ticketing(),
-        icon: Ticket,
-    },
-    {
-        title: 'Inventory',
-        href: warehouse(),
-        icon: Warehouse,
-    },
-    {
-        title: 'Store Manager',
-        href: storeManager(),
-        icon: Store,
-    },
-];
 
 // NOTE: do not hardcode default footer items here. Use server-provided `auth.user.pinned` instead.
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
+
+    // Define nav items inside component so route() is called at render time (after Ziggy config is loaded)
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: route('dashboard'),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Office Shifts',
+            href: route('office'),
+            icon: Building2,
+        },
+        {
+            title: 'Sellables',
+            href: route('sellables'),
+            icon: ShoppingBag,
+        },
+        {
+            title: 'Ticket Scanner',
+            href: route('ticket-scanner'),
+            icon: ScanText,
+        },
+        {
+            title: 'Ticket Distributor',
+            href: route('ticketing'),
+            icon: Ticket,
+        },
+        {
+            title: 'Inventory',
+            href: route('warehouse'),
+            icon: Warehouse,
+        },
+        {
+            title: 'Store Manager',
+            href: route('store-manager'),
+            icon: Store,
+        },
+    ];
 
     // Footer collapse state for mobile only. Default collapsed.
     const [footerExpanded, setFooterExpanded] = React.useState<boolean>(false);
@@ -131,7 +124,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={route('dashboard')} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

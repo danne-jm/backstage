@@ -22,26 +22,37 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
         <SidebarGroup className="px-2 py-0">
             <SidebarGroupLabel>Platform</SidebarGroupLabel>
             <SidebarMenu>
-                {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={
-                                forcedActive
-                                    ? resolveUrl(item.href).startsWith(
-                                          resolveUrl(forcedActive),
-                                      )
-                                    : page.url.startsWith(resolveUrl(item.href))
-                            }
-                            tooltip={{ children: item.title }}
-                        >
-                            <Link href={item.href} prefetch>
-                                {item.icon && <item.icon />}
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
+                {items.map((item) => {
+                    const itemUrl = resolveUrl(item.href);
+                    // Handle both absolute and relative URLs by using a dummy base
+                    const itemPath = new URL(itemUrl, 'http://base.com')
+                        .pathname;
+                    const pagePath = new URL(page.url, 'http://base.com')
+                        .pathname;
+                    const forcedPath = forcedActive
+                        ? new URL(resolveUrl(forcedActive), 'http://base.com')
+                              .pathname
+                        : null;
+
+                    const isActive = forcedPath
+                        ? itemPath === forcedPath
+                        : pagePath.startsWith(itemPath);
+
+                    return (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={isActive}
+                                tooltip={{ children: item.title }}
+                            >
+                                <Link href={item.href} prefetch>
+                                    {item.icon && <item.icon />}
+                                    <span>{item.title}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                })}
             </SidebarMenu>
         </SidebarGroup>
     );

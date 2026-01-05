@@ -5,22 +5,22 @@ import { PreviousShiftSalesLog } from '@/components/office/PreviousShiftSalesLog
 import { SellablesList } from '@/components/office/SellablesList';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import AppLayout from '@/layouts/app-layout';
-import { office } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { Check } from 'lucide-react';
 import * as React from 'react';
 import useSWR from 'swr';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Office',
-        href: office().url,
-    },
-];
+import { route } from 'ziggy-js';
 
 export default function Office() {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Office',
+            href: route('office'),
+        },
+    ];
+
     const { props: initialProps, version } = usePage<SharedData>();
     const [props, setProps] = React.useState(initialProps);
     // Cast to any to avoid type errors since auth is guaranteed by middleware but maybe missing in SharedData type
@@ -41,7 +41,7 @@ export default function Office() {
             })
             .then((res) => res.data);
 
-    useSWR(office().url, fetcher, {
+    useSWR(route('office'), fetcher, {
         refreshInterval: 2000,
         onSuccess: (newData) => {
             if (newData?.props) {

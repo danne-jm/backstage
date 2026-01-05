@@ -66,7 +66,7 @@ export default function EditItemDialog({
                 image: null,
                 remove_image: false,
             });
-             
+
             setImagePreview(item.image_url ?? null);
             // setRemoveImage(false);
         }

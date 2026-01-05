@@ -8,8 +8,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { office } from '@/routes';
 import { Link, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import { formatTimestamp } from './utils';
 
 interface PastShiftsListProps {
@@ -111,8 +111,9 @@ export function PastShiftsList({
                                                                             setTimeout(
                                                                                 () =>
                                                                                     router.get(
-                                                                                        office()
-                                                                                            .url,
+                                                                                        route(
+                                                                                            'office',
+                                                                                        ),
                                                                                         {},
                                                                                         {
                                                                                             preserveScroll: true,

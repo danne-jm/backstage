@@ -11,7 +11,6 @@ class EventTicket extends Model
 
     // Store tickets in the separate 'tickets' connection
 
-
     protected $table = 'event_tickets';
 
     protected $fillable = [

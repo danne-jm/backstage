@@ -324,8 +324,8 @@ export default function Sellables() {
                                 const prevEvDate =
                                     idx > 0
                                         ? parseDate(
-                                            orderedEvents[idx - 1].event_date,
-                                        )
+                                              orderedEvents[idx - 1].event_date,
+                                          )
                                         : null;
                                 const prevIsPast = prevEvDate
                                     ? prevEvDate.getTime() < now.getTime()

@@ -2,13 +2,10 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn, isSameUrl, resolveUrl } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
-import { edit } from '@/routes/profile';
-import { show } from '@/routes/two-factor';
-import { edit as editPassword } from '@/routes/user-password';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
+import { route } from 'ziggy-js';
 // Use a static path for the Google settings link to avoid a runtime helper collision
 const googlePath = '/settings/google';
 // footer settings page uses a static path; the route helper may not exist in all environments
@@ -18,22 +15,22 @@ function getSidebarNavItems(auth: any) {
     const items: NavItem[] = [
         {
             title: 'Profile',
-            href: edit(),
+            href: route('profile.edit'),
             icon: null,
         },
         {
             title: 'Password',
-            href: editPassword(),
+            href: route('user-password.edit'),
             icon: null,
         },
         {
             title: 'Two-Factor Auth',
-            href: show(),
+            href: route('two-factor.show'),
             icon: null,
         },
         {
             title: 'Appearance',
-            href: editAppearance(),
+            href: route('appearance.edit'),
             icon: null,
         },
     ];
@@ -68,7 +65,6 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     if (typeof window === 'undefined') {
         return null;
     }
-
 
     const currentPath = window.location.pathname;
     const sidebarNavItems = getSidebarNavItems(auth);

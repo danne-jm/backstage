@@ -31,7 +31,6 @@ export default function TicketScanner() {
         [props.events],
     );
 
-
     // Only show events happening within the next 14 days (inclusive)
     // Assumption: "within 14 days of current day" means from now up to now + 14 days.
     const filteredEvents = React.useMemo(() => {
@@ -51,7 +50,6 @@ export default function TicketScanner() {
     );
 
     // Format scan date as DD/MM/YYYY
-
 
     const selectedEventObj = React.useMemo(() => {
         return events.find((ev) => ev.id === selectedEvent) ?? null;
@@ -323,7 +321,7 @@ export default function TicketScanner() {
     React.useEffect(() => {
         return () => {
             if (scannerRef.current) {
-                scannerRef.current.stop().catch(() => { });
+                scannerRef.current.stop().catch(() => {});
             }
         };
     }, []);
@@ -336,12 +334,12 @@ export default function TicketScanner() {
         if (modalOpen) {
             if (scanning) {
                 wasScanningRef.current = true;
-                stopCamera().catch(() => { });
+                stopCamera().catch(() => {});
             }
         } else {
             if (wasScanningRef.current) {
                 wasScanningRef.current = false;
-                startCameraScan().catch(() => { });
+                startCameraScan().catch(() => {});
             }
         }
         // only depend on modalOpen and scanning
@@ -683,9 +681,9 @@ export default function TicketScanner() {
                     allTickets={
                         scanModal?.ticket
                             ? getAllTicketsForAttendee(
-                                scanModal.ticket,
-                                scanModal.ticket,
-                            )
+                                  scanModal.ticket,
+                                  scanModal.ticket,
+                              )
                             : []
                     }
                 />
@@ -700,9 +698,9 @@ export default function TicketScanner() {
                     allTickets={
                         selectedScannedTicket
                             ? getAllTicketsForAttendee(
-                                selectedScannedTicket,
-                                selectedScannedTicket,
-                            )
+                                  selectedScannedTicket,
+                                  selectedScannedTicket,
+                              )
                             : []
                     }
                 />

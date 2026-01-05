@@ -58,8 +58,6 @@ export default function EventAttendees({ event }: { event: any }) {
 
     const { auth } = usePage<SharedData>().props;
 
-
-
     // Derived sample data (array of objects) for easier rendering in the Manage dialog
     const sampleData = React.useMemo(() => {
         if (!headers || headers.length === 0 || !rows || rows.length === 0)
@@ -445,7 +443,7 @@ export default function EventAttendees({ event }: { event: any }) {
                         {headers.length === 0 || rows.length === 0 ? (
                             <div className="flex h-24 items-center justify-center text-center text-muted-foreground">
                                 {event.google_spreadsheet_id &&
-                                    event.google_sheet_name
+                                event.google_sheet_name
                                     ? 'No data found in the configured spreadsheet.'
                                     : 'No spreadsheet configured. Configure a Google Sheet above and save.'}
                             </div>
@@ -558,18 +556,18 @@ export default function EventAttendees({ event }: { event: any }) {
                                         'is_empty',
                                         'is_not_empty',
                                     ].includes(rule.operator) && (
-                                            <Input
-                                                placeholder="Value..."
-                                                value={rule.value}
-                                                onChange={(e) =>
-                                                    updateFilterRule(
-                                                        idx,
-                                                        'value',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        )}
+                                        <Input
+                                            placeholder="Value..."
+                                            value={rule.value}
+                                            onChange={(e) =>
+                                                updateFilterRule(
+                                                    idx,
+                                                    'value',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                    )}
                                 </div>
                                 <Button
                                     variant="ghost"
