@@ -71,10 +71,26 @@ export default function EventAttendees({ event }: { event: any }) {
         });
     }, [headers, rows]);
 
-    // Helper to fetch sheets (reusable)
+    // Google connection warning
+    const [showGoogleWarning, setShowGoogleWarning] = React.useState(false);
+    const [googleTokenExpired, setGoogleTokenExpired] = React.useState(false);
+    // Explicitly cast to any or check property existence as SharedData might differ
+    const gmailConnected = Boolean((auth.user as any)?.gmail_connected);
+
+    React.useEffect(() => {
+        if (!gmailConnected) {
+            setShowGoogleWarning(true);
+            const timer = setTimeout(() => setShowGoogleWarning(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [gmailConnected]);
+
+    // Update fetchSheets error handling to detect expiration
     const fetchSheets = async (silent = false) => {
         if (!spreadsheetId) return;
         setLoadingSheets(true);
+        // Reset expiration state on new attempt
+        setGoogleTokenExpired(false);
         try {
             // Use direct URL instead of route()
             const res = await axios.get(
@@ -144,13 +160,22 @@ export default function EventAttendees({ event }: { event: any }) {
             } else {
                 throw new Error('Invalid response format from server');
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
             let msg = 'Unknown error';
             if (typeof e === 'object' && e !== null) {
                 // @ts-expect-error -- axios error typing
                 msg = e.response?.data?.error || e.message || msg;
             }
+
+            // Check for specific token expiration error
+            if (msg === 'GOOGLE_TOKEN_EXPIRED') {
+                setGoogleTokenExpired(true);
+                // Do not clear state, let user retry after auth
+                if (!silent) toast.error('Google connection expired. Please refresh login.');
+                return;
+            }
+
             // Clear state and database on error
             setAvailableSheets([]);
             setSheetName('');
@@ -284,19 +309,6 @@ export default function EventAttendees({ event }: { event: any }) {
         setFilterConfig(newConfig);
     };
 
-    // Google connection warning
-    const [showGoogleWarning, setShowGoogleWarning] = React.useState(false);
-    // Explicitly cast to any or check property existence as SharedData might differ
-    const gmailConnected = Boolean((auth.user as any)?.gmail_connected);
-
-    React.useEffect(() => {
-        if (!gmailConnected) {
-            setShowGoogleWarning(true);
-            const timer = setTimeout(() => setShowGoogleWarning(false), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [gmailConnected]);
-
     return (
         <AppLayout
             breadcrumbs={[
@@ -310,17 +322,31 @@ export default function EventAttendees({ event }: { event: any }) {
 
             <div className="relative flex h-full flex-col gap-6 p-6">
                 {/* Google Connection Warning */}
-                {showGoogleWarning && (
+                {(showGoogleWarning || googleTokenExpired) && (
                     <div className="fixed top-14 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
                         <Alert
                             variant="destructive"
-                            className="border-red-200 bg-red-100 text-red-900 dark:border-red-900 dark:bg-red-900/30 dark:text-red-200"
+                            className="border-red-200 bg-red-100 text-red-900 dark:border-red-900 dark:bg-red-900/30 dark:text-red-200 flex items-center justify-between"
                         >
-                            <TriangleAlert className="h-4 w-4" />
-                            <AlertTitle>
-                                Google account not connected — you cannot sync
-                                attendees
-                            </AlertTitle>
+                            <div className="flex items-center gap-2">
+                                <TriangleAlert className="h-4 w-4" />
+                                <AlertTitle>
+                                    {googleTokenExpired
+                                        ? "Google connection expired"
+                                        : "Google account not connected — you cannot sync attendees"}
+                                </AlertTitle>
+                            </div>
+
+                            {googleTokenExpired && (
+                                <a
+                                    href={`/auth/google/redirect?return_to=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                                    className="ml-4"
+                                >
+                                    <Button size="sm" variant="default" className="bg-red-600 hover:bg-red-700 text-white border-none h-7">
+                                        Refresh Login
+                                    </Button>
+                                </a>
+                            )}
                         </Alert>
                     </div>
                 )}
@@ -443,7 +469,7 @@ export default function EventAttendees({ event }: { event: any }) {
                         {headers.length === 0 || rows.length === 0 ? (
                             <div className="flex h-24 items-center justify-center text-center text-muted-foreground">
                                 {event.google_spreadsheet_id &&
-                                event.google_sheet_name
+                                    event.google_sheet_name
                                     ? 'No data found in the configured spreadsheet.'
                                     : 'No spreadsheet configured. Configure a Google Sheet above and save.'}
                             </div>
@@ -556,18 +582,18 @@ export default function EventAttendees({ event }: { event: any }) {
                                         'is_empty',
                                         'is_not_empty',
                                     ].includes(rule.operator) && (
-                                        <Input
-                                            placeholder="Value..."
-                                            value={rule.value}
-                                            onChange={(e) =>
-                                                updateFilterRule(
-                                                    idx,
-                                                    'value',
-                                                    e.target.value,
-                                                )
-                                            }
-                                        />
-                                    )}
+                                            <Input
+                                                placeholder="Value..."
+                                                value={rule.value}
+                                                onChange={(e) =>
+                                                    updateFilterRule(
+                                                        idx,
+                                                        'value',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        )}
                                 </div>
                                 <Button
                                     variant="ghost"

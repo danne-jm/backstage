@@ -49,6 +49,9 @@ export default function Ticketing() {
     // State to hold the attendee data fetched from the backend
     const [sampleData, setSampleData] = React.useState<any[]>([]);
 
+    // Google connection warning
+    const [googleTokenExpired, setGoogleTokenExpired] = React.useState(false);
+
     // Template State
     const [selectedTemplateId, setSelectedTemplateId] = React.useState<
         number | 'none'
@@ -109,16 +112,31 @@ export default function Ticketing() {
             setLastNameField('');
             setEmailField('');
             setSelectedSampleIndex(null);
+            setGoogleTokenExpired(false);
             return;
         }
+
+        // Reset expiry on new fetch
+        setGoogleTokenExpired(false);
 
         // Fetch attendees for the selected event
         fetch(`/ticketing/attendees/${selectedEvent}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
             },
         })
-            .then((response) => response.json())
+            .then(async (response) => {
+                if (!response.ok) {
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        const data = await response.json();
+                        throw new Error(data.message || response.statusText);
+                    }
+                    throw new Error(response.statusText);
+                }
+                return response.json();
+            })
             .then((data) => {
                 if (
                     data.success &&
@@ -147,35 +165,49 @@ export default function Ticketing() {
                             availableFields.find((f: string) =>
                                 f.toLowerCase().includes('first'),
                             ) ||
-                                availableFields[0] ||
-                                '',
+                            availableFields[0] ||
+                            '',
                         );
                         setLastNameField(
                             availableFields.find((f: string) =>
                                 f.toLowerCase().includes('last'),
                             ) ||
-                                availableFields[1] ||
-                                '',
+                            availableFields[1] ||
+                            '',
                         );
                         setEmailField(
                             availableFields.find((f: string) =>
                                 f.toLowerCase().includes('email'),
                             ) ||
-                                availableFields[2] ||
-                                '',
+                            availableFields[2] ||
+                            '',
                         );
                         setSelectedSampleIndex(0);
                     }
-                } else {
+                } else if (!data.success) {
+                    // Check for specific token expiry in success:false response
+                    if (data.message && typeof data.message === 'string' && data.message.includes('GOOGLE_TOKEN_EXPIRED')) {
+                        setGoogleTokenExpired(true);
+                    }
                     console.error(
-                        'Failed to fetch attendees or no data:',
+                        'Failed to fetch attendees:',
                         data.message,
+                    );
+                    setSampleData([]);
+                } else {
+                    // Success but empty or weird format
+                    console.error(
+                        'No data found or invalid format',
+                        data
                     );
                     setSampleData([]);
                 }
             })
             .catch((error) => {
                 console.error('Error fetching attendees:', error);
+                if (error.message && error.message.includes('GOOGLE_TOKEN_EXPIRED')) {
+                    setGoogleTokenExpired(true);
+                }
                 setSampleData([]);
             });
     }, [selectedEvent]);
@@ -425,17 +457,31 @@ export default function Ticketing() {
 
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Google Connection Warning */}
-                {showGoogleWarning && (
+                {(showGoogleWarning || googleTokenExpired) && (
                     <div className="fixed top-14 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
                         <Alert
                             variant="destructive"
-                            className="border-red-200 bg-red-100 text-red-900 dark:border-red-900 dark:bg-red-900/30 dark:text-red-200"
+                            className="border-red-200 bg-red-100 text-red-900 dark:border-red-900 dark:bg-red-900/30 dark:text-red-200 flex items-center justify-between"
                         >
-                            <TriangleAlert className="h-4 w-4" />
-                            <AlertTitle>
-                                Google account not connected — you cannot
-                                distribute emails
-                            </AlertTitle>
+                            <div className="flex items-center gap-2">
+                                <TriangleAlert className="h-4 w-4" />
+                                <AlertTitle>
+                                    {googleTokenExpired
+                                        ? "Google connection expired"
+                                        : "Google account not connected — you cannot distribute emails"}
+                                </AlertTitle>
+                            </div>
+
+                            {googleTokenExpired && (
+                                <a
+                                    href={`/auth/google/redirect?return_to=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                                    className="ml-4"
+                                >
+                                    <Button size="sm" variant="default" className="bg-red-600 hover:bg-red-700 text-white border-none h-7">
+                                        Refresh Login
+                                    </Button>
+                                </a>
+                            )}
                         </Alert>
                     </div>
                 )}
@@ -477,8 +523,8 @@ export default function Ticketing() {
                                                     e.target.value === 'none'
                                                         ? 'none'
                                                         : Number(
-                                                              e.target.value,
-                                                          ),
+                                                            e.target.value,
+                                                        ),
                                                 )
                                             }
                                         >
@@ -522,7 +568,7 @@ export default function Ticketing() {
                                             events.map((ev: any) => {
                                                 const rawDate = ev
                                                     ? (ev.start_date ??
-                                                      ev.event_date)
+                                                        ev.event_date)
                                                     : null;
                                                 return (
                                                     <option
@@ -846,7 +892,7 @@ export default function Ticketing() {
                                         });
                                     if (
                                         ev.quantity_without_card !==
-                                            undefined &&
+                                        undefined &&
                                         ev.quantity_without_card !== null
                                     )
                                         rows.push({
@@ -1034,7 +1080,7 @@ export default function Ticketing() {
                                                             name={`nullable-${f}`}
                                                             checked={
                                                                 !nullableFields[
-                                                                    f
+                                                                f
                                                                 ]
                                                             }
                                                             onChange={() =>
@@ -1058,7 +1104,7 @@ export default function Ticketing() {
                                                             name={`nullable-${f}`}
                                                             checked={Boolean(
                                                                 nullableFields[
-                                                                    f
+                                                                f
                                                                 ],
                                                             )}
                                                             onChange={() =>
@@ -1158,18 +1204,18 @@ export default function Ticketing() {
                                                                                                 (
                                                                                                     r as any
                                                                                                 )[
-                                                                                                    f
+                                                                                                f
                                                                                                 ] ??
-                                                                                                    '',
+                                                                                                '',
                                                                                             )}
                                                                                         >
                                                                                             {String(
                                                                                                 (
                                                                                                     r as any
                                                                                                 )[
-                                                                                                    f
+                                                                                                f
                                                                                                 ] ??
-                                                                                                    '',
+                                                                                                '',
                                                                                             )}
                                                                                         </span>
                                                                                     </td>
@@ -1211,7 +1257,7 @@ export default function Ticketing() {
                                                                                         s as any
                                                                                     )
                                                                                         .email ??
-                                                                                        '',
+                                                                                    '',
                                                                                 ).trim(),
                                                                         )
                                                                         .filter(
@@ -1224,10 +1270,10 @@ export default function Ticketing() {
                                                                                 '@',
                                                                             )
                                                                                 ? e
-                                                                                      .split(
-                                                                                          '@',
-                                                                                      )[1]
-                                                                                      .toLowerCase()
+                                                                                    .split(
+                                                                                        '@',
+                                                                                    )[1]
+                                                                                    .toLowerCase()
                                                                                 : '',
                                                                     );
                                                                 const domainCounts: Record<
@@ -1308,7 +1354,7 @@ export default function Ticketing() {
                                                                             </div>
                                                                             <ul className="mt-1 list-disc pl-5">
                                                                                 {domainEntries.length ===
-                                                                                0 ? (
+                                                                                    0 ? (
                                                                                     <li className="text-muted-foreground">
                                                                                         No
                                                                                         recipient
@@ -1353,66 +1399,66 @@ export default function Ticketing() {
 
                                                                         {suspicious.length >
                                                                             0 && (
-                                                                            <div>
-                                                                                <div className="text-xs font-medium text-red-600">
-                                                                                    Potential
-                                                                                    typos
-                                                                                </div>
-                                                                                <div className="mt-1 text-xs">
-                                                                                    {suspicious.map(
-                                                                                        ([
-                                                                                            d,
-                                                                                        ]) => (
-                                                                                            <div
-                                                                                                key={
-                                                                                                    d
-                                                                                                }
-                                                                                                className="mb-1"
-                                                                                            >
-                                                                                                <div className="font-medium">
-                                                                                                    {
+                                                                                <div>
+                                                                                    <div className="text-xs font-medium text-red-600">
+                                                                                        Potential
+                                                                                        typos
+                                                                                    </div>
+                                                                                    <div className="mt-1 text-xs">
+                                                                                        {suspicious.map(
+                                                                                            ([
+                                                                                                d,
+                                                                                            ]) => (
+                                                                                                <div
+                                                                                                    key={
                                                                                                         d
                                                                                                     }
-                                                                                                </div>
-                                                                                                <div className="text-muted-foreground">
-                                                                                                    Addresses:
-                                                                                                </div>
-                                                                                                <ul className="mt-1 list-disc pl-5 text-xs">
-                                                                                                    {emails
-                                                                                                        .filter(
-                                                                                                            (
-                                                                                                                e,
-                                                                                                            ) =>
-                                                                                                                e.endsWith(
-                                                                                                                    `@${d}`,
+                                                                                                    className="mb-1"
+                                                                                                >
+                                                                                                    <div className="font-medium">
+                                                                                                        {
+                                                                                                            d
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                    <div className="text-muted-foreground">
+                                                                                                        Addresses:
+                                                                                                    </div>
+                                                                                                    <ul className="mt-1 list-disc pl-5 text-xs">
+                                                                                                        {emails
+                                                                                                            .filter(
+                                                                                                                (
+                                                                                                                    e,
+                                                                                                                ) =>
+                                                                                                                    e.endsWith(
+                                                                                                                        `@${d}`,
+                                                                                                                    ),
+                                                                                                            )
+                                                                                                            .slice(
+                                                                                                                0,
+                                                                                                                5,
+                                                                                                            )
+                                                                                                            .map(
+                                                                                                                (
+                                                                                                                    e,
+                                                                                                                ) => (
+                                                                                                                    <li
+                                                                                                                        key={
+                                                                                                                            e
+                                                                                                                        }
+                                                                                                                    >
+                                                                                                                        {
+                                                                                                                            e
+                                                                                                                        }
+                                                                                                                    </li>
                                                                                                                 ),
-                                                                                                        )
-                                                                                                        .slice(
-                                                                                                            0,
-                                                                                                            5,
-                                                                                                        )
-                                                                                                        .map(
-                                                                                                            (
-                                                                                                                e,
-                                                                                                            ) => (
-                                                                                                                <li
-                                                                                                                    key={
-                                                                                                                        e
-                                                                                                                    }
-                                                                                                                >
-                                                                                                                    {
-                                                                                                                        e
-                                                                                                                    }
-                                                                                                                </li>
-                                                                                                            ),
-                                                                                                        )}
-                                                                                                </ul>
-                                                                                            </div>
-                                                                                        ),
-                                                                                    )}
+                                                                                                            )}
+                                                                                                    </ul>
+                                                                                                </div>
+                                                                                            ),
+                                                                                        )}
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                        )}
+                                                                            )}
                                                                     </div>
                                                                 );
                                                             })()}
@@ -1460,14 +1506,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    firstNameField
+                                                                firstNameField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    firstNameField
+                                                                firstNameField
                                                                 ] ?? '',
                                                             )}
                                                         </span>
@@ -1476,14 +1522,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    lastNameField
+                                                                lastNameField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    lastNameField
+                                                                lastNameField
                                                                 ] ?? '',
                                                             )}
                                                         </span>
@@ -1492,14 +1538,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    emailField
+                                                                emailField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    emailField
+                                                                emailField
                                                                 ] ?? '',
                                                             )}
                                                         </span>

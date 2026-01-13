@@ -71,8 +71,19 @@ class GoogleSheetsService
             return $sheets;
         } catch (\Throwable $e) {
             Log::error('Google Sheets Fetch Error: '.$e->getMessage());
+            $msg = $e->getMessage();
+            
+            // Check for specific expiration/unregistered caller errors
+            if (str_contains($msg, 'unregistered callers') || str_contains($msg, 'invalid_grant')) {
+                 throw new Exception('GOOGLE_TOKEN_EXPIRED');
+            }
+
             // Extract the actual message from Google's JSON error if possible
-            $msg = json_decode($e->getMessage(), true)['error']['message'] ?? $e->getMessage();
+            $decoded = json_decode($msg, true);
+            if (isset($decoded['error']['message'])) {
+                $msg = $decoded['error']['message'];
+            }
+            
             throw new Exception('Google Error: '.$msg);
         }
     }

@@ -10,9 +10,13 @@ use Laravel\Socialite\Facades\Socialite;
 
 class GmailOAuthController extends Controller
 {
-    public function redirectToGoogle()
+    public function redirectToGoogle(Request $request)
     {
         try {
+            if ($request->has('return_to')) {
+                session()->put('url.intended', $request->input('return_to'));
+            }
+
             $user = Auth::user();
 
             // Default options
@@ -96,7 +100,7 @@ class GmailOAuthController extends Controller
 
             $current->forceFill($fill)->save();
 
-            return redirect()->route('settings.google')->with('status', 'Gmail connected successfully');
+            return redirect()->intended(route('settings.google'))->with('status', 'Gmail connected successfully');
         }
 
         // Not authenticated: sign-in / register flow
