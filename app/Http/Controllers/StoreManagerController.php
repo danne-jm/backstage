@@ -89,7 +89,13 @@ class StoreManagerController extends Controller
             ->take($pageSize)
             ->get();
 
-        $onlineSellablesCount = Product::where('is_online_sellable', true)->count() + Event::where('is_online_sellable', true)->count();
+        $onlineSellablesCount = Product::where('is_online_sellable', true)->count() + Event::where('is_online_sellable', true)
+            ->where('event_date', '>=', $now)
+            ->where(function ($query) use ($now) {
+                $query->whereNull('end_sell_date')
+                    ->orWhere('end_sell_date', '>=', $now);
+            })
+            ->count();
 
         $boardUsers = User::where('permissions', 'like', '%board%')
             ->orderBy('first_name')
