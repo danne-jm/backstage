@@ -68,6 +68,22 @@ class HandleInertiaRequests extends Middleware
             ];
         }
 
+        // Fetch online users (active in last 5 mins), excluding the current user
+        $onlineUsers = [];
+        if ($user) {
+            $onlineUsers = \App\Models\User::query()
+                ->where('last_seen_at', '>=', now()->subMinutes(5))
+                ->where('id', '!=', $user->id)
+                ->get(['id', 'first_name', 'last_name', 'email'])
+                ->map(function ($u) {
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->name, // uses accessor
+                        'initials' => strtoupper(substr($u->first_name, 0, 1) . substr($u->last_name, 0, 1)),
+                    ];
+                });
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -75,6 +91,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $userPayload,
             ],
+            'onlineUsers' => $onlineUsers,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -51,6 +51,7 @@ class User extends Authenticatable
         'permissions',
         'role',
         'pinned',
+        'last_seen_at',
     ];
 
     /**
@@ -101,6 +102,7 @@ class User extends Authenticatable
             'permissions' => 'array',
             'role' => 'string',
             'pinned' => 'array',
+            'last_seen_at' => 'datetime',
         ];
     }
 
