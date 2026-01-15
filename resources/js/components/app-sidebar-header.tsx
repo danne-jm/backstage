@@ -37,9 +37,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePage } from '@inertiajs/react';
 import { SharedData } from '@/types';
+import { useInitials } from '@/hooks/use-initials';
 
 function OnlineUsersList() {
     const { onlineUsers } = usePage<SharedData>().props;
+    const getInitials = useInitials();
 
     if (!onlineUsers || onlineUsers.length === 0) return null;
 
@@ -53,7 +55,7 @@ function OnlineUsersList() {
                                 <Avatar className="h-8 w-8 rounded-full border-2 border-background">
                                     {/* <AvatarImage src={user.avatar} /> */}
                                     <AvatarFallback className="bg-sidebar-accent text-xs font-medium text-sidebar-accent-foreground">
-                                        {user.initials}
+                                        {getInitials(user.name)}
                                     </AvatarFallback>
                                 </Avatar>
                                 <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
