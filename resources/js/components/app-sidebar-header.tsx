@@ -28,25 +28,25 @@ export function AppSidebarHeader({
     );
 }
 
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { usePage } from '@inertiajs/react';
-import { SharedData } from '@/types';
 import { useInitials } from '@/hooks/use-initials';
 
+import { useOnlineUsers } from '@/hooks/use-online-users';
+
 function OnlineUsersList() {
-    const { onlineUsers } = usePage<SharedData>().props;
+    const onlineUsers = useOnlineUsers();
     const getInitials = useInitials();
 
     if (!onlineUsers || onlineUsers.length === 0) return null;
 
     return (
-        <div className="flex items-center gap-1 overflow-hidden mr-2">
+        <div className="mr-2 flex items-center gap-1 overflow-hidden">
             <TooltipProvider delayDuration={0}>
                 {onlineUsers.map((user) => (
                     <Tooltip key={user.id}>
@@ -58,7 +58,7 @@ function OnlineUsersList() {
                                         {getInitials(user.name)}
                                     </AvatarFallback>
                                 </Avatar>
-                                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+                                <span className="absolute right-0 bottom-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>

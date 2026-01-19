@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/tooltip';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
+import { useOnlineUsers } from '@/hooks/use-online-users';
 import { cn, isSameUrl, resolveUrl } from '@/lib/utils';
 import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
@@ -68,6 +69,8 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const getInitials = useInitials();
+    const onlineUsers = useOnlineUsers();
+
     return (
         <>
             <div className="border-b border-sidebar-border/80">
@@ -185,6 +188,24 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
+                        {onlineUsers.length > 0 && (
+                            <div className="mr-4 flex -space-x-2 overflow-hidden">
+                                {onlineUsers.map((user) => (
+                                    <TooltipProvider key={user.id} delayDuration={0}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="flex h-8 w-8 cursor-default items-center justify-center rounded-full border-2 border-background bg-neutral-200 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-200">
+                                                    {user.initials}
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{user.name}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                ))}
+                            </div>
+                        )}
                         <div className="relative flex items-center space-x-1">
                             <Button
                                 variant="ghost"

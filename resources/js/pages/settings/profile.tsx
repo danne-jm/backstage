@@ -1,4 +1,3 @@
-
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
@@ -106,13 +105,13 @@ export default function Profile({
                                                     auth.user.permissions,
                                                 )
                                                     ? auth.user.permissions.join(
-                                                        ', ',
-                                                    )
+                                                          ', ',
+                                                      )
                                                     : typeof auth.user
-                                                        .permissions ===
+                                                            .permissions ===
                                                         'string'
-                                                        ? auth.user.permissions
-                                                        : '')}
+                                                      ? auth.user.permissions
+                                                      : '')}
                                         </span>
 
                                         <Lock
@@ -174,12 +173,12 @@ export default function Profile({
 
                                             {status ===
                                                 'verification-link-sent' && (
-                                                    <div className="mt-2 text-sm font-medium text-green-600">
-                                                        A new verification link has
-                                                        been sent to your email
-                                                        address.
-                                                    </div>
-                                                )}
+                                                <div className="mt-2 text-sm font-medium text-green-600">
+                                                    A new verification link has
+                                                    been sent to your email
+                                                    address.
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 

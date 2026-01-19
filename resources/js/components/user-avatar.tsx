@@ -15,7 +15,7 @@ export function UserAvatar({ user, className, isOnline }: UserAvatarProps) {
     const initials = user.initials || getInitials(user.name);
 
     return (
-        <div className={cn("relative inline-block", className)}>
+        <div className={cn('relative inline-block', className)}>
             <Avatar className="h-8 w-8 rounded-full border-2 border-background">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className="bg-sidebar-accent text-xs font-medium text-sidebar-accent-foreground">
@@ -23,7 +23,7 @@ export function UserAvatar({ user, className, isOnline }: UserAvatarProps) {
                 </AvatarFallback>
             </Avatar>
             {isOnline && (
-                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+                <span className="absolute right-0 bottom-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
             )}
         </div>
     );

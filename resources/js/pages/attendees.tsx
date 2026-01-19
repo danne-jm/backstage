@@ -172,7 +172,10 @@ export default function EventAttendees({ event }: { event: any }) {
             if (msg === 'GOOGLE_TOKEN_EXPIRED') {
                 setGoogleTokenExpired(true);
                 // Do not clear state, let user retry after auth
-                if (!silent) toast.error('Google connection expired. Please refresh login.');
+                if (!silent)
+                    toast.error(
+                        'Google connection expired. Please refresh login.',
+                    );
                 return;
             }
 
@@ -326,14 +329,14 @@ export default function EventAttendees({ event }: { event: any }) {
                     <div className="fixed top-14 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
                         <Alert
                             variant="destructive"
-                            className="border-red-200 bg-red-100 text-red-900 dark:border-red-900 dark:bg-red-900/30 dark:text-red-200 flex items-center justify-between"
+                            className="flex items-center justify-between border-red-200 bg-red-100 text-red-900 dark:border-red-900 dark:bg-red-900/30 dark:text-red-200"
                         >
                             <div className="flex items-center gap-2">
                                 <TriangleAlert className="h-4 w-4" />
                                 <AlertTitle>
                                     {googleTokenExpired
-                                        ? "Google connection expired"
-                                        : "Google account not connected — you cannot sync attendees"}
+                                        ? 'Google connection expired'
+                                        : 'Google account not connected — you cannot sync attendees'}
                                 </AlertTitle>
                             </div>
 
@@ -342,7 +345,11 @@ export default function EventAttendees({ event }: { event: any }) {
                                     href={`/auth/google/redirect?return_to=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                                     className="ml-4"
                                 >
-                                    <Button size="sm" variant="default" className="bg-red-600 hover:bg-red-700 text-white border-none h-7">
+                                    <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="h-7 border-none bg-red-600 text-white hover:bg-red-700"
+                                    >
                                         Refresh Login
                                     </Button>
                                 </a>
@@ -469,7 +476,7 @@ export default function EventAttendees({ event }: { event: any }) {
                         {headers.length === 0 || rows.length === 0 ? (
                             <div className="flex h-24 items-center justify-center text-center text-muted-foreground">
                                 {event.google_spreadsheet_id &&
-                                    event.google_sheet_name
+                                event.google_sheet_name
                                     ? 'No data found in the configured spreadsheet.'
                                     : 'No spreadsheet configured. Configure a Google Sheet above and save.'}
                             </div>
@@ -582,18 +589,18 @@ export default function EventAttendees({ event }: { event: any }) {
                                         'is_empty',
                                         'is_not_empty',
                                     ].includes(rule.operator) && (
-                                            <Input
-                                                placeholder="Value..."
-                                                value={rule.value}
-                                                onChange={(e) =>
-                                                    updateFilterRule(
-                                                        idx,
-                                                        'value',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        )}
+                                        <Input
+                                            placeholder="Value..."
+                                            value={rule.value}
+                                            onChange={(e) =>
+                                                updateFilterRule(
+                                                    idx,
+                                                    'value',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                    )}
                                 </div>
                                 <Button
                                     variant="ghost"
