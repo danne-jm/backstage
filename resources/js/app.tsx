@@ -24,7 +24,10 @@ createInertiaApp({
         root.render(
             <StrictMode>
                 <UserPresenceProvider
-                    user={(props.initialPage.props as unknown as SharedData).auth.user}
+                    user={
+                        (props.initialPage.props as unknown as SharedData).auth
+                            .user
+                    }
                 >
                     <App {...props} />
                 </UserPresenceProvider>

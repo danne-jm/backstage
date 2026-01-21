@@ -6,6 +6,17 @@
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
+@layer utilities {
+    .no-spinner::-webkit-inner-spin-button,
+    .no-spinner::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .no-spinner {
+        -moz-appearance: textfield;
+    }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

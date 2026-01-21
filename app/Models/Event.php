@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class Event extends Model
 {
-    use LogsActivity;
+    use HasFactory, LogsActivity;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -40,9 +42,10 @@ class Event extends Model
         'google_sheet_name',
         'is_online_sellable',
         'attendee_filter_config',
+        'instagram_link',
     ];
 
-    protected $appends = ['remaining', 'remaining_with_card', 'remaining_without_card'];
+    protected $appends = ['remaining', 'remaining_with_card', 'remaining_without_card', 'image', 'images_list'];
 
     protected function casts(): array
     {
@@ -83,6 +86,11 @@ class Event extends Model
     public function onlineSales()
     {
         return $this->hasMany(OnlineSale::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(EventImage::class);
     }
 
     /**
@@ -170,6 +178,25 @@ class Event extends Model
         }
 
         return max(0, $this->quantity - $this->sales()->count() - $this->onlineSales()->count());
+    }
+
+    public function getImageAttribute(): ?string
+    {
+        // Only select id to avoid loading binary data
+        $firstImage = $this->images()->select('id', 'event_id')->first();
+
+        return $firstImage ? "/events/images/{$firstImage->id}" : null;
+    }
+
+    public function getImagesListAttribute(): array
+    {
+        // Only select id to avoid loading binary data
+        return $this->images()->select('id', 'event_id')->get()->map(function ($img) {
+            return [
+                'id' => $img->id,
+                'url' => "/events/images/{$img->id}",
+            ];
+        })->toArray();
     }
 
     public function filterRows(array $rows): array

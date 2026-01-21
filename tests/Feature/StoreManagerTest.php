@@ -74,8 +74,8 @@ class StoreManagerTest extends TestCase
         // Current broken behavior would return 4 (3 events + 1 product)
         // Correct behavior should return 2 (1 product + 1 future event)
         $count = $response->json('onlineSellablesCount');
-        
-        // We assert 2 to verifying the failing state initially if it returns 4, 
+
+        // We assert 2 to verifying the failing state initially if it returns 4,
         // OR we can just print it. Let's assert 2 so we know when it passes.
         $this->assertEquals(2, $count, "Expected 2 sellables, got {$count}");
     }

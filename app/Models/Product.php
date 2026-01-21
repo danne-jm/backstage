@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -20,9 +21,9 @@ class Product extends Model
             ->dontSubmitEmptyLogs();
     }
 
-    protected $fillable = ['name', 'description', 'price', 'type', 'quantity', 'unlimited_quantity', 'variable_amount', 'quantity_with_card', 'unlimited_quantity_with_card', 'quantity_without_card', 'unlimited_quantity_without_card', 'is_online_sellable'];
+    protected $fillable = ['name', 'description', 'price', 'type', 'quantity', 'unlimited_quantity', 'variable_amount', 'quantity_with_card', 'unlimited_quantity_with_card', 'quantity_without_card', 'unlimited_quantity_without_card', 'is_online_sellable', 'instagram_link'];
 
-    protected $appends = ['remaining'];
+    protected $appends = ['remaining', 'image', 'images_list'];
 
     protected function casts(): array
     {
@@ -43,6 +44,30 @@ class Product extends Model
     public function onlineSales()
     {
         return $this->hasMany(OnlineSale::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class);
+    }
+
+    public function getImageAttribute(): ?string
+    {
+        // Only select id to avoid loading binary data
+        $firstImage = $this->images()->select('id', 'product_id')->first();
+
+        return $firstImage ? "/products/images/{$firstImage->id}" : null;
+    }
+
+    public function getImagesListAttribute(): array
+    {
+        // Only select id to avoid loading binary data
+        return $this->images()->select('id', 'product_id')->get()->map(function ($img) {
+            return [
+                'id' => $img->id,
+                'url' => "/products/images/{$img->id}",
+            ];
+        })->toArray();
     }
 
     public function getRemainingAttribute()

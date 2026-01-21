@@ -33,31 +33,48 @@ export function UserPresenceProvider({
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
 
     useEffect(() => {
-        if (!user || typeof window === 'undefined' || !window.Echo) {
+        if (!user || typeof window === 'undefined') {
             return;
         }
 
-        const userId = user.id;
+        // Wait for Echo to be initialized if it's not ready yet
+        const initSocket = () => {
+            if (!window.Echo) {
+                setTimeout(initSocket, 100);
+                return;
+            }
 
-        window.Echo.join('presence.users')
-            .here((users: OnlineUser[]) => {
-                setOnlineUsers(users.filter((u) => u.id !== userId));
-            })
-            .joining((joinedUser: OnlineUser) => {
-                setOnlineUsers((prev) => {
-                    if (prev.some((u) => u.id === joinedUser.id)) return prev;
-                    if (joinedUser.id === userId) return prev;
-                    return [...prev, joinedUser];
+            const userId = user.id;
+
+            // Ensure connection is open
+            if (window.Echo.connector && window.Echo.connector.pusher) {
+                window.Echo.connector.pusher.connect();
+            }
+
+            window.Echo.join('presence.users')
+                .here((users: OnlineUser[]) => {
+                    setOnlineUsers(users.filter((u) => u.id !== userId));
+                })
+                .joining((joinedUser: OnlineUser) => {
+                    setOnlineUsers((prev) => {
+                        if (prev.some((u) => u.id === joinedUser.id)) return prev;
+                        if (joinedUser.id === userId) return prev;
+                        return [...prev, joinedUser];
+                    });
+                })
+                .leaving((leftUser: OnlineUser) => {
+                    setOnlineUsers((prev) =>
+                        prev.filter((u) => u.id !== leftUser.id),
+                    );
                 });
-            })
-            .leaving((leftUser: OnlineUser) => {
-                setOnlineUsers((prev) =>
-                    prev.filter((u) => u.id !== leftUser.id),
-                );
-            });
+        };
+
+        initSocket();
 
         return () => {
-            window.Echo.leave('presence.users');
+            if (window.Echo) {
+                window.Echo.leave('presence.users');
+            }
         };
     }, [user?.id]); // Only re-subscribe if user ID changes
 

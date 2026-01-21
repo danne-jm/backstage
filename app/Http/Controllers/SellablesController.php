@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\EventImage;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\User;
 use App\Services\InventoryManagementService;
 use Illuminate\Http\Request;
@@ -127,6 +129,8 @@ class SellablesController extends Controller
             'remaining_with_card' => $event->remaining_with_card,
             'remaining_without_card' => $event->remaining_without_card,
             'is_online_sellable' => $event->is_online_sellable,
+            'images_list' => $event->images_list,
+            'instagram_link' => $event->instagram_link,
         ];
     }
 
@@ -185,11 +189,26 @@ class SellablesController extends Controller
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
+            'is_online_sellable' => ['sometimes', 'boolean'],
+            'instagram_link' => ['nullable', 'string', 'max:500'],
+            'images.*' => ['nullable', 'image', 'max:10240'],
         ]);
 
         $normalized = $this->inventoryService->normalizeInput($validated);
 
-        Product::create($normalized);
+        $product = Product::create($normalized);
+
+        // Handle Image Uploads
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $content = file_get_contents($file->getRealPath());
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_data' => $content,
+                    'mime_type' => $file->getMimeType(),
+                ]);
+            }
+        }
 
         return redirect()->route('sellables');
     }
@@ -206,11 +225,25 @@ class SellablesController extends Controller
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'is_online_sellable' => ['sometimes', 'boolean'],
+            'instagram_link' => ['nullable', 'string', 'max:500'],
+            'images.*' => ['nullable', 'image', 'max:10240'],
         ]);
 
         $normalized = $this->inventoryService->normalizeInput($validated);
 
         $product->update($normalized);
+
+        // Handle Image Uploads (Append)
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $content = file_get_contents($file->getRealPath());
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_data' => $content,
+                    'mime_type' => $file->getMimeType(),
+                ]);
+            }
+        }
     }
 
     public function destroyProduct(Product $product)
@@ -237,12 +270,28 @@ class SellablesController extends Controller
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
+            'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
+            'is_online_sellable' => ['sometimes', 'boolean'],
+            'instagram_link' => ['nullable', 'string', 'max:500'],
+            'images.*' => ['nullable', 'image', 'max:10240'], // 10MB max
         ]);
 
         $normalized = $this->inventoryService->normalizeInput($validated);
 
-        Event::create($normalized);
+        $event = Event::create($normalized);
+
+        // Handle Image Uploads
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $content = file_get_contents($file->getRealPath());
+                EventImage::create([
+                    'event_id' => $event->id,
+                    'image_data' => $content,
+                    'mime_type' => $file->getMimeType(),
+                ]);
+            }
+        }
 
         return redirect()->route('sellables');
     }
@@ -266,6 +315,8 @@ class SellablesController extends Controller
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
             'is_online_sellable' => ['sometimes', 'boolean'],
+            'instagram_link' => ['nullable', 'string', 'max:500'],
+            'images.*' => ['nullable', 'image', 'max:10240'],
         ]);
 
         $normalized = $this->inventoryService->normalizeInput($validated);
@@ -281,6 +332,32 @@ class SellablesController extends Controller
         }
 
         $event->update($normalized);
+
+        // Handle Image Uploads (Append)
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $content = file_get_contents($file->getRealPath());
+                EventImage::create([
+                    'event_id' => $event->id,
+                    'image_data' => $content,
+                    'mime_type' => $file->getMimeType(),
+                ]);
+            }
+        }
+    }
+
+    public function destroyImage(EventImage $image)
+    {
+        $image->delete();
+
+        return back();
+    }
+
+    public function destroyProductImage(ProductImage $image)
+    {
+        $image->delete();
+
+        return back();
     }
 
     public function destroyEvent(Event $event)

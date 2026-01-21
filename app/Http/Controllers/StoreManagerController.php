@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\OfficeShift;
 use App\Models\OnlineSale;
 use App\Models\Product;
 use App\Models\User;
@@ -70,11 +71,28 @@ class StoreManagerController extends Controller
                 ];
             });
 
-        // Fetch online sales from the last 14 days. Support server-side
-        // pagination via `page` and `pageSize` query params so the
-        // frontend can request only the slice it needs when the dataset
-        // grows large.
-        $from = now()->subDays(14);
+        // Determine time period for sales filter
+        $period = $request->query('period', '14days');
+        $lastClosedShift = OfficeShift::where('status', 'closed')
+            ->orderBy('ended_at', 'desc')
+            ->first();
+
+        switch ($period) {
+            case '7days':
+                $from = now()->subDays(7);
+                break;
+            case 'month':
+                $from = now()->subDays(30);
+                break;
+            case 'lastShift':
+                $from = $lastClosedShift?->ended_at ?? now()->subDays(14);
+                break;
+            case '14days':
+            default:
+                $from = now()->subDays(14);
+                break;
+        }
+
         $page = max(1, (int) $request->query('page', 1));
         $pageSize = max(1, min(1000, (int) $request->query('pageSize', 100)));
 
@@ -102,7 +120,7 @@ class StoreManagerController extends Controller
             ->get(['id', 'first_name', 'last_name', 'email'])
             ->map(fn ($u) => [
                 'id' => $u->id,
-                'name' => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
+                'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
                 'email' => $u->email,
             ]);
 
@@ -113,6 +131,7 @@ class StoreManagerController extends Controller
             'onlineSalesTotal' => $onlineSalesTotal,
             'onlineSellablesCount' => $onlineSellablesCount,
             'boardUsers' => $boardUsers,
+            'lastClosedShiftDate' => $lastClosedShift?->ended_at?->toIso8601String(),
         ]);
     }
 }

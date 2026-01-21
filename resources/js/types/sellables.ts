@@ -15,6 +15,8 @@ export interface Product {
     remaining_with_card?: number;
     remaining_without_card?: number;
     is_online_sellable: boolean;
+    images_list?: { id: number; url: string }[];
+    instagram_link?: string | null;
 }
 
 export interface Event {
@@ -46,6 +48,8 @@ export interface Event {
     remaining_with_card: number;
     remaining_without_card: number;
     is_online_sellable: boolean;
+    images_list?: { id: number; url: string }[];
+    instagram_link?: string | null;
 }
 
 export type Sellable = Product | Event;

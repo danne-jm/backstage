@@ -8,16 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('online_sales', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('event_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('method')->default('card');
-            $table->decimal('amount', 10, 2);
-            $table->json('details')->nullable();
-            $table->timestamp('sold_at')->useCurrent();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('online_sales')) {
+            Schema::create('online_sales', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
+                $table->foreignId('event_id')->nullable()->constrained()->nullOnDelete();
+                $table->string('method')->default('card');
+                $table->decimal('amount', 10, 2);
+                $table->json('details')->nullable();
+                $table->timestamp('sold_at')->useCurrent();
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void

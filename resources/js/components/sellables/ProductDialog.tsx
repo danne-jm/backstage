@@ -1,3 +1,4 @@
+import { ImageManager } from '@/components/sellables/ImageManager';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -13,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { Product } from '@/types/sellables';
 import { router } from '@inertiajs/react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import * as React from 'react';
 
 interface ProductDialogProps {
@@ -40,6 +42,15 @@ export function ProductDialog({
     const [productQuantityWithoutCard, setProductQuantityWithoutCard] =
         React.useState('');
 
+    // Online Store & Images
+    const [isOnlineSellable, setIsOnlineSellable] = React.useState(false);
+    const [isOnlineSectionOpen, setIsOnlineSectionOpen] = React.useState(false);
+    const [imagesList, setImagesList] = React.useState<
+        { id: number; url: string }[]
+    >([]);
+    const [newImages, setNewImages] = React.useState<File[]>([]);
+    const [instagramLink, setInstagramLink] = React.useState('');
+
     React.useEffect(() => {
         if (editingProduct) {
             setProductName(editingProduct.name);
@@ -50,7 +61,6 @@ export function ProductDialog({
                     ? ''
                     : editingProduct.quantity?.toString() || '',
             );
-            // setProductUnlimited(Boolean(editingProduct.unlimited_quantity));
             setProductVariableAmount(Boolean(editingProduct.variable_amount));
             setProductQuantityWithCard(
                 editingProduct.unlimited_quantity_with_card
@@ -62,62 +72,119 @@ export function ProductDialog({
                     ? ''
                     : editingProduct.quantity_without_card?.toString() || '',
             );
+            setIsOnlineSellable(editingProduct.is_online_sellable);
+            setImagesList(editingProduct.images_list || []);
+            setNewImages([]);
+            setInstagramLink(editingProduct.instagram_link || '');
+            setIsOnlineSectionOpen(false);
         } else {
             setProductName('');
             setProductPrice('');
             setProductDescription('');
             setProductQuantity('');
-            // setProductUnlimited(false);
             setProductVariableAmount(false);
             setProductQuantityWithCard('');
             setProductQuantityWithoutCard('');
+            setIsOnlineSellable(false);
+            setImagesList([]);
+            setNewImages([]);
+            setInstagramLink('');
+            setIsOnlineSectionOpen(false);
         }
-    }, [editingProduct]);
+    }, [editingProduct, open]);
 
-    const submitProduct = () => {
-        const data: any = {
-            name: productName,
-            price: parseFloat(productPrice),
-            description: productDescription || null,
-            variable_amount: productVariableAmount,
-            // quantity handling: empty quantity => null and mark unlimited
-            quantity: productVariableAmount
-                ? null
-                : productQuantity
-                  ? parseInt(productQuantity)
-                  : null,
-            unlimited_quantity: productVariableAmount
-                ? false
-                : !productQuantity,
-            quantity_with_card:
-                productVariableAmount && productQuantityWithCard
-                    ? parseInt(productQuantityWithCard)
-                    : null,
-            unlimited_quantity_with_card: productVariableAmount
-                ? !productQuantityWithCard
-                : false,
-            quantity_without_card:
-                productVariableAmount && productQuantityWithoutCard
-                    ? parseInt(productQuantityWithoutCard)
-                    : null,
-            unlimited_quantity_without_card: productVariableAmount
-                ? !productQuantityWithoutCard
-                : false,
-        };
+    const allImagesForDisplay = React.useMemo(() => {
+        const existing = imagesList.map((img) => ({ ...img, isNew: false }));
+        const incoming = newImages.map((file, idx) => ({
+            id: -1 * (idx + 1),
+            url: URL.createObjectURL(file),
+            isNew: true,
+            file,
+        }));
+        return [...existing, ...incoming];
+    }, [imagesList, newImages]);
 
-        if (editingProduct) {
-            router.put(`/sellables/products/${editingProduct.id}`, data, {
+    const handleAddImages = (files: FileList) => {
+        const filesArray = Array.from(files);
+        setNewImages((prev) => [...prev, ...filesArray]);
+    };
+
+    const handleRemoveImage = (id: number) => {
+        if (id > 0) {
+            router.delete(`/sellables/product-images/${id}`, {
+                preserveScroll: true,
                 onSuccess: () => {
-                    onOpenChange(false);
-                    onSuccess();
+                    setImagesList((prev) =>
+                        prev.filter((img) => img.id !== id),
+                    );
                 },
             });
         } else {
-            router.post('/sellables/products', data, {
+            const indexToRemove = id * -1 - 1;
+            setNewImages((prev) =>
+                prev.filter((_, idx) => idx !== indexToRemove),
+            );
+        }
+    };
+
+    const submitProduct = () => {
+        const formData = new FormData();
+        formData.append('name', productName);
+        formData.append('price', productPrice);
+        if (productDescription)
+            formData.append('description', productDescription);
+        formData.append('variable_amount', productVariableAmount ? '1' : '0');
+
+        if (!productVariableAmount) {
+            if (productQuantity) formData.append('quantity', productQuantity);
+            formData.append('unlimited_quantity', !productQuantity ? '1' : '0');
+        } else {
+            formData.append('unlimited_quantity', '0');
+        }
+
+        if (productVariableAmount) {
+            if (productQuantityWithCard)
+                formData.append('quantity_with_card', productQuantityWithCard);
+            formData.append(
+                'unlimited_quantity_with_card',
+                !productQuantityWithCard ? '1' : '0',
+            );
+
+            if (productQuantityWithoutCard)
+                formData.append(
+                    'quantity_without_card',
+                    productQuantityWithoutCard,
+                );
+            formData.append(
+                'unlimited_quantity_without_card',
+                !productQuantityWithoutCard ? '1' : '0',
+            );
+        }
+
+        formData.append('is_online_sellable', isOnlineSellable ? '1' : '0');
+        if (instagramLink) formData.append('instagram_link', instagramLink);
+
+        // Append images
+        newImages.forEach((file) => {
+            formData.append('images[]', file);
+        });
+
+        if (editingProduct) {
+            formData.append('_method', 'PUT');
+            router.post(`/sellables/products/${editingProduct.id}`, formData, {
                 onSuccess: () => {
                     onOpenChange(false);
                     onSuccess();
                 },
+                forceFormData: true,
+            });
+        } else {
+            router.post('/sellables/products', formData, {
+                onSuccess: () => {
+                    onOpenChange(false);
+                    onSuccess();
+                },
+                forceFormData: true,
             });
         }
     };
@@ -225,6 +292,78 @@ export function ProductDialog({
                             </div>
                         </div>
                     )}
+
+                    {/* Collapsible Online Store Section */}
+                    <div className="rounded-md border">
+                        <button
+                            type="button"
+                            className="flex w-full items-center justify-between bg-muted/20 p-3 transition-colors hover:bg-muted/40"
+                            onClick={() =>
+                                setIsOnlineSectionOpen(!isOnlineSectionOpen)
+                            }
+                        >
+                            <div className="text-sm font-semibold">
+                                Online Store Options
+                            </div>
+                            {isOnlineSectionOpen ? (
+                                <ChevronUp className="h-4 w-4" />
+                            ) : (
+                                <ChevronDown className="h-4 w-4" />
+                            )}
+                        </button>
+
+                        {isOnlineSectionOpen && (
+                            <div className="space-y-4 border-t p-3">
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="online-sellable"
+                                        checked={isOnlineSellable}
+                                        onCheckedChange={(checked) =>
+                                            setIsOnlineSellable(
+                                                checked === true,
+                                            )
+                                        }
+                                    />
+                                    <Label
+                                        htmlFor="online-sellable"
+                                        className="cursor-pointer"
+                                    >
+                                        Sellable Online
+                                    </Label>
+                                </div>
+
+                                <div>
+                                    <Label className="mb-2 block">
+                                        Product Images
+                                    </Label>
+                                    <ImageManager
+                                        images={allImagesForDisplay}
+                                        onRemoveImage={handleRemoveImage}
+                                        onAddImages={handleAddImages}
+                                    />
+                                    <p className="mt-2 text-[0.8rem] text-muted-foreground">
+                                        First image will be the cover. Accepted
+                                        formats: JPG, PNG.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="product-instagram-link">
+                                        Instagram Link (optional)
+                                    </Label>
+                                    <Input
+                                        id="product-instagram-link"
+                                        type="url"
+                                        value={instagramLink}
+                                        onChange={(e) =>
+                                            setInstagramLink(e.target.value)
+                                        }
+                                        placeholder="https://instagram.com/..."
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>

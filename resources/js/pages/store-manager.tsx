@@ -20,7 +20,14 @@ import type {
 } from '@/types/sellables';
 import { useEffect, useMemo, useState } from 'react';
 
-// types moved to resources/js/types/sellables.ts
+type TimePeriod = '7days' | '14days' | 'month' | 'lastShift';
+
+const periodLabels: Record<TimePeriod, string> = {
+    '7days': 'Last 7 days',
+    '14days': 'Last 14 days',
+    'month': 'Last 30 days',
+    'lastShift': 'Since last shift',
+};
 
 export default function StoreManager() {
     const breadcrumbs: BreadcrumbItem[] = [
@@ -40,6 +47,8 @@ export default function StoreManager() {
     const [onlineSales, setOnlineSales] = useState<OnlineSale[]>([]);
     const [onlineSalesTotal, setOnlineSalesTotal] = useState<number>(0);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
+    const [period, setPeriod] = useState<TimePeriod>('7days');
+    const [lastClosedShiftDate, setLastClosedShiftDate] = useState<string | null>(null);
 
     const { auth } = usePage<SharedData>().props;
     const permissions = auth?.user?.permissions || [];
@@ -59,7 +68,7 @@ export default function StoreManager() {
         try {
             setLoading(true);
             const res = await fetch(
-                `/store-manager/data?page=${page}&pageSize=${size}`,
+                `/store-manager/data?page=${page}&pageSize=${size}&period=${period}`,
                 {
                     credentials: 'same-origin',
                 },
@@ -86,9 +95,16 @@ export default function StoreManager() {
                     setOnlineSales(json.onlineSales);
                 setOnlineSellablesCount(json.onlineSellablesCount || 0);
                 setOnlineSalesTotal(Number(json.onlineSalesTotal || 0));
+                setLastClosedShiftDate(json.lastClosedShiftDate || null);
             }
 
-            const sres = await fetch('/sales/summary?days=14', {
+            // Fetch sales summary matching the period
+            const days = period === 'month' ? 30 : period === '7days' ? 7 : period === 'lastShift' ? 0 : 14;
+            let summaryUrl = `/sales/summary?days=${days}`;
+            if (period === 'lastShift' && lastClosedShiftDate) {
+                summaryUrl = `/sales/summary?from=${lastClosedShiftDate}`;
+            }
+            const sres = await fetch(summaryUrl, {
                 credentials: 'same-origin',
             });
             if (sres.ok) {
@@ -101,8 +117,6 @@ export default function StoreManager() {
             setLoading(false);
         }
     }
-
-    // (loading is triggered via the useEffect below once page state is defined)
 
     const openProductDialog = (product?: Product) => {
         setEditingProduct(product || null);
@@ -154,11 +168,9 @@ export default function StoreManager() {
         });
     };
 
-    // Quick stats
+    // Quick stats - uses onlineSales which is filtered by period
     const totalOffice = sales.reduce((s, r) => s + (r.office_total || 0), 0);
-    const totalOnline = sales.reduce((s, r) => s + (r.online_total || 0), 0);
-
-    // (online sellable totals computed below after `sellables` is defined)
+    const totalOnline = onlineSales.reduce((s, os) => s + (parseFloat(String(os.amount || 0)) || 0), 0);
 
     const sellables: Sellable[] = [...products, ...events];
 
@@ -174,8 +186,13 @@ export default function StoreManager() {
                     return acc + amount;
                 return acc;
             }, 0);
-            return { ...s, total };
-        });
+            const count = onlineSales.reduce((acc, os) => {
+                if (s.type === 'product' && os.product_id === s.id) return acc + 1;
+                if (s.type === 'event' && os.event_id === s.id) return acc + 1;
+                return acc;
+            }, 0);
+            return { ...s, total, count };
+        }).sort((a, b) => b.count - a.count); // Sort by quantity (count) descending
     })();
 
     // Prepare per-sellable daily series and colors for chart + legend
@@ -218,7 +235,7 @@ export default function StoreManager() {
         ...onlineSellableSeries.flatMap((s) => s.series),
     );
 
-    // Pagination for Latest Card Sales: show up to `pageSize` per page and paginate when there are more
+    // Pagination for Latest Card Sales
     const pageSize = 100;
     const [onlinePage, setOnlinePage] = useState<number>(1);
 
@@ -227,14 +244,12 @@ export default function StoreManager() {
         Math.ceil((onlineSalesTotal || 0) / pageSize),
     );
 
-    const sellableCounts = onlineSellableTotals.map((s) => {
-        const count = onlineSales.reduce((acc, os) => {
-            if (s.type === 'product' && os.product_id === s.id) return acc + 1;
-            if (s.type === 'event' && os.event_id === s.id) return acc + 1;
-            return acc;
-        }, 0);
-        return { id: s.id, type: s.type, name: s.name, count };
-    });
+    const sellableCounts = onlineSellableTotals.map((s) => ({
+        id: s.id,
+        type: s.type,
+        name: s.name,
+        count: s.count,
+    }));
 
     // Server returns the paginated slice already; just sort the returned slice newest-first
     const visibleOnlineSales = useMemo(() => {
@@ -245,10 +260,10 @@ export default function StoreManager() {
         });
     }, [onlineSales]);
 
-    // Load store-manager data once on mount and whenever pagination changes.
+    // Load store-manager data once on mount and whenever pagination or period changes.
     useEffect(() => {
         load(onlinePage, pageSize);
-    }, [onlinePage, pageSize]);
+    }, [onlinePage, pageSize, period]);
 
     return (
         <>
@@ -267,12 +282,13 @@ export default function StoreManager() {
                             seriesMax={seriesMax}
                         />
 
+
                         {/* Quick KPIs */}
                         <StoreQuickStats
                             totalOffice={totalOffice}
                             totalOnline={totalOnline}
                             onlineSellablesCount={onlineSellablesCount}
-                            topSellerName={sellables[0]?.name ?? '—'}
+                            topSellerName={onlineSellableTotals[0]?.name ?? '—'}
                         />
 
                         {/* Sellables */}
@@ -335,6 +351,9 @@ export default function StoreManager() {
                         onlinePage={onlinePage}
                         setOnlinePage={setOnlinePage}
                         totalOnlinePages={totalOnlinePages}
+                        period={period}
+                        setPeriod={setPeriod}
+                        periodLabels={periodLabels}
                     />
                 </div>
             </AppLayout>

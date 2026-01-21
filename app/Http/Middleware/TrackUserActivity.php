@@ -17,7 +17,7 @@ class TrackUserActivity
     {
         if (\Illuminate\Support\Facades\Auth::check()) {
             $user = \Illuminate\Support\Facades\Auth::user();
-            $key = 'user-is-online-' . $user->id;
+            $key = 'user-is-online-'.$user->id;
 
             if (! \Illuminate\Support\Facades\Cache::has($key)) {
                 $user->updateQuietly([

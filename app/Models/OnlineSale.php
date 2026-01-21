@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class OnlineSale extends Model
 {
@@ -19,11 +21,14 @@ class OnlineSale extends Model
     }
 
     protected $fillable = [
+        'online_transaction_id',
+        'reference_id',
         'product_id',
         'event_id',
         'method',
         'amount',
         'details',
+        'ticket_type',
         'sold_at',
     ];
 
@@ -33,12 +38,37 @@ class OnlineSale extends Model
         'sold_at' => 'datetime',
     ];
 
-    public function product()
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($sale) {
+            if (empty($sale->reference_id)) {
+                $sale->reference_id = self::generateUniqueReferenceId();
+            }
+        });
+    }
+
+    public static function generateUniqueReferenceId(): string
+    {
+        do {
+            $id = Str::upper(Str::random(12));
+        } while (self::where('reference_id', $id)->exists());
+
+        return $id;
+    }
+
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(OnlineTransaction::class, 'online_transaction_id');
+    }
+
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function event()
+    public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }

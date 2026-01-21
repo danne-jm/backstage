@@ -562,81 +562,6 @@ export default function Office() {
         return grouped.map((g) => `${g.name} ${g.count}`).join(' | ');
     };
 
-    const addCardSale = () => {
-        if (!saleProductId || !activeShift) return;
-        const selectedItem = filteredSellables.find(
-            (i: any) => i.actual_id === saleProductId,
-        );
-        if (!selectedItem) return;
-
-        let amountToUse = '0';
-        let itemName = selectedItem.name;
-        if (selectedItem.type === 'product') {
-            amountToUse = String(selectedItem.price);
-        } else {
-            amountToUse =
-                saleTicketType === 'with_card'
-                    ? String(selectedItem.price_with_card)
-                    : String(selectedItem.price_without_card);
-            itemName += ` (${saleTicketType === 'with_card' ? 'with' : 'without'} ESN card)`;
-        }
-
-        const ticketLabel =
-            selectedItem.type === 'event'
-                ? saleTicketType === 'with_card'
-                    ? 'With ESNcard'
-                    : 'Without ESNcard'
-                : '';
-        const tempId = `tmp-${Date.now()}`;
-        const tempSale: any = {
-            id: tempId,
-            name: itemName,
-            method: 'card',
-            amount: Number(amountToUse),
-            description: '',
-            ticket_type:
-                selectedItem.type === 'event' ? saleTicketType : undefined,
-            ticket_label: ticketLabel || undefined,
-        };
-
-        setSales((prev) => [tempSale, ...(prev || [])]);
-        setSubmitting(true);
-
-        axios
-            .post('/online-sales', {
-                office_shift_id: activeShift?.id,
-                product_id:
-                    selectedItem.type === 'product' ? saleProductId : null,
-                event_id: selectedItem.type === 'event' ? saleProductId : null,
-                method: 'card',
-                amount: amountToUse,
-                ticket_type:
-                    selectedItem.type === 'event' ? saleTicketType : undefined,
-                ticket_label: ticketLabel || undefined,
-            })
-            .then(() => {
-                setMessage('Sale recorded (Card)');
-                mutate();
-            })
-            .catch((err: any) => {
-                setSales((prev) =>
-                    (prev || []).filter((s: any) => s.id !== tempId),
-                );
-                const status = err?.response?.status;
-                const stockErr = err?.response?.data?.errors?.stock;
-                if (status === 422 && stockErr) {
-                    const text = Array.isArray(stockErr)
-                        ? stockErr.join(' | ')
-                        : String(stockErr);
-                    setSoldOutText(text);
-                    setIsSoldOutModalOpen(true);
-                } else {
-                    setMessage('Failed to record sale');
-                }
-            })
-            .finally(() => setSubmitting(false));
-    };
-
     const addCustomCardSale = () => {
         if (!activeShift || !customAmount || !customDescription) return;
         const isCustom = customSaleItemId === 'custom';
@@ -2222,15 +2147,6 @@ export default function Office() {
                                         }}
                                     >
                                         Add Cash
-                                    </Button>
-                                    <Button
-                                        disabled={
-                                            activeShift?.status !== 'open' ||
-                                            submitting
-                                        }
-                                        onClick={addCardSale}
-                                    >
-                                        Add Card
                                     </Button>
                                     <div className="flex-1" />
                                 </div>

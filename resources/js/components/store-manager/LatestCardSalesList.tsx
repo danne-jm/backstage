@@ -1,6 +1,8 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import { OnlineSale } from '@/types/sellables';
 
+type TimePeriod = '7days' | '14days' | 'month' | 'lastShift';
+
 interface LatestCardSalesListProps {
     loading: boolean;
     onlineSales: OnlineSale[];
@@ -8,6 +10,9 @@ interface LatestCardSalesListProps {
     onlinePage: number;
     setOnlinePage: (page: number | ((prev: number) => number)) => void;
     totalOnlinePages: number;
+    period: TimePeriod;
+    setPeriod: (period: TimePeriod) => void;
+    periodLabels: Record<TimePeriod, string>;
 }
 
 export function LatestCardSalesList({
@@ -17,6 +22,9 @@ export function LatestCardSalesList({
     onlinePage,
     setOnlinePage,
     totalOnlinePages,
+    period,
+    setPeriod,
+    periodLabels,
 }: LatestCardSalesListProps) {
     const formatDateTime = (iso?: string | null) => {
         if (!iso) return 'N/A';
@@ -32,21 +40,36 @@ export function LatestCardSalesList({
 
     return (
         <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-            <h2 className="mb-4 text-lg font-semibold">
-                Latest Card Sales{' '}
-                {onlineSales.length > 0 ? (
-                    <span className="text-muted-foreground">
-                        | {visibleOnlineSales.length}
-                    </span>
-                ) : (
-                    ''
-                )}
-            </h2>
+            <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">
+                    Latest Card Sales{' '}
+                    {onlineSales.length > 0 ? (
+                        <span className="text-muted-foreground">
+                            | {visibleOnlineSales.length}
+                        </span>
+                    ) : (
+                        ''
+                    )}
+                </h2>
+                <div className="flex rounded-md border border-sidebar-border/70 overflow-hidden">
+                    {(['7days', '14days', 'month', 'lastShift'] as TimePeriod[]).map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => setPeriod(p)}
+                            className={`px-3 py-1.5 text-sm transition-colors ${period === p
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background hover:bg-muted'
+                                }`}
+                        >
+                            {periodLabels[p]}
+                        </button>
+                    ))}
+                </div>
+            </div>
             {loading ? (
                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
             ) : (
                 <div className="space-y-4">
-                    {/* Limit to the 10 most recent sales and make the list vertically scrollable */}
                     {onlineSales.length > 0 ? (
                         <div className="max-h-[70vh] space-y-4 overflow-y-auto">
                             {visibleOnlineSales.map((sale: any) => (

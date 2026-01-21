@@ -5,10 +5,11 @@ interface SalesChartProps {
     loading: boolean;
     sales: Array<{ date: string; office_total: number; online_total: number }>;
     onlineSales: OnlineSale[];
-    onlineSellableTotals: Array<Sellable & { total: number }>;
+    onlineSellableTotals: Array<Sellable & { total: number; count: number }>;
     onlineSellableSeries: Array<
         Sellable & {
             total: number;
+            count: number;
             series: number[];
             color: string;
         }
@@ -27,13 +28,15 @@ export function SalesChart({
     sales,
     onlineSellableTotals,
     onlineSellableSeries,
-    sellableCounts,
     seriesMax,
 }: SalesChartProps) {
+    // Sort by count (quantity) descending
+    const sortedTotals = [...onlineSellableTotals].sort((a, b) => b.count - a.count);
+
     return (
         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
             <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Sales (last 14 days)</h3>
+                <h3 className="text-sm font-semibold">Sales</h3>
                 <div className="text-sm font-medium">
                     €
                     {onlineSellableTotals
@@ -65,9 +68,9 @@ export function SalesChart({
                                                             Math.max(
                                                                 1,
                                                                 dateKeys.length -
-                                                                    1,
+                                                                1,
                                                             )) *
-                                                            w;
+                                                        w;
                                                     const y =
                                                         pad +
                                                         h -
@@ -104,11 +107,11 @@ export function SalesChart({
                             Active online sellables
                         </div>
                         <div className="space-y-1">
-                            {onlineSellableTotals.length > 0 ? (
-                                onlineSellableTotals.map((s) => {
+                            {sortedTotals.length > 0 ? (
+                                sortedTotals.map((s) => {
                                     const total = s.total || 0;
                                     const overall =
-                                        onlineSellableTotals.reduce(
+                                        sortedTotals.reduce(
                                             (a, it) => a + (it.total || 0),
                                             0,
                                         ) || 0;
@@ -124,12 +127,7 @@ export function SalesChart({
                                         );
                                     const color =
                                         seriesMeta?.color ?? '#6B7280';
-                                    const meta = sellableCounts.find(
-                                        (sc) =>
-                                            sc.id === s.id &&
-                                            (sc.type as any) === s.type,
-                                    );
-                                    const count = meta?.count ?? 0;
+                                    const count = s.count ?? 0;
 
                                     return (
                                         <div

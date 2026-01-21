@@ -143,13 +143,65 @@ class OfficeController extends Controller
         ])->values()->all();
 
         // Transform Sales Relation -> Frontend Array (retaining snapshot data usually preferred for receipts)
-        $activeArray['sales'] = $office->sales->map(function ($sale) {
+        $officeSales = $office->sales->map(function ($sale) {
             $snap = $sale->snapshot ?? [];
             $snap['id'] = $sale->id;
             $snap['breakdown'] = $sale->breakdown;
+            $snap['source'] = 'office'; // Mark as office sale
 
             return $snap;
-        })->sortByDesc('created_at')->values()->all();
+        });
+
+        // Get store OnlineSales since the last closed shift (sales without an OfficeShiftSale link)
+        // We find the last closed shift's ended_at to determine the cutoff time
+        $lastClosedShift = OfficeShift::where('status', 'closed')
+            ->orderBy('ended_at', 'desc')
+            ->first();
+
+        $storeOnlineSalesQuery = \App\Models\OnlineSale::with(['product', 'event', 'transaction'])
+            ->whereDoesntHave('transaction', function ($query) {
+                // Only include online sales from store (those with a transaction)
+            })
+            ->orWhereHas('transaction'); // Sales with a transaction are from the store
+
+        // Actually, let's query for OnlineSales that have a transaction (store purchases)
+        // and were created after the last closed shift
+        $storeOnlineSales = \App\Models\OnlineSale::with(['product', 'event'])
+            ->whereNotNull('online_transaction_id') // Has a transaction = came from store
+            ->when($lastClosedShift, function ($query) use ($lastClosedShift) {
+                $query->where('sold_at', '>', $lastClosedShift->ended_at);
+            })
+            ->get()
+            ->map(function ($sale) {
+                return [
+                    'id' => 'online-'.$sale->id,
+                    'item_type' => $sale->product_id ? 'product' : 'event',
+                    'name' => $sale->product?->name ?? $sale->event?->name ?? 'Unknown Item',
+                    'price' => $sale->amount,
+                    'method' => 'card',
+                    'amount' => $sale->amount,
+                    'sold_by' => 'Store - SumUp',
+                    'sold_at' => $sale->sold_at?->toIso8601String(),
+                    'created_at' => $sale->created_at?->toIso8601String(),
+                    'ticket_type' => $sale->ticket_type,
+                    'ticket_label' => $sale->ticket_type === 'with_card' ? 'With ESNcard' : ($sale->ticket_type === 'without_card' ? 'Without ESNcard' : null),
+                    'source' => 'store',
+                    'reference_id' => $sale->reference_id,
+                    'breakdown' => null,
+                ];
+            });
+
+        // Merge office sales and store online sales, then sort by created_at desc
+        $allSales = $officeSales->concat($storeOnlineSales)
+            ->sortByDesc('created_at')
+            ->values()
+            ->all();
+
+        $activeArray['sales'] = $allSales;
+
+        // Calculate store card total to include in the display
+        $storeCardTotal = $storeOnlineSales->sum('amount');
+        $activeArray['store_card_total'] = $storeCardTotal;
 
         if ($office->started_by) {
             $u = User::find($office->started_by);
@@ -450,6 +502,75 @@ class OfficeController extends Controller
 
     public function end(Request $request, OfficeShift $office)
     {
+        // 1. Identify OnlineSales that occurred during this shift (since last closed shift)
+        $lastClosedShift = OfficeShift::where('status', 'closed')
+            ->where('id', '!=', $office->id)
+            ->orderBy('ended_at', 'desc')
+            ->first();
+
+        $fromDate = $lastClosedShift ? $lastClosedShift->ended_at : $office->started_at;
+
+        // Fetch online sales that happened in this window
+        // (Where transaction exists = came from store)
+        $onlineSales = \App\Models\OnlineSale::with(['product', 'event'])
+            ->whereNotNull('online_transaction_id')
+            ->where('sold_at', '>', $fromDate)
+            ->where('sold_at', '<=', now())
+            ->get();
+
+        foreach ($onlineSales as $onlineSale) {
+            // Avoid duplicates: Check if we already created a sale for this online_sale_id
+            $exists = OfficeShiftSale::where('office_shift_id', $office->id)
+                ->whereJsonContains('snapshot->online_sale_id', $onlineSale->id)
+                ->exists();
+
+            if (! $exists) {
+                // Create OfficeShiftSale
+                $itemType = $onlineSale->product_id ? 'product' : 'event';
+                $name = $onlineSale->product?->name ?? $onlineSale->event?->name ?? 'Unknown Item';
+                $description = 'Online Sale #'.$onlineSale->reference_id;
+
+                $snapshot = [
+                    'item_type' => $itemType,
+                    'name' => $name,
+                    'price' => $onlineSale->amount,
+                    'method' => 'card',
+                    'amount' => $onlineSale->amount,
+                    'description' => $description,
+                    // Use a special indicator for sold_by so it displays correctly
+                    'sold_by' => 'Store - SumUp',
+                    'sold_at' => $onlineSale->sold_at->toIso8601String(),
+                    'created_at' => $onlineSale->created_at->toIso8601String(),
+                    'ticket_type' => $onlineSale->ticket_type,
+                    'source' => 'store', // Important for filtering/display
+                    'online_sale_id' => $onlineSale->id,
+                    'reference_id' => $onlineSale->reference_id,
+                ];
+
+                OfficeShiftSale::create([
+                    'office_shift_id' => $office->id,
+                    'product_id' => $onlineSale->product_id,
+                    'event_id' => $onlineSale->event_id,
+                    'method' => 'card', // Online is always card/digital money
+                    'amount' => $onlineSale->amount,
+                    'description' => $description,
+                    // Assign to the user closing the shift, or the starter?
+                    // We'll use the current user (closer) as the 'record creator',
+                    // but the snapshot 'sold_by' handles the display name.
+                    'sold_by' => Auth::id() ?? $office->started_by,
+                    'sold_at' => $onlineSale->sold_at,
+                    'snapshot' => $snapshot,
+                    'breakdown' => null,
+                ]);
+
+                // Increment card total for the shift
+                $office->increment('card_total', $onlineSale->amount);
+            }
+        }
+
+        // Recalculate totals after adding online sales
+        $this->recalculateTotals($office);
+
         $finalBreakdown = OfficeShift::mergeBreakdowns(
             $office->start_cash_breakdown,
             $office->cash_breakdown

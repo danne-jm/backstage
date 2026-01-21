@@ -191,7 +191,10 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                         {onlineUsers.length > 0 && (
                             <div className="mr-4 flex -space-x-2 overflow-hidden">
                                 {onlineUsers.map((user) => (
-                                    <TooltipProvider key={user.id} delayDuration={0}>
+                                    <TooltipProvider
+                                        key={user.id}
+                                        delayDuration={0}
+                                    >
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div className="flex h-8 w-8 cursor-default items-center justify-center rounded-full border-2 border-background bg-neutral-200 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-200">
