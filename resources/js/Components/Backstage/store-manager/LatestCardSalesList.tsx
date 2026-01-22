@@ -51,15 +51,23 @@ export function LatestCardSalesList({
                         ''
                     )}
                 </h2>
-                <div className="flex rounded-md border border-sidebar-border/70 overflow-hidden">
-                    {(['7days', '14days', 'month', 'lastShift'] as TimePeriod[]).map((p) => (
+                <div className="flex overflow-hidden rounded-md border border-sidebar-border/70">
+                    {(
+                        [
+                            '7days',
+                            '14days',
+                            'month',
+                            'lastShift',
+                        ] as TimePeriod[]
+                    ).map((p) => (
                         <button
                             key={p}
                             onClick={() => setPeriod(p)}
-                            className={`px-3 py-1.5 text-sm transition-colors ${period === p
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-background hover:bg-muted'
-                                }`}
+                            className={`px-3 py-1.5 text-sm transition-colors ${
+                                period === p
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-background hover:bg-muted'
+                            }`}
                         >
                             {periodLabels[p]}
                         </button>

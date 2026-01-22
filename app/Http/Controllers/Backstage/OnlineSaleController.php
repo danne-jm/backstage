@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Backstage;
 
 use App\Http\Controllers\Controller;
-
 use App\Services\SaleService;
 use Illuminate\Http\Request;
 

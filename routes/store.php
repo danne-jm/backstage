@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\Shared\ImageServingController;
 use App\Http\Controllers\Store\OnlinePaymentController;
 use App\Http\Controllers\Store\ShopController;
-use App\Http\Controllers\Shared\ImageServingController;
 use Illuminate\Support\Facades\Route;
 
 // Public Shop Routes

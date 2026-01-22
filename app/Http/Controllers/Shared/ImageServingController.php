@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Shared;
 
 use App\Http\Controllers\Controller;
-
 use App\Models\EventImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;

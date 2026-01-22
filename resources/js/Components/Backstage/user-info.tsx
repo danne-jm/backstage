@@ -1,4 +1,8 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/Components/Shared/ui/avatar';
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from '@/Components/Shared/ui/avatar';
 import { useInitials } from '@/hooks/use-initials';
 import { type User } from '@/types';
 

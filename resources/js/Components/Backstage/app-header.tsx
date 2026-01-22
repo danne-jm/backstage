@@ -1,6 +1,11 @@
 import { Breadcrumbs } from '@/Components/Backstage/breadcrumbs';
+import { UserMenuContent } from '@/Components/Backstage/user-menu-content';
 import { Icon } from '@/Components/Shared/icon';
-import { Avatar, AvatarFallback, AvatarImage } from '@/Components/Shared/ui/avatar';
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from '@/Components/Shared/ui/avatar';
 import { Button } from '@/Components/Shared/ui/button';
 import {
     DropdownMenu,
@@ -26,7 +31,6 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/Components/Shared/ui/tooltip';
-import { UserMenuContent } from '@/Components/Backstage/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { useOnlineUsers } from '@/hooks/use-online-users';
 import { cn, isSameUrl, resolveUrl } from '@/lib/utils';

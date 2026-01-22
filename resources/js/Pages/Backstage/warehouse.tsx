@@ -1,8 +1,8 @@
-import { Button } from '@/Components/Shared/ui/button';
-import { Input } from '@/Components/Shared/ui/input';
 import CreateItemDialog from '@/Components/Backstage/warehouse/CreateItemDialog';
 import DeleteItemDialog from '@/Components/Backstage/warehouse/DeleteItemDialog';
 import EditItemDialog from '@/Components/Backstage/warehouse/EditItemDialog';
+import { Button } from '@/Components/Shared/ui/button';
+import { Input } from '@/Components/Shared/ui/input';
 import AppLayout from '@/layouts/Backstage/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';

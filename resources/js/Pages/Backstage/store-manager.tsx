@@ -25,8 +25,8 @@ type TimePeriod = '7days' | '14days' | 'month' | 'lastShift';
 const periodLabels: Record<TimePeriod, string> = {
     '7days': 'Last 7 days',
     '14days': 'Last 14 days',
-    'month': 'Last 30 days',
-    'lastShift': 'Since last shift',
+    month: 'Last 30 days',
+    lastShift: 'Since last shift',
 };
 
 export default function StoreManager() {
@@ -48,7 +48,9 @@ export default function StoreManager() {
     const [onlineSalesTotal, setOnlineSalesTotal] = useState<number>(0);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
     const [period, setPeriod] = useState<TimePeriod>('7days');
-    const [lastClosedShiftDate, setLastClosedShiftDate] = useState<string | null>(null);
+    const [lastClosedShiftDate, setLastClosedShiftDate] = useState<
+        string | null
+    >(null);
 
     const { auth } = usePage<SharedData>().props;
     const permissions = auth?.user?.permissions || [];
@@ -99,7 +101,14 @@ export default function StoreManager() {
             }
 
             // Fetch sales summary matching the period
-            const days = period === 'month' ? 30 : period === '7days' ? 7 : period === 'lastShift' ? 0 : 14;
+            const days =
+                period === 'month'
+                    ? 30
+                    : period === '7days'
+                      ? 7
+                      : period === 'lastShift'
+                        ? 0
+                        : 14;
             let summaryUrl = `/sales/summary?days=${days}`;
             if (period === 'lastShift' && lastClosedShiftDate) {
                 summaryUrl = `/sales/summary?from=${lastClosedShiftDate}`;
@@ -170,29 +179,36 @@ export default function StoreManager() {
 
     // Quick stats - uses onlineSales which is filtered by period
     const totalOffice = sales.reduce((s, r) => s + (r.office_total || 0), 0);
-    const totalOnline = onlineSales.reduce((s, os) => s + (parseFloat(String(os.amount || 0)) || 0), 0);
+    const totalOnline = onlineSales.reduce(
+        (s, os) => s + (parseFloat(String(os.amount || 0)) || 0),
+        0,
+    );
 
     const sellables: Sellable[] = [...products, ...events];
 
     // Compute recent online totals per active online sellable from onlineSales
     const onlineSellableTotals = (() => {
         const items = sellables.filter((s) => s.is_online_sellable);
-        return items.map((s) => {
-            const total = onlineSales.reduce((acc, os) => {
-                const amount = parseFloat(String(os.amount || 0)) || 0;
-                if (s.type === 'product' && os.product_id === s.id)
-                    return acc + amount;
-                if (s.type === 'event' && os.event_id === s.id)
-                    return acc + amount;
-                return acc;
-            }, 0);
-            const count = onlineSales.reduce((acc, os) => {
-                if (s.type === 'product' && os.product_id === s.id) return acc + 1;
-                if (s.type === 'event' && os.event_id === s.id) return acc + 1;
-                return acc;
-            }, 0);
-            return { ...s, total, count };
-        }).sort((a, b) => b.count - a.count); // Sort by quantity (count) descending
+        return items
+            .map((s) => {
+                const total = onlineSales.reduce((acc, os) => {
+                    const amount = parseFloat(String(os.amount || 0)) || 0;
+                    if (s.type === 'product' && os.product_id === s.id)
+                        return acc + amount;
+                    if (s.type === 'event' && os.event_id === s.id)
+                        return acc + amount;
+                    return acc;
+                }, 0);
+                const count = onlineSales.reduce((acc, os) => {
+                    if (s.type === 'product' && os.product_id === s.id)
+                        return acc + 1;
+                    if (s.type === 'event' && os.event_id === s.id)
+                        return acc + 1;
+                    return acc;
+                }, 0);
+                return { ...s, total, count };
+            })
+            .sort((a, b) => b.count - a.count); // Sort by quantity (count) descending
     })();
 
     // Prepare per-sellable daily series and colors for chart + legend
@@ -281,7 +297,6 @@ export default function StoreManager() {
                             sellableCounts={sellableCounts}
                             seriesMax={seriesMax}
                         />
-
 
                         {/* Quick KPIs */}
                         <StoreQuickStats

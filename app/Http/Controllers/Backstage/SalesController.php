@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Backstage;
 
 use App\Http\Controllers\Controller;
-
 use App\Models\OfficeShiftSale;
 use App\Models\OnlineSale;
 use Carbon\Carbon;

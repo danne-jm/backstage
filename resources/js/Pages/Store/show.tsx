@@ -97,10 +97,11 @@ export default function ShopShow({ item }: Props) {
                                                 onClick={() =>
                                                     setActiveImage(img.url)
                                                 }
-                                                className={`h-3 w-3 rounded-full border-2 border-black transition-colors ${activeImage === img.url
+                                                className={`h-3 w-3 rounded-full border-2 border-black transition-colors ${
+                                                    activeImage === img.url
                                                         ? 'bg-black'
                                                         : 'bg-white hover:bg-gray-200'
-                                                    }`}
+                                                }`}
                                                 aria-label={`View image ${item.images!.indexOf(img) + 1}`}
                                             />
                                         ))}
@@ -119,21 +120,33 @@ export default function ShopShow({ item }: Props) {
                                 <div className="mb-6 rounded-md bg-red-50 p-4">
                                     <div className="flex">
                                         <div className="flex-shrink-0">
-                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            <svg
+                                                className="h-5 w-5 text-red-400"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                    clipRule="evenodd"
+                                                />
                                             </svg>
                                         </div>
                                         <div className="ml-3">
-                                            <h3 className="text-sm font-medium text-red-800">Unavailable</h3>
+                                            <h3 className="text-sm font-medium text-red-800">
+                                                Unavailable
+                                            </h3>
                                             <div className="mt-2 text-sm text-red-700">
-                                                <p>This item is currently not available for purchase.</p>
+                                                <p>
+                                                    This item is currently not
+                                                    available for purchase.
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
                                 <>
-
                                     <p className="mb-8 text-4xl font-bold text-black">
                                         €{Number(item.price).toFixed(2)}
                                     </p>
@@ -157,27 +170,33 @@ export default function ShopShow({ item }: Props) {
                                                     </div>
                                                     <div className="ml-3">
                                                         <h3 className="mb-1 text-sm font-semibold text-emerald-800">
-                                                            ESNcard Discount Available
+                                                            ESNcard Discount
+                                                            Available
                                                         </h3>
                                                         <p className="text-sm text-emerald-700">
-                                                            Get this {item.type} for
-                                                            just{' '}
+                                                            Get this {item.type}{' '}
+                                                            for just{' '}
                                                             <span className="font-bold">
                                                                 €
                                                                 {Number(
                                                                     item.member_price!,
                                                                 ).toFixed(2)}
                                                             </span>{' '}
-                                                            with your ESNcard. Apply
-                                                            your discount code at
-                                                            checkout.
+                                                            with your ESNcard.
+                                                            Apply your discount
+                                                            code at checkout.
                                                         </p>
                                                         {/* Logic to warn if member price is sold out but regular is not */}
                                                         {item.is_variable &&
                                                             !item.unlimited_with_card &&
-                                                            (item.remaining_with_card ?? 0) <= 0 && (
+                                                            (item.remaining_with_card ??
+                                                                0) <= 0 && (
                                                                 <p className="mt-2 text-sm font-bold text-red-600">
-                                                                    Note: Member price tickets are currently sold out.
+                                                                    Note: Member
+                                                                    price
+                                                                    tickets are
+                                                                    currently
+                                                                    sold out.
                                                                 </p>
                                                             )}
                                                     </div>
@@ -188,19 +207,38 @@ export default function ShopShow({ item }: Props) {
                                     {/* Logic to show regular price sold out warning */}
                                     {item.is_variable &&
                                         !item.unlimited_without_card &&
-                                        (item.remaining_without_card ?? 0) <= 0 && (
+                                        (item.remaining_without_card ?? 0) <=
+                                            0 && (
                                             <div className="mb-6 rounded-md bg-yellow-50 p-4">
                                                 <div className="flex">
                                                     <div className="flex-shrink-0">
                                                         {/* Exclamation icon */}
-                                                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                        <svg
+                                                            className="h-5 w-5 text-yellow-400"
+                                                            viewBox="0 0 20 20"
+                                                            fill="currentColor"
+                                                        >
+                                                            <path
+                                                                fillRule="evenodd"
+                                                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                                clipRule="evenodd"
+                                                            />
                                                         </svg>
                                                     </div>
                                                     <div className="ml-3">
-                                                        <h3 className="text-sm font-medium text-yellow-800">Standard Price Sold Out</h3>
+                                                        <h3 className="text-sm font-medium text-yellow-800">
+                                                            Standard Price Sold
+                                                            Out
+                                                        </h3>
                                                         <div className="mt-2 text-sm text-yellow-700">
-                                                            <p>Standard tickets are sold out. Only member price tickets may be available.</p>
+                                                            <p>
+                                                                Standard tickets
+                                                                are sold out.
+                                                                Only member
+                                                                price tickets
+                                                                may be
+                                                                available.
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -235,7 +273,8 @@ export default function ShopShow({ item }: Props) {
                                                             Math.max(
                                                                 1,
                                                                 parseInt(
-                                                                    e.target.value,
+                                                                    e.target
+                                                                        .value,
                                                                 ) || 1,
                                                             ),
                                                         )
@@ -269,7 +308,8 @@ export default function ShopShow({ item }: Props) {
                                     </div>
 
                                     <div className="mb-8 space-y-4">
-                                        {(!item.unlimited && (item.remaining ?? 0) <= 0) ? (
+                                        {!item.unlimited &&
+                                        (item.remaining ?? 0) <= 0 ? (
                                             <button
                                                 type="button"
                                                 disabled

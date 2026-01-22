@@ -11,7 +11,7 @@ import {
     Ticket,
     Trash2,
 } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface Sellable {
     id: number;
@@ -91,14 +91,18 @@ export default function ShopCart({ sellables }: Props) {
         const timer = setTimeout(async () => {
             try {
                 const payload = {
-                    items: cart.map(i => ({ id: i.id, type: i.type, quantity: i.quantity })),
-                    codes: appliedDiscounts
+                    items: cart.map((i) => ({
+                        id: i.id,
+                        type: i.type,
+                        quantity: i.quantity,
+                    })),
+                    codes: appliedDiscounts,
                 };
                 const res = await axios.post('/validate-cart', payload);
                 setServerBreakdown(res.data.breakdown);
                 setServerTotal(res.data.total_final);
             } catch (e) {
-                console.error("Validation failed", e);
+                console.error('Validation failed', e);
             }
         }, 500);
 
@@ -108,15 +112,24 @@ export default function ShopCart({ sellables }: Props) {
     // Validation Effect: Scrub invalid/unsellable items (local check)
     useEffect(() => {
         // 1. Identify items in cart that are no longer in sellables list (deleted or not online_sellable)
-        const validIds = new Set(sellables.filter(s => s.is_online_sellable !== false).map(s => `${s.type}-${s.id}`));
+        const validIds = new Set(
+            sellables
+                .filter((s) => s.is_online_sellable !== false)
+                .map((s) => `${s.type}-${s.id}`),
+        );
 
         // We use the raw entries from useCart hook to check validity
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
             if (!validIds.has(`${entry.type}-${entry.id}`)) {
                 // Determine if it was just set to not sellable or deleted
-                const exists = sellables.find(s => s.id === entry.id && s.type === entry.type);
+                const exists = sellables.find(
+                    (s) => s.id === entry.id && s.type === entry.type,
+                );
                 if (exists && exists.is_online_sellable === false) {
-                    setMessage({ text: `${exists.name} is no longer available for purchase and was removed from your cart.`, type: 'error' });
+                    setMessage({
+                        text: `${exists.name} is no longer available for purchase and was removed from your cart.`,
+                        type: 'error',
+                    });
                 }
                 // Silently remove if it completely disappeared, or notify if explicit
                 removeFromCart(entry.id, entry.type);
@@ -127,8 +140,10 @@ export default function ShopCart({ sellables }: Props) {
     // Derived state for warnings (don't block render, just calculations)
     const cartWarnings = useMemo(() => {
         const warnings: string[] = [];
-        cart.forEach(item => {
-            const sellable = sellables.find(s => s.id === item.id && s.type === item.type);
+        cart.forEach((item) => {
+            const sellable = sellables.find(
+                (s) => s.id === item.id && s.type === item.type,
+            );
             if (!sellable) return;
 
             const isDiscounted =
@@ -137,25 +152,32 @@ export default function ShopCart({ sellables }: Props) {
                 item.member_price < item.price;
 
             // Check specific stock
-            let hasStock = true;
             if (sellable.is_variable) {
                 if (isDiscounted) {
                     // Check member stock
-                    if (!sellable.unlimited_with_card && (sellable.remaining_with_card ?? 0) < item.quantity) {
-                        warnings.push(`Insufficient stock for ${item.name} at Member Price.`);
-                        hasStock = false;
+                    if (
+                        !sellable.unlimited_with_card &&
+                        (sellable.remaining_with_card ?? 0) < item.quantity
+                    ) {
+                        warnings.push(
+                            `Insufficient stock for ${item.name} at Member Price.`,
+                        );
                     }
                 } else {
                     // Check normal stock
-                    if (!sellable.unlimited_without_card && (sellable.remaining_without_card ?? 0) < item.quantity) {
+                    if (
+                        !sellable.unlimited_without_card &&
+                        (sellable.remaining_without_card ?? 0) < item.quantity
+                    ) {
                         warnings.push(`Insufficient stock for ${item.name}.`);
-                        hasStock = false;
                     }
                 }
             } else {
-                if (!sellable.unlimited && (sellable.remaining ?? 0) < item.quantity) {
+                if (
+                    !sellable.unlimited &&
+                    (sellable.remaining ?? 0) < item.quantity
+                ) {
                     warnings.push(`Insufficient stock for ${item.name}.`);
-                    hasStock = false;
                 }
             }
         });
@@ -195,19 +217,9 @@ export default function ShopCart({ sellables }: Props) {
         (acc, item) => acc + item.price * item.quantity,
         0,
     );
-    const itemsSubtotal = cart.reduce((acc, item) => {
-        const isDiscounted =
-            discountApplied &&
-            item.member_price &&
-            item.member_price < item.price;
-        const price =
-            isDiscounted && item.member_price ? item.member_price : item.price;
-        return acc + price * item.quantity;
-    }, 0);
 
-    const processingFee = itemsSubtotal * 0.02;
-    const finalTotal = itemsSubtotal + processingFee;
-    const savedAmount = originalTotal - itemsSubtotal;
+
+
 
     // Sort cart items by price descending (most expensive first)
     const sortedCart = [...cart].sort((a, b) => b.price - a.price);
@@ -418,14 +430,6 @@ export default function ShopCart({ sellables }: Props) {
                                 {sortedCart.flatMap((item) =>
                                     Array.from({ length: item.quantity }).map(
                                         (_, i) => {
-                                            const isDiscounted =
-                                                discountApplied &&
-                                                item.member_price &&
-                                                item.member_price < item.price;
-                                            const finalPrice = isDiscounted
-                                                ? item.member_price!
-                                                : item.price;
-
                                             return (
                                                 <div
                                                     key={`${item.type}-${item.id}-${i}`}
@@ -438,31 +442,65 @@ export default function ShopCart({ sellables }: Props) {
                                                         <dd className="text-right text-sm font-medium text-gray-900">
                                                             {(() => {
                                                                 // Find server data for this item type
-                                                                const sItem = serverBreakdown?.find(s => s.id === item.id && s.type === item.type);
+                                                                const sItem =
+                                                                    serverBreakdown?.find(
+                                                                        (s) =>
+                                                                            s.id ===
+                                                                            item.id &&
+                                                                            s.type ===
+                                                                            item.type,
+                                                                    );
 
                                                                 // Determine if THIS unit is discounted (greedy allocation: first N units)
-                                                                const discountedCount = sItem?.discounted_quantity || 0;
-                                                                const isUnitDiscounted = i < discountedCount;
-                                                                const codeUsed = sItem?.codes_applied?.[i] || (isUnitDiscounted ? 'Discount' : null);
+                                                                const discountedCount =
+                                                                    sItem?.discounted_quantity ||
+                                                                    0;
+                                                                const isUnitDiscounted =
+                                                                    i <
+                                                                    discountedCount;
+                                                                const codeUsed =
+                                                                    sItem
+                                                                        ?.codes_applied?.[
+                                                                    i
+                                                                    ] ||
+                                                                    (isUnitDiscounted
+                                                                        ? 'Discount'
+                                                                        : null);
 
                                                                 // Calculate unit price
-                                                                const unitRegularPrice = Number(item.price);
-                                                                const unitMemberPrice = Number(item.member_price ?? item.price);
-                                                                // If finding member price fails locally, rely on server total? 
+                                                                const unitRegularPrice =
+                                                                    Number(
+                                                                        item.price,
+                                                                    );
+                                                                const unitMemberPrice =
+                                                                    Number(
+                                                                        item.member_price ??
+                                                                        item.price,
+                                                                    );
+                                                                // If finding member price fails locally, rely on server total?
                                                                 // Better to use available data. If server says discounted, we assume member price is active.
 
-                                                                if (isUnitDiscounted) {
+                                                                if (
+                                                                    isUnitDiscounted
+                                                                ) {
                                                                     return (
                                                                         <div className="flex flex-col items-end">
                                                                             <div className="flex items-center gap-2">
                                                                                 <span className="text-xs text-emerald-700">
-                                                                                    {codeUsed && `(${codeUsed})`}
+                                                                                    {codeUsed &&
+                                                                                        `(${codeUsed})`}
                                                                                 </span>
                                                                                 <span className="text-xs text-gray-500 line-through">
-                                                                                    €{unitRegularPrice.toFixed(2)}
+                                                                                    €
+                                                                                    {unitRegularPrice.toFixed(
+                                                                                        2,
+                                                                                    )}
                                                                                 </span>
                                                                                 <span>
-                                                                                    €{unitMemberPrice.toFixed(2)}
+                                                                                    €
+                                                                                    {unitMemberPrice.toFixed(
+                                                                                        2,
+                                                                                    )}
                                                                                 </span>
                                                                                 <Ticket className="h-3 w-3 text-emerald-700" />
                                                                             </div>
@@ -471,7 +509,12 @@ export default function ShopCart({ sellables }: Props) {
                                                                 }
 
                                                                 return (
-                                                                    <span>€{unitRegularPrice.toFixed(2)}</span>
+                                                                    <span>
+                                                                        €
+                                                                        {unitRegularPrice.toFixed(
+                                                                            2,
+                                                                        )}
+                                                                    </span>
                                                                 );
                                                             })()}
                                                         </dd>
@@ -588,14 +631,25 @@ export default function ShopCart({ sellables }: Props) {
                                             serverTotal < originalTotal ? (
                                                 <div className="flex flex-col items-end">
                                                     <span className="text-xs text-gray-500 line-through">
-                                                        €{originalTotal.toFixed(2)}
+                                                        €
+                                                        {originalTotal.toFixed(
+                                                            2,
+                                                        )}
                                                     </span>
                                                     <span className="mt-1 font-medium text-gray-900">
-                                                        €{Number(serverTotal).toFixed(2)}
+                                                        €
+                                                        {Number(
+                                                            serverTotal,
+                                                        ).toFixed(2)}
                                                     </span>
                                                 </div>
                                             ) : (
-                                                <span>€{Number(serverTotal).toFixed(2)}</span>
+                                                <span>
+                                                    €
+                                                    {Number(
+                                                        serverTotal,
+                                                    ).toFixed(2)}
+                                                </span>
                                             )
                                         ) : (
                                             <span>Calculating...</span>
@@ -608,7 +662,10 @@ export default function ShopCart({ sellables }: Props) {
                                         Processing fee
                                     </dt>
                                     <dd className="text-sm font-medium text-gray-900">
-                                        +€{serverTotal ? (serverTotal * 0.02).toFixed(2) : '0.00'}
+                                        +€
+                                        {serverTotal
+                                            ? (serverTotal * 0.02).toFixed(2)
+                                            : '0.00'}
                                     </dd>
                                 </div>
 
@@ -617,7 +674,10 @@ export default function ShopCart({ sellables }: Props) {
                                         Order total
                                     </dt>
                                     <dd className="text-2xl font-bold text-gray-900">
-                                        €{serverTotal ? (serverTotal * 1.02).toFixed(2) : '...'}
+                                        €
+                                        {serverTotal
+                                            ? (serverTotal * 1.02).toFixed(2)
+                                            : '...'}
                                     </dd>
                                 </div>
                             </dl>
@@ -632,7 +692,9 @@ export default function ShopCart({ sellables }: Props) {
 
                             {cartWarnings.length > 0 && (
                                 <div className="mt-4 rounded-md bg-yellow-50 p-3 text-yellow-700">
-                                    <p className="font-bold">Please adjust your cart:</p>
+                                    <p className="font-bold">
+                                        Please adjust your cart:
+                                    </p>
                                     <ul className="list-disc pl-5">
                                         {cartWarnings.map((w, i) => (
                                             <li key={i}>{w}</li>
@@ -644,7 +706,11 @@ export default function ShopCart({ sellables }: Props) {
                             <div className="mt-6">
                                 <button
                                     type="button"
-                                    disabled={cart.length === 0 || isProcessing || cartWarnings.length > 0}
+                                    disabled={
+                                        cart.length === 0 ||
+                                        isProcessing ||
+                                        cartWarnings.length > 0
+                                    }
                                     onClick={handleCheckout}
                                     className="flex w-full items-center justify-center border border-transparent bg-black px-4 py-3 text-base font-medium text-white uppercase shadow-sm hover:bg-gray-800 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                 >
@@ -661,7 +727,7 @@ export default function ShopCart({ sellables }: Props) {
                         </section>
                     </div>
                 </div>
-            </div >
-        </ShopLayout >
+            </div>
+        </ShopLayout>
     );
 }

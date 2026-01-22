@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Backstage;
 
 use App\Http\Controllers\Controller;
-
 use App\Models\Event;
 use App\Models\OfficeShift;
 use App\Models\OnlineSale;
@@ -122,7 +121,7 @@ class StoreManagerController extends Controller
             ->get(['id', 'first_name', 'last_name', 'email'])
             ->map(fn ($u) => [
                 'id' => $u->id,
-                'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
+                'name' => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
                 'email' => $u->email,
             ]);
 

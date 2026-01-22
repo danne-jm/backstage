@@ -128,21 +128,6 @@ export function EventDialog({
     const handleAddImages = (files: FileList) => {
         const filesArray = Array.from(files);
         setNewImages((prev) => [...prev, ...filesArray]);
-
-        // Creating temporary preview URLs for new images is tricky if we mix them with existing ones.
-        // For simplicity, we just show "File: name" or nothing for new images in the manager,
-        // OR we can create blob URLs. Let's create blob URLs for valid preview.
-        const newPreviews = filesArray.map((f) => ({
-            id: -Date.now() - Math.random(), // temp negative id
-            url: URL.createObjectURL(f),
-            file: f,
-        }));
-        // Actually ImageManager expects {id, url}.
-        // The current ImageManager implementation calls onRemoveImage with id.
-        // We need to distinguish between server images (positive id) and local images (negative or other tracking).
-        // Let's adapt logic below or in ImageManager.
-        // For now, simpler approach: Just support adding new ones and uploading.
-        // The ImageManager I wrote only displays `images`. I should probably update `imagesList` with temporary previews.
     };
 
     // Correct approach for mixed images:

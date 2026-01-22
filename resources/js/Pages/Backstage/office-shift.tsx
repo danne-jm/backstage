@@ -86,7 +86,8 @@ export default function Office() {
         () => (Array.isArray(rawSellables) ? rawSellables : []),
         [rawSellables],
     );
-    const activeShift: OfficeShift | null | undefined = props['activeShift'] ?? null;
+    const activeShift: OfficeShift | null | undefined =
+        props['activeShift'] ?? null;
 
     const isEventInSellWindow = React.useCallback((item: any) => {
         if (!item) return false;

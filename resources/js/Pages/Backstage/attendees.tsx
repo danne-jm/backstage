@@ -164,7 +164,6 @@ export default function EventAttendees({ event }: { event: any }) {
             console.error(e);
             let msg = 'Unknown error';
             if (typeof e === 'object' && e !== null) {
-
                 msg = e.response?.data?.error || e.message || msg;
             }
 

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Backstage;
 
 use App\Http\Controllers\Controller;
-
 use App\Models\Event;
 use App\Models\MailTemplate;
 use Inertia\Inertia;

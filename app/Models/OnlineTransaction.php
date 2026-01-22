@@ -18,7 +18,6 @@ class OnlineTransaction extends Model
         'completed_at',
     ];
 
-
     protected $casts = [
         'total_amount' => 'decimal:2',
         'processing_fee' => 'decimal:2',

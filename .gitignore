@@ -1,31 +1,79 @@
-# Laravel & Node.js .gitignore
-/vendor/
-/node_modules/
-.env
-/public/build/
-/public/storage
-/storage/*.key
-/storage/app/public
-/storage/framework/cache/data
-/storage/logs
-.phpunit.result.cache
-npm-debug.log
-yarn-error.log
+################################################################################
+#                                                                              #
+#                                   GENERAL                                    #
+#                                                                              #
+################################################################################
+
+# System & OS
 .DS_Store
-/.phpunit.cache
+
+# Environment & Credentials
+.env
+.env.backup
+.env.production
+/auth.json
+
+# IDEs & Editors
 /.idea
 /.vscode
 /.fleet
 /.nova
 /.zed
+/.phpactor.json
+
+
+################################################################################
+#                                                                              #
+#                               LARAVEL & PHP                                  #
+#                                                                              #
+################################################################################
+
+# Dependencies
+/vendor
+
+# Build & Storage
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/app/public
+/storage/framework/cache/data
+/storage/logs
+/storage/pail
+
+# Testing
+.phpunit.result.cache
+/.phpunit.cache
+
+# Homestead
 Homestead.json
 Homestead.yaml
-/auth.json
-/.env.backup
-.env.production
-/.phpactor.json
-/public/hot
-/storage/pail
+
+
+################################################################################
+#                                                                              #
+#                               NODE & FRONTEND                                #
+#                                                                              #
+################################################################################
+
+# Dependencies
+/node_modules
+
+# Logs
+npm-debug.log
+yarn-error.log
+
+# Generated Routes/Types (Ziggy/TypeScript)
 /resources/js/actions
 /resources/js/routes
 /resources/js/wayfinder
+
+
+################################################################################
+#                                                                              #
+#                                  EXCEPTIONS                                  #
+#                                                                              #
+################################################################################
+
+# Explicitly allow the example environment file
+!.env-example

@@ -1,3 +1,5 @@
+import { UserInfo } from '@/Components/Backstage/user-info';
+import { UserMenuContent } from '@/Components/Backstage/user-menu-content';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -9,8 +11,6 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from '@/Components/Shared/ui/sidebar';
-import { UserInfo } from '@/Components/Backstage/user-info';
-import { UserMenuContent } from '@/Components/Backstage/user-menu-content';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';

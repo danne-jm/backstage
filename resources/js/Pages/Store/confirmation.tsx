@@ -72,7 +72,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                             {item.ticket_type && (
                                                 <p className="mt-1 text-sm text-gray-500">
                                                     {item.ticket_type ===
-                                                        'with_card'
+                                                    'with_card'
                                                         ? 'With ESNcard'
                                                         : 'Without ESNcard'}
                                                 </p>
@@ -100,7 +100,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                                     title="Copy reference ID"
                                                 >
                                                     {copiedId ===
-                                                        item.reference_id ? (
+                                                    item.reference_id ? (
                                                         <Check className="h-4 w-4 text-green-500" />
                                                     ) : (
                                                         <Copy className="h-4 w-4 text-gray-400" />
@@ -162,7 +162,9 @@ export default function Confirmation({ transaction, items }: Props) {
                     <div className="mt-8 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                         <p className="text-sm text-yellow-800">
                             <strong>Important:</strong> Please save your
-                            reference IDs. You may still need to register to the event(s) and/or product(s) and might have to provide them in your form submission!
+                            reference IDs. You may still need to register to the
+                            event(s) and/or product(s) and might have to provide
+                            them in your form submission!
                         </p>
                     </div>
                 </div>

@@ -12,6 +12,7 @@ import {
     InputOTPGroup,
     InputOTPSlot,
 } from '@/Components/Shared/ui/input-otp';
+import { Spinner } from '@/Components/Shared/ui/spinner';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { Form } from '@inertiajs/react';
@@ -20,7 +21,6 @@ import { Check, Copy, ScanLine } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 import AlertError from './alert-error';
-import { Spinner } from '@/Components/Shared/ui/spinner';
 
 function GridScanIcon() {
     return (

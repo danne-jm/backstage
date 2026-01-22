@@ -1,10 +1,10 @@
+import { UserInfo } from '@/Components/Backstage/user-info';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from '@/Components/Shared/ui/dropdown-menu';
-import { UserInfo } from '@/Components/Backstage/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { type User } from '@/types';
 import { Link, router } from '@inertiajs/react';

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Store;
 
 use App\Http\Controllers\Controller;
-
 use Inertia\Inertia;
 
 class ShopController extends Controller

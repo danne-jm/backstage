@@ -31,7 +31,9 @@ export function SalesChart({
     seriesMax,
 }: SalesChartProps) {
     // Sort by count (quantity) descending
-    const sortedTotals = [...onlineSellableTotals].sort((a, b) => b.count - a.count);
+    const sortedTotals = [...onlineSellableTotals].sort(
+        (a, b) => b.count - a.count,
+    );
 
     return (
         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
@@ -68,9 +70,9 @@ export function SalesChart({
                                                             Math.max(
                                                                 1,
                                                                 dateKeys.length -
-                                                                1,
+                                                                    1,
                                                             )) *
-                                                        w;
+                                                            w;
                                                     const y =
                                                         pad +
                                                         h -

@@ -7,7 +7,7 @@ import {
     ShoppingBag,
     TreeDeciduous,
 } from 'lucide-react';
-import { PropsWithChildren, useEffect, useState } from 'react';
+import { PropsWithChildren } from 'react';
 
 interface FooterConfig {
     linktree_url?: string;
@@ -21,11 +21,7 @@ interface FooterConfig {
 export default function ShopLayout({ children }: PropsWithChildren) {
     const { cartCount } = useCart();
     const { footer } = usePage<{ footer: FooterConfig }>().props;
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const mounted = true;
 
     return (
         <div className="flex min-h-screen flex-col bg-gray-50">
