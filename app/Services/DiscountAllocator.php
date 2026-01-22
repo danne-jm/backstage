@@ -14,16 +14,26 @@ class DiscountAllocator
      *
      * @param  array  $items  Format: [['id' => 1, 'type' => 'event', 'quantity' => 2, ...]]
      * @param  array  $codes  List of code strings ['CODE1', 'CODE2']
+     * @param  bool   $useLock  Whether to use pessimistic locking (for transactional checkout)
      * @return array
      */
-    public function allocate(array $cartItems, array $codes)
+    public function allocate(array $cartItems, array $codes, bool $useLock = false)
     {
         // 1. Fetch all related Enitities to get pricing details
+        // SECURITY FIX: Use lockForUpdate() when inside a transaction to prevent TOCTOU race conditions
         $productIds = collect($cartItems)->where('type', 'product')->pluck('id')->unique();
         $eventIds = collect($cartItems)->where('type', 'event')->pluck('id')->unique();
 
-        $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
-        $events = Event::whereIn('id', $eventIds)->get()->keyBy('id');
+        $productQuery = Product::whereIn('id', $productIds);
+        $eventQuery = Event::whereIn('id', $eventIds);
+
+        if ($useLock) {
+            $productQuery->lockForUpdate();
+            $eventQuery->lockForUpdate();
+        }
+
+        $products = $productQuery->get()->keyBy('id');
+        $events = $eventQuery->get()->keyBy('id');
 
         // 2. Explode cart items into individual "Units" suitable for single-code application
         $units = [];
@@ -95,8 +105,13 @@ class DiscountAllocator
 
         // 4. Validate Codes against History
         // We need to know which codes have successfully been used for these specific item types before.
+        // SECURITY FIX: Lock DiscountUsage rows to prevent double-spending in concurrent requests
         $cleanCodes = array_unique(array_filter($codes));
-        $history = DiscountUsage::whereIn('code', $cleanCodes)->get()->groupBy('code');
+        $historyQuery = DiscountUsage::whereIn('code', $cleanCodes);
+        if ($useLock) {
+            $historyQuery->lockForUpdate();
+        }
+        $history = $historyQuery->get()->groupBy('code');
 
         // 5. Allocate
         $allocations = []; // Map of unit_index => code_used

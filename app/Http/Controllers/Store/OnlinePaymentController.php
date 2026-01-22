@@ -64,8 +64,9 @@ class OnlinePaymentController extends Controller
         return DB::transaction(function () use ($items) {
 
             // Perform strict discount allocation
+            // SECURITY FIX: Pass useLock=true to enable pessimistic locking inside this transaction
             $codes = $validated['discount_codes'] ?? [];
-            $allocation = $this->allocator->allocate($items, $codes);
+            $allocation = $this->allocator->allocate($items, $codes, true);
 
             // Re-validate stock while we are here (allocator checks prices, but maybe not hard stock limits?)
             // Allocator checks pricing logic. We still need to verify availability.
