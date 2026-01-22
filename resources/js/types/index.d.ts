@@ -22,12 +22,27 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface OfficeShift {
+    id: number;
+    status: 'open' | 'closed';
+    started_at: string;
+    start_cash_breakdown?: Record<string, number>;
+    cash_breakdown?: Record<string, number>;
+    start_cash?: number;
+    start_card?: number;
+    cash_total?: number;
+    card_total?: number;
+    workers?: any[];
+    sales?: any[]; // Add this line
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
     onlineUsers?: { id: number; name: string; initials: string }[];
+    activeShift?: OfficeShift | null;
     [key: string]: unknown;
 }
 
@@ -46,5 +61,6 @@ export interface User {
     gmail_provider_id?: string | null;
     gmail_provider_email?: string | null;
     gmail_connected?: boolean;
+    initials?: string | null;
     [key: string]: unknown; // This allows for additional properties...
 }

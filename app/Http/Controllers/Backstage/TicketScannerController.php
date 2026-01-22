@@ -1,0 +1,180 @@
+<?php
+
+namespace App\Http\Controllers\Backstage;
+
+use App\Http\Controllers\Controller;
+
+use App\Models\Event;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+
+class TicketScannerController extends Controller
+{
+    public function index()
+    {
+        $events = [];
+        try {
+            $events = Event::query()->orderBy('start_sell_date')->get();
+        } catch (\Throwable $e) {
+            $events = [];
+        }
+
+        // Don't load tickets initially - they'll be loaded per event
+        return Inertia::render('Backstage/ticket-scanner', [
+            'events' => $events,
+            'tickets' => [],
+        ]);
+    }
+
+    public function import(Request $request)
+    {
+        $data = $request->validate([
+            'event_id' => 'required|integer',
+            'samples' => 'required|array',
+        ]);
+
+        $ev = Event::find($data['event_id']);
+        if (! $ev) {
+            return response()->json(['error' => 'Event not found'], 404);
+        }
+
+        $created = [];
+        foreach ($data['samples'] as $row) {
+            $first = isset($row['first_name']) ? (string) $row['first_name'] : '';
+            $last = isset($row['last_name']) ? (string) $row['last_name'] : '';
+            $email = isset($row['email']) ? (string) $row['email'] : '';
+
+            $unique = Str::random(8);
+
+            $eventName = $ev->name;
+            $eventDate = $ev->event_date;
+
+            $datePart = 'nodate';
+            if ($eventDate) {
+                try {
+                    $datePart = $eventDate->format('d-m-Y');
+                } catch (\Throwable $e) {
+                    $datePart = str_replace([' ', ':', '-'], '', (string) $eventDate);
+                }
+            }
+
+            // Sanitize for new format: dashes for event and names
+            $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);
+            $sanitizedFirst = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $first);
+            $sanitizedLast = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $last);
+            $sanitizedFullName = trim($sanitizedFirst.'-'.$sanitizedLast, '-');
+            $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $email);
+
+            $ticketCode = sprintf('%s_%s_to_%s_via_%s_%s',
+                $sanitizedEvent,
+                $datePart,
+                $sanitizedFullName,
+                $sanitizedEmail,
+                $unique
+            );
+
+            $ticket = $ev->tickets()->create([
+                'user_id' => null,
+                'ticket_code' => $ticketCode,
+                'metadata' => [
+                    'first_name' => $first,
+                    'last_name' => $last,
+                    'email' => $email,
+                    'event_name' => $eventName,
+                    'event_date' => $eventDate,
+                ],
+                'scanned_at' => null,
+            ]);
+
+            $created[] = [
+                'ticket_code' => $ticketCode,
+                'first_name' => $first,
+                'last_name' => $last,
+                'email' => $email,
+            ];
+        }
+
+        return response()->json(['created' => $created], 201);
+    }
+
+    public function availableTickets(Request $request)
+    {
+        $eventId = $request->query('event_id');
+        if (! $eventId) {
+            return response()->json(['tickets' => []]);
+        }
+
+        $event = Event::find($eventId);
+        if (! $event) {
+            return response()->json(['tickets' => []]);
+        }
+
+        // Get tickets with scanned_at = null for the selected event
+        $tickets = $event->tickets()->whereNull('scanned_at')->orderBy('created_at', 'desc')->get();
+
+        return response()->json(['tickets' => $tickets]);
+    }
+
+    public function scannedTickets(Request $request)
+    {
+        $eventId = $request->query('event_id');
+        if (! $eventId) {
+            return response()->json(['tickets' => []]);
+        }
+
+        $event = Event::find($eventId);
+        if (! $event) {
+            return response()->json(['tickets' => []]);
+        }
+
+        // Get tickets with scanned_at not null for the selected event
+        $tickets = $event->tickets()->whereNotNull('scanned_at')->orderBy('updated_at', 'desc')->get();
+
+        return response()->json(['tickets' => $tickets]);
+    }
+
+    public function verify(Request $request)
+    {
+        $id = $request->query('ticket_id');
+        $eventId = $request->query('event_id');
+
+        if (! $id || ! $eventId) {
+            return response()->json(['valid' => false], 400);
+        }
+
+        $event = Event::find($eventId);
+        if (! $event) {
+            return response()->json(['valid' => false], 404);
+        }
+
+        $ticket = $event->tickets()->where('ticket_code', $id)->first();
+        if (! $ticket) {
+            return response()->json(['valid' => false], 404);
+        }
+
+        $previousScanned = $ticket->scanned_at !== null;
+        if (! $previousScanned) {
+            $ticket->scanned_at = now();
+        }
+
+        // Increment scan_count and append scan_details
+        $ticket->scan_count = ($ticket->scan_count ?? 0) + 1;
+        $scanDetails = $ticket->scan_details ?? [];
+        $scanDetails[] = [
+            'timestamp' => now()->toDateTimeString(),
+            'user_id' => auth()->id(),
+            'user_email' => auth()->user()?->email,
+        ];
+        $ticket->scan_details = $scanDetails;
+
+        $ticket->save();
+
+        return response()->json([
+            'valid' => true,
+            'ticket' => $ticket,
+            'previously_scanned' => $previousScanned,
+            'previous_scan_count' => ($ticket->scan_count ?? 1) - 1,
+        ]);
+    }
+}

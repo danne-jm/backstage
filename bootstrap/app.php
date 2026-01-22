@@ -15,11 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         using: function () {
             Route::middleware('web')
                 ->domain('laravel.danieljm.dpdns.org')
-                ->group(base_path('routes/web.php'));
+                ->group(base_path('routes/backstage.php'));
 
             Route::middleware('web')
                 ->domain('store.danieljm.dpdns.org')
-                ->group(base_path('routes/shop.php'));
+                ->group(base_path('routes/store.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
