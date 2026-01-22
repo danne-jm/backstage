@@ -138,30 +138,60 @@ class TicketScannerController extends Controller
 
     public function verify(Request $request)
     {
-        $id = $request->query('ticket_id');
-        $eventId = $request->query('event_id');
+        $id = $request->input('ticket_id');
+        $eventId = $request->input('event_id');
 
         if (! $id || ! $eventId) {
-            return response()->json(['valid' => false], 400);
+            return response()->json(['valid' => false, 'error' => 'Missing ticket_id or event_id'], 400);
         }
 
         $event = Event::find($eventId);
         if (! $event) {
-            return response()->json(['valid' => false], 404);
+            return response()->json(['valid' => false, 'error' => 'Event not found'], 404);
         }
 
+        // SECURITY FIX: Use atomic update to prevent race condition where two concurrent
+        // requests could both mark the same ticket as scanned.
+        // This atomically updates scanned_at ONLY if it was previously null.
+        $affectedRows = $event->tickets()
+            ->where('ticket_code', $id)
+            ->whereNull('scanned_at')
+            ->update([
+                'scanned_at' => now(),
+                'scan_count' => \DB::raw('COALESCE(scan_count, 0) + 1'),
+            ]);
+
+        if ($affectedRows > 0) {
+            // First scan - successful
+            $ticket = $event->tickets()->where('ticket_code', $id)->first();
+            
+            // Append scan details (separate update to handle JSON field)
+            $scanDetails = $ticket->scan_details ?? [];
+            $scanDetails[] = [
+                'timestamp' => now()->toDateTimeString(),
+                'user_id' => auth()->id(),
+                'user_email' => auth()->user()?->email,
+            ];
+            $ticket->scan_details = $scanDetails;
+            $ticket->save();
+
+            return response()->json([
+                'valid' => true,
+                'ticket' => $ticket->fresh(),
+                'previously_scanned' => false,
+                'previous_scan_count' => 0,
+            ]);
+        }
+
+        // Either ticket doesn't exist OR already scanned
         $ticket = $event->tickets()->where('ticket_code', $id)->first();
         if (! $ticket) {
-            return response()->json(['valid' => false], 404);
+            return response()->json(['valid' => false, 'error' => 'Ticket not found'], 404);
         }
 
-        $previousScanned = $ticket->scanned_at !== null;
-        if (! $previousScanned) {
-            $ticket->scanned_at = now();
-        }
-
-        // Increment scan_count and append scan_details
-        $ticket->scan_count = ($ticket->scan_count ?? 0) + 1;
+        // Already scanned - increment scan_count and log the attempt
+        $previousScanCount = $ticket->scan_count ?? 0;
+        $ticket->scan_count = $previousScanCount + 1;
         $scanDetails = $ticket->scan_details ?? [];
         $scanDetails[] = [
             'timestamp' => now()->toDateTimeString(),
@@ -169,14 +199,13 @@ class TicketScannerController extends Controller
             'user_email' => auth()->user()?->email,
         ];
         $ticket->scan_details = $scanDetails;
-
         $ticket->save();
 
         return response()->json([
             'valid' => true,
             'ticket' => $ticket,
-            'previously_scanned' => $previousScanned,
-            'previous_scan_count' => ($ticket->scan_count ?? 1) - 1,
+            'previously_scanned' => true,
+            'previous_scan_count' => $previousScanCount,
         ]);
     }
 }

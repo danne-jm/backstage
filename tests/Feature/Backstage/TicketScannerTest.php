@@ -61,11 +61,12 @@ class TicketScannerTest extends TestCase
             'user_id' => null
         ]);
 
+        // Note: verify route is now POST (security fix for CSRF)
         $response = $this->actingAs($user)
-            ->getJson(route('ticket-scanner.verify', [
+            ->postJson(route('ticket-scanner.verify'), [
                 'event_id' => $event->id,
                 'ticket_id' => $ticketCode,
-            ]));
+            ]);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -91,10 +92,10 @@ class TicketScannerTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)
-            ->getJson(route('ticket-scanner.verify', [
+            ->postJson(route('ticket-scanner.verify'), [
                 'event_id' => $event->id,
                 'ticket_id' => $ticketCode,
-            ]));
+            ]);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -109,10 +110,10 @@ class TicketScannerTest extends TestCase
         $event = Event::factory()->create();
 
         $response = $this->actingAs($user)
-            ->getJson(route('ticket-scanner.verify', [
+            ->postJson(route('ticket-scanner.verify'), [
                 'event_id' => $event->id,
                 'ticket_id' => 'INVALID_CODE',
-            ]));
+            ]);
 
         $response->assertStatus(404)
             ->assertJson([

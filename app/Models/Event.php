@@ -149,7 +149,8 @@ class Event extends Model
             return null;
         }
 
-        return max(0, $this->quantity_with_card - $this->getSalesWithCardCountAttribute());
+        // SECURITY FIX: Use atomic sold_count column instead of count query to prevent snapshot isolation issues
+        return max(0, $this->quantity_with_card - ($this->sold_count_with_card ?? 0));
     }
 
     public function getRemainingWithoutCardAttribute()
@@ -161,7 +162,8 @@ class Event extends Model
             return null;
         }
 
-        return max(0, $this->quantity_without_card - $this->getSalesWithoutCardCountAttribute());
+        // SECURITY FIX: Use atomic sold_count column instead of count query
+        return max(0, $this->quantity_without_card - ($this->sold_count_without_card ?? 0));
     }
 
     public function getRemainingAttribute()

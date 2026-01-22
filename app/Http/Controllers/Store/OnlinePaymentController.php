@@ -232,6 +232,18 @@ class OnlinePaymentController extends Controller
                     ],
                 ]);
 
+                // SECURITY FIX: Atomically increment sold_count to prevent overselling via snapshot isolation
+                if ($saleData['event_id']) {
+                    if ($saleData['ticket_type'] === 'with_card') {
+                        Event::where('id', $saleData['event_id'])->increment('sold_count_with_card');
+                    } else {
+                        Event::where('id', $saleData['event_id'])->increment('sold_count_without_card');
+                    }
+                }
+                if ($saleData['product_id']) {
+                    Product::where('id', $saleData['product_id'])->increment('sold_count');
+                }
+
                 // Track Usage if discounted
                 if ($saleData['is_discounted'] && $saleData['code_used']) {
                     \App\Models\DiscountUsage::create([

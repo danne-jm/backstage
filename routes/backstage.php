@@ -315,7 +315,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('ticket-scanner/import', [App\Http\Controllers\Backstage\TicketScannerController::class, 'import'])
             ->name('ticket-scanner.import')
             ->middleware('permission:import_ticket');
-        Route::get('ticket-scanner/verify', [App\Http\Controllers\Backstage\TicketScannerController::class, 'verify'])->name('ticket-scanner.verify');
+        // SECURITY FIX: Changed from GET to POST to prevent CSRF attacks.
+        // GET requests should be idempotent; verifying a ticket modifies state.
+        Route::post('ticket-scanner/verify', [App\Http\Controllers\Backstage\TicketScannerController::class, 'verify'])->name('ticket-scanner.verify');
         Route::get('ticket-scanner/available-tickets', [App\Http\Controllers\Backstage\TicketScannerController::class, 'availableTickets'])->name('ticket-scanner.available-tickets');
         Route::get('ticket-scanner/scanned-tickets', [App\Http\Controllers\Backstage\TicketScannerController::class, 'scannedTickets'])->name('ticket-scanner.scanned-tickets');
     });
