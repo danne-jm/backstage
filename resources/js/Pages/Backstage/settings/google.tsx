@@ -88,7 +88,7 @@ export default function GoogleSettings() {
                         ) : (
                             <div className="space-y-2">
                                 <div className="text-sm">Not connected.</div>
-                                <a href="/auth/google/redirect">
+                                <a href="/settings/google/connect">
                                     <Button>Connect with Google</Button>
                                 </a>
                                 <div className="text-xs text-muted-foreground">

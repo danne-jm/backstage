@@ -29,6 +29,7 @@ enum UserPermission: string
 
     // Resources: Ticket Scanner
     case VIEW_TICKET_SCANNER = 'view_ticket_scanner';
+    case IMPORT_TICKET = 'import_ticket';
     case SCAN_TICKETS = 'scan_tickets';
 
     // Resources: Ticket Distributor
@@ -112,6 +113,7 @@ enum UserPermission: string
 
             // Ticket Scanner
             self::VIEW_TICKET_SCANNER => 'View Ticket Scanner',
+            self::IMPORT_TICKET => 'Import Tickets',
             self::SCAN_TICKETS => 'Perform Ticket Scans',
 
             // Ticket Distributor
@@ -185,7 +187,7 @@ enum UserPermission: string
                 self::VIEW_EVENT_ATTENDEES->value, self::UPDATE_EVENT_ATTENDEE->value,
                 self::VIEW_INVENTORY->value, self::CREATE_ITEM->value, self::UPDATE_ITEM->value, self::DELETE_ITEM->value,
                 self::VIEW_STORE_MANAGER->value, self::UPDATE_STORE_SETTINGS->value,
-                self::VIEW_TICKET_SCANNER->value, self::SCAN_TICKETS->value,
+                self::VIEW_TICKET_SCANNER->value, self::IMPORT_TICKET->value, self::SCAN_TICKETS->value,
                 self::VIEW_TICKET_DISTRIBUTOR->value, self::SEND_TICKETS->value,
                 self::VIEW_MAIL_DISTRIBUTOR->value, self::SEND_MAILS->value,
                 self::VIEW_SETTINGS_PROFILE->value, self::UPDATE_SETTINGS_PROFILE->value, self::DELETE_ACCOUNT->value,

@@ -266,7 +266,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:view_store_manager');
 
     // Endpoint to record an online/card sale (creates an OnlineSale and optionally records it on an office shift)
-    Route::post('online-sales', [App\Http\Controllers\Backstage\OnlineSaleController::class, 'store'])->name('online-sales.store');
+    Route::post('online-sales', [App\Http\Controllers\Backstage\OnlineSaleController::class, 'store'])
+        ->name('online-sales.store')
+        ->middleware('permission:create_office');
     // Sales summary endpoints (office vs online)
     Route::get('sales/summary', [App\Http\Controllers\Backstage\SalesController::class, 'summary'])->name('sales.summary');
 

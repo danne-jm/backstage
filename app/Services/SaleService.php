@@ -109,17 +109,29 @@ class SaleService
             if ($productId) {
                 $product = Product::find($productId);
                 if ($product) {
-                    // If product has per-card quantities, prefer decrementing quantity_with_card when present
-                    if (! empty($product->quantity_with_card) || $product->unlimited_quantity_with_card === false) {
-                        if (! $product->unlimited_quantity_with_card && ! is_null($product->quantity_with_card)) {
-                            $product->quantity_with_card = max(0, intval($product->quantity_with_card) - 1);
-                            $product->save();
-                        }
+                    // Atomic Decrement Logic
+                    // Prefer quantity_with_card if unlimited_quantity_with_card is FALSE and quantity_with_card is NOT NULL
+                    // (Note: if unlimited is TRUE, we do nothing)
+
+                    if ($product->unlimited_quantity_with_card === false && ! is_null($product->quantity_with_card)) {
+                        // We must conditionally decrement only if we are aiming for the 'with_card' stock.
+                        // Wait, the logic above was: if (!empty(qty_card) OR unlimited_card === false).
+                        // Let's replicate strict logic but atomically.
+                        
+                        // "If product has per-card quantities, prefer decrementing quantity_with_card when present"
+                        // The original logic checked `!empty($product->quantity_with_card)`.
+                        // Since we are in a transaction, we can use the instance we have, BUT to be safe against races,
+                        // we should fire a query builder update.
+                        
+                        Product::where('id', $productId)->update([
+                            'quantity_with_card' => DB::raw('GREATEST(0, quantity_with_card - 1)')
+                        ]);
                     } else {
                         // Fallback: decrement main quantity if present and not unlimited
                         if (! $product->unlimited_quantity && ! is_null($product->quantity)) {
-                            $product->quantity = max(0, intval($product->quantity) - 1);
-                            $product->save();
+                            Product::where('id', $productId)->update([
+                                'quantity' => DB::raw('GREATEST(0, quantity - 1)')
+                            ]);
                         }
                     }
                 }
@@ -129,22 +141,26 @@ class SaleService
                 $event = Event::find($eventId);
                 if ($event) {
                     if ($ticketType && $event->variable_amount) {
+                         // Variable amount event
                         if ($ticketType === 'with_card') {
                             if (! $event->unlimited_quantity_with_card && ! is_null($event->quantity_with_card)) {
-                                $event->quantity_with_card = max(0, intval($event->quantity_with_card) - 1);
-                                $event->save();
+                                Event::where('id', $eventId)->update([
+                                    'quantity_with_card' => DB::raw('GREATEST(0, quantity_with_card - 1)')
+                                ]);
                             }
                         } else {
                             if (! $event->unlimited_quantity_without_card && ! is_null($event->quantity_without_card)) {
-                                $event->quantity_without_card = max(0, intval($event->quantity_without_card) - 1);
-                                $event->save();
+                                Event::where('id', $eventId)->update([
+                                    'quantity_without_card' => DB::raw('GREATEST(0, quantity_without_card - 1)')
+                                ]);
                             }
                         }
                     } else {
                         // Non-variable amount: decrement main quantity
                         if (! $event->unlimited_quantity && ! is_null($event->quantity)) {
-                            $event->quantity = max(0, intval($event->quantity) - 1);
-                            $event->save();
+                            Event::where('id', $eventId)->update([
+                                'quantity' => DB::raw('GREATEST(0, quantity - 1)')
+                            ]);
                         }
                     }
                 }
