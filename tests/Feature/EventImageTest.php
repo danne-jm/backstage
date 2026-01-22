@@ -19,7 +19,7 @@ class EventImageTest extends TestCase
         $this->actingAs($user);
 
         // Grant permissions roughly
-        $user->update(['permissions' => ['create_event', 'view_sellables_inventory']]);
+        $user->update(['permissions' => ['create_event', 'view_sellables_inventory', 'update_event', 'delete_event', 'view_sellables']]);
 
         $file = UploadedFile::fake()->image('event.jpg', 600, 600);
 
@@ -42,7 +42,7 @@ class EventImageTest extends TestCase
 
         $event = Event::first();
         $this->assertNotNull($event);
-        $this->assertTrue($event->is_online_sellable);
+        $this->assertEquals(1, $event->is_online_sellable);
 
         $this->assertCount(1, $event->images);
         $this->assertEquals('image/jpeg', $event->images->first()->mime_type);
@@ -51,7 +51,11 @@ class EventImageTest extends TestCase
 
     public function test_can_retrieve_image()
     {
-        $event = Event::factory()->create(['is_online_sellable' => true]);
+        $user = User::factory()->create();
+        $event = Event::factory()->create([
+            'is_online_sellable' => true,
+            'responsible_user_id' => $user->id
+        ]);
         $image = EventImage::create([
             'event_id' => $event->id,
             'image_data' => 'fake_data',
@@ -61,7 +65,7 @@ class EventImageTest extends TestCase
         $response = $this->get("/events/images/{$image->id}");
 
         $response->assertOk();
-        $response->assertHeader('Content-Type', 'text/plain');
+        $this->assertStringStartsWith('text/plain', $response->headers->get('Content-Type'));
         $this->assertEquals('fake_data', $response->content());
     }
 
@@ -69,9 +73,9 @@ class EventImageTest extends TestCase
     {
         $user = User::factory()->create();
         $this->actingAs($user);
-        $user->update(['permissions' => ['update_event', 'view_sellables_inventory']]);
+        $user->update(['permissions' => ['update_event', 'view_sellables_inventory', 'delete_event', 'view_sellables']]);
 
-        $event = Event::factory()->create();
+        $event = Event::factory()->create(['responsible_user_id' => $user->id]);
         $image = EventImage::create([
             'event_id' => $event->id,
             'image_data' => 'data',

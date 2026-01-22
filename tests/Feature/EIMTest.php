@@ -30,6 +30,7 @@ class EIMTest extends TestCase
     {
         $user = User::factory()->create([
             'permissions' => ['administrator'],
+            'email_verified_at' => now(),
         ]);
 
         $expanded = $user->getExpandedPermissions();

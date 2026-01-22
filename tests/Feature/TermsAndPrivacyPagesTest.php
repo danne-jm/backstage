@@ -5,7 +5,7 @@ it('displays terms and conditions page without authentication', function () {
 
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page
-        ->component('terms-conditions')
+        ->component('Shared/terms-conditions')
     );
 });
 
@@ -14,7 +14,7 @@ it('displays privacy policy page without authentication', function () {
 
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page
-        ->component('privacy-policy')
+        ->component('Shared/privacy-policy')
     );
 });
 
