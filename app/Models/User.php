@@ -48,8 +48,9 @@ class User extends Authenticatable
         'gmail_refresh_token',
         'gmail_provider_id',
         'gmail_provider_email',
-        'permissions',
-        'role',
+        // SECURITY: 'permissions' and 'role' are intentionally NOT fillable
+        // to prevent privilege escalation via mass assignment.
+        // Use forceFill() in admin controllers to set these fields.
         'pinned',
         'last_seen_at',
     ];

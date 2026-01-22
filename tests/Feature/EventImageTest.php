@@ -18,8 +18,8 @@ class EventImageTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        // Grant permissions roughly
-        $user->update(['permissions' => ['create_event', 'view_sellables_inventory', 'update_event', 'delete_event', 'view_sellables']]);
+        // Grant permissions via forceFill (permissions not in $fillable for security)
+        $user->forceFill(['permissions' => ['create_event', 'view_sellables_inventory', 'update_event', 'delete_event', 'view_sellables']])->save();
 
         $file = UploadedFile::fake()->image('event.jpg', 600, 600);
 
@@ -73,7 +73,7 @@ class EventImageTest extends TestCase
     {
         $user = User::factory()->create();
         $this->actingAs($user);
-        $user->update(['permissions' => ['update_event', 'view_sellables_inventory', 'delete_event', 'view_sellables']]);
+        $user->forceFill(['permissions' => ['update_event', 'view_sellables_inventory', 'delete_event', 'view_sellables']])->save();
 
         $event = Event::factory()->create(['responsible_user_id' => $user->id]);
         $image = EventImage::create([

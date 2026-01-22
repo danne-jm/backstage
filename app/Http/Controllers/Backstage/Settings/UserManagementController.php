@@ -107,15 +107,20 @@ class UserManagementController extends Controller implements HasMiddleware
         $data['password_hash'] = Hash::make($data['password']);
         unset($data['password']);
 
-        $data['permissions'] = $data['permissions'] ?? [];
-
-        // Ensure a default role label is present for newly created users
+        // Extract privileged fields before mass assignment
+        $permissions = $data['permissions'] ?? [];
         $role = isset($data['role']) ? trim((string) $data['role']) : '';
         if ($role === '') {
-            $data['role'] = 'Anonymous';
+            $role = 'Anonymous';
         }
+        unset($data['permissions'], $data['role']);
 
-        User::create($data);
+        // Create user with safe fields only, then forceFill privileged fields
+        $user = User::create($data);
+        $user->forceFill([
+            'permissions' => $permissions,
+            'role' => $role,
+        ])->save();
 
         return back();
     }
@@ -140,14 +145,28 @@ class UserManagementController extends Controller implements HasMiddleware
 
         if (! empty($data['password'])) {
             $data['password_hash'] = Hash::make($data['password']);
-            unset($data['password']);
         }
+        unset($data['password']);
 
-        if (isset($data['permissions'])) {
-            $data['permissions'] = $data['permissions'];
-        }
+        // Extract privileged fields before mass assignment
+        $permissions = $data['permissions'] ?? null;
+        $role = $data['role'] ?? null;
+        unset($data['permissions'], $data['role']);
 
+        // Update safe fields via mass assignment
         $target->update($data);
+
+        // Update privileged fields via forceFill (if provided)
+        $privilegedUpdates = [];
+        if ($permissions !== null) {
+            $privilegedUpdates['permissions'] = $permissions;
+        }
+        if ($role !== null) {
+            $privilegedUpdates['role'] = $role;
+        }
+        if (!empty($privilegedUpdates)) {
+            $target->forceFill($privilegedUpdates)->save();
+        }
 
         return back();
     }
