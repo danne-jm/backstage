@@ -35,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
         Product::observe(ProductObserver::class);
         Event::observe(EventObserver::class);
 
+        // Explicit Model Binding for 'office' param mapping to OfficeShift model
+        \Illuminate\Support\Facades\Route::model('office', \App\Models\OfficeShift::class);
+
         // EIM: Audit Logging for Authentication
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
             activity('auth')

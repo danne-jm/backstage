@@ -76,6 +76,9 @@ class TicketScannerController extends Controller
             $ticket = $ev->tickets()->create([
                 'user_id' => null,
                 'ticket_code' => $ticketCode,
+                'first_name' => $first,
+                'last_name' => $last,
+                'email' => $email,
                 'metadata' => [
                     'first_name' => $first,
                     'last_name' => $last,

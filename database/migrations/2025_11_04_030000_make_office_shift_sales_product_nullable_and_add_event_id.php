@@ -8,9 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Use raw statements to avoid requiring doctrine/dbal for column modification
-        // Only run these raw ALTER statements on databases that support them (not sqlite used in tests)
-        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            Schema::table('office_shift_sales', function ($table) {
+                // SQLite ALTER constraints are limited, but we can add columns and nullable.
+                // product_id nullable change in sqlite requires recreating table usually, 
+                // but we can try just adding event_id first.
+                // Making product_id nullable in SQLite simple usage:
+                $table->bigInteger('product_id')->nullable()->change();
+                $table->foreignId('event_id')->nullable()->after('product_id')->constrained('events')->cascadeOnDelete();
+            });
+        } else {
             // Drop existing foreign key on product_id, make product_id nullable, re-add FK
             DB::statement('ALTER TABLE `office_shift_sales` DROP FOREIGN KEY `office_shift_sales_product_id_foreign`');
             DB::statement('ALTER TABLE `office_shift_sales` MODIFY `product_id` BIGINT UNSIGNED NULL');
@@ -24,8 +31,14 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Reverse the changes: drop event fk/column and make product_id NOT NULL again
-        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            Schema::table('office_shift_sales', function ($table) {
+                // Reverting in SQLite is hard (dropping column allowed in newer versions)
+                $table->dropColumn('event_id');
+                // Cannot easily revert nullable change without table recreation 
+            });
+        } else {
+            // Reverse the changes: drop event fk/column and make product_id NOT NULL again
             DB::statement('ALTER TABLE `office_shift_sales` DROP FOREIGN KEY `office_shift_sales_event_id_foreign`');
             DB::statement('ALTER TABLE `office_shift_sales` DROP COLUMN `event_id`');
 

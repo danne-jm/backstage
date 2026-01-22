@@ -29,7 +29,7 @@ class EventFactory extends Factory
             'variable_amount' => false,
             'quantity_with_card' => null,
             'quantity_without_card' => null,
-            'responsible_user_id' => null,
+            'responsible_user_id' => \App\Models\User::factory(),
             'is_online_sellable' => false,
         ];
     }

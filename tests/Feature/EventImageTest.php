@@ -23,7 +23,7 @@ class EventImageTest extends TestCase
 
         $file = UploadedFile::fake()->image('event.jpg', 600, 600);
 
-        $response = $this->post('/sellables/events', [
+        $response = $this->post('http://localhost/sellables/events', [
             'name' => 'Test Event',
             'event_date' => '2026-01-01',
             'start_sell_date' => '2025-12-01',
@@ -62,7 +62,7 @@ class EventImageTest extends TestCase
             'mime_type' => 'text/plain',
         ]);
 
-        $response = $this->get("/events/images/{$image->id}");
+        $response = $this->get("http://localhost/events/images/{$image->id}");
 
         $response->assertOk();
         $this->assertStringStartsWith('text/plain', $response->headers->get('Content-Type'));
@@ -82,7 +82,7 @@ class EventImageTest extends TestCase
             'mime_type' => 'text/plain',
         ]);
 
-        $response = $this->delete("/sellables/images/{$image->id}");
+        $response = $this->delete("http://localhost/sellables/images/{$image->id}");
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('event_images', ['id' => $image->id]);

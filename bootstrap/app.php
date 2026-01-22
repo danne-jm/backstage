@@ -15,9 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         using: function () {
             $isTesting = app()->runningUnitTests();
 
-            // In testing, use null (no domain) for Backstage to match default test client and win collision on '/', 
+            // In testing, use localhost for Backstage to match default test client, 
             // and store.localhost for Store to avoid collision on '/' route.
-            $backstageDomain = $isTesting ? null : env('APP_DOMAIN', 'laravel.danieljm.dpdns.org');
+            $backstageDomain = $isTesting ? 'localhost' : env('APP_DOMAIN', 'laravel.danieljm.dpdns.org');
             $storeDomain = $isTesting ? 'store.localhost' : env('STORE_DOMAIN', 'store.danieljm.dpdns.org');
 
             Route::middleware('web')
