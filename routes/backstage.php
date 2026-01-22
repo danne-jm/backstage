@@ -363,6 +363,12 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Backstage/settings/google');
     })->name('settings.google')->middleware('permission:view_settings_google');
 
+    // SECURITY FIX: Protected route for account linking (requires auth + permission)
+    // This route sets oauth_intent='connect' to allow the callback to link accounts safely.
+    Route::get('settings/google/connect', [\App\Http\Controllers\Backstage\GmailOAuthController::class, 'redirectToGoogleConnect'])
+        ->name('settings.google.connect')
+        ->middleware('permission:update_settings_google');
+
     // Disconnect Gmail (remove stored refresh token)
     Route::post('settings/google/disconnect', [\App\Http\Controllers\Backstage\GmailOAuthController::class, 'disconnect'])
         ->name('settings.google.disconnect')

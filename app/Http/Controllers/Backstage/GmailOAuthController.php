@@ -10,12 +10,19 @@ use Laravel\Socialite\Facades\Socialite;
 
 class GmailOAuthController extends Controller
 {
+    /**
+     * Redirect to Google OAuth for Sign-In (public, unauthenticated login flow).
+     * SECURITY: This route is PUBLIC and should ONLY be used for login/registration.
+     */
     public function redirectToGoogle(Request $request)
     {
         try {
             if ($request->has('return_to')) {
                 session()->put('url.intended', $request->input('return_to'));
             }
+
+            // SECURITY FIX: Set oauth_intent to 'login' to prevent account linking via public route
+            session()->put('oauth_intent', 'login');
 
             $user = Auth::user();
 
@@ -85,7 +92,16 @@ class GmailOAuthController extends Controller
         }
 
         $current = Auth::user();
+        $oauthIntent = session()->pull('oauth_intent'); // Consume the intent
+
         if ($current) {
+            // SECURITY FIX: Reject account linking via public callback unless intent is 'connect'
+            // This prevents authorization bypass and CSRF account takeover attacks.
+            if ($oauthIntent !== 'connect') {
+                Log::warning("OAuth account linking rejected: user {$current->id} attempted link via public callback with intent: {$oauthIntent}");
+                return redirect()->route('dashboard')->withErrors('Invalid OAuth flow. Please use the settings page to connect your Google account.');
+            }
+
             // Connecting an existing authenticated user: store token/provider and provider email
             $fill = [];
             if ($refreshToken) {
@@ -178,6 +194,36 @@ class GmailOAuthController extends Controller
         Auth::login($user, true);
 
         return redirect()->intended('/dashboard');
+    }
+
+    /**
+     * Redirect to Google OAuth for Account Linking (protected, authenticated users only).
+     * SECURITY: This route MUST be protected by 'auth' and 'permission:update_settings_google' middleware.
+     */
+    public function redirectToGoogleConnect(Request $request)
+    {
+        try {
+            // SECURITY FIX: Set oauth_intent to 'connect' to allow account linking
+            session()->put('oauth_intent', 'connect');
+
+            return Socialite::driver('google')
+                ->scopes([
+                    'https://www.googleapis.com/auth/gmail.send',
+                    'https://www.googleapis.com/auth/userinfo.profile',
+                    'https://www.googleapis.com/auth/userinfo.email',
+                    'https://www.googleapis.com/auth/spreadsheets.readonly',
+                ])
+                ->with([
+                    'access_type' => 'offline',
+                    'prompt' => 'consent', // Always ask for consent when linking
+                ])
+                ->redirect();
+
+        } catch (\Throwable $e) {
+            Log::error('Socialite connect redirect failed: '.$e->getMessage());
+
+            return redirect()->route('settings.google')->withErrors('Unable to start Google connection');
+        }
     }
 
     /**
