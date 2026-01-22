@@ -13,12 +13,19 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
         using: function () {
+            $isTesting = app()->runningUnitTests();
+
+            // In testing, use null (no domain) for Backstage to match default test client and win collision on '/', 
+            // and store.localhost for Store to avoid collision on '/' route.
+            $backstageDomain = $isTesting ? null : env('APP_DOMAIN', 'laravel.danieljm.dpdns.org');
+            $storeDomain = $isTesting ? 'store.localhost' : env('STORE_DOMAIN', 'store.danieljm.dpdns.org');
+
             Route::middleware('web')
-                ->domain('laravel.danieljm.dpdns.org')
+                ->domain($backstageDomain)
                 ->group(base_path('routes/backstage.php'));
 
             Route::middleware('web')
-                ->domain('store.danieljm.dpdns.org')
+                ->domain($storeDomain)
                 ->group(base_path('routes/store.php'));
         },
     )
