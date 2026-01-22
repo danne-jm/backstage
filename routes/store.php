@@ -11,7 +11,7 @@ Route::get('/cart', [ShopController::class, 'cart'])->name('shop.cart');
 Route::get('/item/{type}/{id}', [ShopController::class, 'show'])->name('shop.show');
 
 // Checkout, Validation, and Confirmation
-Route::post('/validate-cart', [OnlinePaymentController::class, 'validateCart'])->name('shop.validate-cart');
+Route::post('/validate-cart', [OnlinePaymentController::class, 'validateCart'])->name('shop.validate-cart')->middleware('throttle:60,1');
 Route::post('/checkout', [OnlinePaymentController::class, 'checkout'])->name('shop.checkout')->middleware('throttle:checkout');
 Route::get('/confirmation', [OnlinePaymentController::class, 'confirmation'])->name('shop.confirmation');
 

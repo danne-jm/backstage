@@ -54,9 +54,14 @@ export default function Confirmation({ transaction, items }: Props) {
                     </div>
 
                     <div className="mt-12 rounded-lg bg-gray-50 p-6">
-                        <h2 className="mb-6 text-lg font-medium text-gray-900">
-                            Order Details
-                        </h2>
+                        <div className="mb-6 flex items-baseline justify-between">
+                            <h2 className="text-lg font-medium text-gray-900">
+                                Order Details
+                            </h2>
+                            <span className="text-sm font-normal text-gray-500">
+                                Purchase Reference: #{transaction.id}
+                            </span>
+                        </div>
 
                         <div className="space-y-4">
                             {items.map((item) => (
@@ -72,7 +77,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                             {item.ticket_type && (
                                                 <p className="mt-1 text-sm text-gray-500">
                                                     {item.ticket_type ===
-                                                    'with_card'
+                                                        'with_card'
                                                         ? 'With ESNcard'
                                                         : 'Without ESNcard'}
                                                 </p>
@@ -100,7 +105,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                                     title="Copy reference ID"
                                                 >
                                                     {copiedId ===
-                                                    item.reference_id ? (
+                                                        item.reference_id ? (
                                                         <Check className="h-4 w-4 text-green-500" />
                                                     ) : (
                                                         <Copy className="h-4 w-4 text-gray-400" />

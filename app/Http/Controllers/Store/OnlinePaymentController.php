@@ -262,7 +262,7 @@ class OnlinePaymentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'redirect_url' => '/confirmation?token='.$token,
+                'redirect_url' => '/confirmation?bag='.$token,
             ]);
         });
     }
@@ -272,7 +272,7 @@ class OnlinePaymentController extends Controller
      */
     public function confirmation(Request $request)
     {
-        $token = $request->query('token');
+        $token = $request->query('bag');
 
         if (! $token) {
             return redirect('/')->with('error', 'Invalid confirmation link.');

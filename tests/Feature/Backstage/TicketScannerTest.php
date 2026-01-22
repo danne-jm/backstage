@@ -48,7 +48,8 @@ class TicketScannerTest extends TestCase
 
     public function test_can_verify_valid_ticket()
     {
-        $user = User::factory()->create(['permissions' => ['view_ticket_scanner']]);
+        // SECURITY FIX: User needs scan_tickets permission
+        $user = User::factory()->create(['permissions' => ['view_ticket_scanner', 'scan_tickets']]);
         $event = Event::factory()->create();
         
         // Create a ticket manually or via endpoint
@@ -79,7 +80,8 @@ class TicketScannerTest extends TestCase
 
     public function test_verify_detects_already_scanned()
     {
-        $user = User::factory()->create(['permissions' => ['view_ticket_scanner']]);
+        // SECURITY FIX: User needs scan_tickets permission
+        $user = User::factory()->create(['permissions' => ['view_ticket_scanner', 'scan_tickets']]);
         $event = Event::factory()->create();
         $ticketCode = 'TEST_CODE_SCANNED';
         
@@ -106,7 +108,8 @@ class TicketScannerTest extends TestCase
 
     public function test_verify_fails_invalid_ticket()
     {
-        $user = User::factory()->create(['permissions' => ['view_ticket_scanner']]);
+        // SECURITY FIX: User needs scan_tickets permission
+        $user = User::factory()->create(['permissions' => ['view_ticket_scanner', 'scan_tickets']]);
         $event = Event::factory()->create();
 
         $response = $this->actingAs($user)
