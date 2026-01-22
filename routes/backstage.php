@@ -310,7 +310,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Ticket scanner page
     Route::middleware(['permission:view_ticket_scanner'])->group(function () {
         Route::get('ticket-scanner', [App\Http\Controllers\Backstage\TicketScannerController::class, 'index'])->name('ticket-scanner');
-        Route::post('ticket-scanner/import', [App\Http\Controllers\Backstage\TicketScannerController::class, 'import'])->name('ticket-scanner.import');
+        // SECURITY FIX: Require import_ticket permission for state-changing import action.
+        // view_ticket_scanner should only allow viewing, not creating tickets.
+        Route::post('ticket-scanner/import', [App\Http\Controllers\Backstage\TicketScannerController::class, 'import'])
+            ->name('ticket-scanner.import')
+            ->middleware('permission:import_ticket');
         Route::get('ticket-scanner/verify', [App\Http\Controllers\Backstage\TicketScannerController::class, 'verify'])->name('ticket-scanner.verify');
         Route::get('ticket-scanner/available-tickets', [App\Http\Controllers\Backstage\TicketScannerController::class, 'availableTickets'])->name('ticket-scanner.available-tickets');
         Route::get('ticket-scanner/scanned-tickets', [App\Http\Controllers\Backstage\TicketScannerController::class, 'scannedTickets'])->name('ticket-scanner.scanned-tickets');

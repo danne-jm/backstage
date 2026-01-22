@@ -36,9 +36,11 @@ class EventAttendeeController extends Controller
 
     public function listSheets(Request $request, Event $event)
     {
-        $spreadsheetId = $request->input('spreadsheet_id') ?? $event->google_spreadsheet_id;
+        // SECURITY FIX: Always use the event's configured spreadsheet ID.
+        // Do NOT trust user-supplied spreadsheet_id to prevent masquerading attacks.
+        $spreadsheetId = $event->google_spreadsheet_id;
         if (! $spreadsheetId) {
-            return response()->json(['sheets' => []]);
+            return response()->json(['sheets' => [], 'error' => 'Event has no configured spreadsheet']);
         }
 
         try {
@@ -54,11 +56,12 @@ class EventAttendeeController extends Controller
 
     public function getSheetData(Request $request, Event $event)
     {
-        $spreadsheetId = $request->input('spreadsheet_id') ?? $event->google_spreadsheet_id;
+        // SECURITY FIX: Always use the event's configured spreadsheet ID.
+        $spreadsheetId = $event->google_spreadsheet_id;
         $sheetName = $request->input('sheet_name') ?? $event->google_sheet_name;
 
         if (! $spreadsheetId || ! $sheetName) {
-            return response()->json(['error' => 'Missing spreadsheet_id or sheet_name'], 400);
+            return response()->json(['error' => 'Event has no configured spreadsheet or sheet name'], 400);
         }
 
         try {
@@ -80,15 +83,21 @@ class EventAttendeeController extends Controller
     public function update(Request $request, Event $event)
     {
         $request->validate([
-            'spreadsheet_id' => ['required', 'string'], // In case it differs from event default, though usually same
             'range' => ['required', 'string'], // e.g. "Sheet1!A2:E2"
             'values' => ['required', 'array'],
         ]);
 
+        // SECURITY FIX: Always use the event's configured spreadsheet ID.
+        // Do NOT trust user-supplied spreadsheet_id to prevent masquerading attacks.
+        $spreadsheetId = $event->google_spreadsheet_id;
+        if (! $spreadsheetId) {
+            return response()->json(['success' => false, 'message' => 'Event has no configured spreadsheet'], 400);
+        }
+
         try {
             $service = new GoogleSheetsService;
             $service->updateRow(
-                $request->input('spreadsheet_id'),
+                $spreadsheetId,
                 $request->input('range'),
                 $request->input('values')
             );

@@ -192,7 +192,9 @@ class SellablesController extends Controller
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'is_online_sellable' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
-            'images.*' => ['nullable', 'image', 'max:10240'],
+            // SECURITY FIX: Block SVG uploads to prevent Stored XSS attacks.
+            // SVG files can contain malicious JavaScript that executes when viewed.
+            'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
         ]);
 
         $normalized = $this->inventoryService->normalizeInput($validated);
@@ -227,7 +229,8 @@ class SellablesController extends Controller
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'is_online_sellable' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
-            'images.*' => ['nullable', 'image', 'max:10240'],
+            // SECURITY FIX: Block SVG uploads to prevent Stored XSS attacks.
+            'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
         ]);
 
         $normalized = $this->inventoryService->normalizeInput($validated);
@@ -275,7 +278,8 @@ class SellablesController extends Controller
             'google_spreadsheet_id' => ['nullable', 'string'],
             'is_online_sellable' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
-            'images.*' => ['nullable', 'image', 'max:10240'], // 10MB max
+            // SECURITY FIX: Block SVG uploads to prevent Stored XSS attacks.
+            'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
         ]);
 
         $normalized = $this->inventoryService->normalizeInput($validated);
@@ -317,7 +321,8 @@ class SellablesController extends Controller
             'google_spreadsheet_id' => ['nullable', 'string'],
             'is_online_sellable' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
-            'images.*' => ['nullable', 'image', 'max:10240'],
+            // SECURITY FIX: Block SVG uploads to prevent Stored XSS attacks.
+            'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
         ]);
 
         $normalized = $this->inventoryService->normalizeInput($validated);

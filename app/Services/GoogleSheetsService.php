@@ -106,7 +106,9 @@ class GoogleSheetsService
             $body = new \Google\Service\Sheets\ValueRange([
                 'values' => [$values],
             ]);
-            $params = ['valueInputOption' => 'USER_ENTERED'];
+            // SECURITY FIX: Use 'RAW' to prevent formula injection attacks.
+            // 'USER_ENTERED' would allow malicious formulas (=IMPORTXML, etc.) to execute.
+            $params = ['valueInputOption' => 'RAW'];
             $this->service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
         } catch (\Throwable $e) {
             Log::error('Google Data Update Error: '.$e->getMessage());

@@ -11,10 +11,17 @@ class ImageServingController extends Controller
 {
     /**
      * Serve an event image.
+     * SECURITY: Only serve images for events that are publicly sellable.
      */
     public function show(Request $request, $id)
     {
         $image = EventImage::findOrFail($id);
+
+        // SECURITY FIX: Prevent IDOR/enumeration of private/draft event images.
+        // Only serve images for events that are published (is_online_sellable).
+        if ($image->event && !$image->event->is_online_sellable) {
+            abort(404);
+        }
 
         $content = $image->image_data;
         if (is_resource($content)) {
@@ -29,10 +36,16 @@ class ImageServingController extends Controller
 
     /**
      * Serve a product image.
+     * SECURITY: Only serve images for products that are publicly sellable.
      */
     public function showProduct(Request $request, $id)
     {
         $image = \App\Models\ProductImage::findOrFail($id);
+
+        // SECURITY FIX: Prevent IDOR/enumeration of private/draft product images.
+        if ($image->product && !$image->product->is_online_sellable) {
+            abort(404);
+        }
 
         $content = $image->image_data;
         if (is_resource($content)) {

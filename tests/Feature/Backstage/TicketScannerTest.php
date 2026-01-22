@@ -19,7 +19,8 @@ class TicketScannerTest extends TestCase
 
     public function test_can_import_tickets()
     {
-        $user = User::factory()->create(['permissions' => ['view_ticket_scanner']]);
+        // Note: import_ticket permission is required for the import action (security fix)
+        $user = User::factory()->create(['permissions' => ['view_ticket_scanner', 'import_ticket']]);
         $event = Event::factory()->create();
 
         $samples = [
