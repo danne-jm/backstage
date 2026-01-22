@@ -76,4 +76,4 @@ yarn-error.log
 ################################################################################
 
 # Explicitly allow the example environment file
-!.env-example
+!.env.example
