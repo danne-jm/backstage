@@ -2,8 +2,10 @@ import { User } from '@/types';
 import {
     createContext,
     ReactNode,
+    useCallback,
     useContext,
     useEffect,
+    useRef,
     useState,
 } from 'react';
 
@@ -31,52 +33,104 @@ export function UserPresenceProvider({
     user,
 }: UserPresenceProviderProps) {
     const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+    const channelRef = useRef<ReturnType<typeof window.Echo.join> | null>(null);
+    const boundRef = useRef(false);
+
+    const subscribeToPresence = useCallback(() => {
+        if (!window.Echo || !user) return;
+
+        const userId = user.id;
+
+        // Leave any existing subscription first to avoid duplicates
+        if (channelRef.current) {
+            try {
+                window.Echo.leave('presence.users');
+            } catch {
+                // Ignore errors from leaving non-existent channel
+            }
+        }
+
+        channelRef.current = window.Echo.join('presence.users')
+            .here((users: OnlineUser[]) => {
+                setOnlineUsers(users.filter((u) => u.id !== userId));
+            })
+            .joining((joinedUser: OnlineUser) => {
+                setOnlineUsers((prev) => {
+                    if (prev.some((u) => u.id === joinedUser.id)) return prev;
+                    if (joinedUser.id === userId) return prev;
+                    return [...prev, joinedUser];
+                });
+            })
+            .leaving((leftUser: OnlineUser) => {
+                setOnlineUsers((prev) =>
+                    prev.filter((u) => u.id !== leftUser.id),
+                );
+            });
+    }, [user]);
 
     useEffect(() => {
         if (!user || typeof window === 'undefined') {
             return;
         }
 
-        // Wait for Echo to be initialized if it's not ready yet
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        let cleanupCalled = false;
+
         const initSocket = () => {
+            if (cleanupCalled) return;
+
             if (!window.Echo) {
-                setTimeout(initSocket, 100);
+                timeoutId = setTimeout(initSocket, 100);
                 return;
             }
 
-            const userId = user.id;
+            const pusher = window.Echo.connector?.pusher;
 
-            // Ensure connection is open
-            if (window.Echo.connector && window.Echo.connector.pusher) {
-                window.Echo.connector.pusher.connect();
-            }
+            if (pusher) {
+                // Force connect if not already connected
+                pusher.connect();
 
-            window.Echo.join('presence.users')
-                .here((users: OnlineUser[]) => {
-                    setOnlineUsers(users.filter((u) => u.id !== userId));
-                })
-                .joining((joinedUser: OnlineUser) => {
-                    setOnlineUsers((prev) => {
-                        if (prev.some((u) => u.id === joinedUser.id)) return prev;
-                        if (joinedUser.id === userId) return prev;
-                        return [...prev, joinedUser];
+                // Bind to state changes for reconnection handling
+                if (!boundRef.current) {
+                    boundRef.current = true;
+
+                    pusher.connection.bind('connected', () => {
+                        // Re-subscribe when connection is established
+                        subscribeToPresence();
                     });
-                })
-                .leaving((leftUser: OnlineUser) => {
-                    setOnlineUsers((prev) =>
-                        prev.filter((u) => u.id !== leftUser.id),
-                    );
-                });
+
+                    pusher.connection.bind('disconnected', () => {
+                        setOnlineUsers([]);
+                    });
+                }
+
+                // Initial subscription
+                if (pusher.connection.state === 'connected') {
+                    subscribeToPresence();
+                }
+            } else {
+                // Fallback: just subscribe directly
+                subscribeToPresence();
+            }
         };
 
         initSocket();
 
         return () => {
-            if (window.Echo) {
-                window.Echo.leave('presence.users');
+            cleanupCalled = true;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
             }
+            if (window.Echo) {
+                try {
+                    window.Echo.leave('presence.users');
+                } catch {
+                    // Ignore
+                }
+            }
+            channelRef.current = null;
         };
-    }, [user?.id]); // Only re-subscribe if user ID changes
+    }, [user?.id, subscribeToPresence]);
 
     return (
         <UserPresenceContext.Provider value={{ onlineUsers }}>

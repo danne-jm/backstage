@@ -10,7 +10,7 @@ Route::get('/cart', [ShopController::class, 'cart'])->name('shop.cart');
 Route::get('/item/{type}/{id}', [ShopController::class, 'show'])->name('shop.show');
 
 // Checkout and Confirmation
-Route::post('/checkout', [OnlinePaymentController::class, 'checkout'])->name('shop.checkout');
+Route::post('/checkout', [OnlinePaymentController::class, 'checkout'])->name('shop.checkout')->middleware('throttle:checkout');
 Route::get('/confirmation', [OnlinePaymentController::class, 'confirmation'])->name('shop.confirmation');
 
 // Event images (served from database)

@@ -318,7 +318,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // API route for fetching tickets by event (outside auth middleware)
 use App\Http\Controllers\TicketApiController;
 
-Route::get('/api/tickets', [TicketApiController::class, 'tickets']);
+Route::get('/api/tickets', [TicketApiController::class, 'tickets'])->middleware(['auth:sanctum', 'permission:view_event_attendees']);
 
 // Route for serving event images (publicly accessible)
 Route::get('/events/images/{id}', [App\Http\Controllers\ImageServingController::class, 'show']);

@@ -55,7 +55,7 @@ class HandleInertiaRequests extends Middleware
                 'name' => (string) ($user->name ?? ''),
                 'email' => $user->email ?? null,
                 // include permissions (was 'roles') and single role
-                'permissions' => $user->permissions ?? null,
+                'permissions' => $user->getExpandedPermissions() ?? null,
                 'role' => $user->role ?? null,
                 // include pinned footer items so the frontend sidebar can render
                 // per-user quick links without relying on ad-hoc page props
