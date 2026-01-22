@@ -34,10 +34,10 @@ class GoogleSheetsService
         $this->client->setClientSecret($clientSecret);
 
         try {
-            $refreshToken = decrypt($user->gmail_refresh_token);
+            $refreshToken = $user->gmail_refresh_token;
         } catch (\Throwable $e) {
             // Log the specific error for debugging
-            Log::error('Google Token Decrypt Error: '.$e->getMessage());
+            Log::error('Google Token Access/Decrypt Error: '.$e->getMessage());
             throw new Exception('Your Google connection is invalid. Please disconnect and reconnect in Settings.');
         }
 
@@ -48,7 +48,7 @@ class GoogleSheetsService
             // CHECK: Did Google rotate the refresh token?
             if (isset($token['refresh_token']) && $token['refresh_token'] !== $refreshToken) {
                 $user->forceFill([
-                    'gmail_refresh_token' => encrypt($token['refresh_token']),
+                    'gmail_refresh_token' => $token['refresh_token'],
                 ])->save();
             }
         } catch (\Throwable $e) {

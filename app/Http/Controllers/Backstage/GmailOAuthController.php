@@ -105,7 +105,7 @@ class GmailOAuthController extends Controller
             // Connecting an existing authenticated user: store token/provider and provider email
             $fill = [];
             if ($refreshToken) {
-                $fill['gmail_refresh_token'] = encrypt($refreshToken);
+                $fill['gmail_refresh_token'] = $refreshToken;
             }
             if ($providerId) {
                 $fill['gmail_provider_id'] = $providerId;
@@ -143,9 +143,8 @@ class GmailOAuthController extends Controller
                     'gmail_provider_id' => $providerId ?? null,
                 ];
 
-                // Include the encrypted refresh token immediately if available
                 if ($refreshToken) {
-                    $createData['gmail_refresh_token'] = encrypt($refreshToken);
+                    $createData['gmail_refresh_token'] = $refreshToken;
                 }
 
                 $created = \App\Models\User::create($createData);
@@ -177,7 +176,7 @@ class GmailOAuthController extends Controller
         // Store provider/token information if available
         $tokenFill = [];
         if ($refreshToken) {
-            $tokenFill['gmail_refresh_token'] = encrypt($refreshToken);
+            $tokenFill['gmail_refresh_token'] = $refreshToken;
         }
         if ($providerId) {
             $tokenFill['gmail_provider_id'] = $providerId;
@@ -239,7 +238,7 @@ class GmailOAuthController extends Controller
         // Optionally try to revoke at Google's revoke endpoint
         try {
             if (! empty($user->gmail_refresh_token)) {
-                $refreshToken = decrypt($user->gmail_refresh_token);
+                $refreshToken = $user->gmail_refresh_token;
                 // Call Google's token revoke endpoint
                 $url = 'https://oauth2.googleapis.com/revoke?token='.urlencode($refreshToken);
                 // Non-blocking fire-and-forget using file_get_contents with a small timeout

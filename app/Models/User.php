@@ -44,13 +44,9 @@ class User extends Authenticatable
         'first_name',
         'last_name',
         'email',
-        'password_hash',
-        'gmail_refresh_token',
-        'gmail_provider_id',
-        'gmail_provider_email',
-        // SECURITY: 'permissions' and 'role' are intentionally NOT fillable
-        // to prevent privilege escalation via mass assignment.
-        // Use forceFill() in admin controllers to set these fields.
+        // SECURITY: 'password_hash', 'gmail_refresh_token', 'gmail_provider_id', 'gmail_provider_email'
+        // and 'permissions'/'role' are intentionally NOT fillable to prevent Mass Assignment vulnerability.
+        // Use forceFill() in controllers to set these fields.
         'pinned',
         'last_seen_at',
     ];
@@ -104,6 +100,7 @@ class User extends Authenticatable
             'role' => 'string',
             'pinned' => 'array',
             'last_seen_at' => 'datetime',
+            'gmail_refresh_token' => 'encrypted',
         ];
     }
 
