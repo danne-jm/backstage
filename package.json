@@ -9,7 +9,8 @@
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
-        "types": "tsc --noEmit"
+        "types": "tsc --noEmit",
+        "generate-pwa-icons": "node scripts/generate-pwa-icons.mjs"
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",
@@ -23,7 +24,10 @@
         "prettier": "^3.4.2",
         "prettier-plugin-organize-imports": "^4.1.0",
         "prettier-plugin-tailwindcss": "^0.6.11",
-        "typescript-eslint": "^8.23.0"
+        "sharp": "^0.34.5",
+        "typescript-eslint": "^8.23.0",
+        "vite-plugin-pwa": "^1.2.0",
+        "workbox-window": "^7.4.0"
     },
     "dependencies": {
         "@headlessui/react": "^2.2.0",

@@ -157,7 +157,7 @@ export default function Warehouse() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Warehouse" />
 
-            <div className="p-4">
+            <div className="flex h-full flex-1 flex-col p-4">
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex w-1/2 items-center gap-2">
                         {/* ... search input ... */}
@@ -200,7 +200,7 @@ export default function Warehouse() {
                     categories={categoriesProp}
                 />
 
-                <div className="overflow-x-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
+                <div className="flex-1 overflow-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
                         {/* ... thead ... */}
                         <thead className="bg-gray-50 dark:bg-transparent">
