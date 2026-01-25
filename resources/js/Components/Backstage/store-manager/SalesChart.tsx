@@ -336,13 +336,19 @@ export function SalesChart({
                         {/* Tooltip */}
                         {hover && hover.points.length > 0 && (
                             <div
-                                className="pointer-events-none absolute z-10 rounded-lg border border-sidebar-border bg-background p-2 shadow-lg"
+                                className="pointer-events-none absolute z-10 max-w-[200px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs"
                                 style={{
-                                    left: `${Math.min(hover.mouseX + 10, 200)}px`,
-                                    top: `${hover.mouseY + 10}px`,
+                                    left:
+                                        hover.mouseX > 180
+                                            ? `${hover.mouseX - 220}px`
+                                            : `${hover.mouseX + 10}px`,
+                                    top:
+                                        hover.mouseY > 80
+                                            ? `${hover.mouseY - 80}px`
+                                            : `${hover.mouseY + 10}px`,
                                 }}
                             >
-                                <div className="mb-1 text-xs font-medium">
+                                <div className="mb-1 text-[10px] font-medium sm:text-xs">
                                     {new Date(hover.date).toLocaleDateString(
                                         'en-US',
                                         {
@@ -356,18 +362,18 @@ export function SalesChart({
                                     {hover.points.map((item, i) => (
                                         <div
                                             key={i}
-                                            className="flex items-center gap-2 text-xs"
+                                            className="flex items-center gap-1 text-[10px] sm:gap-2 sm:text-xs"
                                         >
                                             <span
-                                                className="inline-block h-2 w-2 rounded-full"
+                                                className="inline-block h-2 w-2 shrink-0 rounded-full"
                                                 style={{
                                                     backgroundColor: item.color,
                                                 }}
                                             />
-                                            <span className="truncate">
+                                            <span className="min-w-0 truncate">
                                                 {item.name}
                                             </span>
-                                            <span className="ml-auto font-medium">
+                                            <span className="ml-auto shrink-0 font-medium">
                                                 €{item.value.toFixed(2)}
                                             </span>
                                         </div>
