@@ -33,9 +33,10 @@ interface Sellable {
 
 interface Props {
     sellables: Sellable[];
+    processingFeeRate: number;
 }
 
-export default function ShopCart({ sellables }: Props) {
+export default function ShopCart({ sellables, processingFeeRate }: Props) {
     const { entries, removeFromCart, updateQuantity, clearCart } = useCart();
     const [appliedDiscounts, setAppliedDiscounts] = useState<string[]>(() => {
         if (typeof window !== 'undefined') {
@@ -84,7 +85,8 @@ export default function ShopCart({ sellables }: Props) {
     const [serverBreakdown, setServerBreakdown] = useState<any[] | null>(null);
     const [serverTotal, setServerTotal] = useState<number | null>(null);
 
-    // Debounce validation
+    // Debounce validation - just update totals, don't modify applied codes
+    // (codes are validated when the user applies them)
     useEffect(() => {
         if (cart.length === 0) return;
 
@@ -184,8 +186,8 @@ export default function ShopCart({ sellables }: Props) {
         return warnings;
     }, [cart, sellables, discountApplied]);
 
-    const handleApplyDiscount = () => {
-        const code = inputCode.trim();
+    const handleApplyDiscount = async () => {
+        const code = inputCode.trim().toUpperCase();
         if (!code) {
             setMessage({ text: 'Please enter a code.', type: 'error' });
             return;
@@ -198,11 +200,51 @@ export default function ShopCart({ sellables }: Props) {
             return;
         }
 
-        const newDiscounts = [...appliedDiscounts, code];
-        setAppliedDiscounts(newDiscounts);
-        localStorage.setItem('cart_discounts', JSON.stringify(newDiscounts));
-        setInputCode('');
+        setIsProcessing(true);
         setMessage(null);
+
+        try {
+            // Validate the code by calling the cart validation endpoint with just this code
+            const payload = {
+                items: cart.map((i) => ({
+                    id: i.id,
+                    type: i.type,
+                    quantity: i.quantity,
+                })),
+                codes: [...appliedDiscounts, code],
+            };
+            const res = await axios.post('/validate-cart', payload);
+            const validCodes: string[] = res.data.valid_codes || [];
+
+            if (validCodes.includes(code)) {
+                // Code is valid with ESNcard API - add it
+                const newDiscounts = [...appliedDiscounts, code];
+                setAppliedDiscounts(newDiscounts);
+                localStorage.setItem(
+                    'cart_discounts',
+                    JSON.stringify(newDiscounts),
+                );
+                setInputCode('');
+                setMessage({ text: 'Code applied!', type: 'success' });
+
+                // Update server data
+                setServerBreakdown(res.data.breakdown);
+                setServerTotal(res.data.total_final);
+            } else {
+                // Code failed ESNcard API validation
+                setMessage({
+                    text: 'Invalid or expired ESNcard code.',
+                    type: 'error',
+                });
+            }
+        } catch (e) {
+            setMessage({
+                text: 'Failed to validate code. Please try again.',
+                type: 'error',
+            });
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const removeDiscount = (codeToRemove: string) => {
@@ -335,12 +377,12 @@ export default function ShopCart({ sellables }: Props) {
                                                                     item
                                                                         .description
                                                                         .length >
-                                                                    230
+                                                                        230
                                                                         ? item.description.substring(
-                                                                              0,
-                                                                              230,
-                                                                          ) +
-                                                                          '...'
+                                                                            0,
+                                                                            230,
+                                                                        ) +
+                                                                        '...'
                                                                         : item.description,
                                                             }}
                                                         />
@@ -355,7 +397,7 @@ export default function ShopCart({ sellables }: Props) {
                                                                     item.id,
                                                                     item.type,
                                                                     item.quantity -
-                                                                        1,
+                                                                    1,
                                                                 )
                                                             }
                                                             className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
@@ -371,7 +413,7 @@ export default function ShopCart({ sellables }: Props) {
                                                                     item.id,
                                                                     item.type,
                                                                     item.quantity +
-                                                                        1,
+                                                                    1,
                                                                 )
                                                             }
                                                             className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
@@ -443,9 +485,9 @@ export default function ShopCart({ sellables }: Props) {
                                                                     serverBreakdown?.find(
                                                                         (s) =>
                                                                             s.id ===
-                                                                                item.id &&
+                                                                            item.id &&
                                                                             s.type ===
-                                                                                item.type,
+                                                                            item.type,
                                                                     );
 
                                                                 // Determine if THIS unit is discounted (greedy allocation: first N units)
@@ -458,7 +500,7 @@ export default function ShopCart({ sellables }: Props) {
                                                                 const codeUsed =
                                                                     sItem
                                                                         ?.codes_applied?.[
-                                                                        i
+                                                                    i
                                                                     ] ||
                                                                     (isUnitDiscounted
                                                                         ? 'Discount'
@@ -472,7 +514,7 @@ export default function ShopCart({ sellables }: Props) {
                                                                 const unitMemberPrice =
                                                                     Number(
                                                                         item.member_price ??
-                                                                            item.price,
+                                                                        item.price,
                                                                     );
                                                                 // If finding member price fails locally, rely on server total?
                                                                 // Better to use available data. If server says discounted, we assume member price is active.
@@ -547,49 +589,49 @@ export default function ShopCart({ sellables }: Props) {
                                                 {/* Applied Discounts Badges */}
                                                 {appliedDiscounts.length >
                                                     0 && (
-                                                    <div className="mb-3 flex flex-wrap gap-2">
-                                                        {appliedDiscounts.map(
-                                                            (code) => (
-                                                                <span
-                                                                    key={code}
-                                                                    className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-sm font-medium text-gray-800"
-                                                                >
-                                                                    {code}
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            removeDiscount(
-                                                                                code,
-                                                                            )
-                                                                        }
-                                                                        className="ml-1.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none"
+                                                        <div className="mb-3 flex flex-wrap gap-2">
+                                                            {appliedDiscounts.map(
+                                                                (code) => (
+                                                                    <span
+                                                                        key={code}
+                                                                        className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-sm font-medium text-gray-800"
                                                                     >
-                                                                        <span className="sr-only">
-                                                                            Remove
-                                                                            discount
-                                                                            code{' '}
-                                                                            {
-                                                                                code
+                                                                        {code}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                removeDiscount(
+                                                                                    code,
+                                                                                )
                                                                             }
-                                                                        </span>
-                                                                        <svg
-                                                                            className="h-2 w-2"
-                                                                            stroke="currentColor"
-                                                                            fill="none"
-                                                                            viewBox="0 0 8 8"
+                                                                            className="ml-1.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none"
                                                                         >
-                                                                            <path
-                                                                                strokeLinecap="round"
-                                                                                strokeWidth="1.5"
-                                                                                d="M1 1l6 6m0-6L1 7"
-                                                                            />
-                                                                        </svg>
-                                                                    </button>
-                                                                </span>
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                )}
+                                                                            <span className="sr-only">
+                                                                                Remove
+                                                                                discount
+                                                                                code{' '}
+                                                                                {
+                                                                                    code
+                                                                                }
+                                                                            </span>
+                                                                            <svg
+                                                                                className="h-2 w-2"
+                                                                                stroke="currentColor"
+                                                                                fill="none"
+                                                                                viewBox="0 0 8 8"
+                                                                            >
+                                                                                <path
+                                                                                    strokeLinecap="round"
+                                                                                    strokeWidth="1.5"
+                                                                                    d="M1 1l6 6m0-6L1 7"
+                                                                                />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </span>
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    )}
 
                                                 <div className="flex space-x-2">
                                                     <input
@@ -661,7 +703,7 @@ export default function ShopCart({ sellables }: Props) {
                                     <dd className="text-sm font-medium text-gray-900">
                                         +€
                                         {serverTotal
-                                            ? (serverTotal * 0.02).toFixed(2)
+                                            ? (Number(serverTotal) * Number(processingFeeRate)).toFixed(2)
                                             : '0.00'}
                                     </dd>
                                 </div>
@@ -673,7 +715,7 @@ export default function ShopCart({ sellables }: Props) {
                                     <dd className="text-2xl font-bold text-gray-900">
                                         €
                                         {serverTotal
-                                            ? (serverTotal * 1.02).toFixed(2)
+                                            ? (Number(serverTotal) * (1 + Number(processingFeeRate))).toFixed(2)
                                             : '...'}
                                     </dd>
                                 </div>

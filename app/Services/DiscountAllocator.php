@@ -44,20 +44,23 @@ class DiscountAllocator
                 continue;
             }
 
-            // Determine pricing
-            $regularPrice = $item['type'] === 'product' ? $entity->price : ($entity->price_without_card ?? $entity->price_with_card); // Default to without card if variable
-            if (! $item['type'] === 'product' && ! $entity->variable_amount) {
-                // For non-variable events, member price is just the price
-                $regularPrice = $entity->price_without_card ?? $entity->price_with_card;
-            }
+            // Determine pricing - IMPORTANT: Cast to float for proper numeric comparison
+            // Database stores prices as decimal strings like "75.00", and PHP string comparison
+            // can give wrong results (e.g., "9" > "85" as strings but 9 < 85 as numbers)
+            $priceWithCard = (float) ($entity->price_with_card ?? 0);
+            $priceWithoutCard = (float) ($entity->price_without_card ?? $entity->price_with_card ?? 0);
+            
+            $regularPrice = $item['type'] === 'product' 
+                ? (float) $entity->price 
+                : $priceWithoutCard;
 
             // Determine potential savings
-            $memberPrice = $item['type'] === 'product' ? $entity->price : $entity->price_with_card; // Product member price is same? Wait, requirement says "if discounted price available".
-            // Actually, based on previous logic, Product might not have distinct member price unless explicitly set.
-            // Let's perform a check: Can this item even be discounted?
+            $memberPrice = $item['type'] === 'product' 
+                ? (float) $entity->price 
+                : $priceWithCard;
 
             $canDiscount = false;
-            $savings = 0;
+            $savings = 0.0;
 
             if ($item['type'] === 'event') {
                 if ($entity->variable_amount) {
@@ -67,23 +70,25 @@ class DiscountAllocator
 
                     if ($isUnlimited || $memberStock > 0) {
                         // Ensure there is actually a discount
-                        if ($entity->price_with_card < $entity->price_without_card) {
+                        if ($priceWithCard < $priceWithoutCard) {
                             $canDiscount = true;
-                            $savings = $entity->price_without_card - $entity->price_with_card;
-                            $memberPrice = $entity->price_with_card;
+                            $savings = $priceWithoutCard - $priceWithCard;
+                            $memberPrice = $priceWithCard;
                         }
                     }
-                } elseif ($entity->price_with_card < $entity->price_without_card) {
+                } elseif ($priceWithCard < $priceWithoutCard) {
                     // Even if not variable, if price_with_card is lower, it's discountable
                     $canDiscount = true;
-                    $savings = $entity->price_without_card - $entity->price_with_card;
-                    $memberPrice = $entity->price_with_card;
+                    $savings = $priceWithoutCard - $priceWithCard;
+                    $memberPrice = $priceWithCard;
                 }
             } elseif ($item['type'] === 'product') {
-                if (isset($entity->member_price) && $entity->member_price < $entity->price) {
+                $productMemberPrice = (float) ($entity->member_price ?? $entity->price);
+                $productPrice = (float) $entity->price;
+                if ($productMemberPrice < $productPrice) {
                     $canDiscount = true;
-                    $savings = $entity->price - $entity->member_price;
-                    $memberPrice = $entity->member_price;
+                    $savings = $productPrice - $productMemberPrice;
+                    $memberPrice = $productMemberPrice;
                 }
             }
 
@@ -103,11 +108,21 @@ class DiscountAllocator
 
         // 3. (Removed Sorting - Allocator is now FCFS / Natural Order)
 
-        // 4. Validate Codes against History
-        // We need to know which codes have successfully been used for these specific item types before.
-        // SECURITY FIX: Lock DiscountUsage rows to prevent double-spending in concurrent requests
+        // 4. Validate Codes against ESNcard API AND History
+        // First, check each code against the official ESNcard API
         $cleanCodes = array_unique(array_filter($codes));
-        $historyQuery = DiscountUsage::whereIn('code', $cleanCodes);
+        $esnService = new ESNcardService();
+        $validExternalCodes = [];
+        
+        foreach ($cleanCodes as $code) {
+            if ($esnService->validate($code)) {
+                $validExternalCodes[] = $code;
+            }
+        }
+
+        // Now check history only for valid external codes
+        // SECURITY FIX: Lock DiscountUsage rows to prevent double-spending in concurrent requests
+        $historyQuery = DiscountUsage::whereIn('code', $validExternalCodes);
         if ($useLock) {
             $historyQuery->lockForUpdate();
         }
@@ -122,8 +137,8 @@ class DiscountAllocator
                 continue;
             }
 
-            // Try to find a code
-            foreach ($cleanCodes as $code) {
+            // Try to find a code from the API-validated codes
+            foreach ($validExternalCodes as $code) {
                 // Rule 1: Code must not be used for this specific item type by THIS user (globally)
                 // History check
                 $alreadyUsedHistory = false;
@@ -158,6 +173,7 @@ class DiscountAllocator
                 break; // Move to next unit
             }
         }
+        unset($unit); // Break the reference to avoid PHP foreach quirk
 
         // 6. Reconstruct Cart Summary
         $totalOriginal = 0;
@@ -197,7 +213,8 @@ class DiscountAllocator
             'total_final' => $totalFinal,
             'total_savings' => $totalSavings,
             'breakdown' => array_values($itemBreakdowns),
-            'units' => $units, // useful for checkout controller to know exactly what happened
+            'units' => $units,
+            'valid_codes' => $validExternalCodes, // Codes that passed ESNcard API validation
         ];
     }
 }
