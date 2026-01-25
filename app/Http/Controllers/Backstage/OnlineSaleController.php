@@ -24,6 +24,7 @@ class OnlineSaleController extends Controller
             'ticket_type' => ['nullable', 'string'],
             'office_shift_id' => ['nullable', 'integer', 'exists:office_shifts,id'],
             'description' => ['nullable', 'string'],
+            'is_manual_entry' => ['nullable', 'boolean'],
             // SECURITY FIX: Removed sold_by from user input to prevent impersonation.
             // sold_by will be set server-side based on authentication status.
         ]);
@@ -34,11 +35,12 @@ class OnlineSaleController extends Controller
         $payload['sold_at'] = $request->input('sold_at', now());
         $payload['ticket_label'] = $request->input('ticket_label', null);
         $payload['name'] = $request->input('name', null);
+        $payload['is_manual_entry'] = $validated['is_manual_entry'] ?? false;
 
         // SECURITY FIX: Set sold_by server-side. For public purchases, it's null.
         // For authenticated users (staff), use their ID.
         $payload['sold_by'] = auth()->id();
-        $payload['sold_by_email'] = auth()->user()?->email;
+        $payload['sold_by_name'] = auth()->user()?->name;
 
         $sale = $this->service->createOnlineSale($payload);
 

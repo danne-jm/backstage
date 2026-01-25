@@ -114,12 +114,12 @@ Route::group(['middleware' => config('fortify.middleware', ['web'])], function (
             : [config('fortify.auth_middleware', 'auth').':'.config('fortify.guard')];
 
         Route::get(RoutePath::for('password.confirm', '/user/confirm-password'), [Laravel\Fortify\Http\Controllers\ConfirmablePasswordController::class, 'show'])
-             ->middleware([config('fortify.auth_middleware', 'auth').':'.config('fortify.guard')])
-             ->name('password.confirm');
+            ->middleware([config('fortify.auth_middleware', 'auth').':'.config('fortify.guard')])
+            ->name('password.confirm');
 
         Route::post(RoutePath::for('password.confirm', '/user/confirm-password'), [Laravel\Fortify\Http\Controllers\ConfirmablePasswordController::class, 'store'])
-             ->middleware([config('fortify.auth_middleware', 'auth').':'.config('fortify.guard')])
-             ->name('password.confirm.store');
+            ->middleware([config('fortify.auth_middleware', 'auth').':'.config('fortify.guard')])
+            ->name('password.confirm.store');
 
         Route::post(RoutePath::for('two-factor.enable', '/user/two-factor-authentication'), [TwoFactorAuthenticationController::class, 'store'])
             ->middleware($twoFactorMiddleware)

@@ -39,10 +39,10 @@ class TicketScannerTest extends TestCase
 
         $this->assertDatabaseHas('tickets', [
             'event_id' => $event->id,
-            // Metadata is JSON, so we can't easily assertDatabaseHas on deep keys 
+            // Metadata is JSON, so we can't easily assertDatabaseHas on deep keys
             // without casting or precision, but we can check if a ticket exists.
         ]);
-        
+
         $this->assertEquals(2, $event->tickets()->count());
     }
 
@@ -51,7 +51,7 @@ class TicketScannerTest extends TestCase
         // SECURITY FIX: User needs scan_tickets permission
         $user = User::factory()->create(['permissions' => ['view_ticket_scanner', 'scan_tickets']]);
         $event = Event::factory()->create();
-        
+
         // Create a ticket manually or via endpoint
         $ticketCode = 'TEST_CODE_123';
         $event->tickets()->create([
@@ -59,7 +59,7 @@ class TicketScannerTest extends TestCase
             'email' => 'test@example.com',
             'metadata' => ['first_name' => 'Test'],
             'scanned_at' => null,
-            'user_id' => null
+            'user_id' => null,
         ]);
 
         // Note: verify route is now POST (security fix for CSRF)
@@ -84,13 +84,13 @@ class TicketScannerTest extends TestCase
         $user = User::factory()->create(['permissions' => ['view_ticket_scanner', 'scan_tickets']]);
         $event = Event::factory()->create();
         $ticketCode = 'TEST_CODE_SCANNED';
-        
+
         $ticket = $event->tickets()->create([
             'ticket_code' => $ticketCode,
             'email' => 'test@example.com',
             'metadata' => ['first_name' => 'Test'],
             'scanned_at' => now()->subHour(),
-            'user_id' => null
+            'user_id' => null,
         ]);
 
         $response = $this->actingAs($user)

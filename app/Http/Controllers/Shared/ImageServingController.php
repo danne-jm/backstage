@@ -19,7 +19,7 @@ class ImageServingController extends Controller
 
         // SECURITY FIX: Prevent IDOR/enumeration of private/draft event images.
         // Only serve images for events that are published (is_online_sellable).
-        if ($image->event && !$image->event->is_online_sellable) {
+        if ($image->event && ! $image->event->is_online_sellable) {
             abort(404);
         }
 
@@ -43,7 +43,7 @@ class ImageServingController extends Controller
         $image = \App\Models\ProductImage::findOrFail($id);
 
         // SECURITY FIX: Prevent IDOR/enumeration of private/draft product images.
-        if ($image->product && !$image->product->is_online_sellable) {
+        if ($image->product && ! $image->product->is_online_sellable) {
             abort(404);
         }
 

@@ -4,8 +4,8 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class UserManagementTest extends TestCase
 {
@@ -40,7 +40,7 @@ class UserManagementTest extends TestCase
                 'last_name' => 'User',
                 'email' => 'new@example.com',
                 'password' => 'password',
-                'permissions' => ['view_office']
+                'permissions' => ['view_office'],
             ])
             ->assertRedirect(); // Usually redirects back
 
@@ -48,7 +48,7 @@ class UserManagementTest extends TestCase
             'email' => 'new@example.com',
             'first_name' => 'New',
         ]);
-        
+
         $newUser = User::where('email', 'new@example.com')->first();
         $this->assertTrue(in_array('view_office', $newUser->permissions));
     }
@@ -63,7 +63,7 @@ class UserManagementTest extends TestCase
                 'first_name' => 'Updated',
                 'last_name' => 'Name',
                 'email' => $targetUser->email,
-                'permissions' => ['view_office']
+                'permissions' => ['view_office'],
             ])
             ->assertRedirect();
 

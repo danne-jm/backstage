@@ -197,15 +197,13 @@ export default function Office() {
         'with_card' | 'without_card'
     >('with_card');
 
+    // Only initialize on mount, don't reset when filteredSellables changes
     React.useEffect(() => {
-        if (filteredSellables.length) {
+        if (filteredSellables.length && saleProductId === null) {
             setSaleProductId(filteredSellables[0].actual_id ?? null);
             setSaleItemType(filteredSellables[0].type ?? 'product');
-        } else {
-            setSaleProductId(null);
-            setSaleItemType('product');
         }
-    }, [filteredSellables]);
+    }, [filteredSellables, saleProductId]);
 
     const [customSaleItemId, setCustomSaleItemId] =
         React.useState<string>('custom');
@@ -599,6 +597,7 @@ export default function Office() {
                 method: 'card',
                 amount: amountToUse,
                 description: descToUse,
+                is_manual_entry: true, // Flag to indicate this was manually entered
             })
             .then(() => {
                 setMessage('Custom sale recorded (Card)');
@@ -1107,6 +1106,8 @@ export default function Office() {
                                                                     ticketLabelToSend,
                                                                 breakdown:
                                                                     customCashBreakdown,
+                                                                is_manual_entry:
+                                                                    !isQuick, // True if from Custom sale section, false if from Quick add sale
                                                             },
                                                             {
                                                                 onSuccess:
@@ -2337,9 +2338,8 @@ export default function Office() {
                                                         'cash' && (
                                                         <>
                                                             <Button
-                                                                size="icon"
+                                                                size="sm"
                                                                 variant="ghost"
-                                                                className="h-4 w-4"
                                                                 onClick={() =>
                                                                     activeShift?.status ===
                                                                         'open' &&
@@ -2353,7 +2353,7 @@ export default function Office() {
                                                                     'open'
                                                                 }
                                                             >
-                                                                <Pencil className="h-3 w-3" />
+                                                                <Pencil className="h-4 w-4" />
                                                             </Button>
                                                         </>
                                                     )}
@@ -2362,16 +2362,9 @@ export default function Office() {
                                             <td className="px-1 py-3">
                                                 <span
                                                     className="block max-w-[100%] truncate"
-                                                    title={
-                                                        s.item_type === 'custom'
-                                                            ? (s.description ??
-                                                              '')
-                                                            : ''
-                                                    }
+                                                    title={s.description ?? ''}
                                                 >
-                                                    {s.item_type === 'custom'
-                                                        ? (s.description ?? '')
-                                                        : ''}
+                                                    {s.description ?? ''}
                                                 </span>
                                             </td>
                                             <td className="px-1 py-3">
@@ -2411,7 +2404,12 @@ export default function Office() {
                                                     disabled={
                                                         submitting ||
                                                         activeShift?.status !==
-                                                            'open'
+                                                            'open' ||
+                                                        (String(
+                                                            s.method,
+                                                        ).toLowerCase() ===
+                                                            'card' &&
+                                                            !s.is_manual_entry)
                                                     }
                                                     onClick={() => {
                                                         if (

@@ -6,10 +6,8 @@ use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class SellablesTest extends TestCase
 {
@@ -70,17 +68,17 @@ class SellablesTest extends TestCase
                 'unlimited_quantity' => true,
             ])
             ->assertOk(); // Helper says it returns nothing (just updates) or redirects? Check Controller.
-        
+
         // Controller seems to return nothing on update (void response implicitly 200 OK or similar?)
-        // Wait, typical Inertia/Laravel update redirects back. 
+        // Wait, typical Inertia/Laravel update redirects back.
         // Looking at controller code: `public function updateProduct` ends without return statement?
-        // PHP implicitly returns null. Laravel handles this... poorly? 
+        // PHP implicitly returns null. Laravel handles this... poorly?
         // Actually, Inertia requests usually expect a redirect.
         // Let's re-read controller code. `updateProduct` does NOT have a return statement.
         // This might arguably be a bug in the controller I need to fix, or it relies on implicit behavior.
         // Let's assume for now it might fail or return 200 blank.
         // I will add a redirect to the controller if needed, but let's test first.
-        
+
         $this->assertDatabaseHas('products', [
             'id' => $product->id,
             'name' => 'New Name',

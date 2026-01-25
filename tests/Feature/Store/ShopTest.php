@@ -5,8 +5,8 @@ namespace Tests\Feature\Store;
 use App\Models\Event;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class ShopTest extends TestCase
 {

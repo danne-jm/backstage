@@ -164,7 +164,7 @@ class TicketScannerController extends Controller
         if ($affectedRows > 0) {
             // First scan - successful
             $ticket = $event->tickets()->where('ticket_code', $id)->first();
-            
+
             // Append scan details (separate update to handle JSON field)
             $scanDetails = $ticket->scan_details ?? [];
             $scanDetails[] = [

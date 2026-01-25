@@ -305,9 +305,11 @@ class OfficeController extends Controller
             'ticket_type' => ['nullable', 'string'],
             'ticket_label' => ['nullable', 'string'],
             'breakdown' => ['nullable', 'array'],
+            'is_manual_entry' => ['nullable', 'boolean'],
         ]);
 
         $itemType = $data['item_type'] ?? 'product';
+        $isManualEntry = $data['is_manual_entry'] ?? false;
         $itemName = 'Custom Sale';
         $itemPrice = $data['amount'];
         $itemDescription = $data['description'] ?? null;
@@ -369,12 +371,13 @@ class OfficeController extends Controller
             'price' => $itemPrice,
             'method' => $data['method'],
             'amount' => $data['amount'],
-            'description' => $data['description'] ?? $itemDescription,
-            'sold_by' => Auth::user()->email ?? 'unknown',
+            'description' => $data['description'] ?? '',
+            'sold_by' => ($itemType === 'custom' || $isManualEntry) ? 'Custom - '.(Auth::user()->name ?? 'unknown') : (Auth::user()->name ?? 'unknown'),
             'sold_at' => now()->toIso8601String(),
             'created_at' => now()->toIso8601String(),
             'ticket_type' => $data['ticket_type'] ?? null,
             'ticket_label' => $data['ticket_label'] ?? null,
+            'is_manual_entry' => $isManualEntry,
         ];
 
         $saleBreakdown = ($data['method'] === 'cash' && isset($data['breakdown'])) ? $data['breakdown'] : null;
@@ -385,7 +388,7 @@ class OfficeController extends Controller
             'event_id' => $eventId,
             'method' => $data['method'],
             'amount' => $data['amount'],
-            'description' => $data['description'] ?? $itemDescription,
+            'description' => $data['description'] ?? '',
             'sold_by' => Auth::id(),
             'sold_at' => now(),
             'snapshot' => $snapshot,
@@ -416,6 +419,24 @@ class OfficeController extends Controller
             ->first();
 
         if ($sale) {
+            // For manual card entries, also delete the corresponding OnlineSale if it exists
+            if ($sale->method === 'card' && isset($sale->snapshot['is_manual_entry']) && $sale->snapshot['is_manual_entry']) {
+                // Try to find and delete the corresponding OnlineSale
+                // Match by amount, product_id/event_id, and sold_at time (within a small window)
+                $onlineSale = \App\Models\OnlineSale::where('amount', $sale->amount)
+                    ->when($sale->product_id, fn ($q) => $q->where('product_id', $sale->product_id))
+                    ->when($sale->event_id, fn ($q) => $q->where('event_id', $sale->event_id))
+                    ->whereBetween('sold_at', [
+                        $sale->sold_at->subSeconds(5),
+                        $sale->sold_at->addSeconds(5),
+                    ])
+                    ->first();
+
+                if ($onlineSale) {
+                    $onlineSale->delete();
+                }
+            }
+
             // Revert totals
             if ($sale->method === 'cash') {
                 $office->decrement('cash_total', $sale->amount);

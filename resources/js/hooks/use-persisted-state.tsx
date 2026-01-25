@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
 import { getItem, setItem } from '@/lib/db';
+import { useEffect, useState } from 'react';
 
 /**
  * Hook for persisting state in IndexedDB (survives page reloads and app restarts)
- * 
+ *
  * @example
  * const [count, setCount] = usePersistedState('counter', 0);
  * const [user, setUser] = usePersistedState('user', { name: '', email: '' });
  */
 export function usePersistedState<T>(
     key: string,
-    initialValue: T
+    initialValue: T,
 ): [T, (value: T | ((prev: T) => T)) => void] {
     const [state, setState] = useState<T>(initialValue);
     const [isLoaded, setIsLoaded] = useState(false);

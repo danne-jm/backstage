@@ -11,7 +11,7 @@ class OnlineTransaction extends Model
     use HasFactory;
 
     protected $fillable = [
-        'token',
+        'reference_id',
         'total_amount',
         'processing_fee',
         'discount_codes',

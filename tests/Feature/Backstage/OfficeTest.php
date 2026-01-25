@@ -5,8 +5,8 @@ namespace Tests\Feature\Backstage;
 use App\Models\OfficeShift;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class OfficeTest extends TestCase
 {
@@ -22,7 +22,7 @@ class OfficeTest extends TestCase
     public function test_office_dashboard_can_be_rendered()
     {
         $user = User::factory()->create(['permissions' => ['view_office']]);
-        
+
         $this->actingAs($user)
             ->get('http://localhost/office')
             ->assertOk()
@@ -37,7 +37,7 @@ class OfficeTest extends TestCase
 
         $response = $this->actingAs($user)
             ->post('http://localhost/office/start', ['initial_cash' => 100.00]);
-            
+
         // Expect redirect to the specific shift page, e.g. /office/{id}
         // Since we don't know ID easily without fetching, we can check pattern or just fetch latest.
         $shift = OfficeShift::latest('id')->first();
@@ -57,7 +57,7 @@ class OfficeTest extends TestCase
             'started_by' => $user->id,
             'started_at' => now(),
             'start_cash' => 100.00,
-            'status' => 'open'
+            'status' => 'open',
         ]);
 
         $this->actingAs($user)
@@ -71,7 +71,7 @@ class OfficeTest extends TestCase
             'notes' => 'Good shift',
             'status' => 'closed',
         ]);
-        
+
         $this->assertNotNull($shift->fresh()->ended_at);
     }
 }

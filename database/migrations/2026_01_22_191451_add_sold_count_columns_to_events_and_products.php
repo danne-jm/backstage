@@ -48,7 +48,7 @@ return new class extends Migration
             ");
 
             // Products
-            \DB::statement("
+            \DB::statement('
                 UPDATE products SET sold_count = (
                     SELECT COALESCE(
                         (SELECT COUNT(*) FROM office_shift_sales WHERE office_shift_sales.product_id = products.id), 0
@@ -56,7 +56,7 @@ return new class extends Migration
                         (SELECT COUNT(*) FROM online_sales WHERE online_sales.product_id = products.id), 0
                     )
                 )
-            ");
+            ');
         }
     }
 

@@ -15,7 +15,12 @@ import {
     Ticket,
     Warehouse,
 } from 'lucide-react';
-import { type PropsWithChildren, type ReactNode, useEffect, useState } from 'react';
+import {
+    type PropsWithChildren,
+    type ReactNode,
+    useEffect,
+    useState,
+} from 'react';
 import { route } from 'ziggy-js';
 
 export default function AppSidebarLayout({
@@ -47,15 +52,21 @@ export default function AppSidebarLayout({
     // Hide scrollbar in PWA mode
     useEffect(() => {
         if (showBottomNav) {
-            document.documentElement.style.setProperty('scrollbar-width', 'none');
-            document.documentElement.style.setProperty('-ms-overflow-style', 'none');
+            document.documentElement.style.setProperty(
+                'scrollbar-width',
+                'none',
+            );
+            document.documentElement.style.setProperty(
+                '-ms-overflow-style',
+                'none',
+            );
             document.documentElement.classList.add('pwa-mode');
         } else {
             document.documentElement.style.removeProperty('scrollbar-width');
             document.documentElement.style.removeProperty('-ms-overflow-style');
             document.documentElement.classList.remove('pwa-mode');
         }
-        
+
         return () => {
             document.documentElement.style.removeProperty('scrollbar-width');
             document.documentElement.style.removeProperty('-ms-overflow-style');
@@ -128,10 +139,17 @@ export default function AppSidebarLayout({
         <>
             <AppShell variant="sidebar">
                 {!showBottomNav && <AppSidebar />}
-                <AppContent 
-                    variant="sidebar" 
-                    className={`overflow-x-hidden ${showBottomNav ? 'pb-20 pt-safe' : ''}`}
-                    style={showBottomNav ? { paddingTop: 'max(1.5rem, env(safe-area-inset-top))' } : undefined}
+                <AppContent
+                    variant="sidebar"
+                    className={`overflow-x-hidden ${showBottomNav ? 'pt-safe pb-20' : ''}`}
+                    style={
+                        showBottomNav
+                            ? {
+                                  paddingTop:
+                                      'max(1.5rem, env(safe-area-inset-top))',
+                              }
+                            : undefined
+                    }
                 >
                     <AppSidebarHeader
                         breadcrumbs={breadcrumbs}
@@ -145,4 +163,3 @@ export default function AppSidebarLayout({
         </>
     );
 }
-

@@ -77,7 +77,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                             {item.ticket_type && (
                                                 <p className="mt-1 text-sm text-gray-500">
                                                     {item.ticket_type ===
-                                                        'with_card'
+                                                    'with_card'
                                                         ? 'With ESNcard'
                                                         : 'Without ESNcard'}
                                                 </p>
@@ -105,7 +105,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                                     title="Copy reference ID"
                                                 >
                                                     {copiedId ===
-                                                        item.reference_id ? (
+                                                    item.reference_id ? (
                                                         <Check className="h-4 w-4 text-green-500" />
                                                     ) : (
                                                         <Copy className="h-4 w-4 text-gray-400" />

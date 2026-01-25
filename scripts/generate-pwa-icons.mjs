@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 

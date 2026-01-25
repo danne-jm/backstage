@@ -54,7 +54,7 @@ class EventImageTest extends TestCase
         $user = User::factory()->create();
         $event = Event::factory()->create([
             'is_online_sellable' => true,
-            'responsible_user_id' => $user->id
+            'responsible_user_id' => $user->id,
         ]);
         $image = EventImage::create([
             'event_id' => $event->id,

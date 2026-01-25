@@ -99,6 +99,7 @@ class GmailOAuthController extends Controller
             // This prevents authorization bypass and CSRF account takeover attacks.
             if ($oauthIntent !== 'connect') {
                 Log::warning("OAuth account linking rejected: user {$current->id} attempted link via public callback with intent: {$oauthIntent}");
+
                 return redirect()->route('dashboard')->withErrors('Invalid OAuth flow. Please use the settings page to connect your Google account.');
             }
 

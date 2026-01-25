@@ -14,7 +14,7 @@ class DiscountAllocator
      *
      * @param  array  $items  Format: [['id' => 1, 'type' => 'event', 'quantity' => 2, ...]]
      * @param  array  $codes  List of code strings ['CODE1', 'CODE2']
-     * @param  bool   $useLock  Whether to use pessimistic locking (for transactional checkout)
+     * @param  bool  $useLock  Whether to use pessimistic locking (for transactional checkout)
      * @return array
      */
     public function allocate(array $cartItems, array $codes, bool $useLock = false)

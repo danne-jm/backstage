@@ -33,7 +33,7 @@ it('can update an item', function () {
         'email' => 'editor@example.com',
         'permissions' => ['update_item', 'view_inventory'],
     ]);
-    
+
     $item = Item::create([
         'name' => 'Original Name',
         'quantity' => 10,
@@ -63,7 +63,7 @@ it('can delete an item', function () {
         'email' => 'deleter@example.com',
         'permissions' => ['delete_item', 'view_inventory'],
     ]);
-    
+
     $item = Item::create([
         'name' => 'To Delete',
         'quantity' => 5,

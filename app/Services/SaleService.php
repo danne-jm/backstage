@@ -117,20 +117,20 @@ class SaleService
                         // We must conditionally decrement only if we are aiming for the 'with_card' stock.
                         // Wait, the logic above was: if (!empty(qty_card) OR unlimited_card === false).
                         // Let's replicate strict logic but atomically.
-                        
+
                         // "If product has per-card quantities, prefer decrementing quantity_with_card when present"
                         // The original logic checked `!empty($product->quantity_with_card)`.
                         // Since we are in a transaction, we can use the instance we have, BUT to be safe against races,
                         // we should fire a query builder update.
-                        
+
                         Product::where('id', $productId)->update([
-                            'quantity_with_card' => DB::raw('GREATEST(0, quantity_with_card - 1)')
+                            'quantity_with_card' => DB::raw('GREATEST(0, quantity_with_card - 1)'),
                         ]);
                     } else {
                         // Fallback: decrement main quantity if present and not unlimited
                         if (! $product->unlimited_quantity && ! is_null($product->quantity)) {
                             Product::where('id', $productId)->update([
-                                'quantity' => DB::raw('GREATEST(0, quantity - 1)')
+                                'quantity' => DB::raw('GREATEST(0, quantity - 1)'),
                             ]);
                         }
                     }
@@ -141,17 +141,17 @@ class SaleService
                 $event = Event::find($eventId);
                 if ($event) {
                     if ($ticketType && $event->variable_amount) {
-                         // Variable amount event
+                        // Variable amount event
                         if ($ticketType === 'with_card') {
                             if (! $event->unlimited_quantity_with_card && ! is_null($event->quantity_with_card)) {
                                 Event::where('id', $eventId)->update([
-                                    'quantity_with_card' => DB::raw('GREATEST(0, quantity_with_card - 1)')
+                                    'quantity_with_card' => DB::raw('GREATEST(0, quantity_with_card - 1)'),
                                 ]);
                             }
                         } else {
                             if (! $event->unlimited_quantity_without_card && ! is_null($event->quantity_without_card)) {
                                 Event::where('id', $eventId)->update([
-                                    'quantity_without_card' => DB::raw('GREATEST(0, quantity_without_card - 1)')
+                                    'quantity_without_card' => DB::raw('GREATEST(0, quantity_without_card - 1)'),
                                 ]);
                             }
                         }
@@ -159,7 +159,7 @@ class SaleService
                         // Non-variable amount: decrement main quantity
                         if (! $event->unlimited_quantity && ! is_null($event->quantity)) {
                             Event::where('id', $eventId)->update([
-                                'quantity' => DB::raw('GREATEST(0, quantity - 1)')
+                                'quantity' => DB::raw('GREATEST(0, quantity - 1)'),
                             ]);
                         }
                     }
@@ -170,22 +170,33 @@ class SaleService
             if (! empty($data['office_shift_id'])) {
                 $office = OfficeShift::find($data['office_shift_id']);
                 if ($office) {
-                    // Default sold_by in the snapshot to the provided sold_by_email, or to 'SumUp' for card sales. 'unknown' if no user context.
-                    $defaultSoldBy = $data['sold_by_email'] ?? null;
+                    // Determine item type - treat manual entries as custom
+                    $isManualEntry = $data['is_manual_entry'] ?? false;
+                    $itemType = $productId ? 'product' : ($eventId ? 'event' : 'custom');
+
+                    // Default sold_by in the snapshot to the provided sold_by_name, or to 'SumUp' for card sales. 'unknown' if no user context.
+                    $defaultSoldBy = $data['sold_by_name'] ?? null;
                     if (! $defaultSoldBy) {
-                        $defaultSoldBy = ($method === 'card') ? 'SumUp' : (Auth::user()->email ?? 'unknown');
+                        $defaultSoldBy = ($method === 'card') ? 'SumUp' : (Auth::user()->name ?? 'unknown');
+                    }
+
+                    // For custom sales OR manual entries, prefix with "Custom - "
+                    if (($itemType === 'custom' || $isManualEntry) && $defaultSoldBy && $defaultSoldBy !== 'SumUp') {
+                        $defaultSoldBy = 'Custom - '.$defaultSoldBy;
                     }
 
                     $snapshot = array_merge([
-                        'item_type' => $productId ? 'product' : ($eventId ? 'event' : 'custom'),
+                        'item_type' => $itemType,
                         'name' => $data['name'] ?? ($productId ? optional(Product::find($productId))->name : optional(Event::find($eventId))->name),
                         'price' => $data['price'] ?? $amount,
                         'method' => $method,
                         'amount' => $amount,
+                        'description' => $data['description'] ?? '',
                         'sold_by' => $defaultSoldBy,
                         'sold_at' => $data['sold_at'] ?? now()->toDateTimeString(),
                         'ticket_type' => $ticketType ?? null,
                         'ticket_label' => $data['ticket_label'] ?? null,
+                        'is_manual_entry' => $isManualEntry,
                     ], $details ?: []);
 
                     $oss = OfficeShiftSale::create([
@@ -194,7 +205,7 @@ class SaleService
                         'event_id' => $eventId,
                         'method' => $method,
                         'amount' => $amount,
-                        'description' => $data['description'] ?? null,
+                        'description' => $data['description'] ?? '',
                         'sold_by' => $data['sold_by'] ?? null,
                         'sold_at' => $data['sold_at'] ?? now(),
                         'snapshot' => $snapshot,

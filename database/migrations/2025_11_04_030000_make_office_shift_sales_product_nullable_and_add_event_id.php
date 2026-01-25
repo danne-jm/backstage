@@ -11,7 +11,7 @@ return new class extends Migration
         if (Schema::getConnection()->getDriverName() === 'sqlite') {
             Schema::table('office_shift_sales', function ($table) {
                 // SQLite ALTER constraints are limited, but we can add columns and nullable.
-                // product_id nullable change in sqlite requires recreating table usually, 
+                // product_id nullable change in sqlite requires recreating table usually,
                 // but we can try just adding event_id first.
                 // Making product_id nullable in SQLite simple usage:
                 $table->bigInteger('product_id')->nullable()->change();
@@ -35,7 +35,7 @@ return new class extends Migration
             Schema::table('office_shift_sales', function ($table) {
                 // Reverting in SQLite is hard (dropping column allowed in newer versions)
                 $table->dropColumn('event_id');
-                // Cannot easily revert nullable change without table recreation 
+                // Cannot easily revert nullable change without table recreation
             });
         } else {
             // Reverse the changes: drop event fk/column and make product_id NOT NULL again

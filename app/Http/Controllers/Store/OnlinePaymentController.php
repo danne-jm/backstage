@@ -203,12 +203,12 @@ class OnlinePaymentController extends Controller
             $processingFee = round($subtotal * 0.02, 2);
             $totalAmount = $subtotal + $processingFee;
 
-            // Generate secure token
-            $token = Str::random(64);
+            // Generate secure reference ID
+            $referenceId = Str::random(64);
 
-            // Create transaction with secure token
+            // Create transaction with secure reference ID
             $transaction = OnlineTransaction::create([
-                'token' => $token,
+                'reference_id' => $referenceId,
                 'total_amount' => $totalAmount,
                 'processing_fee' => $processingFee,
                 'discount_codes' => count($codes) > 0 ? $codes : null,
@@ -262,24 +262,24 @@ class OnlinePaymentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'redirect_url' => '/confirmation?bag='.$token,
+                'redirect_url' => '/confirmation?bag='.$referenceId,
             ]);
         });
     }
 
     /**
-     * Display purchase confirmation page using secure token.
+     * Display purchase confirmation page using secure reference ID.
      */
     public function confirmation(Request $request)
     {
-        $token = $request->query('bag');
+        $referenceId = $request->query('bag');
 
-        if (! $token) {
+        if (! $referenceId) {
             return redirect('/')->with('error', 'Invalid confirmation link.');
         }
 
         $transaction = OnlineTransaction::with(['sales.product', 'sales.event'])
-            ->where('token', $token)
+            ->where('reference_id', $referenceId)
             ->first();
 
         if (! $transaction) {

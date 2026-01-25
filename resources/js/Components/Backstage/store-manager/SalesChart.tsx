@@ -1,5 +1,6 @@
 import { PlaceholderPattern } from '@/Components/Shared/ui/placeholder-pattern';
 import { OnlineSale, Sellable } from '@/types/sellables';
+import { useRef, useState } from 'react';
 
 interface SalesChartProps {
     loading: boolean;
@@ -23,6 +24,20 @@ interface SalesChartProps {
     seriesMax: number;
 }
 
+interface HoverData {
+    dateIndex: number;
+    date: string;
+    mouseX: number;
+    mouseY: number;
+    points: Array<{
+        name: string;
+        value: number;
+        color: string;
+        x: number;
+        y: number;
+    }>;
+}
+
 export function SalesChart({
     loading,
     sales,
@@ -30,13 +45,71 @@ export function SalesChart({
     onlineSellableSeries,
     seriesMax,
 }: SalesChartProps) {
+    const [hover, setHover] = useState<HoverData | null>(null);
+    const svgRef = useRef<SVGSVGElement>(null);
+
     // Sort by count (quantity) descending
     const sortedTotals = [...onlineSellableTotals].sort(
         (a, b) => b.count - a.count,
     );
 
+    // Chart dimensions - reduced left padding
+    const leftPad = 28;
+    const bottomPad = 24;
+    const topPad = 8;
+    const rightPad = 8;
+    const viewBoxWidth = 360;
+    const viewBoxHeight = 140;
+    const chartW = viewBoxWidth - leftPad - rightPad;
+    const chartH = viewBoxHeight - topPad - bottomPad;
+    const dateKeys = sales.map((s) => s.date);
+
+    const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+        if (!svgRef.current || !sales || sales.length === 0) return;
+
+        const rect = svgRef.current.getBoundingClientRect();
+        const scaleX = viewBoxWidth / rect.width;
+        const scaleY = viewBoxHeight / rect.height;
+        const svgX = (e.clientX - rect.left) * scaleX;
+        const svgY = (e.clientY - rect.top) * scaleY;
+
+        // Find closest date index based on mouse X position
+        const chartX = svgX - leftPad;
+        const ratio = chartX / chartW;
+        const dateIndex = Math.round(ratio * (dateKeys.length - 1));
+        const clampedIndex = Math.max(
+            0,
+            Math.min(dateKeys.length - 1, dateIndex),
+        );
+
+        // Calculate points for this date
+        const points = onlineSellableSeries
+            .map((s) => {
+                const val = s.series[clampedIndex] || 0;
+                const x =
+                    leftPad +
+                    (clampedIndex / Math.max(1, dateKeys.length - 1)) * chartW;
+                const y = topPad + chartH - (val / seriesMax) * chartH;
+                return { name: s.name, value: val, color: s.color, x, y };
+            })
+            .filter((p) => p.value > 0);
+
+        setHover({
+            dateIndex: clampedIndex,
+            date: dateKeys[clampedIndex],
+            mouseX: e.clientX - rect.left,
+            mouseY: e.clientY - rect.top,
+            points,
+        });
+    };
+
+    // Calculate Y-axis ticks (5 ticks including 0)
+    const yTicks = 5;
+    const yStep = seriesMax / (yTicks - 1);
+    const yTickValues = Array.from({ length: yTicks }, (_, i) => yStep * i);
+
     return (
-        <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
+        <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
             <div className="mb-2 flex items-center justify-between">
                 <h3 className="text-sm font-semibold">Sales</h3>
                 <div className="text-sm font-medium">
@@ -50,59 +123,230 @@ export function SalesChart({
                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
             ) : (
                 <>
-                    <div className="h-40 w-full">
-                        <svg viewBox="0 0 300 80" className="h-full w-full">
-                            {(() => {
-                                if (!sales || sales.length === 0) return null;
-                                const pad = 10;
-                                const w = 300 - pad * 2;
-                                const h = 80 - pad * 2;
-                                const dateKeys = sales.map((s) => s.date);
-
-                                return (
-                                    <>
-                                        {onlineSellableSeries.map((s, idx) => {
-                                            const points = s.series.map(
-                                                (val: number, i: number) => {
-                                                    const x =
-                                                        pad +
-                                                        (i /
-                                                            Math.max(
-                                                                1,
-                                                                dateKeys.length -
-                                                                    1,
-                                                            )) *
-                                                            w;
-                                                    const y =
-                                                        pad +
-                                                        h -
-                                                        (val / seriesMax) * h;
-                                                    return { x, y };
-                                                },
-                                            );
-
-                                            const d = points
-                                                .map(
-                                                    (p, i) =>
-                                                        `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`,
-                                                )
-                                                .join(' ');
-
-                                            return (
-                                                <path
-                                                    key={`series-${idx}`}
-                                                    d={d}
-                                                    fill="none"
-                                                    stroke={s.color}
-                                                    strokeWidth={2}
-                                                    strokeOpacity={0.95}
+                    <div className="relative w-full flex-1">
+                        <svg
+                            ref={svgRef}
+                            viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+                            className="h-full w-full"
+                            preserveAspectRatio="xMidYMid meet"
+                            onMouseMove={handleMouseMove}
+                            onMouseLeave={() => setHover(null)}
+                        >
+                            {sales && sales.length > 0 && (
+                                <>
+                                    {/* Y-axis grid lines and labels */}
+                                    {yTickValues.map((value, i) => {
+                                        const y =
+                                            topPad +
+                                            chartH -
+                                            (value / seriesMax) * chartH;
+                                        return (
+                                            <g key={`y-tick-${i}`}>
+                                                <line
+                                                    x1={leftPad}
+                                                    y1={y}
+                                                    x2={leftPad + chartW}
+                                                    y2={y}
+                                                    stroke="currentColor"
+                                                    strokeOpacity={0.1}
+                                                    strokeWidth={1}
                                                 />
-                                            );
-                                        })}
-                                    </>
-                                );
-                            })()}
+                                                <text
+                                                    x={leftPad - 3}
+                                                    y={y}
+                                                    textAnchor="end"
+                                                    dominantBaseline="middle"
+                                                    fontSize="8"
+                                                    fill="currentColor"
+                                                    opacity={0.6}
+                                                >
+                                                    €{value.toFixed(0)}
+                                                </text>
+                                            </g>
+                                        );
+                                    })}
+
+                                    {/* X-axis labels - show fewer labels to avoid overlap */}
+                                    {dateKeys.map((date, i) => {
+                                        // Show every nth label depending on count
+                                        const step =
+                                            dateKeys.length > 10
+                                                ? 3
+                                                : dateKeys.length > 5
+                                                  ? 2
+                                                  : 1;
+                                        if (
+                                            i % step !== 0 &&
+                                            i !== dateKeys.length - 1
+                                        )
+                                            return null;
+
+                                        const x =
+                                            leftPad +
+                                            (i /
+                                                Math.max(
+                                                    1,
+                                                    dateKeys.length - 1,
+                                                )) *
+                                                chartW;
+                                        const y = topPad + chartH + 12;
+                                        const formattedDate = new Date(
+                                            date,
+                                        ).toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                        });
+
+                                        return (
+                                            <text
+                                                key={`x-label-${i}`}
+                                                x={x}
+                                                y={y}
+                                                textAnchor="middle"
+                                                fontSize="7"
+                                                fill="currentColor"
+                                                opacity={0.6}
+                                            >
+                                                {formattedDate}
+                                            </text>
+                                        );
+                                    })}
+
+                                    {/* Data series lines */}
+                                    {onlineSellableSeries.map((s, idx) => {
+                                        const points = s.series.map(
+                                            (val: number, i: number) => {
+                                                const x =
+                                                    leftPad +
+                                                    (i /
+                                                        Math.max(
+                                                            1,
+                                                            dateKeys.length - 1,
+                                                        )) *
+                                                        chartW;
+                                                const y =
+                                                    topPad +
+                                                    chartH -
+                                                    (val / seriesMax) * chartH;
+                                                return { x, y };
+                                            },
+                                        );
+
+                                        const d = points
+                                            .map(
+                                                (p, i) =>
+                                                    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`,
+                                            )
+                                            .join(' ');
+
+                                        return (
+                                            <path
+                                                key={`series-${idx}`}
+                                                d={d}
+                                                fill="none"
+                                                stroke={s.color}
+                                                strokeWidth={2}
+                                                strokeOpacity={0.95}
+                                                style={{
+                                                    pointerEvents: 'none',
+                                                }}
+                                            />
+                                        );
+                                    })}
+
+                                    {/* Vertical hover line */}
+                                    {hover && (
+                                        <line
+                                            x1={
+                                                leftPad +
+                                                (hover.dateIndex /
+                                                    Math.max(
+                                                        1,
+                                                        dateKeys.length - 1,
+                                                    )) *
+                                                    chartW
+                                            }
+                                            y1={topPad}
+                                            x2={
+                                                leftPad +
+                                                (hover.dateIndex /
+                                                    Math.max(
+                                                        1,
+                                                        dateKeys.length - 1,
+                                                    )) *
+                                                    chartW
+                                            }
+                                            y2={topPad + chartH}
+                                            stroke="currentColor"
+                                            strokeOpacity={0.3}
+                                            strokeWidth={1}
+                                            strokeDasharray="3,3"
+                                            style={{ pointerEvents: 'none' }}
+                                        />
+                                    )}
+
+                                    {/* Circle indicators on hover */}
+                                    {hover &&
+                                        hover.points.map((point, i) => (
+                                            <circle
+                                                key={`hover-point-${i}`}
+                                                cx={point.x}
+                                                cy={point.y}
+                                                r={4}
+                                                fill={point.color}
+                                                stroke="white"
+                                                strokeWidth={2}
+                                                style={{
+                                                    pointerEvents: 'none',
+                                                }}
+                                            />
+                                        ))}
+                                </>
+                            )}
                         </svg>
+
+                        {/* Tooltip */}
+                        {hover && hover.points.length > 0 && (
+                            <div
+                                className="pointer-events-none absolute z-10 rounded-lg border border-sidebar-border bg-background p-2 shadow-lg"
+                                style={{
+                                    left: `${Math.min(hover.mouseX + 10, 200)}px`,
+                                    top: `${hover.mouseY + 10}px`,
+                                }}
+                            >
+                                <div className="mb-1 text-xs font-medium">
+                                    {new Date(hover.date).toLocaleDateString(
+                                        'en-US',
+                                        {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                        },
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    {hover.points.map((item, i) => (
+                                        <div
+                                            key={i}
+                                            className="flex items-center gap-2 text-xs"
+                                        >
+                                            <span
+                                                className="inline-block h-2 w-2 rounded-full"
+                                                style={{
+                                                    backgroundColor: item.color,
+                                                }}
+                                            />
+                                            <span className="truncate">
+                                                {item.name}
+                                            </span>
+                                            <span className="ml-auto font-medium">
+                                                €{item.value.toFixed(2)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className="mt-3 text-xs">
                         <div className="mb-1 text-muted-foreground">

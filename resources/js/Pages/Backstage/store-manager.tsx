@@ -97,28 +97,34 @@ export default function StoreManager() {
                     setOnlineSales(json.onlineSales);
                 setOnlineSellablesCount(json.onlineSellablesCount || 0);
                 setOnlineSalesTotal(Number(json.onlineSalesTotal || 0));
-                setLastClosedShiftDate(json.lastClosedShiftDate || null);
-            }
 
-            // Fetch sales summary matching the period
-            const days =
-                period === 'month'
-                    ? 30
-                    : period === '7days'
-                      ? 7
-                      : period === 'lastShift'
-                        ? 0
-                        : 14;
-            let summaryUrl = `/sales/summary?days=${days}`;
-            if (period === 'lastShift' && lastClosedShiftDate) {
-                summaryUrl = `/sales/summary?from=${lastClosedShiftDate}`;
-            }
-            const sres = await fetch(summaryUrl, {
-                credentials: 'same-origin',
-            });
-            if (sres.ok) {
-                const sj = await sres.json();
-                setSales(sj.data || []);
+                // Get the latest closed shift date from response
+                const latestShiftDate = json.lastClosedShiftDate || null;
+                setLastClosedShiftDate(latestShiftDate);
+
+                // Fetch sales summary matching the period
+                const days =
+                    period === 'month'
+                        ? 30
+                        : period === '7days'
+                          ? 7
+                          : period === 'lastShift'
+                            ? 0
+                            : 14;
+                let summaryUrl = `/sales/summary?days=${days}`;
+
+                // Use the fresh latestShiftDate instead of state
+                if (period === 'lastShift' && latestShiftDate) {
+                    summaryUrl = `/sales/summary?from=${latestShiftDate}`;
+                }
+
+                const sres = await fetch(summaryUrl, {
+                    credentials: 'same-origin',
+                });
+                if (sres.ok) {
+                    const sj = await sres.json();
+                    setSales(sj.data || []);
+                }
             }
         } catch (e) {
             console.error('Failed to load store-manager data', e);
@@ -286,7 +292,7 @@ export default function StoreManager() {
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title="Store Manager" />
                 <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                    <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         {/* Sales chart */}
                         <SalesChart
                             loading={loading}
@@ -306,7 +312,7 @@ export default function StoreManager() {
                             topSellerName={onlineSellableTotals[0]?.name ?? '—'}
                         />
 
-                        {/* Sellables */}
+                        {/* Sellables - this drives the row height */}
                         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
                             <h3 className="mb-2 text-sm font-semibold">
                                 Sellables

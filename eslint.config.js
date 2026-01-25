@@ -33,6 +33,15 @@ export default [
         ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js'],
     },
     {
+        // Node.js scripts
+        files: ['scripts/**/*.mjs'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+    {
         // Temporarily relax some TypeScript rules to reduce noise while migrating types.
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
