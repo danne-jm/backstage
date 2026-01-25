@@ -15,7 +15,19 @@ class HandleInertiaRequests extends Middleware
      *
      * @var string
      */
-    protected $rootView = 'app';
+    protected $rootView = 'backstage';
+
+    public function rootView(Request $request): string
+    {
+        $host = $request->getHost();
+        $storeDomain = env('STORE_DOMAIN', 'store.danieljm.dpdns.org');
+
+        if ($host === $storeDomain || $host === 'store.localhost') {
+            return 'shop';
+        }
+
+        return 'backstage';
+    }
 
     /**
      * Determines the current asset version.

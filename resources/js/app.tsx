@@ -9,7 +9,7 @@ import { createRoot } from 'react-dom/client';
 import { UserPresenceProvider } from './contexts/user-presence-context';
 import { initializeTheme } from './hooks/use-appearance';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = 'Leuven Backstage';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

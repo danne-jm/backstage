@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { Button } from '@/Components/Shared/ui/button';
 import { Checkbox } from '@/Components/Shared/ui/checkbox';
 import {
@@ -78,7 +79,17 @@ export function EventPreview({
             <div className="flex items-start">
                 <div className="flex-1">
                     <div className="flex items-start justify-between">
-                        <h3 className="font-medium">{event.name}</h3>
+                        <h3
+                            className={cn(
+                                'font-medium',
+                                variant === 'store-manager' &&
+                                isOnline &&
+                                event.name.length >= 26 &&
+                                'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                            )}
+                        >
+                            {event.name}
+                        </h3>
 
                         <div className="flex items-center gap-2">
                             {onEdit && (
@@ -158,48 +169,48 @@ export function EventPreview({
                                         Qty w/ ESNcard:
                                     </span>{' '}
                                     {event.unlimited_quantity_with_card ||
-                                    event.quantity_with_card == null
+                                        event.quantity_with_card == null
                                         ? 'Unlimited'
                                         : event.quantity_with_card}
                                     {event.unlimited_quantity_with_card ||
-                                    event.quantity_with_card == null
+                                        event.quantity_with_card == null
                                         ? false
                                         : event.remaining_with_card !==
-                                              undefined &&
-                                          event.remaining_with_card !==
-                                              null && (
-                                              <span className="text-gray-500">
-                                                  {' '}
-                                                  | {
-                                                      event.remaining_with_card
-                                                  }{' '}
-                                                  remain
-                                              </span>
-                                          )}{' '}
+                                        undefined &&
+                                        event.remaining_with_card !==
+                                        null && (
+                                            <span className="text-gray-500">
+                                                {' '}
+                                                | {
+                                                    event.remaining_with_card
+                                                }{' '}
+                                                remain
+                                            </span>
+                                        )}{' '}
                                     |{' '}
                                     <span className="text-muted-foreground">
                                         w/o ESNcard:
                                     </span>{' '}
                                     {event.unlimited_quantity_without_card ||
-                                    event.quantity_without_card == null
+                                        event.quantity_without_card == null
                                         ? 'Unlimited'
                                         : event.quantity_without_card}
                                     {event.unlimited_quantity_without_card ||
-                                    event.quantity_without_card == null
+                                        event.quantity_without_card == null
                                         ? false
                                         : event.remaining_without_card !==
-                                              undefined &&
-                                          event.remaining_without_card !==
-                                              null && (
-                                              <span className="text-gray-500">
-                                                  {' '}
-                                                  |{' '}
-                                                  {
-                                                      event.remaining_without_card
-                                                  }{' '}
-                                                  remain
-                                              </span>
-                                          )}
+                                        undefined &&
+                                        event.remaining_without_card !==
+                                        null && (
+                                            <span className="text-gray-500">
+                                                {' '}
+                                                |{' '}
+                                                {
+                                                    event.remaining_without_card
+                                                }{' '}
+                                                remain
+                                            </span>
+                                        )}
                                 </div>
 
                                 {variant === 'store-manager' && onSetOnline && (
@@ -230,19 +241,19 @@ export function EventPreview({
                                         Quantity:
                                     </span>{' '}
                                     {event.unlimited_quantity ||
-                                    event.quantity == null
+                                        event.quantity == null
                                         ? 'Unlimited'
                                         : event.quantity}
                                     {event.unlimited_quantity ||
-                                    event.quantity == null
+                                        event.quantity == null
                                         ? false
                                         : event.remaining !== undefined &&
-                                          event.remaining !== null && (
-                                              <span className="text-gray-500">
-                                                  {' '}
-                                                  | {event.remaining} remain
-                                              </span>
-                                          )}
+                                        event.remaining !== null && (
+                                            <span className="text-gray-500">
+                                                {' '}
+                                                | {event.remaining} remain
+                                            </span>
+                                        )}
                                 </div>
 
                                 {variant === 'store-manager' && onSetOnline && (

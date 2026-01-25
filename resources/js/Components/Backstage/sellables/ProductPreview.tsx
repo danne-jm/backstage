@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { Button } from '@/Components/Shared/ui/button';
 import { Checkbox } from '@/Components/Shared/ui/checkbox';
 import {
@@ -36,7 +37,17 @@ export function ProductPreview({
         <div className="relative rounded-lg border p-4">
             <div>
                 <div className="flex items-start justify-between">
-                    <h3 className="font-medium">{product.name}</h3>
+                    <h3
+                        className={cn(
+                            'font-medium',
+                            variant === 'store-manager' &&
+                            isOnline &&
+                            product.name.length >= 26 &&
+                            'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                        )}
+                    >
+                        {product.name}
+                    </h3>
 
                     <div className="flex items-center gap-2">
                         {onEdit && (
@@ -85,46 +96,46 @@ export function ProductPreview({
                                     Qty w/ ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_with_card ||
-                                product.quantity_with_card == null
+                                    product.quantity_with_card == null
                                     ? 'Unlimited'
                                     : product.quantity_with_card}
                                 {product.unlimited_quantity_with_card ||
-                                product.quantity_with_card == null
+                                    product.quantity_with_card == null
                                     ? false
                                     : product.remaining_with_card !==
-                                          undefined &&
-                                      product.remaining_with_card !== null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {
-                                                  product.remaining_with_card
-                                              }{' '}
-                                              remain
-                                          </span>
-                                      )}{' '}
+                                    undefined &&
+                                    product.remaining_with_card !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {
+                                                product.remaining_with_card
+                                            }{' '}
+                                            remain
+                                        </span>
+                                    )}{' '}
                                 |{' '}
                                 <span className="text-muted-foreground">
                                     w/o ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_without_card ||
-                                product.quantity_without_card == null
+                                    product.quantity_without_card == null
                                     ? 'Unlimited'
                                     : product.quantity_without_card}
                                 {product.unlimited_quantity_without_card ||
-                                product.quantity_without_card == null
+                                    product.quantity_without_card == null
                                     ? false
                                     : product.remaining_without_card !==
-                                          undefined &&
-                                      product.remaining_without_card !==
-                                          null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {
-                                                  product.remaining_without_card
-                                              }{' '}
-                                              remain
-                                          </span>
-                                      )}
+                                    undefined &&
+                                    product.remaining_without_card !==
+                                    null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {
+                                                product.remaining_without_card
+                                            }{' '}
+                                            remain
+                                        </span>
+                                    )}
                             </>
                         ) : (
                             <>
@@ -132,19 +143,19 @@ export function ProductPreview({
                                     Quantity:
                                 </span>{' '}
                                 {product.unlimited_quantity ||
-                                product.quantity == null
+                                    product.quantity == null
                                     ? 'Unlimited'
                                     : product.quantity}
                                 {product.unlimited_quantity ||
-                                product.quantity == null
+                                    product.quantity == null
                                     ? false
                                     : product.remaining !== undefined &&
-                                      product.remaining !== null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {product.remaining} remain
-                                          </span>
-                                      )}
+                                    product.remaining !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {product.remaining} remain
+                                        </span>
+                                    )}
                             </>
                         )}
                     </div>

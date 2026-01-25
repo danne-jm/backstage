@@ -45,6 +45,24 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Dynamically set APP_NAME based on request host
+        // We use request() helper safely here; if running in console (e.g. queue worker), 
+        // request()->getHost() might not return what we expect, but for web requests it works.
+        // For console commands, the default config('app.name') (Backstage) usually suffices or
+        // one can force it if needed.
+        if (! app()->runningInConsole()) {
+            $host = request()->getHost();
+            $storeDomain = env('STORE_DOMAIN', 'store.danieljm.dpdns.org');
+
+            // Simple check: if host matches the store domain, use Store name.
+            // Otherwise default to Backstage name.
+            if ($host === $storeDomain || $host === 'store.localhost') {
+                config(['app.name' => env('STORE_APP_NAME', 'ESN Leuven')]);
+            } else {
+                config(['app.name' => env('BACKSTAGE_APP_NAME', 'Leuven Backstage')]);
+            }
+        }
+
         // Register observers to propagate non-price updates into saved sales snapshots
         Product::observe(ProductObserver::class);
         Event::observe(EventObserver::class);

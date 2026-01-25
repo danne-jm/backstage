@@ -180,8 +180,13 @@ describe('Store checkout flow with payment gateway', function () {
         $response->assertSuccessful();
 
         $transaction = OnlineTransaction::first();
-        expect((float) $transaction->total_amount)->toBe(204.00); // 200 * 1.02 (2% fee)
-        expect((float) $transaction->processing_fee)->toBe(4.00);
+        
+        $rate = config('services.sumup.processing_fee_rate');
+        $expectedFee = round(200 * $rate, 2);
+        $expectedTotal = round(200 + $expectedFee, 2);
+
+        expect((float) $transaction->total_amount)->toBe($expectedTotal);
+        expect((float) $transaction->processing_fee)->toBe($expectedFee);
     });
 
     it('rejects checkout when product is out of stock', function () {

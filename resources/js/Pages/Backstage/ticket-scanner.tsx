@@ -158,9 +158,20 @@ export default function TicketScanner() {
         }
 
         try {
-            const url = `/ticket-scanner/verify?ticket_id=${encodeURIComponent(ticketId)}&event_id=${selectedEvent}`;
+            const url = `/ticket-scanner/verify`;
+            // Retrieve CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const res = await fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    ticket_id: ticketId,
+                    event_id: selectedEvent,
+                }),
             });
 
             if (res.ok) {
@@ -321,7 +332,7 @@ export default function TicketScanner() {
     React.useEffect(() => {
         return () => {
             if (scannerRef.current) {
-                scannerRef.current.stop().catch(() => {});
+                scannerRef.current.stop().catch(() => { });
             }
         };
     }, []);
@@ -334,12 +345,12 @@ export default function TicketScanner() {
         if (modalOpen) {
             if (scanning) {
                 wasScanningRef.current = true;
-                stopCamera().catch(() => {});
+                stopCamera().catch(() => { });
             }
         } else {
             if (wasScanningRef.current) {
                 wasScanningRef.current = false;
-                startCameraScan().catch(() => {});
+                startCameraScan().catch(() => { });
             }
         }
         // only depend on modalOpen and scanning
@@ -681,9 +692,9 @@ export default function TicketScanner() {
                     allTickets={
                         scanModal?.ticket
                             ? getAllTicketsForAttendee(
-                                  scanModal.ticket,
-                                  scanModal.ticket,
-                              )
+                                scanModal.ticket,
+                                scanModal.ticket,
+                            )
                             : []
                     }
                 />
@@ -698,9 +709,9 @@ export default function TicketScanner() {
                     allTickets={
                         selectedScannedTicket
                             ? getAllTicketsForAttendee(
-                                  selectedScannedTicket,
-                                  selectedScannedTicket,
-                              )
+                                selectedScannedTicket,
+                                selectedScannedTicket,
+                            )
                             : []
                     }
                 />

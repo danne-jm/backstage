@@ -34,16 +34,8 @@ class GmailSender
 
         $this->logger->info('GmailSender: Refresh token found, decrypting...', ['user_id' => $user->id]);
 
-        try {
-            $refreshToken = decrypt($refreshTokenEncrypted);
-            $this->logger->info('GmailSender: Refresh token decrypted successfully', ['user_id' => $user->id]);
-        } catch (\Throwable $e) {
-            $this->logger->error('GmailSender: Failed to decrypt refresh token', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
+        $refreshToken = $refreshTokenEncrypted; // Already decrypted by Model cast
+        $this->logger->info('GmailSender: Refresh token retrieved (decrypted by Model)', ['user_id' => $user->id]);
 
         // Prepare client
         $client = $this->googleClient;
