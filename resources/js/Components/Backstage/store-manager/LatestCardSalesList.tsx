@@ -1,7 +1,7 @@
 import { PlaceholderPattern } from '@/Components/Shared/ui/placeholder-pattern';
 import { OnlineSale } from '@/types/sellables';
 
-type TimePeriod = '7days' | '14days' | 'month' | 'lastShift';
+type TimePeriod = '24hours' | '7days' | '14days' | 'month' | 'lastShift';
 
 interface LatestCardSalesListProps {
     loading: boolean;
@@ -54,6 +54,7 @@ export function LatestCardSalesList({
                 <div className="flex overflow-hidden rounded-md border border-sidebar-border/70">
                     {(
                         [
+                            '24hours',
                             '7days',
                             '14days',
                             'month',

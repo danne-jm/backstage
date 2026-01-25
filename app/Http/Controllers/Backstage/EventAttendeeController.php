@@ -125,7 +125,8 @@ class EventAttendeeController extends Controller
     /**
      * Validate purchase identifiers against online_sales for this event.
      * Fetches unfiltered data directly from Google Sheets, validates against online_sales,
-     * applies cell formatting (green/red background), and updates has_paid column.
+     * applies cell formatting (green/red/orange background), and updates has_paid column.
+     * Automatically resets validation session at the start for a clean validation run.
      */
     public function validatePurchases(Request $request, Event $event)
     {
@@ -138,6 +139,11 @@ class EventAttendeeController extends Controller
 
         try {
             $service = new GoogleSheetsService;
+
+            // STEP 1: Reset validation session for this event (automatic reset)
+            $sessionKey = "validated_identifiers_event_{$event->id}";
+            session()->forget($sessionKey);
+            $validatedIdentifiers = [];
 
             // Fetch ALL rows (unfiltered) directly from Google Sheets
             $allData = $service->getSheetData($spreadsheetId, $sheetName);
@@ -209,47 +215,76 @@ class EventAttendeeController extends Controller
             $valueUpdates = [];
 
             // Colors (RGB 0-1 scale)
-            // #93c47d = RGB(147, 196, 125) = (0.576, 0.769, 0.490)
-            // #ea9999 = RGB(234, 153, 153) = (0.918, 0.600, 0.600)
+            // #93c47d = RGB(147, 196, 125) = (0.576, 0.769, 0.490) - Green for valid
+            // #ea9999 = RGB(234, 153, 153) = (0.918, 0.600, 0.600) - Red for invalid
+            // #f6b26b = RGB(246, 178, 107) = (0.965, 0.698, 0.420) - Orange for duplicate
             $greenColor = ['red' => 0.576, 'green' => 0.769, 'blue' => 0.490];
             $redColor = ['red' => 0.918, 'green' => 0.600, 'blue' => 0.600];
+            $orangeColor = ['red' => 0.965, 'green' => 0.698, 'blue' => 0.420];
 
             $results = [];
             $validCount = 0;
+            $duplicateCount = 0;
 
+            // STEP 2: Process each purchase identifier
             foreach ($rowsToProcess as $purchaseId => $rowIndices) {
-                $isValid = in_array($purchaseId, $validReferenceIds);
+                $isValidInDatabase = in_array($purchaseId, $validReferenceIds);
 
                 foreach ($rowIndices as $rowIndex) {
+                    // Check if this identifier was already validated in this run
+                    $isDuplicate = in_array($purchaseId, $validatedIdentifiers);
+
+                    // Determine color and validity
+                    $color = $redColor; // Default to red (invalid)
+                    $isValid = false;
+
+                    if ($isValidInDatabase && ! $isDuplicate) {
+                        // Valid and first time seen - green
+                        $color = $greenColor;
+                        $isValid = true;
+                    } elseif ($isValidInDatabase && $isDuplicate) {
+                        // Valid but already used - orange (duplicate)
+                        $color = $orangeColor;
+                        $isValid = false; // Treat as invalid for has_paid purposes
+                        $duplicateCount++;
+                    }
+                    // else: invalid in database - stays red
+
                     // Add cell formatting for purchase_identifier column
-                    // Google Sheets API repeatCell uses 0-indexed rows
-                    // $rowIndex is already the 0-indexed position in allData array (where 0 = headers)
                     $cellFormats[] = [
-                        'row' => $rowIndex, // 0-indexed: row 1 in allData = row 1 in API (which is the 2nd row visually)
+                        'row' => $rowIndex,
                         'col' => $purchaseIdCol,
-                        'color' => $isValid ? $greenColor : $redColor,
+                        'color' => $color,
                     ];
 
-                    // If valid and has_paid column exists, update to TRUE
-                    if ($isValid && $hasPaidCol !== null) {
-                        // Column letter conversion (0=A, 1=B, etc.)
+                    // Update has_paid column if it exists
+                    if ($hasPaidCol !== null) {
                         $colLetter = $this->columnToLetter($hasPaidCol);
-                        // A1 notation is 1-indexed, so add 1 to rowIndex
                         $rowNumber = $rowIndex + 1;
+
+                        // Set to TRUE only if valid (first occurrence), FALSE otherwise
+                        $hasPaidValue = $isValid ? 'TRUE' : 'FALSE';
                         $valueUpdates[] = [
                             'range' => "{$sheetName}!{$colLetter}{$rowNumber}",
-                            'values' => ['TRUE'],
+                            'values' => [$hasPaidValue],
                         ];
                     }
 
-                    // Store result for frontend (using data row index, not sheet row)
+                    // Store result for frontend
                     $results[$rowIndex] = $isValid;
 
                     if ($isValid) {
                         $validCount++;
+                        // Mark this identifier as validated in this run
+                        if (! in_array($purchaseId, $validatedIdentifiers)) {
+                            $validatedIdentifiers[] = $purchaseId;
+                        }
                     }
                 }
             }
+
+            // Update session with validated identifiers
+            session([$sessionKey => $validatedIdentifiers]);
 
             // Apply formatting to Google Sheets
             if (! empty($cellFormats)) {
@@ -264,6 +299,7 @@ class EventAttendeeController extends Controller
             return response()->json([
                 'results' => $results,
                 'valid_count' => $validCount,
+                'duplicate_count' => $duplicateCount,
                 'total_checked' => count($cellFormats),
             ]);
         } catch (\Throwable $e) {

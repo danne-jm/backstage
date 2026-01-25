@@ -295,15 +295,19 @@ export default function EventAttendees({ event }: { event: any }) {
         setIsValidating(true);
 
         try {
-            // Backend fetches unfiltered data directly from Google Sheets,
-            // validates against online_sales, applies cell formatting, and updates has_paid
+            // Backend automatically resets validation session, then validates all identifiers
+            // Updates has_paid column and applies cell formatting
             const res = await axios.post(
                 `/sellables/events/${event.id}/attendees/validate-purchases`,
                 {},
             );
 
+            const duplicateMsg =
+                res.data.duplicate_count > 0
+                    ? ` ${res.data.duplicate_count} duplicates marked orange.`
+                    : '';
             toast.success(
-                `Validated ${res.data.total_checked} entries. ${res.data.valid_count} valid. Changes applied to Google Sheet.`,
+                `Validated ${res.data.total_checked} entries. ${res.data.valid_count} valid.${duplicateMsg} Changes applied to Google Sheet.`,
             );
 
             // Refresh the local data to reflect updated has_paid values
@@ -311,9 +315,7 @@ export default function EventAttendees({ event }: { event: any }) {
                 await fetchSheetData(sheetName);
             }
 
-            // Map backend results (which use unfiltered row indices) to filtered row indices for local highlighting
-            // Since we refresh the data, the filtered indices may not match, so we clear validation results
-            // The visual feedback is now permanently in the Google Sheet via cell background colors
+            // Clear validation results since visual feedback is in the Google Sheet
             setValidationResults({});
         } catch (e: any) {
             console.error('Validation failed:', e);

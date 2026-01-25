@@ -53,11 +53,11 @@ export function SalesChart({
         (a, b) => b.count - a.count,
     );
 
-    // Chart dimensions - reduced left padding
-    const leftPad = 28;
+    // Chart dimensions - remove left/right padding for perfect alignment
+    const leftPad = 0;
     const bottomPad = 24;
     const topPad = 8;
-    const rightPad = 8;
+    const rightPad = 0;
     const viewBoxWidth = 360;
     const viewBoxHeight = 140;
     const chartW = viewBoxWidth - leftPad - rightPad;
@@ -164,20 +164,26 @@ export function SalesChart({
                                         );
                                     })}
 
-                                    {/* X-axis labels - show fewer labels to avoid overlap */}
+                                    {/* X-axis labels - intelligently spaced to prevent overflow */}
                                     {dateKeys.map((date, i) => {
-                                        // Show every nth label depending on count
+                                        // Detect if this is hourly data (has hour component)
+                                        const isHourly = date.includes(':');
+                                        
+                                        // Show fewer labels for more data points
                                         const step =
-                                            dateKeys.length > 10
-                                                ? 3
-                                                : dateKeys.length > 5
+                                            dateKeys.length > 20
+                                                ? 4
+                                                : dateKeys.length > 10
                                                   ? 2
                                                   : 1;
-                                        if (
-                                            i % step !== 0 &&
-                                            i !== dateKeys.length - 1
-                                        )
-                                            return null;
+                                        
+                                        // Always show first and last, then every nth
+                                        const shouldShow = 
+                                            i === 0 || 
+                                            i === dateKeys.length - 1 || 
+                                            i % step === 0;
+                                        
+                                        if (!shouldShow) return null;
 
                                         const x =
                                             leftPad +
@@ -188,19 +194,38 @@ export function SalesChart({
                                                 )) *
                                                 chartW;
                                         const y = topPad + chartH + 12;
-                                        const formattedDate = new Date(
-                                            date,
-                                        ).toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                        });
+                                        
+                                        let formattedDate;
+                                        if (isHourly) {
+                                            // Format as time (e.g., "14:00")
+                                            const dateObj = new Date(date);
+                                            formattedDate = dateObj.toLocaleTimeString('en-US', {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                hour12: false,
+                                            });
+                                        } else {
+                                            // Format as date (e.g., "Jan 25")
+                                            formattedDate = new Date(
+                                                date,
+                                            ).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                            });
+                                        }
 
                                         return (
                                             <text
                                                 key={`x-label-${i}`}
                                                 x={x}
                                                 y={y}
-                                                textAnchor="middle"
+                                                textAnchor={
+                                                    i === 0
+                                                        ? 'start'
+                                                        : i === dateKeys.length - 1
+                                                          ? 'end'
+                                                          : 'middle'
+                                                }
                                                 fontSize="7"
                                                 fill="currentColor"
                                                 opacity={0.6}

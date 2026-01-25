@@ -79,6 +79,9 @@ class StoreManagerController extends Controller
             ->first();
 
         switch ($period) {
+            case '24hours':
+                $from = now()->subHours(24);
+                break;
             case '7days':
                 $from = now()->subDays(7);
                 break;

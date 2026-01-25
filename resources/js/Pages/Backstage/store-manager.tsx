@@ -20,9 +20,10 @@ import type {
 } from '@/types/sellables';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-type TimePeriod = '7days' | '14days' | 'month' | 'lastShift';
+type TimePeriod = '24hours' | '7days' | '14days' | 'month' | 'lastShift';
 
 const periodLabels: Record<TimePeriod, string> = {
+    '24hours': 'Last 24 hours',
     '7days': 'Last 7 days',
     '14days': 'Last 14 days',
     month: 'Last 30 days',
@@ -102,10 +103,14 @@ export default function StoreManager() {
                             ? 30
                             : period === '7days'
                               ? 7
-                              : period === 'lastShift'
-                                ? 0
-                                : 14;
-                    let summaryUrl = `/sales/summary?days=${days}`;
+                              : period === '24hours'
+                                ? 1
+                                : period === 'lastShift'
+                                  ? 0
+                                  : 14;
+                    
+                    const hourly = period === '24hours';
+                    let summaryUrl = `/sales/summary?days=${days}&hourly=${hourly}`;
 
                     // Use the fresh lastClosedShiftDate from response
                     if (period === 'lastShift' && json.lastClosedShiftDate) {
