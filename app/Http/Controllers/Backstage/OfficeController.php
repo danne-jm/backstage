@@ -25,86 +25,92 @@ class OfficeController extends Controller
 
     public function index(Request $request)
     {
-        // Load active shift with relations to prevent N+1 issues
-        $activeShift = OfficeShift::with(['workers.user'])
-            ->where('status', 'open')
-            ->orderBy('started_at', 'desc')
-            ->first();
+        $cacheKey = 'office_dashboard_index';
 
-        $lastShift = OfficeShift::with(['workers.user', 'sales.product', 'sales.event'])
-            ->where('status', 'closed')
-            ->orderBy('ended_at', 'desc')
-            ->first();
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 10, function () {
+            // Load active shift with relations to prevent N+1 issues
+            $activeShift = OfficeShift::with(['workers.user'])
+                ->where('status', 'open')
+                ->orderBy('started_at', 'desc')
+                ->first();
 
-        $sellables = $this->inventoryService->getAllSellables();
-        $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
+            $lastShift = OfficeShift::with(['workers.user', 'sales.product', 'sales.event'])
+                ->where('status', 'closed')
+                ->orderBy('ended_at', 'desc')
+                ->first();
 
-        // Format Active Shift for Frontend
-        $activeData = null;
-        if ($activeShift) {
-            $activeData = $activeShift->toArray();
-            // Map workers relation to simple array for frontend
-            $activeData['workers'] = $activeShift->workers->map(fn ($w) => [
-                'id' => $w->user->id,
-                'name' => $w->user->name,
-                'role' => $w->role,
-                'email' => $w->user->email,
-            ]);
-        }
+            $sellables = $this->inventoryService->getAllSellables();
+            $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
 
-        // Format Last Shift for Frontend
-        $lastShiftData = null;
-        if ($lastShift) {
-            $lastShiftData = $lastShift->toArray();
-            $lastShiftData['workers'] = $lastShift->workers->map(fn ($w) => [
-                'id' => $w->user->id,
-                'name' => $w->user->name,
-                'role' => $w->role,
-            ]);
-            $lastShiftData['sales'] = $lastShift->sales->map(function ($sale) {
-                $snap = $sale->snapshot ?? [];
-                $snap['id'] = $sale->id;
-                $snap['breakdown'] = $sale->breakdown; // Add breakdown to the response
-
-                return $snap;
-            })->sortByDesc('created_at')->values()->all();
-        }
-
-        $pastShifts = OfficeShift::with(['workers.user'])
-            ->whereNotNull('ended_at')
-            ->orderBy('ended_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(fn ($s) => [
-                'id' => $s->id,
-                'started_at' => $s->started_at,
-                'ended_at' => $s->ended_at,
-                'status' => $s->status,
-                'total_cash' => $s->total_cash,
-                'total_card' => $s->total_card,
-                'workers' => $s->workers->map(fn ($w) => [
+            // Format Active Shift for Frontend
+            $activeData = null;
+            if ($activeShift) {
+                $activeData = $activeShift->toArray();
+                // Map workers relation to simple array for frontend
+                $activeData['workers'] = $activeShift->workers->map(fn ($w) => [
                     'id' => $w->user->id,
                     'name' => $w->user->name,
-                ]),
-            ]);
+                    'role' => $w->role,
+                    'email' => $w->user->email,
+                ]);
+            }
 
-        $staffCollection = User::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'role', 'email']);
-        $staff = $staffCollection->map(fn ($u) => [
-            'id' => $u->id,
-            'name' => $u->name,
-            'role' => $u->role,
-            'email' => $u->email,
-        ])->toArray();
+            // Format Last Shift for Frontend
+            $lastShiftData = null;
+            if ($lastShift) {
+                $lastShiftData = $lastShift->toArray();
+                $lastShiftData['workers'] = $lastShift->workers->map(fn ($w) => [
+                    'id' => $w->user->id,
+                    'name' => $w->user->name,
+                    'role' => $w->role,
+                ]);
+                $lastShiftData['sales'] = $lastShift->sales->map(function ($sale) {
+                    $snap = $sale->snapshot ?? [];
+                    $snap['id'] = $sale->id;
+                    $snap['breakdown'] = $sale->breakdown; // Add breakdown to the response
 
-        return Inertia::render('Backstage/office', [
-            'activeShift' => $activeData,
-            'lastShift' => $lastShiftData,
-            'products' => $products,
-            'sellables' => $sellables,
-            'pastShifts' => $pastShifts,
-            'denominations' => OfficeShift::DENOMINATIONS,
-            'staff' => $staff,
-        ]);
+                    return $snap;
+                })->sortByDesc('created_at')->values()->all();
+            }
+
+            $pastShifts = OfficeShift::with(['workers.user'])
+                ->whereNotNull('ended_at')
+                ->orderBy('ended_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(fn ($s) => [
+                    'id' => $s->id,
+                    'started_at' => $s->started_at,
+                    'ended_at' => $s->ended_at,
+                    'status' => $s->status,
+                    'total_cash' => $s->total_cash,
+                    'total_card' => $s->total_card,
+                    'workers' => $s->workers->map(fn ($w) => [
+                        'id' => $w->user->id,
+                        'name' => $w->user->name,
+                    ]),
+                ]);
+
+            $staffCollection = User::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'role', 'email']);
+            $staff = $staffCollection->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'role' => $u->role,
+                'email' => $u->email,
+            ])->toArray();
+
+            return [
+                'activeShift' => $activeData,
+                'lastShift' => $lastShiftData,
+                'products' => $products,
+                'sellables' => $sellables,
+                'pastShifts' => $pastShifts,
+                'denominations' => OfficeShift::DENOMINATIONS,
+                'staff' => $staff,
+            ];
+        });
+
+        return Inertia::render('Backstage/office', $data);
     }
 
     public function show(OfficeShift $office)

@@ -55,96 +55,108 @@ class SalesController extends Controller
         }
 
         if ($hourly) {
-            // Prepare hour buckets
-            $hours = [];
-            $cursor = (clone $start)->startOfHour();
-            $endCursor = (clone $end)->startOfHour()->addHour(); // Include current hour
+            $cacheKey = "sales_summary_hourly_" . md5(json_encode([$start->toString(), $end->toString()]));
 
-            while ($cursor->lt($endCursor)) {
-                $hours[$cursor->format('Y-m-d H:00:00')] = [
-                    'date' => $cursor->format('Y-m-d H:00:00'),
-                    'office_total' => 0.0,
-                    'online_total' => 0.0,
-                ];
-                $cursor->addHour();
-            }
+            $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($start, $end) {
+                // Prepare hour buckets
+                $hours = [];
+                $cursor = (clone $start)->startOfHour();
+                $endCursor = (clone $end)->startOfHour()->addHour(); // Include current hour
 
-            // Office sales - hourly
-            $office = OfficeShiftSale::query()
-                ->whereBetween('sold_at', [$start, $end])
-                ->selectRaw('DATE_FORMAT(sold_at, "%Y-%m-%d %H:00:00") as hour, SUM(amount) as total')
-                ->groupBy('hour')
-                ->get();
-
-            foreach ($office as $row) {
-                $h = $row->hour;
-                if (isset($hours[$h])) {
-                    $hours[$h]['office_total'] = (float) $row->total;
+                while ($cursor->lt($endCursor)) {
+                    $hours[$cursor->format('Y-m-d H:00:00')] = [
+                        'date' => $cursor->format('Y-m-d H:00:00'),
+                        'office_total' => 0.0,
+                        'online_total' => 0.0,
+                    ];
+                    $cursor->addHour();
                 }
-            }
 
-            // Online sales - hourly
-            $online = OnlineSale::query()
-                ->whereBetween('sold_at', [$start, $end])
-                ->selectRaw('DATE_FORMAT(sold_at, "%Y-%m-%d %H:00:00") as hour, SUM(amount) as total')
-                ->groupBy('hour')
-                ->get();
+                // Office sales - hourly
+                $office = OfficeShiftSale::query()
+                    ->whereBetween('sold_at', [$start, $end])
+                    ->selectRaw('DATE_FORMAT(sold_at, "%Y-%m-%d %H:00:00") as hour, SUM(amount) as total')
+                    ->groupBy('hour')
+                    ->get();
 
-            foreach ($online as $row) {
-                $h = $row->hour;
-                if (isset($hours[$h])) {
-                    $hours[$h]['online_total'] = (float) $row->total;
+                foreach ($office as $row) {
+                    $h = $row->hour;
+                    if (isset($hours[$h])) {
+                        $hours[$h]['office_total'] = (float) $row->total;
+                    }
                 }
-            }
+
+                // Online sales - hourly
+                $online = OnlineSale::query()
+                    ->whereBetween('sold_at', [$start, $end])
+                    ->selectRaw('DATE_FORMAT(sold_at, "%Y-%m-%d %H:00:00") as hour, SUM(amount) as total')
+                    ->groupBy('hour')
+                    ->get();
+
+                foreach ($online as $row) {
+                    $h = $row->hour;
+                    if (isset($hours[$h])) {
+                        $hours[$h]['online_total'] = (float) $row->total;
+                    }
+                }
+
+                return array_values($hours);
+            });
 
             return response()->json([
-                'data' => array_values($hours),
+                'data' => $data,
             ]);
         } else {
-            // Prepare empty date map - only for the actual date range
-            $dates = [];
-            $cursor = (clone $start)->startOfDay();
-            $endCursor = (clone $end)->endOfDay();
+            $cacheKey = "sales_summary_" . md5(json_encode([$start->toString(), $end->toString()]));
 
-            while ($cursor->lte($endCursor)) {
-                $dates[$cursor->format('Y-m-d')] = [
-                    'date' => $cursor->format('Y-m-d'),
-                    'office_total' => 0.0,
-                    'online_total' => 0.0,
-                ];
-                $cursor->addDay();
-            }
+            $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($start, $end) {
+                // Prepare empty date map - only for the actual date range
+                $dates = [];
+                $cursor = (clone $start)->startOfDay();
+                $endCursor = (clone $end)->endOfDay();
 
-            // Office sales - daily
-            $office = OfficeShiftSale::query()
-                ->whereBetween('sold_at', [$start, $end])
-                ->selectRaw('DATE(sold_at) as day, SUM(amount) as total')
-                ->groupBy('day')
-                ->get();
-
-            foreach ($office as $row) {
-                $d = $row->day;
-                if (isset($dates[$d])) {
-                    $dates[$d]['office_total'] = (float) $row->total;
+                while ($cursor->lte($endCursor)) {
+                    $dates[$cursor->format('Y-m-d')] = [
+                        'date' => $cursor->format('Y-m-d'),
+                        'office_total' => 0.0,
+                        'online_total' => 0.0,
+                    ];
+                    $cursor->addDay();
                 }
-            }
 
-            // Online sales - daily
-            $online = OnlineSale::query()
-                ->whereBetween('sold_at', [$start, $end])
-                ->selectRaw('DATE(sold_at) as day, SUM(amount) as total')
-                ->groupBy('day')
-                ->get();
+                // Office sales - daily
+                $office = OfficeShiftSale::query()
+                    ->whereBetween('sold_at', [$start, $end])
+                    ->selectRaw('DATE(sold_at) as day, SUM(amount) as total')
+                    ->groupBy('day')
+                    ->get();
 
-            foreach ($online as $row) {
-                $d = $row->day;
-                if (isset($dates[$d])) {
-                    $dates[$d]['online_total'] = (float) $row->total;
+                foreach ($office as $row) {
+                    $d = $row->day;
+                    if (isset($dates[$d])) {
+                        $dates[$d]['office_total'] = (float) $row->total;
+                    }
                 }
-            }
+
+                // Online sales - daily
+                $online = OnlineSale::query()
+                    ->whereBetween('sold_at', [$start, $end])
+                    ->selectRaw('DATE(sold_at) as day, SUM(amount) as total')
+                    ->groupBy('day')
+                    ->get();
+
+                foreach ($online as $row) {
+                    $d = $row->day;
+                    if (isset($dates[$d])) {
+                        $dates[$d]['online_total'] = (float) $row->total;
+                    }
+                }
+
+                return array_values($dates);
+            });
 
             return response()->json([
-                'data' => array_values($dates),
+                'data' => $data,
             ]);
         }
     }

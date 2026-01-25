@@ -113,7 +113,10 @@ class TicketScannerController extends Controller
         }
 
         // Get tickets with scanned_at = null for the selected event
-        $tickets = $event->tickets()->whereNull('scanned_at')->orderBy('created_at', 'desc')->get();
+        // Cache this for 10 seconds to prevent stampede during entry
+        $tickets = \Illuminate\Support\Facades\Cache::remember("available_tickets_{$eventId}", 10, function () use ($event) {
+            return $event->tickets()->whereNull('scanned_at')->orderBy('created_at', 'desc')->get();
+        });
 
         return response()->json(['tickets' => $tickets]);
     }

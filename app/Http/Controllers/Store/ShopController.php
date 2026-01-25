@@ -11,46 +11,59 @@ class ShopController extends Controller
     {
         $now = now();
 
-        $events = \App\Models\Event::where('start_sell_date', '<=', $now)
-            ->where('end_sell_date', '>=', $now)
-            ->where('is_online_sellable', true)
-            ->orderBy('event_date', 'asc')
-            ->get()
-            ->map(function ($event) {
-                return $this->formatEventForExplore($event);
-            });
+        $data = \Illuminate\Support\Facades\Cache::remember('shop_index', 30, function () use ($now) {
+            $events = \App\Models\Event::where('start_sell_date', '<=', $now)
+                ->where('end_sell_date', '>=', $now)
+                ->where('is_online_sellable', true)
+                ->orderBy('event_date', 'asc')
+                ->get()
+                ->map(function ($event) {
+                    return $this->formatEventForExplore($event);
+                });
 
-        $products = \App\Models\Product::where('is_online_sellable', true)
-            ->orderBy('name')
-            ->get()
-            ->map(function ($product) {
-                return $this->formatProductForExplore($product);
-            });
+            $products = \App\Models\Product::where('is_online_sellable', true)
+                ->orderBy('name')
+                ->get()
+                ->map(function ($product) {
+                    return $this->formatProductForExplore($product);
+                });
 
-        return Inertia::render('Store/home', [
-            'sellables' => $events->concat($products),
-        ]);
+            return [
+                'sellables' => $events->concat($products),
+            ];
+        });
+
+        return Inertia::render('Store/home', $data);
     }
 
     public function show(string $type, string $id)
     {
-        if ($type === 'event') {
-            $event = \App\Models\Event::where('id', $id)
-                ->where('is_online_sellable', true)
-                ->firstOrFail();
+        $cacheKey = "shop_item_{$type}_{$id}";
 
-            return Inertia::render('Store/show', [
-                'item' => $this->formatEventForExplore($event),
-            ]);
-        } elseif ($type === 'product') {
-            $product = \App\Models\Product::where('id', $id)
-                ->where('is_online_sellable', true)
-                ->firstOrFail();
+        $item = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($type, $id) {
+            if ($type === 'event') {
+                $event = \App\Models\Event::where('id', $id)
+                    ->where('is_online_sellable', true)
+                    ->firstOrFail();
 
-            return Inertia::render('Store/show', [
-                'item' => $this->formatProductForExplore($product),
-            ]);
+                return $this->formatEventForExplore($event);
+            } elseif ($type === 'product') {
+                $product = \App\Models\Product::where('id', $id)
+                    ->where('is_online_sellable', true)
+                    ->firstOrFail();
+
+                return $this->formatProductForExplore($product);
+            }
+            return null;
+        });
+
+        if (! $item) {
+            abort(404);
         }
+
+        return Inertia::render('Store/show', [
+            'item' => $item,
+        ]);
 
         abort(404);
     }

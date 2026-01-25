@@ -65,20 +65,25 @@ class EventAttendeeController extends Controller
             return response()->json(['error' => 'Event has no configured spreadsheet or sheet name'], 400);
         }
 
-        try {
-            $service = new GoogleSheetsService;
-            $data = $service->getSheetData($spreadsheetId, $sheetName);
-            $data = $event->filterRows($data);
+        // Cache Key needs to include spreadsheet and sheetname
+        $cacheKey = 'sheet_data_' . md5($spreadsheetId . $sheetName);
 
-            return response()->json([
-                'spreadsheet_id' => $spreadsheetId,
-                'sheet_name' => $sheetName,
-                'rows' => $data,
-                'row_count' => count($data),
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($spreadsheetId, $sheetName, $event) {
+            try {
+                $service = new GoogleSheetsService;
+                $data = $service->getSheetData($spreadsheetId, $sheetName);
+                $data = $event->filterRows($data);
+
+                return response()->json([
+                    'spreadsheet_id' => $spreadsheetId,
+                    'sheet_name' => $sheetName,
+                    'rows' => $data,
+                    'row_count' => count($data),
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+        });
     }
 
     public function update(Request $request, Event $event)
