@@ -23,7 +23,7 @@ interface Props {
 }
 
 export default function ShopHome({ sellables }: Props) {
-    const [isFilterOpen, setIsFilterOpen] = useState(true);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     // Initialize filter state from URL but keep it managed locally for instant feedback
     const [activeFilter, setActiveFilter] = useState(() => {
@@ -96,11 +96,10 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('all')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
-                                            activeFilter === 'all'
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'all'
                                                 ? 'bg-black text-white'
                                                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        }`}
+                                            }`}
                                     >
                                         All
                                     </button>
@@ -108,11 +107,10 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('products')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
-                                            activeFilter === 'products'
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'products'
                                                 ? 'bg-black text-white'
                                                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        }`}
+                                            }`}
                                     >
                                         Products
                                     </button>
@@ -120,11 +118,10 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('events')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
-                                            activeFilter === 'events'
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'events'
                                                 ? 'bg-black text-white'
                                                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        }`}
+                                            }`}
                                     >
                                         Events
                                     </button>

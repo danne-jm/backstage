@@ -174,8 +174,8 @@ export function SalesChart({
                                             dateKeys.length > 20
                                                 ? 4
                                                 : dateKeys.length > 10
-                                                  ? 2
-                                                  : 1;
+                                                    ? 2
+                                                    : 1;
 
                                         // Always show first and last, then every nth
                                         const shouldShow =
@@ -192,7 +192,7 @@ export function SalesChart({
                                                     1,
                                                     dateKeys.length - 1,
                                                 )) *
-                                                chartW;
+                                            chartW;
                                         const y = topPad + chartH + 12;
 
                                         let formattedDate;
@@ -228,8 +228,8 @@ export function SalesChart({
                                                         ? 'start'
                                                         : i ===
                                                             dateKeys.length - 1
-                                                          ? 'end'
-                                                          : 'middle'
+                                                            ? 'end'
+                                                            : 'middle'
                                                 }
                                                 fontSize="7"
                                                 fill="currentColor"
@@ -251,7 +251,7 @@ export function SalesChart({
                                                             1,
                                                             dateKeys.length - 1,
                                                         )) *
-                                                        chartW;
+                                                    chartW;
                                                 const y =
                                                     topPad +
                                                     chartH -
@@ -292,7 +292,7 @@ export function SalesChart({
                                                         1,
                                                         dateKeys.length - 1,
                                                     )) *
-                                                    chartW
+                                                chartW
                                             }
                                             y1={topPad}
                                             x2={
@@ -302,7 +302,7 @@ export function SalesChart({
                                                         1,
                                                         dateKeys.length - 1,
                                                     )) *
-                                                    chartW
+                                                chartW
                                             }
                                             y2={topPad + chartH}
                                             stroke="currentColor"
@@ -412,23 +412,25 @@ export function SalesChart({
                                     return (
                                         <div
                                             key={`online-sellable-${s.type}-${s.id}`}
-                                            className="flex items-center justify-between"
+                                            className="flex items-center justify-between gap-3"
                                         >
-                                            <div className="flex items-center gap-2 truncate">
+                                            <div className="flex min-w-0 flex-1 items-center gap-2">
                                                 <span
-                                                    className="inline-block h-2 w-2 rounded-full"
+                                                    className="inline-block h-2 w-2 shrink-0 rounded-full"
                                                     style={{
                                                         backgroundColor: color,
                                                     }}
                                                 />
-                                                <span className="flex items-baseline gap-2">
-                                                    <span>{s.name}</span>
-                                                    <span className="text-xs text-muted-foreground">
+                                                <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                                                    <span className="truncate" title={s.name}>
+                                                        {s.name}
+                                                    </span>
+                                                    <span className="shrink-0 text-xs text-muted-foreground">
                                                         x {count}
                                                     </span>
-                                                </span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-baseline gap-3">
+                                            <div className="flex shrink-0 items-baseline gap-3">
                                                 <div className="font-medium">
                                                     €{total.toFixed(2)}
                                                 </div>

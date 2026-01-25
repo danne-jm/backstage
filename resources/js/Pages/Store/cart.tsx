@@ -238,6 +238,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                 });
             }
         } catch (e) {
+            console.error(e);
             setMessage({
                 text: 'Failed to validate code. Please try again.',
                 type: 'error',
