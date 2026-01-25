@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('online_transactions', function (Blueprint $table) {
-            $table->renameColumn('token', 'reference_id');
-        });
+        // Only rename if token column exists (for existing databases)
+        // Skip if reference_id already exists (for fresh databases)
+        if (Schema::hasColumn('online_transactions', 'token') && ! Schema::hasColumn('online_transactions', 'reference_id')) {
+            Schema::table('online_transactions', function (Blueprint $table) {
+                $table->renameColumn('token', 'reference_id');
+            });
+        }
     }
 
     /**
@@ -21,8 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('online_transactions', function (Blueprint $table) {
-            $table->renameColumn('reference_id', 'token');
-        });
+        if (Schema::hasColumn('online_transactions', 'reference_id') && ! Schema::hasColumn('online_transactions', 'token')) {
+            Schema::table('online_transactions', function (Blueprint $table) {
+                $table->renameColumn('reference_id', 'token');
+            });
+        }
     }
 };

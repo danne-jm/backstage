@@ -69,9 +69,7 @@ export function SalesChart({
 
         const rect = svgRef.current.getBoundingClientRect();
         const scaleX = viewBoxWidth / rect.width;
-        const scaleY = viewBoxHeight / rect.height;
         const svgX = (e.clientX - rect.left) * scaleX;
-        const svgY = (e.clientY - rect.top) * scaleY;
 
         // Find closest date index based on mouse X position
         const chartX = svgX - leftPad;

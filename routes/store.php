@@ -15,6 +15,11 @@ Route::post('/validate-cart', [OnlinePaymentController::class, 'validateCart'])-
 Route::post('/checkout', [OnlinePaymentController::class, 'checkout'])->name('shop.checkout')->middleware('throttle:checkout');
 Route::get('/confirmation', [OnlinePaymentController::class, 'confirmation'])->name('shop.confirmation');
 
+// Payment Gateway Routes
+Route::get('/payment/callback', [OnlinePaymentController::class, 'paymentCallback'])->name('shop.payment.callback');
+Route::post('/payment/webhook', [OnlinePaymentController::class, 'webhook'])->name('shop.payment.webhook');
+Route::post('/payment/verify', [OnlinePaymentController::class, 'verifyPayment'])->name('shop.payment.verify')->middleware('throttle:30,1');
+
 // Event images (served from database)
 Route::get('/events/images/{id}', [ImageServingController::class, 'show'])->name('shop.events.images');
 

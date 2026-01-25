@@ -2,10 +2,13 @@
 
 namespace App\Providers;
 
+use App\Contracts\PaymentGatewayInterface;
 use App\Models\Event;
 use App\Models\Product;
 use App\Observers\EventObserver;
 use App\Observers\ProductObserver;
+use App\Services\PaymentGateways\DevelopmentPaymentGateway;
+use App\Services\PaymentGateways\SumUpPaymentGateway;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,7 +19,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Bind the appropriate PaymentGateway implementation based on environment
+        $this->app->singleton(PaymentGatewayInterface::class, function ($app) {
+            $environment = config('app.env', 'production');
+
+            // Use development gateway for non-production environments
+            if (in_array($environment, ['local', 'development', 'testing'])) {
+                return new DevelopmentPaymentGateway;
+            }
+
+            // Use SumUp gateway for production
+            return new SumUpPaymentGateway;
+        });
     }
 
     /**

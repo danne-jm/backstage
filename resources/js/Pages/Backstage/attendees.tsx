@@ -290,14 +290,6 @@ export default function EventAttendees({ event }: { event: any }) {
         );
     }, [headers]);
 
-    const hasPaidColIndex = React.useMemo(() => {
-        return headers.findIndex((h) => h.toLowerCase() === 'has_paid');
-    }, [headers]);
-
-    const paidOnlineColIndex = React.useMemo(() => {
-        return headers.findIndex((h) => h.toLowerCase() === 'paid_online?');
-    }, [headers]);
-
     // Validate purchase identifiers against online_sales
     const validatePurchases = async () => {
         setIsValidating(true);

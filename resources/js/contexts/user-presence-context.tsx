@@ -130,7 +130,7 @@ export function UserPresenceProvider({
             }
             channelRef.current = null;
         };
-    }, [user?.id, subscribeToPresence]);
+    }, [user, subscribeToPresence]);
 
     return (
         <UserPresenceContext.Provider value={{ onlineUsers }}>

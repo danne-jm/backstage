@@ -16,6 +16,9 @@ class OnlineTransaction extends Model
         'processing_fee',
         'discount_codes',
         'completed_at',
+        'external_payment_id',
+        'payment_status',
+        'payment_gateway',
     ];
 
     protected $casts = [
@@ -28,5 +31,29 @@ class OnlineTransaction extends Model
     public function sales(): HasMany
     {
         return $this->hasMany(OnlineSale::class);
+    }
+
+    /**
+     * Check if the payment is pending.
+     */
+    public function isPending(): bool
+    {
+        return $this->payment_status === 'pending';
+    }
+
+    /**
+     * Check if the payment is completed.
+     */
+    public function isCompleted(): bool
+    {
+        return $this->payment_status === 'completed';
+    }
+
+    /**
+     * Check if the payment failed.
+     */
+    public function isFailed(): bool
+    {
+        return in_array($this->payment_status, ['failed', 'cancelled']);
     }
 }

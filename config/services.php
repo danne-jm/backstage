@@ -41,4 +41,11 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'sumup' => [
+        'api_key' => env('SUMUP_API_KEY'),
+        'merchant_code' => env('SUMUP_MERCHANT_CODE'),
+        'api_url' => env('SUMUP_API_URL', 'https://api.sumup.com'),
+        'return_url' => env('SUMUP_RETURN_URL', env('APP_URL').'/payment/callback'),
+    ],
+
 ];

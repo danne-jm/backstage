@@ -18,7 +18,7 @@ import type {
     Product,
     Sellable,
 } from '@/types/sellables';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type TimePeriod = '7days' | '14days' | 'month' | 'lastShift';
 
@@ -48,9 +48,6 @@ export default function StoreManager() {
     const [onlineSalesTotal, setOnlineSalesTotal] = useState<number>(0);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
     const [period, setPeriod] = useState<TimePeriod>('7days');
-    const [lastClosedShiftDate, setLastClosedShiftDate] = useState<
-        string | null
-    >(null);
 
     const { auth } = usePage<SharedData>().props;
     const permissions = auth?.user?.permissions || [];
@@ -66,72 +63,71 @@ export default function StoreManager() {
     const [eventDialogOpen, setEventDialogOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
-    async function load(page: number = 1, size: number = 100) {
-        try {
-            setLoading(true);
-            const res = await fetch(
-                `/store-manager/data?page=${page}&pageSize=${size}&period=${period}`,
-                {
-                    credentials: 'same-origin',
-                },
-            );
-            if (res.ok) {
-                const json = await res.json();
-                if (Array.isArray(json.products))
-                    setProducts(
-                        json.products.map((p: any) => ({
-                            ...p,
-                            type: 'product' as const,
-                        })),
-                    );
-                if (Array.isArray(json.events))
-                    setEvents(
-                        json.events.map((e: any) => ({
-                            ...e,
-                            type: 'event' as const,
-                        })),
-                    );
-                if (Array.isArray(json.boardUsers))
-                    setBoardUsers(json.boardUsers);
-                if (Array.isArray(json.onlineSales))
-                    setOnlineSales(json.onlineSales);
-                setOnlineSellablesCount(json.onlineSellablesCount || 0);
-                setOnlineSalesTotal(Number(json.onlineSalesTotal || 0));
+    const load = useCallback(
+        async (page: number = 1, size: number = 100) => {
+            try {
+                setLoading(true);
+                const res = await fetch(
+                    `/store-manager/data?page=${page}&pageSize=${size}&period=${period}`,
+                    {
+                        credentials: 'same-origin',
+                    },
+                );
+                if (res.ok) {
+                    const json = await res.json();
+                    if (Array.isArray(json.products))
+                        setProducts(
+                            json.products.map((p: any) => ({
+                                ...p,
+                                type: 'product' as const,
+                            })),
+                        );
+                    if (Array.isArray(json.events))
+                        setEvents(
+                            json.events.map((e: any) => ({
+                                ...e,
+                                type: 'event' as const,
+                            })),
+                        );
+                    if (Array.isArray(json.boardUsers))
+                        setBoardUsers(json.boardUsers);
+                    if (Array.isArray(json.onlineSales))
+                        setOnlineSales(json.onlineSales);
+                    setOnlineSellablesCount(json.onlineSellablesCount || 0);
+                    setOnlineSalesTotal(Number(json.onlineSalesTotal || 0));
 
-                // Get the latest closed shift date from response
-                const latestShiftDate = json.lastClosedShiftDate || null;
-                setLastClosedShiftDate(latestShiftDate);
+                    // Fetch sales summary matching the period
+                    const days =
+                        period === 'month'
+                            ? 30
+                            : period === '7days'
+                              ? 7
+                              : period === 'lastShift'
+                                ? 0
+                                : 14;
+                    let summaryUrl = `/sales/summary?days=${days}`;
 
-                // Fetch sales summary matching the period
-                const days =
-                    period === 'month'
-                        ? 30
-                        : period === '7days'
-                          ? 7
-                          : period === 'lastShift'
-                            ? 0
-                            : 14;
-                let summaryUrl = `/sales/summary?days=${days}`;
+                    // Use the fresh lastClosedShiftDate from response
+                    if (period === 'lastShift' && json.lastClosedShiftDate) {
+                        summaryUrl = `/sales/summary?from=${json.lastClosedShiftDate}`;
+                    }
 
-                // Use the fresh latestShiftDate instead of state
-                if (period === 'lastShift' && latestShiftDate) {
-                    summaryUrl = `/sales/summary?from=${latestShiftDate}`;
+                    const sres = await fetch(summaryUrl, {
+                        credentials: 'same-origin',
+                    });
+                    if (sres.ok) {
+                        const sj = await sres.json();
+                        setSales(sj.data || []);
+                    }
                 }
-
-                const sres = await fetch(summaryUrl, {
-                    credentials: 'same-origin',
-                });
-                if (sres.ok) {
-                    const sj = await sres.json();
-                    setSales(sj.data || []);
-                }
+            } catch (e) {
+                console.error('Failed to load store-manager data', e);
+            } finally {
+                setLoading(false);
             }
-        } catch (e) {
-            console.error('Failed to load store-manager data', e);
-        } finally {
-            setLoading(false);
-        }
-    }
+        },
+        [period],
+    );
 
     const openProductDialog = (product?: Product) => {
         setEditingProduct(product || null);
@@ -285,7 +281,7 @@ export default function StoreManager() {
     // Load store-manager data once on mount and whenever pagination or period changes.
     useEffect(() => {
         load(onlinePage, pageSize);
-    }, [onlinePage, pageSize, period]);
+    }, [onlinePage, pageSize, period, load]);
 
     return (
         <>
