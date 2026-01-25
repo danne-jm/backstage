@@ -31,6 +31,7 @@ import { type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import {
+    CheckCircle2,
     Filter,
     Loader2,
     Plus,
@@ -276,6 +277,62 @@ export default function EventAttendees({ event }: { event: any }) {
     );
     const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
+    // Validation State - maps row index to validation result (true=valid, false=invalid, null=empty/not checked)
+    const [validationResults, setValidationResults] = React.useState<
+        Record<number, boolean | null>
+    >({});
+    const [isValidating, setIsValidating] = React.useState(false);
+
+    // Find column indices for purchase_identifier and has_paid
+    const purchaseIdentifierColIndex = React.useMemo(() => {
+        return headers.findIndex(
+            (h) => h.toLowerCase() === 'purchase_identifier',
+        );
+    }, [headers]);
+
+    const hasPaidColIndex = React.useMemo(() => {
+        return headers.findIndex((h) => h.toLowerCase() === 'has_paid');
+    }, [headers]);
+
+    const paidOnlineColIndex = React.useMemo(() => {
+        return headers.findIndex((h) => h.toLowerCase() === 'paid_online?');
+    }, [headers]);
+
+    // Validate purchase identifiers against online_sales
+    const validatePurchases = async () => {
+        setIsValidating(true);
+
+        try {
+            // Backend fetches unfiltered data directly from Google Sheets,
+            // validates against online_sales, applies cell formatting, and updates has_paid
+            const res = await axios.post(
+                `/sellables/events/${event.id}/attendees/validate-purchases`,
+                {},
+            );
+
+            toast.success(
+                `Validated ${res.data.total_checked} entries. ${res.data.valid_count} valid. Changes applied to Google Sheet.`,
+            );
+
+            // Refresh the local data to reflect updated has_paid values
+            if (sheetName) {
+                await fetchSheetData(sheetName);
+            }
+
+            // Map backend results (which use unfiltered row indices) to filtered row indices for local highlighting
+            // Since we refresh the data, the filtered indices may not match, so we clear validation results
+            // The visual feedback is now permanently in the Google Sheet via cell background colors
+            setValidationResults({});
+        } catch (e: any) {
+            console.error('Validation failed:', e);
+            toast.error(
+                `Validation failed: ${e.response?.data?.error || e.message}`,
+            );
+        } finally {
+            setIsValidating(false);
+        }
+    };
+
     const saveFilterConfig = () => {
         router.post(
             `/sellables/events/${event.id}/attendees/filter`,
@@ -449,6 +506,28 @@ export default function EventAttendees({ event }: { event: any }) {
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
+                            {/* Validate purchases button */}
+                            <Button
+                                variant="outline"
+                                onClick={validatePurchases}
+                                disabled={
+                                    isValidating ||
+                                    purchaseIdentifierColIndex === -1 ||
+                                    rows.length === 0
+                                }
+                                title={
+                                    purchaseIdentifierColIndex === -1
+                                        ? 'No purchase_identifier column found'
+                                        : 'Validate purchase identifiers against online sales'
+                                }
+                            >
+                                {isValidating ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                )}
+                                Validate
+                            </Button>
                             <Button
                                 variant="outline"
                                 size="icon"
@@ -494,11 +573,47 @@ export default function EventAttendees({ event }: { event: any }) {
                                     <TableBody>
                                         {rows.map((row, rowIdx) => (
                                             <TableRow key={rowIdx}>
-                                                {row.map((cell, cellIdx) => (
-                                                    <TableCell key={cellIdx}>
-                                                        {cell ?? ''}
-                                                    </TableCell>
-                                                ))}
+                                                {row.map((cell, cellIdx) => {
+                                                    // Determine background color for purchase_identifier column
+                                                    let bgStyle: React.CSSProperties =
+                                                        {};
+                                                    if (
+                                                        cellIdx ===
+                                                            purchaseIdentifierColIndex &&
+                                                        validationResults[
+                                                            rowIdx
+                                                        ] !== undefined
+                                                    ) {
+                                                        if (
+                                                            validationResults[
+                                                                rowIdx
+                                                            ] === true
+                                                        ) {
+                                                            bgStyle = {
+                                                                backgroundColor:
+                                                                    '#93c47d',
+                                                            }; // Green for valid
+                                                        } else if (
+                                                            validationResults[
+                                                                rowIdx
+                                                            ] === false
+                                                        ) {
+                                                            bgStyle = {
+                                                                backgroundColor:
+                                                                    '#ea9999',
+                                                            }; // Red for invalid
+                                                        }
+                                                    }
+
+                                                    return (
+                                                        <TableCell
+                                                            key={cellIdx}
+                                                            style={bgStyle}
+                                                        >
+                                                            {cell ?? ''}
+                                                        </TableCell>
+                                                    );
+                                                })}
                                             </TableRow>
                                         ))}
                                     </TableBody>

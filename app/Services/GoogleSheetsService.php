@@ -115,4 +115,100 @@ class GoogleSheetsService
             throw new Exception('Failed to update sheet data: '.$e->getMessage());
         }
     }
+
+    /**
+     * Get the sheet ID for a given sheet name.
+     */
+    public function getSheetId(string $spreadsheetId, string $sheetName): int
+    {
+        try {
+            $spreadsheet = $this->service->spreadsheets->get($spreadsheetId);
+            foreach ($spreadsheet->getSheets() as $sheet) {
+                if ($sheet->getProperties()->getTitle() === $sheetName) {
+                    return $sheet->getProperties()->getSheetId();
+                }
+            }
+            throw new Exception("Sheet '{$sheetName}' not found");
+        } catch (\Throwable $e) {
+            Log::error('Google Sheet ID Fetch Error: '.$e->getMessage());
+            throw new Exception('Failed to get sheet ID: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Apply background color to specific cells.
+     *
+     * @param  array  $cellFormats  Array of ['row' => int, 'col' => int, 'color' => ['red' => float, 'green' => float, 'blue' => float]]
+     */
+    public function applyCellFormatting(string $spreadsheetId, int $sheetId, array $cellFormats): void
+    {
+        if (empty($cellFormats)) {
+            return;
+        }
+
+        try {
+            $requests = [];
+
+            foreach ($cellFormats as $format) {
+                $requests[] = new \Google\Service\Sheets\Request([
+                    'repeatCell' => [
+                        'range' => [
+                            'sheetId' => $sheetId,
+                            'startRowIndex' => $format['row'],
+                            'endRowIndex' => $format['row'] + 1,
+                            'startColumnIndex' => $format['col'],
+                            'endColumnIndex' => $format['col'] + 1,
+                        ],
+                        'cell' => [
+                            'userEnteredFormat' => [
+                                'backgroundColor' => $format['color'],
+                            ],
+                        ],
+                        'fields' => 'userEnteredFormat.backgroundColor',
+                    ],
+                ]);
+            }
+
+            $batchUpdateRequest = new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest([
+                'requests' => $requests,
+            ]);
+
+            $this->service->spreadsheets->batchUpdate($spreadsheetId, $batchUpdateRequest);
+        } catch (\Throwable $e) {
+            Log::error('Google Cell Formatting Error: '.$e->getMessage());
+            throw new Exception('Failed to apply cell formatting: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update multiple cells at once.
+     *
+     * @param  array  $updates  Array of ['range' => string, 'values' => array]
+     */
+    public function batchUpdateValues(string $spreadsheetId, array $updates): void
+    {
+        if (empty($updates)) {
+            return;
+        }
+
+        try {
+            $data = [];
+            foreach ($updates as $update) {
+                $data[] = new \Google\Service\Sheets\ValueRange([
+                    'range' => $update['range'],
+                    'values' => [$update['values']],
+                ]);
+            }
+
+            $body = new \Google\Service\Sheets\BatchUpdateValuesRequest([
+                'valueInputOption' => 'RAW',
+                'data' => $data,
+            ]);
+
+            $this->service->spreadsheets_values->batchUpdate($spreadsheetId, $body);
+        } catch (\Throwable $e) {
+            Log::error('Google Batch Update Error: '.$e->getMessage());
+            throw new Exception('Failed to batch update values: '.$e->getMessage());
+        }
+    }
 }

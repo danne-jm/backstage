@@ -43,7 +43,7 @@ class GmailOAuthController extends Controller
                     'https://www.googleapis.com/auth/gmail.send',
                     'https://www.googleapis.com/auth/userinfo.profile',
                     'https://www.googleapis.com/auth/userinfo.email',
-                    'https://www.googleapis.com/auth/spreadsheets.readonly',
+                    'https://www.googleapis.com/auth/spreadsheets',
                 ])
                 ->with($options)
                 ->redirect();
@@ -211,7 +211,7 @@ class GmailOAuthController extends Controller
                     'https://www.googleapis.com/auth/gmail.send',
                     'https://www.googleapis.com/auth/userinfo.profile',
                     'https://www.googleapis.com/auth/userinfo.email',
-                    'https://www.googleapis.com/auth/spreadsheets.readonly',
+                    'https://www.googleapis.com/auth/spreadsheets',
                 ])
                 ->with([
                     'access_type' => 'offline',

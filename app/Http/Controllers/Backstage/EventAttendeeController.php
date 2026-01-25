@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backstage;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Models\OnlineSale;
 use App\Services\GoogleSheetsService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request; // Import Schema
@@ -119,5 +120,171 @@ class EventAttendeeController extends Controller
         ]);
 
         return back()->with('success', 'Filter configuration updated.');
+    }
+
+    /**
+     * Validate purchase identifiers against online_sales for this event.
+     * Fetches unfiltered data directly from Google Sheets, validates against online_sales,
+     * applies cell formatting (green/red background), and updates has_paid column.
+     */
+    public function validatePurchases(Request $request, Event $event)
+    {
+        $spreadsheetId = $event->google_spreadsheet_id;
+        $sheetName = $event->google_sheet_name;
+
+        if (! $spreadsheetId || ! $sheetName) {
+            return response()->json(['error' => 'Event has no configured spreadsheet or sheet'], 400);
+        }
+
+        try {
+            $service = new GoogleSheetsService;
+
+            // Fetch ALL rows (unfiltered) directly from Google Sheets
+            $allData = $service->getSheetData($spreadsheetId, $sheetName);
+
+            if (empty($allData) || count($allData) < 2) {
+                return response()->json(['error' => 'No data found in sheet'], 400);
+            }
+
+            $headers = $allData[0];
+            $headerMap = [];
+            foreach ($headers as $index => $header) {
+                $headerMap[strtolower(trim($header))] = $index;
+            }
+
+            // Find required columns
+            $purchaseIdCol = $headerMap['purchase_identifier'] ?? $headerMap['purchase identifier'] ?? null;
+            $hasPaidCol = $headerMap['has_paid?'] ?? $headerMap['has_paid'] ?? $headerMap['has paid?'] ?? $headerMap['has paid'] ?? null;
+            $paidOnlineCol = $headerMap['paid_online?'] ?? $headerMap['paid online?'] ?? $headerMap['paid_online'] ?? $headerMap['paid online'] ?? null;
+
+            if ($purchaseIdCol === null) {
+                return response()->json(['error' => 'purchase_identifier column not found'], 400);
+            }
+
+            // Collect all purchase identifiers and their row positions (only for rows with paid_online = TRUE)
+            $purchaseIdentifiersToCheck = [];
+            $rowsToProcess = []; // Maps purchase_identifier => array of row indices (0-indexed)
+
+            for ($i = 1; $i < count($allData); $i++) {
+                $row = $allData[$i];
+
+                // Check if paid_online column exists and is TRUE
+                if ($paidOnlineCol !== null) {
+                    $paidOnlineValue = strtolower(trim($row[$paidOnlineCol] ?? ''));
+                    if ($paidOnlineValue !== 'true' && $paidOnlineValue !== '1' && $paidOnlineValue !== 'yes') {
+                        continue; // Skip non-online purchases
+                    }
+                }
+
+                $purchaseId = trim($row[$purchaseIdCol] ?? '');
+                if (! empty($purchaseId)) {
+                    $purchaseIdentifiersToCheck[] = $purchaseId;
+                    if (! isset($rowsToProcess[$purchaseId])) {
+                        $rowsToProcess[$purchaseId] = [];
+                    }
+                    $rowsToProcess[$purchaseId][] = $i; // Store 0-indexed row
+                }
+            }
+
+            if (empty($purchaseIdentifiersToCheck)) {
+                return response()->json([
+                    'results' => [],
+                    'valid_count' => 0,
+                    'total_checked' => 0,
+                    'message' => 'No online purchases to validate',
+                ]);
+            }
+
+            // Get all valid reference_ids for this event from online_sales
+            $validReferenceIds = OnlineSale::where('event_id', $event->id)
+                ->whereIn('reference_id', array_unique($purchaseIdentifiersToCheck))
+                ->pluck('reference_id')
+                ->toArray();
+
+            // Get sheet ID for formatting
+            $sheetId = $service->getSheetId($spreadsheetId, $sheetName);
+
+            // Prepare cell formatting and has_paid updates
+            $cellFormats = [];
+            $valueUpdates = [];
+
+            // Colors (RGB 0-1 scale)
+            // #93c47d = RGB(147, 196, 125) = (0.576, 0.769, 0.490)
+            // #ea9999 = RGB(234, 153, 153) = (0.918, 0.600, 0.600)
+            $greenColor = ['red' => 0.576, 'green' => 0.769, 'blue' => 0.490];
+            $redColor = ['red' => 0.918, 'green' => 0.600, 'blue' => 0.600];
+
+            $results = [];
+            $validCount = 0;
+
+            foreach ($rowsToProcess as $purchaseId => $rowIndices) {
+                $isValid = in_array($purchaseId, $validReferenceIds);
+
+                foreach ($rowIndices as $rowIndex) {
+                    // Add cell formatting for purchase_identifier column
+                    // Google Sheets API repeatCell uses 0-indexed rows
+                    // $rowIndex is already the 0-indexed position in allData array (where 0 = headers)
+                    $cellFormats[] = [
+                        'row' => $rowIndex, // 0-indexed: row 1 in allData = row 1 in API (which is the 2nd row visually)
+                        'col' => $purchaseIdCol,
+                        'color' => $isValid ? $greenColor : $redColor,
+                    ];
+
+                    // If valid and has_paid column exists, update to TRUE
+                    if ($isValid && $hasPaidCol !== null) {
+                        // Column letter conversion (0=A, 1=B, etc.)
+                        $colLetter = $this->columnToLetter($hasPaidCol);
+                        // A1 notation is 1-indexed, so add 1 to rowIndex
+                        $rowNumber = $rowIndex + 1;
+                        $valueUpdates[] = [
+                            'range' => "{$sheetName}!{$colLetter}{$rowNumber}",
+                            'values' => ['TRUE'],
+                        ];
+                    }
+
+                    // Store result for frontend (using data row index, not sheet row)
+                    $results[$rowIndex] = $isValid;
+
+                    if ($isValid) {
+                        $validCount++;
+                    }
+                }
+            }
+
+            // Apply formatting to Google Sheets
+            if (! empty($cellFormats)) {
+                $service->applyCellFormatting($spreadsheetId, $sheetId, $cellFormats);
+            }
+
+            // Update has_paid values
+            if (! empty($valueUpdates)) {
+                $service->batchUpdateValues($spreadsheetId, $valueUpdates);
+            }
+
+            return response()->json([
+                'results' => $results,
+                'valid_count' => $validCount,
+                'total_checked' => count($cellFormats),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Validation failed: '.$e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Convert column index to letter (0=A, 1=B, ..., 26=AA, etc.)
+     */
+    private function columnToLetter(int $columnIndex): string
+    {
+        $letter = '';
+        $columnIndex++; // Convert to 1-indexed
+
+        while ($columnIndex > 0) {
+            $columnIndex--;
+            $letter = chr(65 + ($columnIndex % 26)).$letter;
+            $columnIndex = intval($columnIndex / 26);
+        }
+
+        return $letter;
     }
 }
