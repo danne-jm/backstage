@@ -110,11 +110,11 @@ export default function StoreManager() {
                                   : 14;
 
                     const hourly = period === '24hours';
-                    let summaryUrl = `/sales/summary?days=${days}&hourly=${hourly}`;
+                    let summaryUrl = `/sales/summary?days=${days}${hourly ? '&hourly=true' : ''}`;
 
                     // Use the fresh lastClosedShiftDate from response
                     if (period === 'lastShift' && json.lastClosedShiftDate) {
-                        summaryUrl = `/sales/summary?from=${json.lastClosedShiftDate}`;
+                        summaryUrl = `/sales/summary?from=${encodeURIComponent(json.lastClosedShiftDate)}`;
                     }
 
                     const sres = await fetch(summaryUrl, {
@@ -218,7 +218,7 @@ export default function StoreManager() {
             .sort((a, b) => b.count - a.count); // Sort by quantity (count) descending
     })();
 
-    // Prepare per-sellable daily series and colors for chart + legend
+    // Prepare per-sellable series and colors for chart + legend
     const palette = [
         '#3B82F6', // blue
         '#F97316', // orange
@@ -232,18 +232,40 @@ export default function StoreManager() {
 
     const dateKeys = sales.map((s) => s.date);
 
+    // Detect if we're using hourly data (format: "YYYY-MM-DD HH:00:00")
+    const isHourlyData = dateKeys.length > 0 && dateKeys[0].includes(':');
+
     const onlineSellableSeries = onlineSellableTotals.map((s, idx) => {
         const series = dateKeys.map((dk) => {
-            const totalForDay = onlineSales.reduce((acc, os) => {
-                const soldDate = (os.sold_at || '').split('T')[0];
-                if (soldDate !== dk) return acc;
+            const totalForPeriod = onlineSales.reduce((acc, os) => {
+                const soldAt = os.sold_at || '';
+                let matchKey: string;
+
+                if (isHourlyData) {
+                    // For hourly data, match by hour bucket
+                    // soldAt format: "2026-01-25T11:24:21.000000Z" or "2026-01-25 11:24:21"
+                    const dateObj = new Date(soldAt);
+                    const year = dateObj.getFullYear();
+                    const month = String(dateObj.getMonth() + 1).padStart(
+                        2,
+                        '0',
+                    );
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    const hour = String(dateObj.getHours()).padStart(2, '0');
+                    matchKey = `${year}-${month}-${day} ${hour}:00:00`;
+                } else {
+                    // For daily data, match by date only
+                    matchKey = soldAt.split('T')[0].split(' ')[0];
+                }
+
+                if (matchKey !== dk) return acc;
                 if (s.type === 'product' && os.product_id === s.id)
                     return acc + (parseFloat(String(os.amount || 0)) || 0);
                 if (s.type === 'event' && os.event_id === s.id)
                     return acc + (parseFloat(String(os.amount || 0)) || 0);
                 return acc;
             }, 0);
-            return totalForDay;
+            return totalForPeriod;
         });
 
         return {

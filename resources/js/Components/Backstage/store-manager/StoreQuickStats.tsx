@@ -17,7 +17,7 @@ export function StoreQuickStats({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="rounded-md bg-muted/40 p-3">
                     <div className="text-xs text-muted-foreground">
-                        Total Office
+                        Total Office (Cash + Card)
                     </div>
                     <div className="mt-1 text-lg font-medium">
                         €{totalOffice.toFixed(2)}
