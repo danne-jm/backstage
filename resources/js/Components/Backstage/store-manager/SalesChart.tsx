@@ -168,7 +168,7 @@ export function SalesChart({
                                     {dateKeys.map((date, i) => {
                                         // Detect if this is hourly data (has hour component)
                                         const isHourly = date.includes(':');
-                                        
+
                                         // Show fewer labels for more data points
                                         const step =
                                             dateKeys.length > 20
@@ -176,13 +176,13 @@ export function SalesChart({
                                                 : dateKeys.length > 10
                                                   ? 2
                                                   : 1;
-                                        
+
                                         // Always show first and last, then every nth
-                                        const shouldShow = 
-                                            i === 0 || 
-                                            i === dateKeys.length - 1 || 
+                                        const shouldShow =
+                                            i === 0 ||
+                                            i === dateKeys.length - 1 ||
                                             i % step === 0;
-                                        
+
                                         if (!shouldShow) return null;
 
                                         const x =
@@ -194,16 +194,20 @@ export function SalesChart({
                                                 )) *
                                                 chartW;
                                         const y = topPad + chartH + 12;
-                                        
+
                                         let formattedDate;
                                         if (isHourly) {
                                             // Format as time (e.g., "14:00")
                                             const dateObj = new Date(date);
-                                            formattedDate = dateObj.toLocaleTimeString('en-US', {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                hour12: false,
-                                            });
+                                            formattedDate =
+                                                dateObj.toLocaleTimeString(
+                                                    'en-US',
+                                                    {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        hour12: false,
+                                                    },
+                                                );
                                         } else {
                                             // Format as date (e.g., "Jan 25")
                                             formattedDate = new Date(
@@ -222,7 +226,8 @@ export function SalesChart({
                                                 textAnchor={
                                                     i === 0
                                                         ? 'start'
-                                                        : i === dateKeys.length - 1
+                                                        : i ===
+                                                            dateKeys.length - 1
                                                           ? 'end'
                                                           : 'middle'
                                                 }

@@ -108,7 +108,7 @@ export default function StoreManager() {
                                 : period === 'lastShift'
                                   ? 0
                                   : 14;
-                    
+
                     const hourly = period === '24hours';
                     let summaryUrl = `/sales/summary?days=${days}&hourly=${hourly}`;
 
