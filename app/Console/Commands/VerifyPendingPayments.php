@@ -22,6 +22,11 @@ class VerifyPendingPayments extends Command
     /**
      * The console command description.
      *
+     * IMPORTANT: This command reconciles "stale" pending transactions by checking their status with SumUp.
+     * Side effect: Stock is held for 15 minutes (default) before being released if payment fails.
+     * During high-demand events, this may cause temporary "phantom sold out" situations.
+     * Decrease --min-age for faster stock release, but ensure it's >5 minutes to avoid checking active payments.
+     *
      * @var string
      */
     protected $description = 'Check status of stale pending transactions and reconcile with payment gateway';
@@ -35,67 +40,73 @@ class VerifyPendingPayments extends Command
 
         $this->info("Checking for pending transactions older than {$minAgeMinutes} minutes...");
 
-        // Find transactions pending for > min-age minutes with an external payment ID
-        $staleTransactions = OnlineTransaction::with('sales')
-            ->where('payment_status', PaymentResult::STATUS_PENDING)
+        // Count total stale transactions first
+        $totalStale = OnlineTransaction::where('payment_status', PaymentResult::STATUS_PENDING)
             ->where('created_at', '<', now()->subMinutes($minAgeMinutes))
             ->whereNotNull('external_payment_id')
-            ->get();
+            ->count();
 
-        if ($staleTransactions->isEmpty()) {
+        if ($totalStale === 0) {
             $this->info('No stale pending transactions found.');
 
             return self::SUCCESS;
         }
 
-        $this->info("Found {$staleTransactions->count()} stale pending transaction(s).");
+        $this->info("Found {$totalStale} stale pending transaction(s).");
 
         $successCount = 0;
         $failedCount = 0;
         $stillPendingCount = 0;
 
-        foreach ($staleTransactions as $transaction) {
-            $this->line("Verifying transaction {$transaction->reference_id} (#{$transaction->id})...");
+        // Process in chunks to avoid RAM exhaustion on Raspberry Pi (bot attack protection)
+        OnlineTransaction::with('sales')
+            ->where('payment_status', PaymentResult::STATUS_PENDING)
+            ->where('created_at', '<', now()->subMinutes($minAgeMinutes))
+            ->whereNotNull('external_payment_id')
+            ->chunk(100, function ($staleTransactions) use ($gateway, &$successCount, &$failedCount, &$stillPendingCount) {
+                foreach ($staleTransactions as $transaction) {
+                    $this->line("Verifying transaction {$transaction->reference_id} (#{$transaction->id})...");
 
-            try {
-                // Call the payment gateway to verify the actual payment status
-                $result = $gateway->verifyPayment($transaction->external_payment_id, $transaction);
+                    try {
+                        // Call the payment gateway to verify the actual payment status
+                        $result = $gateway->verifyPayment($transaction->external_payment_id, $transaction);
 
-                if ($result->isSuccessful()) {
-                    $this->info('  ✓ Transaction confirmed as PAID.');
-                    $successCount++;
+                        if ($result->isSuccessful()) {
+                            $this->info('  ✓ Transaction confirmed as PAID.');
+                            $successCount++;
 
-                    // Note: The gateway's verifyPayment method automatically updates the DB status to COMPLETED
-                    // You may want to trigger confirmation emails here if needed
-                    // $this->sendConfirmationEmail($transaction);
-                } elseif ($result->isFailed()) {
-                    $this->error('  ✗ Transaction failed or expired.');
-                    $failedCount++;
+                            // Note: The gateway's verifyPayment method automatically updates the DB status to COMPLETED
+                            // You may want to trigger confirmation emails here if needed
+                            // $this->sendConfirmationEmail($transaction);
+                        } elseif ($result->isFailed()) {
+                            $this->error('  ✗ Transaction failed or expired.');
+                            $failedCount++;
 
-                    // Release stock that was reserved by this failed transaction
-                    $this->releaseStock($transaction);
+                            // Release stock that was reserved by this failed transaction
+                            $this->releaseStock($transaction);
 
-                    Log::warning('Payment reconciliation: Transaction marked as failed', [
-                        'transaction_id' => $transaction->id,
-                        'reference' => $transaction->reference_id,
-                        'external_payment_id' => $transaction->external_payment_id,
-                        'reason' => $result->message,
-                    ]);
-                } else {
-                    $this->warn('  ⚠ Transaction still pending.');
-                    $stillPendingCount++;
+                            Log::warning('Payment reconciliation: Transaction marked as failed', [
+                                'transaction_id' => $transaction->id,
+                                'reference' => $transaction->reference_id,
+                                'external_payment_id' => $transaction->external_payment_id,
+                                'reason' => $result->message,
+                            ]);
+                        } else {
+                            $this->warn('  ⚠ Transaction still pending.');
+                            $stillPendingCount++;
+                        }
+                    } catch (\Exception $e) {
+                        $this->error("  ✗ Exception occurred: {$e->getMessage()}");
+
+                        Log::error('Payment reconciliation: Exception during verification', [
+                            'transaction_id' => $transaction->id,
+                            'reference' => $transaction->reference_id,
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
+                    }
                 }
-            } catch (\Exception $e) {
-                $this->error("  ✗ Exception occurred: {$e->getMessage()}");
-
-                Log::error('Payment reconciliation: Exception during verification', [
-                    'transaction_id' => $transaction->id,
-                    'reference' => $transaction->reference_id,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
-        }
+            });
 
         $this->newLine();
         $this->info('Reconciliation complete:');
@@ -109,7 +120,7 @@ class VerifyPendingPayments extends Command
         );
 
         Log::info('Payment reconciliation completed', [
-            'total_checked' => $staleTransactions->count(),
+            'total_checked' => $totalStale,
             'confirmed' => $successCount,
             'failed' => $failedCount,
             'still_pending' => $stillPendingCount,

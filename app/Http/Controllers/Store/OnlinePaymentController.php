@@ -71,7 +71,7 @@ class OnlinePaymentController extends Controller
 
             // Calculate totals
             $subtotal = collect($salesToCreate)->sum('amount');
-            $processingFee = round($subtotal * 0.02, 2);
+            $processingFee = round($subtotal * config('services.sumup.processing_fee_rate', 0.02), 2);
             $totalAmount = $subtotal + $processingFee;
 
             // Generate secure reference ID

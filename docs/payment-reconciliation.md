@@ -4,6 +4,45 @@
 
 The payment reconciliation system provides a safety net for handling payment failures when your Raspberry Pi server goes offline during the checkout process. It addresses the "distributed system" problem where a user successfully pays on SumUp's servers, but your local database doesn't get updated due to server downtime, network issues, or webhook failures.
 
+## Important Trade-offs and Design Decisions
+
+### 1. Processing Fee Configuration
+- **Location**: `config/services.php` → `sumup.processing_fee_rate`
+- **Default**: 2% (0.02)
+- **Why Configurable**: SumUp may change their fee structure. Update via `.env` file:
+  ```env
+  SUMUP_PROCESSING_FEE_RATE=0.0169  # If SumUp changes to 1.69%
+  ```
+- **Risk Mitigated**: No code changes needed when SumUp adjusts fees
+
+### 2. The 15-Minute Hold Side Effect
+- **Behavior**: Stock is incremented BEFORE payment completes (optimistic locking)
+- **Consequence**: If a user abandons checkout at SumUp screen, that item is "held" for 15 minutes
+- **Why This Design**: 
+  - Prevents overselling when multiple users checkout simultaneously
+  - Safer for Raspberry Pi (may go offline during payment)
+  - Ensures money collected = stock decremented
+- **Trade-off**: During "Sold Out" events, tickets may magically reappear 15 minutes later
+- **Tuning**: For high-demand events, reduce to 10 or 5 minutes:
+  ```php
+  // routes/console.php
+  Schedule::command('payments:verify-pending')->everyTenMinutes();
+  ```
+  **NEVER go below 5 minutes** to avoid checking active payments
+
+### 3. Race Condition Protection (Already Implemented ✓)
+- **Mechanism**: Pessimistic locking with `lockForUpdate()` in database transactions
+- **Location**: `DiscountAllocator::allocate()` with `$useLock = true`
+- **Protection**: Prevents two requests from reading `remaining: 1` simultaneously
+- **Coverage**: All Product and Event queries during checkout use `FOR UPDATE` locks
+
+### 4. Memory Optimization for Bot Attacks
+- **Mechanism**: Chunk processing (100 transactions per batch)
+- **Why**: Raspberry Pi has limited RAM (~4GB usable)
+- **Protection**: If a bot creates 5,000 pending transactions, they're processed in batches
+- **Implementation**: Uses `chunk(100)` instead of `get()` to avoid loading all into memory
+- **Trade-off**: Slightly slower for massive bot attacks, but prevents OOM killer
+
 ## The Problem
 
 When a user checks out:
