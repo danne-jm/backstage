@@ -88,7 +88,15 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
     // Debounce validation - just update totals, don't modify applied codes
     // (codes are validated when the user applies them)
     useEffect(() => {
-        if (cart.length === 0) return;
+        if (cart.length === 0) {
+            setServerBreakdown([]);
+            setServerTotal(0);
+            return;
+        }
+
+        // Reset server values while calculating to avoid "stale" comparisons
+        // (e.g. local total updates instantly to 20, stale server total is 10 -> shows fake discount)
+        setServerTotal(null);
 
         const timer = setTimeout(async () => {
             try {
@@ -692,7 +700,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                 </span>
                                             )
                                         ) : (
-                                            <span>Calculating...</span>
+                                            <span>
+                                                €{originalTotal.toFixed(2)}
+                                            </span>
                                         )}
                                     </dd>
                                 </div>
@@ -703,9 +713,10 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                     </dt>
                                     <dd className="text-sm font-medium text-gray-900">
                                         +€
-                                        {serverTotal
-                                            ? (Number(serverTotal) * Number(processingFeeRate)).toFixed(2)
-                                            : '0.00'}
+                                        {(
+                                            Number(serverTotal ?? originalTotal) *
+                                            Number(processingFeeRate)
+                                        ).toFixed(2)}
                                     </dd>
                                 </div>
 
@@ -715,9 +726,10 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                     </dt>
                                     <dd className="text-2xl font-bold text-gray-900">
                                         €
-                                        {serverTotal
-                                            ? (Number(serverTotal) * (1 + Number(processingFeeRate))).toFixed(2)
-                                            : '...'}
+                                        {(
+                                            Number(serverTotal ?? originalTotal) *
+                                            (1 + Number(processingFeeRate))
+                                        ).toFixed(2)}
                                     </dd>
                                 </div>
                             </dl>
