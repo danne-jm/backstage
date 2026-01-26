@@ -33,7 +33,7 @@ const periodLabels: Record<TimePeriod, string> = {
 export default function StoreManager() {
     const breadcrumbs: BreadcrumbItem[] = [
         {
-            title: 'Store Manager (Integrate real data with SumUp or other POS)',
+            title: 'Store Manager (SumUp?)',
             href: route('store-manager'),
         },
     ];
@@ -309,6 +309,24 @@ export default function StoreManager() {
     useEffect(() => {
         load(onlinePage, pageSize);
     }, [onlinePage, pageSize, period, load]);
+
+    // Realtime updates via Reverb
+    useEffect(() => {
+        if (!window.Echo) return undefined;
+        const channel = window.Echo.private('store-stats');
+        channel.listen('StoreUpdated', (e: { sale?: OnlineSale }) => {
+            // If we receive the sale data, add it directly to state for instant update
+            if (e.sale) {
+                setOnlineSales((prev) => [e.sale!, ...prev]);
+                setOnlineSalesTotal((prev) => prev + 1);
+            }
+            // Also reload full data to ensure consistency
+            load(onlinePage, pageSize);
+        });
+        return () => {
+            window.Echo?.leave('store-stats');
+        };
+    }, [load, onlinePage, pageSize]);
 
     return (
         <>

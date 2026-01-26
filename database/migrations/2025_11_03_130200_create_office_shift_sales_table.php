@@ -10,13 +10,13 @@ return new class extends Migration
     {
         if (! Schema::hasTable('office_shift_sales')) {
             Schema::create('office_shift_sales', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('office_shift_id')->constrained('office_shifts')->cascadeOnDelete();
-                $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+                $table->ulid('id')->primary();
+                $table->foreignUlid('office_shift_id')->constrained('office_shifts')->cascadeOnDelete();
+                $table->foreignUlid('product_id')->constrained('products')->cascadeOnDelete();
                 $table->string('method')->default('card'); // card or cash
                 $table->decimal('amount', 10, 2)->default(0);
                 $table->text('description')->nullable();
-                $table->foreignId('sold_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->foreignUlid('sold_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
             });
         }

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductImage extends Model
 {
+    use \Illuminate\Database\Eloquent\Concerns\HasUlids;
+
     protected $fillable = [
         'product_id',
         'image_data',

@@ -10,8 +10,8 @@ return new class extends Migration
     {
         if (! Schema::hasTable('office_shifts')) {
             Schema::create('office_shifts', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('started_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->ulid('id')->primary();
+                $table->foreignUlid('started_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamp('started_at')->nullable();
                 $table->timestamp('ended_at')->nullable();
                 $table->decimal('cash_total', 10, 2)->default(0);

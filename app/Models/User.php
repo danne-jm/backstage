@@ -12,7 +12,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, \Illuminate\Database\Eloquent\Concerns\HasUlids;
 
     use \Spatie\Activitylog\Traits\LogsActivity;
 
@@ -128,6 +128,14 @@ class User extends Authenticatable
         }
 
         return array_unique($expanded);
+    }
+
+    /**
+     * Check if the user has a specific permission.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return in_array($permission, $this->getExpandedPermissions());
     }
 
     /**

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('events', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('name');
             $table->text('description')->nullable();
             $table->date('event_date');
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('price_with_card', 10, 2);
             $table->decimal('price_without_card', 10, 2);
             $table->integer('quantity')->nullable();
-            $table->foreignId('responsible_user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignUlid('responsible_user_id')->constrained('users')->onDelete('cascade');
             $table->text('notes')->nullable();
             $table->boolean('variable_amount')->default(false);
             $table->integer('quantity_with_card')->nullable();

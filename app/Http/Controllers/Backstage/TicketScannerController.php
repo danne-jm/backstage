@@ -89,6 +89,12 @@ class TicketScannerController extends Controller
                 'scanned_at' => null,
             ]);
 
+            // Dispatch realtime event for ticket scanner listeners
+            \App\Events\TicketSold::dispatch($ev->id, $ticket);
+
+            // Clear available tickets cache
+            \Illuminate\Support\Facades\Cache::forget("available_tickets_{$ev->id}");
+
             $created[] = [
                 'ticket_code' => $ticketCode,
                 'first_name' => $first,
@@ -153,11 +159,26 @@ class TicketScannerController extends Controller
             return response()->json(['valid' => false, 'error' => 'Event not found'], 404);
         }
 
+        // Global lookup first to provide better error messages
+        $ticket = \App\Models\Ticket::where('ticket_code', $id)->first();
+
+        if (! $ticket) {
+            return response()->json(['valid' => false, 'error' => 'Invalid ticket code'], 404);
+        }
+
+        // Check if ticket belongs to the selected event
+        if ($ticket->event_id != $eventId) {
+            $ticketEventName = $ticket->event ? $ticket->event->name : 'another event';
+            return response()->json([
+                'valid' => false,
+                'error' => "Ticket is for '{$ticketEventName}', not the selected event."
+            ], 400);
+        }
+
         // SECURITY FIX: Use atomic update to prevent race condition where two concurrent
         // requests could both mark the same ticket as scanned.
         // This atomically updates scanned_at ONLY if it was previously null.
-        $affectedRows = $event->tickets()
-            ->where('ticket_code', $id)
+        $affectedRows = \App\Models\Ticket::where('id', $ticket->id)
             ->whereNull('scanned_at')
             ->update([
                 'scanned_at' => now(),
@@ -166,7 +187,7 @@ class TicketScannerController extends Controller
 
         if ($affectedRows > 0) {
             // First scan - successful
-            $ticket = $event->tickets()->where('ticket_code', $id)->first();
+            $ticket->refresh(); // getting fresh data
 
             // Append scan details (separate update to handle JSON field)
             $scanDetails = $ticket->scan_details ?? [];
@@ -178,22 +199,22 @@ class TicketScannerController extends Controller
             $ticket->scan_details = $scanDetails;
             $ticket->save();
 
+            // Clear cache and broadcast event
+            \Illuminate\Support\Facades\Cache::forget("available_tickets_{$eventId}");
+            \App\Events\TicketScanned::dispatch($eventId, $ticket);
+
             return response()->json([
                 'valid' => true,
-                'ticket' => $ticket->fresh(),
+                'ticket' => $ticket,
                 'previously_scanned' => false,
                 'previous_scan_count' => 0,
             ]);
         }
 
-        // Either ticket doesn't exist OR already scanned
-        $ticket = $event->tickets()->where('ticket_code', $id)->first();
-        if (! $ticket) {
-            return response()->json(['valid' => false, 'error' => 'Ticket not found'], 404);
-        }
-
         // Already scanned - increment scan_count and log the attempt
         $previousScanCount = $ticket->scan_count ?? 0;
+
+        // Manually increment since update failed (it means scanned_at was not null)
         $ticket->scan_count = $previousScanCount + 1;
         $scanDetails = $ticket->scan_details ?? [];
         $scanDetails[] = [
@@ -203,6 +224,9 @@ class TicketScannerController extends Controller
         ];
         $ticket->scan_details = $scanDetails;
         $ticket->save();
+
+        // Broadcast update even for duplicate scans (to update logs/counts on other devices)
+        \App\Events\TicketScanned::dispatch($eventId, $ticket);
 
         return response()->json([
             'valid' => true,

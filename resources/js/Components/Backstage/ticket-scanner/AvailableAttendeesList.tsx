@@ -1,7 +1,7 @@
 interface AvailableAttendeesListProps {
     attendeeGroups: any[];
     onSelectAttendee: (attendee: any) => void;
-    selectedEventId: number | null;
+    selectedEventId: number | string | null;
     ticketsLoaded: boolean;
     eventName: string | undefined;
     ticketCount: number;

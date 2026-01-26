@@ -13,7 +13,7 @@ return new class extends Migration
     {
         if (! Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table) {
-                $table->id();
+                $table->ulid('id')->primary();
                 // Split name into first_name / last_name to match the User model
                 $table->string('first_name')->nullable();
                 $table->string('last_name')->nullable();
@@ -37,7 +37,7 @@ return new class extends Migration
         if (! Schema::hasTable('sessions')) {
             Schema::create('sessions', function (Blueprint $table) {
                 $table->string('id')->primary();
-                $table->foreignId('user_id')->nullable()->index();
+                $table->foreignUlid('user_id')->nullable()->index();
                 $table->string('ip_address', 45)->nullable();
                 $table->text('user_agent')->nullable();
                 $table->longText('payload');

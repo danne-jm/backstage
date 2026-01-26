@@ -23,7 +23,7 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $p) {
-            DB::table('products')->insert([
+            \App\Models\Product::create([
                 'name' => $p['name'],
                 'price' => $p['price'],
                 'created_at' => $now,

@@ -107,6 +107,12 @@ class DistributionService
 
             $ticketsCreated++;
 
+            // Dispatch realtime event for ticket scanner listeners
+            \App\Events\TicketSold::dispatch($event->id, $ticket);
+
+            // Clear available tickets cache
+            \Illuminate\Support\Facades\Cache::forget("available_tickets_{$event->id}");
+
             // Attach ticket_code and ticket_id to recipient for QR generation
             $recipient['__ticket_code'] = $ticketCode;
             $recipient['__event_name'] = $eventName;

@@ -131,7 +131,7 @@ class EventSeeder extends Seeder
         ];
 
         foreach ($events as $event) {
-            DB::table('events')->insert([
+            \App\Models\Event::create([
                 'name' => $event['name'],
                 'description' => $event['description'],
                 'event_date' => $event['event_date'],

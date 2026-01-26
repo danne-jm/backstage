@@ -13,8 +13,8 @@ return new class extends Migration
     {
         if (! Schema::hasTable('event_images')) {
             Schema::create('event_images', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('event_id')->constrained()->cascadeOnDelete();
+                $table->ulid('id')->primary();
+                $table->foreignUlid('event_id')->constrained()->cascadeOnDelete();
                 // Use LONGBLOB for large image data (will receive ALTER below)
                 $table->binary('image_data');
                 $table->string('mime_type');

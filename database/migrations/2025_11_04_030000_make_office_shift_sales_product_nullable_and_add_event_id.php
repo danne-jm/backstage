@@ -14,17 +14,17 @@ return new class extends Migration
                 // product_id nullable change in sqlite requires recreating table usually,
                 // but we can try just adding event_id first.
                 // Making product_id nullable in SQLite simple usage:
-                $table->bigInteger('product_id')->nullable()->change();
-                $table->foreignId('event_id')->nullable()->after('product_id')->constrained('events')->cascadeOnDelete();
+                $table->ulid('product_id')->nullable()->change();
+                $table->foreignUlid('event_id')->nullable()->after('product_id')->constrained('events')->cascadeOnDelete();
             });
         } else {
             // Drop existing foreign key on product_id, make product_id nullable, re-add FK
             DB::statement('ALTER TABLE `office_shift_sales` DROP FOREIGN KEY `office_shift_sales_product_id_foreign`');
-            DB::statement('ALTER TABLE `office_shift_sales` MODIFY `product_id` BIGINT UNSIGNED NULL');
+            DB::statement('ALTER TABLE `office_shift_sales` MODIFY `product_id` CHAR(26) NULL');
             DB::statement('ALTER TABLE `office_shift_sales` ADD CONSTRAINT `office_shift_sales_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE');
 
             // Add event_id column and foreign key
-            DB::statement('ALTER TABLE `office_shift_sales` ADD COLUMN `event_id` BIGINT UNSIGNED NULL AFTER `product_id`');
+            DB::statement('ALTER TABLE `office_shift_sales` ADD COLUMN `event_id` CHAR(26) NULL AFTER `product_id`');
             DB::statement('ALTER TABLE `office_shift_sales` ADD CONSTRAINT `office_shift_sales_event_id_foreign` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE');
         }
     }

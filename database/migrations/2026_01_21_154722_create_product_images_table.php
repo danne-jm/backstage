@@ -13,8 +13,8 @@ return new class extends Migration
     {
         if (! Schema::hasTable('product_images')) {
             Schema::create('product_images', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+                $table->ulid('id')->primary();
+                $table->foreignUlid('product_id')->constrained()->cascadeOnDelete();
                 $table->binary('image_data');
                 $table->string('mime_type');
                 $table->timestamps();

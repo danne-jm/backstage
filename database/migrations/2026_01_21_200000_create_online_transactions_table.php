@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (! Schema::hasTable('online_transactions')) {
             Schema::create('online_transactions', function (Blueprint $table) {
-                $table->id();
+                $table->ulid('id')->primary();
                 $table->decimal('total_amount', 10, 2);
                 $table->decimal('processing_fee', 10, 2)->default(0);
                 $table->json('discount_codes')->nullable();

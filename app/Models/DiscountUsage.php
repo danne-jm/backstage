@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class DiscountUsage extends Model
 {
+    use \Illuminate\Database\Eloquent\Concerns\HasUlids;
+
     protected $fillable = [
         'code',
         'online_transaction_id',

@@ -16,7 +16,7 @@ interface SalesChartProps {
         }
     >;
     sellableCounts: Array<{
-        id: number;
+        id: string;
         type: 'product' | 'event';
         name: string;
         count: number;
@@ -174,8 +174,8 @@ export function SalesChart({
                                             dateKeys.length > 20
                                                 ? 4
                                                 : dateKeys.length > 10
-                                                    ? 2
-                                                    : 1;
+                                                  ? 2
+                                                  : 1;
 
                                         // Always show first and last, then every nth
                                         const shouldShow =
@@ -192,7 +192,7 @@ export function SalesChart({
                                                     1,
                                                     dateKeys.length - 1,
                                                 )) *
-                                            chartW;
+                                                chartW;
                                         const y = topPad + chartH + 12;
 
                                         let formattedDate;
@@ -228,8 +228,8 @@ export function SalesChart({
                                                         ? 'start'
                                                         : i ===
                                                             dateKeys.length - 1
-                                                            ? 'end'
-                                                            : 'middle'
+                                                          ? 'end'
+                                                          : 'middle'
                                                 }
                                                 fontSize="7"
                                                 fill="currentColor"
@@ -251,7 +251,7 @@ export function SalesChart({
                                                             1,
                                                             dateKeys.length - 1,
                                                         )) *
-                                                    chartW;
+                                                        chartW;
                                                 const y =
                                                     topPad +
                                                     chartH -
@@ -292,7 +292,7 @@ export function SalesChart({
                                                         1,
                                                         dateKeys.length - 1,
                                                     )) *
-                                                chartW
+                                                    chartW
                                             }
                                             y1={topPad}
                                             x2={
@@ -302,7 +302,7 @@ export function SalesChart({
                                                         1,
                                                         dateKeys.length - 1,
                                                     )) *
-                                                chartW
+                                                    chartW
                                             }
                                             y2={topPad + chartH}
                                             stroke="currentColor"
@@ -422,7 +422,10 @@ export function SalesChart({
                                                     }}
                                                 />
                                                 <div className="flex min-w-0 flex-1 items-baseline gap-2">
-                                                    <span className="truncate" title={s.name}>
+                                                    <span
+                                                        className="truncate"
+                                                        title={s.name}
+                                                    >
                                                         {s.name}
                                                     </span>
                                                     <span className="shrink-0 text-xs text-muted-foreground">

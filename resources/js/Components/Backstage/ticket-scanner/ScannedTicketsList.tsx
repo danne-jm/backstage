@@ -1,7 +1,7 @@
 interface ScannedTicketsListProps {
     scannedTickets: any[];
     ticketsLoaded: boolean;
-    selectedEventId: number | null;
+    selectedEventId: number | string | null;
     eventName: string | undefined;
     onSelectTicket: (ticket: any) => void;
 }

@@ -41,7 +41,27 @@ export default function Ticketing() {
     const canSend =
         permissions.includes('admin') || permissions.includes('send_tickets');
 
-    const events: any[] = Array.isArray(props['events']) ? props['events'] : [];
+    const events: any[] = React.useMemo(
+        () => (Array.isArray(props['events']) ? props['events'] : []),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [JSON.stringify(props['events'])],
+    );
+    // Only show events happening within the next 14 days (inclusive)
+    const filteredEvents = React.useMemo(() => {
+        const now = new Date();
+        // Reset time to start of day for accurate comparison
+        now.setHours(0, 0, 0, 0);
+        const end = new Date(now);
+        end.setDate(now.getDate() + 14);
+
+        return events.filter((ev) => {
+            const dateVal = ev.start_date ?? ev.event_date;
+            if (!dateVal) return false;
+            const d = new Date(dateVal);
+            return d >= now && d <= end;
+        });
+    }, [events]);
+
     const templates: any[] = Array.isArray(props['templates'])
         ? props['templates']
         : [];
@@ -54,7 +74,7 @@ export default function Ticketing() {
 
     // Template State
     const [selectedTemplateId, setSelectedTemplateId] = React.useState<
-        number | 'none'
+        string | 'none'
     >('none');
 
     const fields = React.useMemo(
@@ -99,7 +119,7 @@ export default function Ticketing() {
     const [editorContent, setEditorContent] = React.useState('');
 
     // Selected event id — default to none so the placeholder shows
-    const [selectedEvent, setSelectedEvent] = React.useState<number | null>(
+    const [selectedEvent, setSelectedEvent] = React.useState<string | null>(
         null,
     );
 
@@ -168,22 +188,22 @@ export default function Ticketing() {
                             availableFields.find((f: string) =>
                                 f.toLowerCase().includes('first'),
                             ) ||
-                                availableFields[0] ||
-                                '',
+                            availableFields[0] ||
+                            '',
                         );
                         setLastNameField(
                             availableFields.find((f: string) =>
                                 f.toLowerCase().includes('last'),
                             ) ||
-                                availableFields[1] ||
-                                '',
+                            availableFields[1] ||
+                            '',
                         );
                         setEmailField(
                             availableFields.find((f: string) =>
                                 f.toLowerCase().includes('email'),
                             ) ||
-                                availableFields[2] ||
-                                '',
+                            availableFields[2] ||
+                            '',
                         );
                         setSelectedSampleIndex(0);
                     }
@@ -317,7 +337,7 @@ export default function Ticketing() {
         const eventObj =
             events.find((ev: any) => ev.id === selectedEvent) ?? null;
         const selectedTemplate = templates.find(
-            (t) => t.id === Number(selectedTemplateId),
+            (t) => t.id === selectedTemplateId,
         );
 
         const buildEmailHtml = (innerHtml: string, ev: any | null) => {
@@ -530,9 +550,7 @@ export default function Ticketing() {
                                                 setSelectedTemplateId(
                                                     e.target.value === 'none'
                                                         ? 'none'
-                                                        : Number(
-                                                              e.target.value,
-                                                          ),
+                                                        : e.target.value,
                                                 )
                                             }
                                         >
@@ -560,7 +578,7 @@ export default function Ticketing() {
                                         value={String(selectedEvent ?? '')}
                                         onChange={(e) =>
                                             setSelectedEvent(
-                                                Number(e.target.value) || null,
+                                                e.target.value || null,
                                             )
                                         }
                                         className="w-full max-w-full min-w-[180px] rounded-md border p-2"
@@ -568,15 +586,15 @@ export default function Ticketing() {
                                         <option value="">
                                             -- Select event --
                                         </option>
-                                        {events.length === 0 ? (
+                                        {filteredEvents.length === 0 ? (
                                             <option value="">
-                                                No events available
+                                                No upcoming events
                                             </option>
                                         ) : (
-                                            events.map((ev: any) => {
+                                            filteredEvents.map((ev: any) => {
                                                 const rawDate = ev
                                                     ? (ev.start_date ??
-                                                      ev.event_date)
+                                                        ev.event_date)
                                                     : null;
                                                 return (
                                                     <option
@@ -900,7 +918,7 @@ export default function Ticketing() {
                                         });
                                     if (
                                         ev.quantity_without_card !==
-                                            undefined &&
+                                        undefined &&
                                         ev.quantity_without_card !== null
                                     )
                                         rows.push({
@@ -1088,7 +1106,7 @@ export default function Ticketing() {
                                                             name={`nullable-${f}`}
                                                             checked={
                                                                 !nullableFields[
-                                                                    f
+                                                                f
                                                                 ]
                                                             }
                                                             onChange={() =>
@@ -1112,7 +1130,7 @@ export default function Ticketing() {
                                                             name={`nullable-${f}`}
                                                             checked={Boolean(
                                                                 nullableFields[
-                                                                    f
+                                                                f
                                                                 ],
                                                             )}
                                                             onChange={() =>
@@ -1212,18 +1230,18 @@ export default function Ticketing() {
                                                                                                 (
                                                                                                     r as any
                                                                                                 )[
-                                                                                                    f
+                                                                                                f
                                                                                                 ] ??
-                                                                                                    '',
+                                                                                                '',
                                                                                             )}
                                                                                         >
                                                                                             {String(
                                                                                                 (
                                                                                                     r as any
                                                                                                 )[
-                                                                                                    f
+                                                                                                f
                                                                                                 ] ??
-                                                                                                    '',
+                                                                                                '',
                                                                                             )}
                                                                                         </span>
                                                                                     </td>
@@ -1265,7 +1283,7 @@ export default function Ticketing() {
                                                                                         s as any
                                                                                     )
                                                                                         .email ??
-                                                                                        '',
+                                                                                    '',
                                                                                 ).trim(),
                                                                         )
                                                                         .filter(
@@ -1278,10 +1296,10 @@ export default function Ticketing() {
                                                                                 '@',
                                                                             )
                                                                                 ? e
-                                                                                      .split(
-                                                                                          '@',
-                                                                                      )[1]
-                                                                                      .toLowerCase()
+                                                                                    .split(
+                                                                                        '@',
+                                                                                    )[1]
+                                                                                    .toLowerCase()
                                                                                 : '',
                                                                     );
                                                                 const domainCounts: Record<
@@ -1362,7 +1380,7 @@ export default function Ticketing() {
                                                                             </div>
                                                                             <ul className="mt-1 list-disc pl-5">
                                                                                 {domainEntries.length ===
-                                                                                0 ? (
+                                                                                    0 ? (
                                                                                     <li className="text-muted-foreground">
                                                                                         No
                                                                                         recipient
@@ -1407,66 +1425,66 @@ export default function Ticketing() {
 
                                                                         {suspicious.length >
                                                                             0 && (
-                                                                            <div>
-                                                                                <div className="text-xs font-medium text-red-600">
-                                                                                    Potential
-                                                                                    typos
-                                                                                </div>
-                                                                                <div className="mt-1 text-xs">
-                                                                                    {suspicious.map(
-                                                                                        ([
-                                                                                            d,
-                                                                                        ]) => (
-                                                                                            <div
-                                                                                                key={
-                                                                                                    d
-                                                                                                }
-                                                                                                className="mb-1"
-                                                                                            >
-                                                                                                <div className="font-medium">
-                                                                                                    {
+                                                                                <div>
+                                                                                    <div className="text-xs font-medium text-red-600">
+                                                                                        Potential
+                                                                                        typos
+                                                                                    </div>
+                                                                                    <div className="mt-1 text-xs">
+                                                                                        {suspicious.map(
+                                                                                            ([
+                                                                                                d,
+                                                                                            ]) => (
+                                                                                                <div
+                                                                                                    key={
                                                                                                         d
                                                                                                     }
-                                                                                                </div>
-                                                                                                <div className="text-muted-foreground">
-                                                                                                    Addresses:
-                                                                                                </div>
-                                                                                                <ul className="mt-1 list-disc pl-5 text-xs">
-                                                                                                    {emails
-                                                                                                        .filter(
-                                                                                                            (
-                                                                                                                e,
-                                                                                                            ) =>
-                                                                                                                e.endsWith(
-                                                                                                                    `@${d}`,
+                                                                                                    className="mb-1"
+                                                                                                >
+                                                                                                    <div className="font-medium">
+                                                                                                        {
+                                                                                                            d
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                    <div className="text-muted-foreground">
+                                                                                                        Addresses:
+                                                                                                    </div>
+                                                                                                    <ul className="mt-1 list-disc pl-5 text-xs">
+                                                                                                        {emails
+                                                                                                            .filter(
+                                                                                                                (
+                                                                                                                    e,
+                                                                                                                ) =>
+                                                                                                                    e.endsWith(
+                                                                                                                        `@${d}`,
+                                                                                                                    ),
+                                                                                                            )
+                                                                                                            .slice(
+                                                                                                                0,
+                                                                                                                5,
+                                                                                                            )
+                                                                                                            .map(
+                                                                                                                (
+                                                                                                                    e,
+                                                                                                                ) => (
+                                                                                                                    <li
+                                                                                                                        key={
+                                                                                                                            e
+                                                                                                                        }
+                                                                                                                    >
+                                                                                                                        {
+                                                                                                                            e
+                                                                                                                        }
+                                                                                                                    </li>
                                                                                                                 ),
-                                                                                                        )
-                                                                                                        .slice(
-                                                                                                            0,
-                                                                                                            5,
-                                                                                                        )
-                                                                                                        .map(
-                                                                                                            (
-                                                                                                                e,
-                                                                                                            ) => (
-                                                                                                                <li
-                                                                                                                    key={
-                                                                                                                        e
-                                                                                                                    }
-                                                                                                                >
-                                                                                                                    {
-                                                                                                                        e
-                                                                                                                    }
-                                                                                                                </li>
-                                                                                                            ),
-                                                                                                        )}
-                                                                                                </ul>
-                                                                                            </div>
-                                                                                        ),
-                                                                                    )}
+                                                                                                            )}
+                                                                                                    </ul>
+                                                                                                </div>
+                                                                                            ),
+                                                                                        )}
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                        )}
+                                                                            )}
                                                                     </div>
                                                                 );
                                                             })()}
@@ -1514,14 +1532,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    firstNameField
+                                                                firstNameField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    firstNameField
+                                                                firstNameField
                                                                 ] ?? '',
                                                             )}
                                                         </span>
@@ -1530,14 +1548,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    lastNameField
+                                                                lastNameField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    lastNameField
+                                                                lastNameField
                                                                 ] ?? '',
                                                             )}
                                                         </span>
@@ -1546,14 +1564,14 @@ export default function Ticketing() {
                                                         <span
                                                             title={String(
                                                                 (r as any)[
-                                                                    emailField
+                                                                emailField
                                                                 ] ?? '',
                                                             )}
                                                             className="inline-block w-full truncate"
                                                         >
                                                             {String(
                                                                 (r as any)[
-                                                                    emailField
+                                                                emailField
                                                                 ] ?? '',
                                                             )}
                                                         </span>

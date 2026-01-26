@@ -194,6 +194,7 @@ class OfficeController extends Controller
                     'ticket_label' => $sale->ticket_type === 'with_card' ? 'With ESNcard' : ($sale->ticket_type === 'without_card' ? 'Without ESNcard' : null),
                     'source' => 'store',
                     'reference_id' => $sale->reference_id,
+                    'description' => 'Online Sale #'.$sale->reference_id,
                     'breakdown' => null,
                 ];
             });
@@ -412,6 +413,22 @@ class OfficeController extends Controller
         }
 
         $this->recalculateTotals($office);
+
+        // Dispatch realtime event for office page listeners
+        \App\Events\OfficeSaleCreated::dispatch($office->id, $sale);
+
+        // Dispatch inventory update event if stock was affected
+        if ($productId) {
+            $product = Product::find($productId);
+            if ($product) {
+                \App\Events\InventoryUpdated::dispatch($product->id, 'product', $product->remaining);
+            }
+        } elseif ($eventId) {
+            $event = Event::find($eventId);
+            if ($event) {
+                \App\Events\InventoryUpdated::dispatch($event->id, 'event', $event->remaining, $event->remaining_with_card, $event->remaining_without_card);
+            }
+        }
 
         return redirect()->route('office.show', $office);
     }

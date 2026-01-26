@@ -9,7 +9,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class OfficeShiftSale extends Model
 {
-    use HasFactory;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids;
     use LogsActivity;
 
     public function getActivitylogOptions(): LogOptions

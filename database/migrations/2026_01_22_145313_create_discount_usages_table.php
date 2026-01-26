@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('discount_usages', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('code')->index();
-            $table->foreignId('online_transaction_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('online_sale_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('event_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUlid('online_transaction_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('online_sale_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('product_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUlid('event_id')->nullable()->constrained()->nullOnDelete();
             $table->decimal('original_price', 10, 2);
             $table->decimal('paid_price', 10, 2);
             $table->decimal('saved_amount', 10, 2);

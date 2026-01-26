@@ -10,7 +10,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Item extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, \Illuminate\Database\Eloquent\Concerns\HasUlids;
 
     public function getActivitylogOptions(): LogOptions
     {

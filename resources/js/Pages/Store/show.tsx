@@ -5,12 +5,12 @@ import { Instagram, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 
 interface ShopItem {
-    id: number;
+    id: string;
     type: 'product' | 'event';
     name: string;
     description: string | null;
     image: string | null;
-    images?: { id: number; url: string }[];
+    images?: { id: string; url: string }[];
     price: number;
     member_price?: number;
     price_without_card?: number;
@@ -151,7 +151,8 @@ export default function ShopShow({ item }: Props) {
                                         €{Number(item.price).toFixed(2)}
                                     </p>
 
-                                    {item.member_price &&
+                                    {item.member_price !== null &&
+                                        item.member_price !== undefined &&
                                         item.member_price < item.price && (
                                             <div className="mb-6 rounded-r-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
                                                 <div className="flex items-start">

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Attendee extends Model
 {
-    use HasFactory;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids;
 
     protected $fillable = [
         'event_id',

@@ -74,12 +74,10 @@ export default function Confirmation({ transaction, items }: Props) {
                                             <h3 className="font-medium text-gray-900">
                                                 {item.name}
                                             </h3>
-                                            {item.ticket_type && (
+                                            {item.ticket_type ===
+                                                'with_card' && (
                                                 <p className="mt-1 text-sm text-gray-500">
-                                                    {item.ticket_type ===
-                                                    'with_card'
-                                                        ? 'With ESNcard'
-                                                        : 'Without ESNcard'}
+                                                    With ESNcard
                                                 </p>
                                             )}
                                             <p className="mt-2 text-sm font-medium text-gray-900">
@@ -132,17 +130,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                     )}
                                 </span>
                             </div>
-                            {transaction.discount_codes &&
-                                transaction.discount_codes.length > 0 && (
-                                    <div className="flex justify-between text-sm text-gray-600">
-                                        <span>Discount codes</span>
-                                        <span>
-                                            {transaction.discount_codes.join(
-                                                ', ',
-                                            )}
-                                        </span>
-                                    </div>
-                                )}
+
                             <div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-bold text-gray-900">
                                 <span>Total</span>
                                 <span>

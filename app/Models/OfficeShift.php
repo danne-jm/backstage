@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity; // Added this use statement for LogsActivity
 
 class OfficeShift extends Model
 {
-    use HasFactory;
-    use \Spatie\Activitylog\Traits\LogsActivity;
+    use HasFactory, LogsActivity, \Illuminate\Database\Eloquent\Concerns\HasUlids; // Combined traits and added HashableId
 
     public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
     {

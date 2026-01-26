@@ -9,7 +9,9 @@ declare global {
 }
 
 // Only initialize Echo on the backstage domain, not on store subdomain
-const isStoreDomain = typeof window !== 'undefined' && window.location.hostname.startsWith('store.');
+const isStoreDomain =
+    typeof window !== 'undefined' &&
+    window.location.hostname.startsWith('store.');
 
 if (!isStoreDomain) {
     window.Pusher = Pusher;
@@ -26,4 +28,3 @@ if (!isStoreDomain) {
 }
 
 export default window.Echo;
-

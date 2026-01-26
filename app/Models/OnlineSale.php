@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class OnlineSale extends Model
 {
-    use HasFactory;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids;
     use \Spatie\Activitylog\Traits\LogsActivity;
 
     public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions

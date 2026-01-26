@@ -17,12 +17,12 @@ class OnlineSaleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'product_id' => ['nullable', 'integer', 'exists:products,id'],
-            'event_id' => ['nullable', 'integer', 'exists:events,id'],
-            'method' => ['required', 'in:card,cash'],
-            'amount' => ['required', 'numeric'],
+            'product_id' => ['nullable', 'string', 'exists:products,id'],
+            'event_id' => ['nullable', 'string', 'exists:events,id'],
+            'method' => ['required', 'string', 'in:cash,card'],
+            'amount' => ['required', 'numeric', 'min:0'],
             'ticket_type' => ['nullable', 'string'],
-            'office_shift_id' => ['nullable', 'integer', 'exists:office_shifts,id'],
+            'office_shift_id' => ['nullable', 'string', 'exists:office_shifts,id'],
             'description' => ['nullable', 'string'],
             'is_manual_entry' => ['nullable', 'boolean'],
             // SECURITY FIX: Removed sold_by from user input to prevent impersonation.
@@ -43,6 +43,24 @@ class OnlineSaleController extends Controller
         $payload['sold_by_name'] = auth()->user()?->name;
 
         $sale = $this->service->createOnlineSale($payload);
+
+        if (! empty($payload['office_shift_id'])) {
+            \App\Events\OfficeSaleCreated::dispatch($payload['office_shift_id'], $sale);
+        }
+        \App\Events\StoreUpdated::dispatch($sale);
+
+        // If it's a product or event, inventory might have changed
+        if ($sale->product_id) {
+            $p = \App\Models\Product::find($sale->product_id);
+            if ($p) {
+                \App\Events\InventoryUpdated::dispatch($p->id, 'product', $p->remaining);
+            }
+        } elseif ($sale->event_id) {
+            $ev = \App\Models\Event::find($sale->event_id);
+            if ($ev) {
+                \App\Events\InventoryUpdated::dispatch($ev->id, 'event', $ev->remaining, $ev->remaining_with_card, $ev->remaining_without_card);
+            }
+        }
 
         return response()->json(['success' => true, 'sale' => $sale]);
     }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export interface CartEntry {
-    id: number;
+    id: string;
     type: 'product' | 'event';
     quantity: number;
 }
@@ -52,7 +52,7 @@ export function useCart() {
     };
 
     const addToCart = (item: {
-        id: number;
+        id: string;
         type: 'product' | 'event';
         quantity: number;
     }) => {
@@ -72,7 +72,7 @@ export function useCart() {
         }
     };
 
-    const removeFromCart = (id: number, type: 'product' | 'event') => {
+    const removeFromCart = (id: string, type: 'product' | 'event') => {
         const newEntries = entries.filter(
             (e) => !(e.id === id && e.type === type),
         );
@@ -80,7 +80,7 @@ export function useCart() {
     };
 
     const updateQuantity = (
-        id: number,
+        id: string,
         type: 'product' | 'event',
         quantity: number,
     ) => {

@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         // Seed users from provided static array
         $users = [
             [
-                'id' => 1,
+                'id' => '00000000000000000000000001',
                 'first_name' => 'Daniel',
                 'last_name' => 'Jaurell Mevorach',
                 'email' => 'it@esnleuven.be',
@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
                 'two_factor_confirmed_at' => null,
             ],
             [
-                'id' => 2,
+                'id' => '00000000000000000000000002',
                 'first_name' => 'Debargha',
                 'last_name' => 'Chakravorty',
                 'email' => 'president@esnleuven.be',
@@ -65,7 +65,7 @@ class DatabaseSeeder extends Seeder
                 'two_factor_confirmed_at' => null,
             ],
             [
-                'id' => 3,
+                'id' => '00000000000000000000000003',
                 'first_name' => 'Ammani',
                 'last_name' => 'Ali Khan',
                 'email' => 'marketing@esnleuven.be',
@@ -85,7 +85,7 @@ class DatabaseSeeder extends Seeder
                 'two_factor_confirmed_at' => null,
             ],
             [
-                'id' => 4,
+                'id' => '00000000000000000000000004',
                 'first_name' => 'Kaat',
                 'last_name' => 'Janssen',
                 'email' => 'finance@esnleuven.be',
@@ -112,8 +112,8 @@ class DatabaseSeeder extends Seeder
 
         // Fix permissions after upsert (upsert doesn't handle PHP variables in JSON columns properly)
         // Use array values since the permissions column is cast to array in the model
-        User::whereIn('id', [1, 2])->update(['permissions' => $adminPermissionsArray]);
-        User::whereIn('id', [3, 4])->update(['permissions' => $boardPermissionsArray]);
+        User::whereIn('id', ['00000000000000000000000001', '00000000000000000000000002'])->update(['permissions' => $adminPermissionsArray]);
+        User::whereIn('id', ['00000000000000000000000003', '00000000000000000000000004'])->update(['permissions' => $boardPermissionsArray]);
 
         // Populate products and events used by the Office UI
         $this->call([

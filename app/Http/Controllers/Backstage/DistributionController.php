@@ -28,7 +28,7 @@ class DistributionController extends Controller
             'recipients.*.email' => ['required', 'string', 'email'],
             'recipients.*.subject' => ['nullable', 'string'],
             'recipients.*.body' => ['nullable', 'string'],
-            'recipients.*.event_id' => ['nullable', 'integer'],
+            'recipients.*.event_id' => ['nullable', 'string'],
             'recipients.*.first_name' => ['nullable', 'string'],
             'recipients.*.last_name' => ['nullable', 'string'],
             'recipients.*.event_name' => ['nullable', 'string'],

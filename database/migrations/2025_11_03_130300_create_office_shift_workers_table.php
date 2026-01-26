@@ -10,9 +10,9 @@ return new class extends Migration
     {
         if (! Schema::hasTable('office_shift_workers')) {
             Schema::create('office_shift_workers', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('office_shift_id')->constrained('office_shifts')->cascadeOnDelete();
-                $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+                $table->ulid('id')->primary();
+                $table->foreignUlid('office_shift_id')->constrained('office_shifts')->cascadeOnDelete();
+                $table->foreignUlid('user_id')->constrained('users')->cascadeOnDelete();
                 $table->string('role')->nullable();
                 $table->timestamps();
             });

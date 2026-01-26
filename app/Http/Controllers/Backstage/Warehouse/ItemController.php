@@ -96,7 +96,9 @@ class ItemController extends Controller
             }
         }
 
-        Item::create($data);
+        $item = Item::create($data);
+
+        \App\Events\InventoryUpdated::dispatch($item->id, 'item', $item->quantity);
 
         return redirect()->route('warehouse')->with('success', 'Item created');
     }
@@ -139,6 +141,8 @@ class ItemController extends Controller
         }
 
         $item->update($data);
+
+        \App\Events\InventoryUpdated::dispatch($item->id, 'item', $item->quantity);
 
         return redirect()->route('warehouse')->with('success', 'Item updated');
     }

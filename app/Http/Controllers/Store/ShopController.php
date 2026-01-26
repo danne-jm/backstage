@@ -64,8 +64,6 @@ class ShopController extends Controller
         return Inertia::render('Store/show', [
             'item' => $item,
         ]);
-
-        abort(404);
     }
 
     public function cart()

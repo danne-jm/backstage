@@ -15,7 +15,7 @@ return new class extends Migration
         if (! Schema::hasTable('event_tickets')) {
             // Create the table on the 'tickets' connection and avoid cross-connection FKs
             Schema::create('event_tickets', function (Blueprint $table) {
-                $table->id();
+                $table->ulid('id')->primary();
                 // store event_id as a plain nullable unsignedBigInteger; do not add a FK
                 $table->unsignedBigInteger('event_id')->nullable();
                 $table->string('first_name')->nullable();

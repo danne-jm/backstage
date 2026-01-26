@@ -28,7 +28,8 @@ export default function TicketScanner() {
 
     const events: any[] = React.useMemo(
         () => (Array.isArray(props.events) ? props.events : []),
-        [props.events],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [JSON.stringify(props.events)],
     );
 
     // Only show events happening within the next 14 days (inclusive)
@@ -45,7 +46,7 @@ export default function TicketScanner() {
     }, [events]);
 
     // Default to no event selected so the select shows the placeholder "-- select event --"
-    const [selectedEvent, setSelectedEvent] = React.useState<number | null>(
+    const [selectedEvent, setSelectedEvent] = React.useState<string | null>(
         null,
     );
 
@@ -139,6 +140,57 @@ export default function TicketScanner() {
         setScannedTickets([]);
     }, [selectedEvent]);
 
+    // Realtime updates via Reverb
+    React.useEffect(() => {
+        if (!selectedEvent || !window.Echo) return;
+
+        const channel = window.Echo.private(`tickets.${selectedEvent}`);
+
+        channel.listen('TicketScanned', (e: { ticket: any }) => {
+            const t = e.ticket;
+            if (!t) return;
+
+            // Remove from available if present
+            setTickets((prev) => prev.filter((pt) => pt.id !== t.id));
+
+            // Add/Update in scanned
+            setScannedTickets((prev) => {
+                const idx = prev.findIndex((pt) => pt.id === t.id);
+                if (idx !== -1) {
+                    const next = [...prev];
+                    next[idx] = t;
+                    return next.sort(
+                        (a, b) =>
+                            new Date(b.updated_at).getTime() -
+                            new Date(a.updated_at).getTime(),
+                    );
+                }
+                return [t, ...prev].sort(
+                    (a, b) =>
+                        new Date(b.updated_at).getTime() -
+                        new Date(a.updated_at).getTime(),
+                );
+            });
+        });
+
+        // Also listen for new sales (TicketSold)
+        channel.listen('TicketSold', (e: { ticket: any }) => {
+            const t = e.ticket;
+            if (!t) return;
+            setTickets((prev) =>
+                [t, ...prev].sort(
+                    (a, b) =>
+                        new Date(b.created_at).getTime() -
+                        new Date(a.created_at).getTime(),
+                ),
+            );
+        });
+
+        return () => {
+            window.Echo?.leave(`tickets.${selectedEvent}`);
+        };
+    }, [selectedEvent]);
+
     const verifyTicket = async (ticketId: string) => {
         // Prevent duplicate processing
         if (processingRef.current.has(ticketId)) {
@@ -160,7 +212,10 @@ export default function TicketScanner() {
         try {
             const url = `/ticket-scanner/verify`;
             // Retrieve CSRF token from meta tag
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const csrfToken =
+                document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute('content') || '';
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -332,7 +387,7 @@ export default function TicketScanner() {
     React.useEffect(() => {
         return () => {
             if (scannerRef.current) {
-                scannerRef.current.stop().catch(() => { });
+                scannerRef.current.stop().catch(() => {});
             }
         };
     }, []);
@@ -345,12 +400,12 @@ export default function TicketScanner() {
         if (modalOpen) {
             if (scanning) {
                 wasScanningRef.current = true;
-                stopCamera().catch(() => { });
+                stopCamera().catch(() => {});
             }
         } else {
             if (wasScanningRef.current) {
                 wasScanningRef.current = false;
-                startCameraScan().catch(() => { });
+                startCameraScan().catch(() => {});
             }
         }
         // only depend on modalOpen and scanning
@@ -483,9 +538,7 @@ export default function TicketScanner() {
                                 <select
                                     value={String(selectedEvent ?? '')}
                                     onChange={(e) =>
-                                        setSelectedEvent(
-                                            Number(e.target.value) || null,
-                                        )
+                                        setSelectedEvent(e.target.value || null)
                                     }
                                     className="w-full rounded-md border p-2"
                                 >
@@ -692,9 +745,9 @@ export default function TicketScanner() {
                     allTickets={
                         scanModal?.ticket
                             ? getAllTicketsForAttendee(
-                                scanModal.ticket,
-                                scanModal.ticket,
-                            )
+                                  scanModal.ticket,
+                                  scanModal.ticket,
+                              )
                             : []
                     }
                 />
@@ -709,9 +762,9 @@ export default function TicketScanner() {
                     allTickets={
                         selectedScannedTicket
                             ? getAllTicketsForAttendee(
-                                selectedScannedTicket,
-                                selectedScannedTicket,
-                            )
+                                  selectedScannedTicket,
+                                  selectedScannedTicket,
+                              )
                             : []
                     }
                 />

@@ -10,9 +10,9 @@ return new class extends Migration
     {
         if (! Schema::hasTable('online_sales')) {
             Schema::create('online_sales', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
-                $table->foreignId('event_id')->nullable()->constrained()->nullOnDelete();
+                $table->ulid('id')->primary();
+                $table->foreignUlid('product_id')->nullable()->constrained()->nullOnDelete();
+                $table->foreignUlid('event_id')->nullable()->constrained()->nullOnDelete();
                 $table->string('method')->default('card');
                 $table->decimal('amount', 10, 2);
                 $table->json('details')->nullable();

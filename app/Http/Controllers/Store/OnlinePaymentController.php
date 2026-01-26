@@ -30,7 +30,7 @@ class OnlinePaymentController extends Controller
     {
         $validated = $request->validate([
             'items' => ['required', 'array'],
-            'items.*.id' => ['required', 'integer'],
+            'items.*.id' => ['required', 'string'], // Keep string as UUIDs are strings
             'items.*.type' => ['required', 'in:product,event'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'codes' => ['nullable', 'array'],
@@ -50,7 +50,7 @@ class OnlinePaymentController extends Controller
     {
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['required', 'integer'],
+            'items.*.id' => ['required', 'string'],
             'items.*.type' => ['required', 'in:product,event'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.use_member_price' => ['nullable', 'boolean'],
@@ -89,7 +89,7 @@ class OnlinePaymentController extends Controller
 
             // Create sales records (linked to pending transaction)
             foreach ($salesToCreate as $saleData) {
-                OnlineSale::create([
+                $sale = OnlineSale::create([
                     'online_transaction_id' => $transaction->id,
                     'product_id' => $saleData['product_id'],
                     'event_id' => $saleData['event_id'],
@@ -103,6 +103,7 @@ class OnlinePaymentController extends Controller
                         'code_used' => $saleData['code_used'],
                     ],
                 ]);
+                \App\Events\StoreUpdated::dispatch($sale);
             }
 
             // Update stock counts (optimistic - will be reverted if payment fails)
@@ -417,10 +418,14 @@ class OnlinePaymentController extends Controller
                 } else {
                     Event::where('id', $saleData['event_id'])->increment('sold_count_without_card');
                 }
+                $event = Event::find($saleData['event_id']);
+                \App\Events\InventoryUpdated::dispatch($event->id, 'event', $event->remaining, $event->remaining_with_card, $event->remaining_without_card);
             }
 
             if ($saleData['product_id']) {
                 Product::where('id', $saleData['product_id'])->increment('sold_count');
+                $product = Product::find($saleData['product_id']);
+                \App\Events\InventoryUpdated::dispatch($product->id, 'product', $product->remaining);
             }
         }
     }

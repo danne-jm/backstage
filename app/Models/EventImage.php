@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EventImage extends Model
 {
+    use \Illuminate\Database\Eloquent\Concerns\HasUlids;
+
     protected $fillable = [
         'event_id',
         'image_data',

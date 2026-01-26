@@ -39,7 +39,7 @@ export function LatestCardSalesList({
     };
 
     return (
-        <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 p-3 dark:border-sidebar-border sm:p-4">
+        <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 p-3 sm:p-4 dark:border-sidebar-border">
             <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-base font-semibold sm:text-lg">
                     Latest Card Sales{' '}
@@ -64,7 +64,7 @@ export function LatestCardSalesList({
                         <button
                             key={p}
                             onClick={() => setPeriod(p)}
-                            className={`whitespace-nowrap px-2 py-1 text-xs transition-colors sm:px-3 sm:py-1.5 sm:text-sm ${
+                            className={`px-2 py-1 text-xs whitespace-nowrap transition-colors sm:px-3 sm:py-1.5 sm:text-sm ${
                                 period === p
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-background hover:bg-muted'

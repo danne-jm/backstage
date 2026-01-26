@@ -13,3 +13,19 @@ Broadcast::channel('presence.users', function ($user) {
         'initials' => strtoupper(substr($user->first_name ?? '', 0, 1).substr($user->last_name ?? '', 0, 1)),
     ];
 });
+
+Broadcast::channel('inventory', function ($user) {
+    return $user->hasPermission('view_inventory') || $user->hasPermission('admin');
+});
+
+Broadcast::channel('tickets.{eventId}', function ($user, $eventId) {
+    return $user->hasPermission('scan_tickets') || $user->hasPermission('admin');
+});
+
+Broadcast::channel('store-stats', function ($user) {
+    return $user->hasPermission('view_store_manager') || $user->hasPermission('admin');
+});
+
+Broadcast::channel('office.{officeId}', function ($user, $officeId) {
+    return $user->hasPermission('sell_tickets') || $user->hasPermission('admin');
+});

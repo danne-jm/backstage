@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('online_sales', function (Blueprint $table) {
             if (! Schema::hasColumn('online_sales', 'online_transaction_id')) {
-                $table->foreignId('online_transaction_id')->nullable()->after('id')->constrained()->nullOnDelete();
+                $table->foreignUlid('online_transaction_id')->nullable()->after('id')->constrained()->nullOnDelete();
             }
             if (! Schema::hasColumn('online_sales', 'reference_id')) {
                 $table->string('reference_id', 12)->unique()->nullable()->after('online_transaction_id');

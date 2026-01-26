@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface Sellable {
-    id: number;
+    id: string;
     type: 'product' | 'event';
     name: string;
     description: string | null;
@@ -96,10 +96,11 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('all')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'all'
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
+                                            activeFilter === 'all'
                                                 ? 'bg-black text-white'
                                                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                            }`}
+                                        }`}
                                     >
                                         All
                                     </button>
@@ -107,10 +108,11 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('products')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'products'
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
+                                            activeFilter === 'products'
                                                 ? 'bg-black text-white'
                                                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                            }`}
+                                        }`}
                                     >
                                         Products
                                     </button>
@@ -118,10 +120,11 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('events')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'events'
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
+                                            activeFilter === 'events'
                                                 ? 'bg-black text-white'
                                                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                            }`}
+                                        }`}
                                     >
                                         Events
                                     </button>
@@ -130,14 +133,14 @@ export default function ShopHome({ sellables }: Props) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:gap-10">
+                    <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-12">
                         {filteredSellables.map((item) => (
                             <Link
                                 key={`${item.type}-${item.id}`}
                                 href={`/item/${item.type}/${item.id}`}
                                 className="group relative flex flex-col"
                             >
-                                <div className="aspect-h-1 aspect-w-1 h-72 w-full overflow-hidden rounded-lg">
+                                <div className="aspect-h-1 aspect-w-1 h-64 w-full overflow-hidden rounded-lg">
                                     {item.image ? (
                                         <img
                                             src={item.image}

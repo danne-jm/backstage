@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('mails', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('event_id')->nullable()->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null'); // sent_by
+            $table->ulid('id')->primary();
+            $table->foreignUlid('event_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignUlid('user_id')->nullable()->constrained()->onDelete('set null'); // sent_by
             $table->string('recipient_email');
             $table->string('subject')->nullable();
             $table->longText('body')->nullable();
