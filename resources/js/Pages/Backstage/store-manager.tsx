@@ -10,10 +10,10 @@ import { ProductDialog } from '@/Components/Backstage/sellables/ProductDialog';
 import { ProductPreview } from '@/Components/Backstage/sellables/ProductPreview';
 import { LatestCardSalesList } from '@/Components/Backstage/store-manager/LatestCardSalesList';
 import { SalesChart } from '@/Components/Backstage/store-manager/SalesChart';
-import { StoreQuickStats } from '@/Components/Backstage/store-manager/StoreQuickStats';
 import type {
     BoardUser,
     Event,
+    OfficeSale,
     OnlineSale,
     Product,
     Sellable,
@@ -46,6 +46,7 @@ export default function StoreManager() {
         Array<{ date: string; office_total: number; online_total: number }>
     >([]);
     const [onlineSales, setOnlineSales] = useState<OnlineSale[]>([]);
+    const [officeSales, setOfficeSales] = useState<OfficeSale[]>([]);
     const [onlineSalesTotal, setOnlineSalesTotal] = useState<number>(0);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
     const [period, setPeriod] = useState<TimePeriod>('7days');
@@ -94,6 +95,8 @@ export default function StoreManager() {
                         setBoardUsers(json.boardUsers);
                     if (Array.isArray(json.onlineSales))
                         setOnlineSales(json.onlineSales);
+                    if (Array.isArray(json.officeSales))
+                        setOfficeSales(json.officeSales);
                     setOnlineSellablesCount(json.onlineSellablesCount || 0);
                     setOnlineSalesTotal(Number(json.onlineSalesTotal || 0));
 
@@ -102,12 +105,12 @@ export default function StoreManager() {
                         period === 'month'
                             ? 30
                             : period === '7days'
-                              ? 7
-                              : period === '24hours'
-                                ? 1
-                                : period === 'lastShift'
-                                  ? 0
-                                  : 14;
+                                ? 7
+                                : period === '24hours'
+                                    ? 1
+                                    : period === 'lastShift'
+                                        ? 0
+                                        : 14;
 
                     const hourly = period === '24hours';
                     let summaryUrl = `/sales/summary?days=${days}${hourly ? '&hourly=true' : ''}`;
@@ -290,7 +293,7 @@ export default function StoreManager() {
     );
 
     const sellableCounts = onlineSellableTotals.map((s) => ({
-        id: s.id,
+        id: String(s.id),
         type: s.type,
         name: s.name,
         count: s.count,
@@ -332,36 +335,40 @@ export default function StoreManager() {
         <>
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title="Store Manager" />
-                <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        {/* Sales chart */}
-                        <SalesChart
-                            loading={loading}
-                            sales={sales}
-                            onlineSales={onlineSales}
-                            onlineSellableTotals={onlineSellableTotals}
-                            onlineSellableSeries={onlineSellableSeries}
-                            sellableCounts={sellableCounts}
-                            seriesMax={seriesMax}
-                        />
-
-                        {/* Quick KPIs */}
-                        <StoreQuickStats
-                            totalOffice={totalOffice}
-                            totalOnline={totalOnline}
-                            onlineSellablesCount={onlineSellablesCount}
-                            topSellerName={onlineSellableTotals[0]?.name ?? '—'}
-                        />
+                <div className="flex flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                    {/* Top row: Sales Chart and Sellables */}
+                    <div className="grid h-120 grid-cols-1 gap-4 overflow-hidden md:grid-cols-3">
+                        <div className="h-full overflow-hidden md:col-span-2">
+                            {/* Sales chart - now wider and includes stats */}
+                            <SalesChart
+                                loading={loading}
+                                sales={sales}
+                                onlineSales={onlineSales}
+                                officeSales={officeSales}
+                                onlineSellableTotals={onlineSellableTotals}
+                                onlineSellableSeries={onlineSellableSeries}
+                                sellableCounts={sellableCounts}
+                                totalOffice={totalOffice}
+                                totalOnline={totalOnline}
+                                onlineSellablesCount={onlineSellablesCount}
+                                topSellerName={onlineSellableTotals[0]?.name ?? '—'}
+                            />
+                        </div>
 
                         {/* Sellables - this drives the row height */}
-                        <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-                            <h3 className="mb-2 text-sm font-semibold">
-                                Sellables
-                            </h3>
+                        <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
+                            <div className="mb-2 flex shrink-0 items-center justify-between">
+                                <h3 className="text-sm font-semibold">
+                                    Sellables
+                                </h3>
+                                <div className="text-xs text-muted-foreground">
+                                    {onlineSellablesCount} purchasable online
+                                </div>
+                            </div>
                             {loading ? (
                                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
                             ) : (
-                                <div className="max-h-96 space-y-2 overflow-y-auto">
+                                <div className="flex-1 space-y-2 overflow-y-auto">
                                     {sellables.map((s) =>
                                         s.type === 'product' ? (
                                             <ProductPreview

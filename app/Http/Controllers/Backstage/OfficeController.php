@@ -175,6 +175,7 @@ class OfficeController extends Controller
         // and were created after the last closed shift
         $storeOnlineSales = \App\Models\OnlineSale::with(['product', 'event'])
             ->whereNotNull('online_transaction_id') // Has a transaction = came from store
+            ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
             ->when($lastClosedShift, function ($query) use ($lastClosedShift) {
                 $query->where('sold_at', '>', $lastClosedShift->ended_at);
             })
@@ -559,6 +560,7 @@ class OfficeController extends Controller
         // (Where transaction exists = came from store)
         $onlineSales = \App\Models\OnlineSale::with(['product', 'event'])
             ->whereNotNull('online_transaction_id')
+            ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
             ->where('sold_at', '>', $fromDate)
             ->where('sold_at', '<=', now())
             ->get();

@@ -88,6 +88,7 @@ class SalesController extends Controller
 
                 // Online sales - hourly
                 $online = OnlineSale::query()
+                    ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
                     ->whereBetween('sold_at', [$start, $end])
                     ->selectRaw('DATE_FORMAT(sold_at, "%Y-%m-%d %H:00:00") as hour, SUM(amount) as total')
                     ->groupBy('hour')
@@ -140,6 +141,7 @@ class SalesController extends Controller
 
                 // Online sales - daily
                 $online = OnlineSale::query()
+                    ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
                     ->whereBetween('sold_at', [$start, $end])
                     ->selectRaw('DATE(sold_at) as day, SUM(amount) as total')
                     ->groupBy('day')

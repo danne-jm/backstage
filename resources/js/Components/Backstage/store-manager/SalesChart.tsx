@@ -1,11 +1,12 @@
 import { PlaceholderPattern } from '@/Components/Shared/ui/placeholder-pattern';
-import { OnlineSale, Sellable } from '@/types/sellables';
-import { useRef, useState } from 'react';
+import { OfficeSale, OnlineSale, Sellable } from '@/types/sellables';
+import { useMemo, useRef, useState } from 'react';
 
 interface SalesChartProps {
     loading: boolean;
     sales: Array<{ date: string; office_total: number; online_total: number }>;
     onlineSales: OnlineSale[];
+    officeSales: OfficeSale[];
     onlineSellableTotals: Array<Sellable & { total: number; count: number }>;
     onlineSellableSeries: Array<
         Sellable & {
@@ -21,7 +22,11 @@ interface SalesChartProps {
         name: string;
         count: number;
     }>;
-    seriesMax: number;
+
+    totalOffice: number;
+    totalOnline: number;
+    onlineSellablesCount: number;
+    topSellerName: string;
 }
 
 interface HoverData {
@@ -41,28 +46,164 @@ interface HoverData {
 export function SalesChart({
     loading,
     sales,
+    onlineSales,
+    officeSales,
     onlineSellableTotals,
     onlineSellableSeries,
-    seriesMax,
+    totalOffice,
+    totalOnline,
 }: SalesChartProps) {
+    const [showOffice, setShowOffice] = useState(true);
+    const [showCard, setShowCard] = useState(true);
     const [hover, setHover] = useState<HoverData | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
 
-    // Sort by count (quantity) descending
-    const sortedTotals = [...onlineSellableTotals].sort(
-        (a, b) => b.count - a.count,
+    const dateKeys = sales.map((s) => s.date);
+    const isHourlyData = dateKeys.length > 0 && dateKeys[0].includes(':');
+
+    // Compute combined series based on toggle state
+    // Each sellable's series = (office sales if showOffice) + (online sales if showCard)
+    const combinedSeries = useMemo(() => {
+        return onlineSellableSeries.map((s) => {
+            const series = dateKeys.map((dk) => {
+                let total = 0;
+
+                // Add online sales for this date if Card toggle is on
+                if (showCard) {
+                    total += onlineSales.reduce((acc, os) => {
+                        const soldAt = os.sold_at || '';
+                        let matchKey: string;
+                        if (isHourlyData) {
+                            const dateObj = new Date(soldAt);
+                            const year = dateObj.getFullYear();
+                            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                            const day = String(dateObj.getDate()).padStart(2, '0');
+                            const hour = String(dateObj.getHours()).padStart(2, '0');
+                            matchKey = `${year}-${month}-${day} ${hour}:00:00`;
+                        } else {
+                            matchKey = soldAt.split('T')[0].split(' ')[0];
+                        }
+                        if (matchKey !== dk) return acc;
+                        if (s.type === 'product' && os.product_id === s.id)
+                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                        if (s.type === 'event' && os.event_id === s.id)
+                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                        return acc;
+                    }, 0);
+                }
+
+                // Add office sales for this date if Office toggle is on
+                if (showOffice) {
+                    total += officeSales.reduce((acc, os) => {
+                        const soldAt = os.sold_at || '';
+                        let matchKey: string;
+                        if (isHourlyData) {
+                            const dateObj = new Date(soldAt);
+                            const year = dateObj.getFullYear();
+                            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                            const day = String(dateObj.getDate()).padStart(2, '0');
+                            const hour = String(dateObj.getHours()).padStart(2, '0');
+                            matchKey = `${year}-${month}-${day} ${hour}:00:00`;
+                        } else {
+                            matchKey = soldAt.split('T')[0].split(' ')[0];
+                        }
+                        if (matchKey !== dk) return acc;
+                        if (s.type === 'product' && os.product_id === s.id)
+                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                        if (s.type === 'event' && os.event_id === s.id)
+                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                        return acc;
+                    }, 0);
+                }
+
+                return total;
+            });
+            return { ...s, series };
+        });
+    }, [onlineSellableSeries, dateKeys, isHourlyData, onlineSales, officeSales, showOffice, showCard]);
+
+    // Calculate dynamic max based on combined series
+    const visibleMax = Math.max(
+        1,
+        ...combinedSeries.flatMap((s) => s.series),
     );
+
+    // Compute dynamic sellable totals based on toggle state
+    // This includes ALL items that have sales (not just online sellables)
+    const filteredTotals = useMemo(() => {
+        const totalsMap = new Map<string, { id: string; type: 'product' | 'event'; name: string; total: number; count: number; color: string }>();
+
+        // Process online sales if Card toggle is on
+        if (showCard) {
+            onlineSales.forEach((os) => {
+                const amount = parseFloat(String(os.amount || 0)) || 0;
+                const type = os.product_id ? 'product' : 'event';
+                const id = os.product_id || os.event_id;
+                if (!id) return;
+
+                const key = `${type}-${id}`;
+                const existing = totalsMap.get(key);
+
+                if (existing) {
+                    existing.total += amount;
+                    existing.count += 1;
+                } else {
+                    const seriesMeta = onlineSellableSeries.find(s => s.type === type && String(s.id) === String(id));
+                    const name = os.product?.name || os.event?.name || seriesMeta?.name || `${type === 'product' ? 'Product' : 'Event'} ${id}`;
+                    totalsMap.set(key, {
+                        id: String(id),
+                        type,
+                        name,
+                        total: amount,
+                        count: 1,
+                        color: seriesMeta?.color || '#6B7280'
+                    });
+                }
+            });
+        }
+
+        // Process office sales if Office toggle is on
+        if (showOffice) {
+            officeSales.forEach((os) => {
+                const amount = parseFloat(String(os.amount || 0)) || 0;
+                const type = os.product_id ? 'product' : 'event';
+                const id = os.product_id || os.event_id;
+                if (!id) return;
+
+                const key = `${type}-${id}`;
+                const existing = totalsMap.get(key);
+
+                if (existing) {
+                    existing.total += amount;
+                    existing.count += 1;
+                } else {
+                    const seriesMeta = onlineSellableSeries.find(s => s.type === type && String(s.id) === String(id));
+                    const name = os.product?.name || os.event?.name || seriesMeta?.name || `${type === 'product' ? 'Product' : 'Event'} ${id}`;
+                    totalsMap.set(key, {
+                        id: String(id),
+                        type,
+                        name,
+                        total: amount,
+                        count: 1,
+                        color: seriesMeta?.color || '#6B7280'
+                    });
+                }
+            });
+        }
+
+        return Array.from(totalsMap.values()).sort((a, b) => b.count - a.count);
+    }, [onlineSales, officeSales, onlineSellableSeries, showOffice, showCard]);
 
     // Chart dimensions - remove left/right padding for perfect alignment
     const leftPad = 0;
-    const bottomPad = 24;
-    const topPad = 8;
+    const bottomPad = 20;
+    const topPad = 4;
     const rightPad = 0;
     const viewBoxWidth = 360;
-    const viewBoxHeight = 140;
+    const viewBoxHeight = 100;
     const chartW = viewBoxWidth - leftPad - rightPad;
     const chartH = viewBoxHeight - topPad - bottomPad;
-    const dateKeys = sales.map((s) => s.date);
+
 
     const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
         if (!svgRef.current || !sales || sales.length === 0) return;
@@ -80,17 +221,15 @@ export function SalesChart({
             Math.min(dateKeys.length - 1, dateIndex),
         );
 
-        // Calculate points for this date
-        const points = onlineSellableSeries
-            .map((s) => {
-                const val = s.series[clampedIndex] || 0;
-                const x =
-                    leftPad +
-                    (clampedIndex / Math.max(1, dateKeys.length - 1)) * chartW;
-                const y = topPad + chartH - (val / seriesMax) * chartH;
-                return { name: s.name, value: val, color: s.color, x, y };
-            })
-            .filter((p) => p.value > 0);
+        // Calculate points for this date using combinedSeries
+        const points = combinedSeries.map((s) => {
+            const val = s.series[clampedIndex] || 0;
+            const x =
+                leftPad +
+                (clampedIndex / Math.max(1, dateKeys.length - 1)) * chartW;
+            const y = topPad + chartH - (val / visibleMax) * chartH;
+            return { name: s.name, value: val, color: s.color, x, y };
+        }).filter((p) => p.value > 0);
 
         setHover({
             dateIndex: clampedIndex,
@@ -103,25 +242,45 @@ export function SalesChart({
 
     // Calculate Y-axis ticks (5 ticks including 0)
     const yTicks = 5;
-    const yStep = seriesMax / (yTicks - 1);
+    const yStep = visibleMax / (yTicks - 1);
     const yTickValues = Array.from({ length: yTicks }, (_, i) => yStep * i);
 
+    // Calculate dynamic total based on visible categories
+    const displayedTotal = (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
+
     return (
-        <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-            <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Sales</h3>
-                <div className="text-sm font-medium">
-                    €
-                    {onlineSellableTotals
-                        .reduce((acc, s) => acc + (s.total || 0), 0)
-                        .toFixed(2)}
+        <div className="relative h-full flex flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
+            <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-sm font-semibold shrink-0">Sales</h3>
+                <div className="flex items-center gap-3 overflow-x-auto overflow-y-hidden text-xs custom-scrollbar pb-1 sm:pb-0">
+                    <button
+                        onClick={() => setShowOffice(!showOffice)}
+                        className={`flex items-center gap-1.5 whitespace-nowrap transition-opacity ${showOffice ? 'opacity-100' : 'opacity-40'}`}
+                        title="Toggle Office Revenue"
+                    >
+                        <span className="h-1.5 w-1.5 rounded-full bg-white shrink-0" />
+                        <span className="text-muted-foreground">Office:</span>
+                        <span className="font-medium text-foreground">€{totalOffice.toFixed(2)}</span>
+                    </button>
+                    <button
+                        onClick={() => setShowCard(!showCard)}
+                        className={`flex items-center gap-1.5 whitespace-nowrap transition-opacity ${showCard ? 'opacity-100' : 'opacity-40'}`}
+                        title="Toggle Card/Online Revenue"
+                    >
+                        <span className="h-1.5 w-1.5 rounded-full bg-white shrink-0" />
+                        <span className="text-muted-foreground">Card:</span>
+                        <span className="font-medium text-foreground">€{totalOnline.toFixed(2)}</span>
+                    </button>
+                    <div className="ml-0 whitespace-nowrap text-sm font-semibold sm:ml-1">
+                        €{displayedTotal.toFixed(2)}
+                    </div>
                 </div>
             </div>
             {loading ? (
                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
             ) : (
                 <>
-                    <div className="relative w-full flex-1">
+                    <div className="relative w-full flex-1 min-h-0">
                         <svg
                             ref={svgRef}
                             viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
@@ -137,7 +296,7 @@ export function SalesChart({
                                         const y =
                                             topPad +
                                             chartH -
-                                            (value / seriesMax) * chartH;
+                                            (value / visibleMax) * chartH;
                                         return (
                                             <g key={`y-tick-${i}`}>
                                                 <line
@@ -158,7 +317,7 @@ export function SalesChart({
                                                     fill="currentColor"
                                                     opacity={0.6}
                                                 >
-                                                    €{value.toFixed(0)}
+                                                    €{value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toFixed(0)}
                                                 </text>
                                             </g>
                                         );
@@ -174,8 +333,8 @@ export function SalesChart({
                                             dateKeys.length > 20
                                                 ? 4
                                                 : dateKeys.length > 10
-                                                  ? 2
-                                                  : 1;
+                                                    ? 2
+                                                    : 1;
 
                                         // Always show first and last, then every nth
                                         const shouldShow =
@@ -192,7 +351,7 @@ export function SalesChart({
                                                     1,
                                                     dateKeys.length - 1,
                                                 )) *
-                                                chartW;
+                                            chartW;
                                         const y = topPad + chartH + 12;
 
                                         let formattedDate;
@@ -228,8 +387,8 @@ export function SalesChart({
                                                         ? 'start'
                                                         : i ===
                                                             dateKeys.length - 1
-                                                          ? 'end'
-                                                          : 'middle'
+                                                            ? 'end'
+                                                            : 'middle'
                                                 }
                                                 fontSize="7"
                                                 fill="currentColor"
@@ -240,8 +399,9 @@ export function SalesChart({
                                         );
                                     })}
 
-                                    {/* Data series lines */}
-                                    {onlineSellableSeries.map((s, idx) => {
+
+                                    {/* Combined sellable lines (office + online based on toggles) */}
+                                    {combinedSeries.map((s, idx) => {
                                         const points = s.series.map(
                                             (val: number, i: number) => {
                                                 const x =
@@ -251,11 +411,11 @@ export function SalesChart({
                                                             1,
                                                             dateKeys.length - 1,
                                                         )) *
-                                                        chartW;
+                                                    chartW;
                                                 const y =
                                                     topPad +
                                                     chartH -
-                                                    (val / seriesMax) * chartH;
+                                                    (val / visibleMax) * chartH;
                                                 return { x, y };
                                             },
                                         );
@@ -292,7 +452,7 @@ export function SalesChart({
                                                         1,
                                                         dateKeys.length - 1,
                                                     )) *
-                                                    chartW
+                                                chartW
                                             }
                                             y1={topPad}
                                             x2={
@@ -302,7 +462,7 @@ export function SalesChart({
                                                         1,
                                                         dateKeys.length - 1,
                                                     )) *
-                                                    chartW
+                                                chartW
                                             }
                                             y2={topPad + chartH}
                                             stroke="currentColor"
@@ -382,43 +542,28 @@ export function SalesChart({
                             </div>
                         )}
                     </div>
-                    <div className="mt-3 text-xs">
+
+
+                    <div className="mt-2 shrink-0 text-xs">
                         <div className="mb-1 text-muted-foreground">
-                            Active online sellables
+                            Active sellables
                         </div>
-                        <div className="space-y-1">
-                            {sortedTotals.length > 0 ? (
-                                sortedTotals.map((s) => {
-                                    const total = s.total || 0;
-                                    const overall =
-                                        sortedTotals.reduce(
-                                            (a, it) => a + (it.total || 0),
-                                            0,
-                                        ) || 0;
-                                    const pct =
-                                        overall === 0
-                                            ? 0
-                                            : (total / overall) * 100;
-                                    const seriesMeta =
-                                        onlineSellableSeries.find(
-                                            (ss) =>
-                                                ss.id === s.id &&
-                                                (ss.type as any) === s.type,
-                                        );
-                                    const color =
-                                        seriesMeta?.color ?? '#6B7280';
-                                    const count = s.count ?? 0;
+                        <div className="space-y-1 pr-2">
+                            {filteredTotals.length > 0 ? (
+                                filteredTotals.map((s) => {
+                                    const overall = filteredTotals.reduce((a, it) => a + it.total, 0) || 0;
+                                    const pct = overall === 0 ? 0 : (s.total / overall) * 100;
 
                                     return (
                                         <div
-                                            key={`online-sellable-${s.type}-${s.id}`}
-                                            className="flex items-center justify-between gap-3"
+                                            key={`sellable-${s.type}-${s.id}`}
+                                            className="flex items-center justify-between gap-3 text-[10px] sm:text-xs"
                                         >
                                             <div className="flex min-w-0 flex-1 items-center gap-2">
                                                 <span
                                                     className="inline-block h-2 w-2 shrink-0 rounded-full"
                                                     style={{
-                                                        backgroundColor: color,
+                                                        backgroundColor: s.color,
                                                     }}
                                                 />
                                                 <div className="flex min-w-0 flex-1 items-baseline gap-2">
@@ -428,14 +573,14 @@ export function SalesChart({
                                                     >
                                                         {s.name}
                                                     </span>
-                                                    <span className="shrink-0 text-xs text-muted-foreground">
-                                                        x {count}
+                                                    <span className="shrink-0 text-muted-foreground">
+                                                        x {s.count}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="flex shrink-0 items-baseline gap-3">
                                                 <div className="font-medium">
-                                                    €{total.toFixed(2)}
+                                                    €{s.total.toFixed(2)}
                                                 </div>
                                                 <div className="text-muted-foreground">
                                                     {pct.toFixed(1)}%
@@ -446,7 +591,7 @@ export function SalesChart({
                                 })
                             ) : (
                                 <div className="text-muted-foreground">
-                                    No active online sellables
+                                    No sales in this period
                                 </div>
                             )}
                         </div>

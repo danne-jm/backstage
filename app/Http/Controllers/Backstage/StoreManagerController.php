@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Backstage;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\OfficeShift;
+use App\Models\OfficeShiftSale;
 use App\Models\OnlineSale;
 use App\Models\Product;
 use App\Models\User;
@@ -106,6 +107,9 @@ class StoreManagerController extends Controller
             $pageSize = max(1, min(1000, (int) $request->query('pageSize', 100)));
 
             $baseQuery = OnlineSale::with(['product', 'event'])
+                ->whereHas('transaction', function ($q) {
+                    $q->where('payment_status', 'completed');
+                })
                 ->where('sold_at', '>=', $from);
 
             $onlineSalesTotal = (int) $baseQuery->count();
@@ -114,6 +118,12 @@ class StoreManagerController extends Controller
                 ->orderBy('sold_at', 'desc')
                 ->skip(($page - 1) * $pageSize)
                 ->take($pageSize)
+                ->get();
+
+            // Fetch office shift sales for the same period
+            $officeSales = OfficeShiftSale::with(['product', 'event'])
+                ->where('sold_at', '>=', $from)
+                ->orderBy('sold_at', 'desc')
                 ->get();
 
             $onlineSellablesCount = Product::where('is_online_sellable', true)->count() + Event::where('is_online_sellable', true)
@@ -137,6 +147,7 @@ class StoreManagerController extends Controller
                 'products' => $products,
                 'events' => $events,
                 'onlineSales' => $onlineSales,
+                'officeSales' => $officeSales,
                 'onlineSalesTotal' => $onlineSalesTotal,
                 'onlineSellablesCount' => $onlineSellablesCount,
                 'boardUsers' => $boardUsers,
