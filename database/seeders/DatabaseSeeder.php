@@ -23,9 +23,12 @@ class DatabaseSeeder extends Seeder
         $boardPermissions = json_encode($boardPermissionsArray);
 
         // Seed users from provided static array
+        // NOTE: We truncate users to prevent duplicates since we are now using dynamic IDs
+        User::query()->delete();
+
         $users = [
             [
-                'id' => '00000000000000000000000001',
+                'id' => \Illuminate\Support\Str::ulid(),
                 'first_name' => 'Daniel',
                 'last_name' => 'Jaurell Mevorach',
                 'email' => 'it@esnleuven.be',
@@ -45,7 +48,7 @@ class DatabaseSeeder extends Seeder
                 'two_factor_confirmed_at' => null,
             ],
             [
-                'id' => '00000000000000000000000002',
+                'id' => \Illuminate\Support\Str::ulid(),
                 'first_name' => 'Debargha',
                 'last_name' => 'Chakravorty',
                 'email' => 'president@esnleuven.be',
@@ -65,7 +68,7 @@ class DatabaseSeeder extends Seeder
                 'two_factor_confirmed_at' => null,
             ],
             [
-                'id' => '00000000000000000000000003',
+                'id' => \Illuminate\Support\Str::ulid(),
                 'first_name' => 'Ammani',
                 'last_name' => 'Ali Khan',
                 'email' => 'marketing@esnleuven.be',
@@ -85,7 +88,7 @@ class DatabaseSeeder extends Seeder
                 'two_factor_confirmed_at' => null,
             ],
             [
-                'id' => '00000000000000000000000004',
+                'id' => \Illuminate\Support\Str::ulid(),
                 'first_name' => 'Kaat',
                 'last_name' => 'Janssen',
                 'email' => 'finance@esnleuven.be',
@@ -106,14 +109,14 @@ class DatabaseSeeder extends Seeder
             ],
         ];
 
-        // Get columns to update (all except 'id' which is the unique key)
-        $updateColumns = array_filter(array_keys($users[0]), fn ($key) => $key !== 'id');
-        User::upsert($users, ['id'], $updateColumns);
-
-        // Fix permissions after upsert (upsert doesn't handle PHP variables in JSON columns properly)
-        // Use array values since the permissions column is cast to array in the model
-        User::whereIn('id', ['00000000000000000000000001', '00000000000000000000000002'])->update(['permissions' => $adminPermissionsArray]);
-        User::whereIn('id', ['00000000000000000000000003', '00000000000000000000000004'])->update(['permissions' => $boardPermissionsArray]);
+        foreach ($users as $userData) {
+            $user = User::create($userData);
+            // Permissions need to be set explicitly as the model attribute is cast to array
+            $user->permissions = $userData['email'] === 'it@esnleuven.be' || $userData['email'] === 'president@esnleuven.be'
+                ? $adminPermissionsArray
+                : $boardPermissionsArray;
+            $user->save();
+        }
 
         // Populate products and events used by the Office UI
         $this->call([

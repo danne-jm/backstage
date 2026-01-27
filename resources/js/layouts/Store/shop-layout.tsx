@@ -25,19 +25,19 @@ export default function ShopLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="flex min-h-screen flex-col bg-gray-50">
-            <header className="border-b border-gray-200 bg-white">
-                <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-8 sm:px-6 lg:px-8">
+            <header className="border-b border-gray-200 bg-white print:border-none">
+                <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-8 sm:px-6 lg:px-8 print:justify-center print:py-4">
                     <div className="flex items-center">
                         <Link href="/">
                             <img
                                 src="/images/BE-LEUV-ESN.webp"
                                 alt="Association Logo"
-                                className="h-20 w-auto"
+                                className="h-20 w-auto print:h-24"
                             />
                         </Link>
                     </div>
 
-                    <nav className="flex space-x-4">
+                    <nav className="flex space-x-4 no-print">
                         <Link
                             href="/cart"
                             className="relative text-gray-900 hover:text-gray-600"
@@ -56,7 +56,7 @@ export default function ShopLayout({ children }: PropsWithChildren) {
 
             <main className="flex-1">{children}</main>
 
-            <footer className="mt-auto border-t border-gray-200 bg-gray-100">
+            <footer className="mt-auto border-t border-gray-200 bg-gray-100 print:bg-white">
                 <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                     <div className="flex flex-col items-center justify-center space-y-8">
                         <div className="flex items-center space-x-6">

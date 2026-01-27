@@ -73,10 +73,6 @@ class Event extends Model
         return $this->hasMany(Ticket::class);
     }
 
-    public function attendees()
-    {
-        return $this->hasMany(Attendee::class);
-    }
 
     public function sales()
     {

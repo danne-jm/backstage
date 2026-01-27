@@ -2,7 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\EventTicket;
+use App\Models\Event;
+use App\Models\Ticket;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -10,7 +11,17 @@ class EventTicketsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create a few sample tickets tied to event id 2 (Welcome Weekend Trip)
+        // Find an event to tie tickets to
+        $event = Event::where('name', 'Welcome Weekend Trip')->first();
+
+        if (! $event) {
+            $event = Event::first();
+        }
+
+        if (! $event) {
+            return;
+        }
+
         $samples = [
             ['first_name' => 'Alice', 'last_name' => 'Meyer', 'email' => 'alice.meyer@example.com'],
             ['first_name' => 'Bob', 'last_name' => 'Smith', 'email' => 'bob.smith@gmail.com'],
@@ -19,23 +30,39 @@ class EventTicketsSeeder extends Seeder
 
         foreach ($samples as $row) {
             $unique = Str::random(8);
-            $eventName = 'Welcome Weekend Trip';
-            $eventDate = now()->addDays(1)->format('Y-m-d H:i:s');
-            $datePart = (new \DateTime($eventDate))->format('YmdHis');
-            $sanitizedName = preg_replace('/[^A-Za-z0-9_]+/', '_', $eventName);
-            $sanitizedFirst = preg_replace('/[^A-Za-z0-9_]+/', '_', $row['first_name']);
-            $sanitizedLast = preg_replace('/[^A-Za-z0-9_]+/', '_', $row['last_name']);
-            $ticketId = trim(sprintf('%s_%s_%s_%s_%s', $sanitizedName, $datePart, $sanitizedFirst, $sanitizedLast, $unique), '_');
+            $eventName = $event->name;
+            $eventDate = $event->event_date;
+            
+            $datePart = $eventDate ? \Illuminate\Support\Carbon::parse($eventDate)->format('d-m-Y') : 'nodate';
 
-            EventTicket::firstOrCreate([
-                'ticket_id' => $ticketId,
-            ], [
-                'event_id' => 2,
+            $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);
+            $sanitizedFirst = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $row['first_name']);
+            $sanitizedLast = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $row['last_name']);
+            $sanitizedFullName = trim($sanitizedFirst.'-'.$sanitizedLast, '-');
+            $sanitizedEmail = preg_replace('/[^A-Za-z0-9@._\-]+/', '', (string) $row['email']);
+
+            $ticketCode = sprintf('%s_%s_to_%s_via_%s_%s',
+                $sanitizedEvent,
+                $datePart,
+                $sanitizedFullName,
+                $sanitizedEmail,
+                $unique
+            );
+
+            Ticket::create([
+                'id' => Str::ulid(),
+                'event_id' => $event->id,
+                'ticket_code' => $ticketCode,
                 'first_name' => $row['first_name'],
                 'last_name' => $row['last_name'],
                 'email' => $row['email'],
-                'event_name' => $eventName,
-                'event_date' => $eventDate,
+                'metadata' => [
+                    'first_name' => $row['first_name'],
+                    'last_name' => $row['last_name'],
+                    'email' => $row['email'],
+                    'event_name' => $eventName,
+                    'event_date' => $eventDate,
+                ],
                 'unique_trait' => $unique,
             ]);
         }
