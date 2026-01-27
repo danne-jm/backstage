@@ -42,7 +42,7 @@ export function LatestCardSalesList({
         <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 p-3 sm:p-4 dark:border-sidebar-border">
             <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-base font-semibold sm:text-lg">
-                    Latest Card Sales{' '}
+                    Latest Online Sales{' '}
                     {onlineSales.length > 0 ? (
                         <span className="text-muted-foreground">
                             | {visibleOnlineSales.length}

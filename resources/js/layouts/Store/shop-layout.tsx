@@ -37,7 +37,7 @@ export default function ShopLayout({ children }: PropsWithChildren) {
                         </Link>
                     </div>
 
-                    <nav className="flex space-x-4 no-print">
+                    <nav className="no-print flex space-x-4">
                         <Link
                             href="/cart"
                             className="relative text-gray-900 hover:text-gray-600"

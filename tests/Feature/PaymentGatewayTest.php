@@ -141,6 +141,7 @@ describe('Store checkout flow with payment gateway', function () {
                 ],
             ],
             'discount_codes' => [],
+            'email' => 'test@example.com',
         ]);
 
         $response->assertSuccessful();
@@ -175,6 +176,7 @@ describe('Store checkout flow with payment gateway', function () {
                 ],
             ],
             'discount_codes' => [],
+            'email' => 'test@example.com',
         ]);
 
         $response->assertSuccessful();
@@ -214,6 +216,7 @@ describe('Store checkout flow with payment gateway', function () {
                     'quantity' => 1,
                 ],
             ],
+            'email' => 'test@example.com',
         ]);
 
         $response->assertStatus(422);
@@ -244,6 +247,7 @@ describe('Store checkout flow with payment gateway', function () {
                 ],
             ],
             'discount_codes' => [],
+            'email' => 'test@example.com',
         ]);
 
         $response->assertSuccessful();

@@ -19,6 +19,8 @@ class OnlineTransaction extends Model
         'external_payment_id',
         'payment_status',
         'payment_gateway',
+        'email',
+        'mail_success',
     ];
 
     protected $casts = [
@@ -26,6 +28,7 @@ class OnlineTransaction extends Model
         'processing_fee' => 'decimal:2',
         'discount_codes' => 'array',
         'completed_at' => 'datetime',
+        'mail_success' => 'boolean',
     ];
 
     public function sales(): HasMany

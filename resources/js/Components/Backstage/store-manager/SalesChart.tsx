@@ -48,7 +48,6 @@ export function SalesChart({
     sales,
     onlineSales,
     officeSales,
-    onlineSellableTotals,
     onlineSellableSeries,
     totalOffice,
     totalOnline,
@@ -76,18 +75,30 @@ export function SalesChart({
                         if (isHourlyData) {
                             const dateObj = new Date(soldAt);
                             const year = dateObj.getFullYear();
-                            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                            const day = String(dateObj.getDate()).padStart(2, '0');
-                            const hour = String(dateObj.getHours()).padStart(2, '0');
+                            const month = String(
+                                dateObj.getMonth() + 1,
+                            ).padStart(2, '0');
+                            const day = String(dateObj.getDate()).padStart(
+                                2,
+                                '0',
+                            );
+                            const hour = String(dateObj.getHours()).padStart(
+                                2,
+                                '0',
+                            );
                             matchKey = `${year}-${month}-${day} ${hour}:00:00`;
                         } else {
                             matchKey = soldAt.split('T')[0].split(' ')[0];
                         }
                         if (matchKey !== dk) return acc;
                         if (s.type === 'product' && os.product_id === s.id)
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                            return (
+                                acc + (parseFloat(String(os.amount || 0)) || 0)
+                            );
                         if (s.type === 'event' && os.event_id === s.id)
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                            return (
+                                acc + (parseFloat(String(os.amount || 0)) || 0)
+                            );
                         return acc;
                     }, 0);
                 }
@@ -100,18 +111,30 @@ export function SalesChart({
                         if (isHourlyData) {
                             const dateObj = new Date(soldAt);
                             const year = dateObj.getFullYear();
-                            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                            const day = String(dateObj.getDate()).padStart(2, '0');
-                            const hour = String(dateObj.getHours()).padStart(2, '0');
+                            const month = String(
+                                dateObj.getMonth() + 1,
+                            ).padStart(2, '0');
+                            const day = String(dateObj.getDate()).padStart(
+                                2,
+                                '0',
+                            );
+                            const hour = String(dateObj.getHours()).padStart(
+                                2,
+                                '0',
+                            );
                             matchKey = `${year}-${month}-${day} ${hour}:00:00`;
                         } else {
                             matchKey = soldAt.split('T')[0].split(' ')[0];
                         }
                         if (matchKey !== dk) return acc;
                         if (s.type === 'product' && os.product_id === s.id)
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                            return (
+                                acc + (parseFloat(String(os.amount || 0)) || 0)
+                            );
                         if (s.type === 'event' && os.event_id === s.id)
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                            return (
+                                acc + (parseFloat(String(os.amount || 0)) || 0)
+                            );
                         return acc;
                     }, 0);
                 }
@@ -120,18 +143,33 @@ export function SalesChart({
             });
             return { ...s, series };
         });
-    }, [onlineSellableSeries, dateKeys, isHourlyData, onlineSales, officeSales, showOffice, showCard]);
+    }, [
+        onlineSellableSeries,
+        dateKeys,
+        isHourlyData,
+        onlineSales,
+        officeSales,
+        showOffice,
+        showCard,
+    ]);
 
     // Calculate dynamic max based on combined series
-    const visibleMax = Math.max(
-        1,
-        ...combinedSeries.flatMap((s) => s.series),
-    );
+    const visibleMax = Math.max(1, ...combinedSeries.flatMap((s) => s.series));
 
     // Compute dynamic sellable totals based on toggle state
     // This includes ALL items that have sales (not just online sellables)
     const filteredTotals = useMemo(() => {
-        const totalsMap = new Map<string, { id: string; type: 'product' | 'event'; name: string; total: number; count: number; color: string }>();
+        const totalsMap = new Map<
+            string,
+            {
+                id: string;
+                type: 'product' | 'event';
+                name: string;
+                total: number;
+                count: number;
+                color: string;
+            }
+        >();
 
         // Process online sales if Card toggle is on
         if (showCard) {
@@ -148,15 +186,21 @@ export function SalesChart({
                     existing.total += amount;
                     existing.count += 1;
                 } else {
-                    const seriesMeta = onlineSellableSeries.find(s => s.type === type && String(s.id) === String(id));
-                    const name = os.product?.name || os.event?.name || seriesMeta?.name || `${type === 'product' ? 'Product' : 'Event'} ${id}`;
+                    const seriesMeta = onlineSellableSeries.find(
+                        (s) => s.type === type && String(s.id) === String(id),
+                    );
+                    const name =
+                        os.product?.name ||
+                        os.event?.name ||
+                        seriesMeta?.name ||
+                        `${type === 'product' ? 'Product' : 'Event'} ${id}`;
                     totalsMap.set(key, {
                         id: String(id),
                         type,
                         name,
                         total: amount,
                         count: 1,
-                        color: seriesMeta?.color || '#6B7280'
+                        color: seriesMeta?.color || '#6B7280',
                     });
                 }
             });
@@ -177,15 +221,21 @@ export function SalesChart({
                     existing.total += amount;
                     existing.count += 1;
                 } else {
-                    const seriesMeta = onlineSellableSeries.find(s => s.type === type && String(s.id) === String(id));
-                    const name = os.product?.name || os.event?.name || seriesMeta?.name || `${type === 'product' ? 'Product' : 'Event'} ${id}`;
+                    const seriesMeta = onlineSellableSeries.find(
+                        (s) => s.type === type && String(s.id) === String(id),
+                    );
+                    const name =
+                        os.product?.name ||
+                        os.event?.name ||
+                        seriesMeta?.name ||
+                        `${type === 'product' ? 'Product' : 'Event'} ${id}`;
                     totalsMap.set(key, {
                         id: String(id),
                         type,
                         name,
                         total: amount,
                         count: 1,
-                        color: seriesMeta?.color || '#6B7280'
+                        color: seriesMeta?.color || '#6B7280',
                     });
                 }
             });
@@ -204,7 +254,6 @@ export function SalesChart({
     const chartW = viewBoxWidth - leftPad - rightPad;
     const chartH = viewBoxHeight - topPad - bottomPad;
 
-
     const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
         if (!svgRef.current || !sales || sales.length === 0) return;
 
@@ -222,14 +271,16 @@ export function SalesChart({
         );
 
         // Calculate points for this date using combinedSeries
-        const points = combinedSeries.map((s) => {
-            const val = s.series[clampedIndex] || 0;
-            const x =
-                leftPad +
-                (clampedIndex / Math.max(1, dateKeys.length - 1)) * chartW;
-            const y = topPad + chartH - (val / visibleMax) * chartH;
-            return { name: s.name, value: val, color: s.color, x, y };
-        }).filter((p) => p.value > 0);
+        const points = combinedSeries
+            .map((s) => {
+                const val = s.series[clampedIndex] || 0;
+                const x =
+                    leftPad +
+                    (clampedIndex / Math.max(1, dateKeys.length - 1)) * chartW;
+                const y = topPad + chartH - (val / visibleMax) * chartH;
+                return { name: s.name, value: val, color: s.color, x, y };
+            })
+            .filter((p) => p.value > 0);
 
         setHover({
             dateIndex: clampedIndex,
@@ -246,32 +297,37 @@ export function SalesChart({
     const yTickValues = Array.from({ length: yTicks }, (_, i) => yStep * i);
 
     // Calculate dynamic total based on visible categories
-    const displayedTotal = (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
+    const displayedTotal =
+        (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
 
     return (
-        <div className="relative h-full flex flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
+        <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-sm font-semibold shrink-0">Sales</h3>
-                <div className="flex items-center gap-3 overflow-x-auto overflow-y-hidden text-xs custom-scrollbar pb-1 sm:pb-0">
+                <h3 className="shrink-0 text-sm font-semibold">Sales</h3>
+                <div className="custom-scrollbar flex items-center gap-3 overflow-x-auto overflow-y-hidden pb-1 text-xs sm:pb-0">
                     <button
                         onClick={() => setShowOffice(!showOffice)}
                         className={`flex items-center gap-1.5 whitespace-nowrap transition-opacity ${showOffice ? 'opacity-100' : 'opacity-40'}`}
                         title="Toggle Office Revenue"
                     >
-                        <span className="h-1.5 w-1.5 rounded-full bg-white shrink-0" />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
                         <span className="text-muted-foreground">Office:</span>
-                        <span className="font-medium text-foreground">€{totalOffice.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">
+                            €{totalOffice.toFixed(2)}
+                        </span>
                     </button>
                     <button
                         onClick={() => setShowCard(!showCard)}
                         className={`flex items-center gap-1.5 whitespace-nowrap transition-opacity ${showCard ? 'opacity-100' : 'opacity-40'}`}
                         title="Toggle Card/Online Revenue"
                     >
-                        <span className="h-1.5 w-1.5 rounded-full bg-white shrink-0" />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
                         <span className="text-muted-foreground">Card:</span>
-                        <span className="font-medium text-foreground">€{totalOnline.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">
+                            €{totalOnline.toFixed(2)}
+                        </span>
                     </button>
-                    <div className="ml-0 whitespace-nowrap text-sm font-semibold sm:ml-1">
+                    <div className="ml-0 text-sm font-semibold whitespace-nowrap sm:ml-1">
                         €{displayedTotal.toFixed(2)}
                     </div>
                 </div>
@@ -280,7 +336,7 @@ export function SalesChart({
                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
             ) : (
                 <>
-                    <div className="relative w-full flex-1 min-h-0">
+                    <div className="relative min-h-0 w-full flex-1">
                         <svg
                             ref={svgRef}
                             viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
@@ -317,7 +373,10 @@ export function SalesChart({
                                                     fill="currentColor"
                                                     opacity={0.6}
                                                 >
-                                                    €{value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toFixed(0)}
+                                                    €
+                                                    {value >= 1000
+                                                        ? `${(value / 1000).toFixed(1)}k`
+                                                        : value.toFixed(0)}
                                                 </text>
                                             </g>
                                         );
@@ -398,7 +457,6 @@ export function SalesChart({
                                             </text>
                                         );
                                     })}
-
 
                                     {/* Combined sellable lines (office + online based on toggles) */}
                                     {combinedSeries.map((s, idx) => {
@@ -543,7 +601,6 @@ export function SalesChart({
                         )}
                     </div>
 
-
                     <div className="mt-2 shrink-0 text-xs">
                         <div className="mb-1 text-muted-foreground">
                             Active sellables
@@ -551,8 +608,15 @@ export function SalesChart({
                         <div className="space-y-1 pr-2">
                             {filteredTotals.length > 0 ? (
                                 filteredTotals.map((s) => {
-                                    const overall = filteredTotals.reduce((a, it) => a + it.total, 0) || 0;
-                                    const pct = overall === 0 ? 0 : (s.total / overall) * 100;
+                                    const overall =
+                                        filteredTotals.reduce(
+                                            (a, it) => a + it.total,
+                                            0,
+                                        ) || 0;
+                                    const pct =
+                                        overall === 0
+                                            ? 0
+                                            : (s.total / overall) * 100;
 
                                     return (
                                         <div
@@ -563,7 +627,8 @@ export function SalesChart({
                                                 <span
                                                     className="inline-block h-2 w-2 shrink-0 rounded-full"
                                                     style={{
-                                                        backgroundColor: s.color,
+                                                        backgroundColor:
+                                                            s.color,
                                                     }}
                                                 />
                                                 <div className="flex min-w-0 flex-1 items-baseline gap-2">

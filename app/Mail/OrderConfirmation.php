@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\OnlineTransaction;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -9,16 +10,21 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OrderConfirmation extends Mailable
+class OrderConfirmation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
     /**
+     * The transaction instance.
+     */
+    public OnlineTransaction $transaction;
+
+    /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct(OnlineTransaction $transaction)
     {
-        //
+        $this->transaction = $transaction->load('sales.product', 'sales.event');
     }
 
     /**
@@ -27,7 +33,7 @@ class OrderConfirmation extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Order Confirmation',
+            subject: 'Order Confirmation - ' . $this->transaction->id,
         );
     }
 
@@ -37,7 +43,7 @@ class OrderConfirmation extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.orders.confirmation',
         );
     }
 
@@ -49,5 +55,14 @@ class OrderConfirmation extends Mailable
     public function attachments(): array
     {
         return [];
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        // Update mail_success to false on failure
+        $this->transaction->update(['mail_success' => false]);
     }
 }

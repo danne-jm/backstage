@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'store_url' => env('STORE_APP_URL', 'https://store.danieljm.dpdns.org'),
+
 ];

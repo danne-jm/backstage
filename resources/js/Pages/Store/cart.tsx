@@ -6,6 +6,7 @@ import {
     ChevronDown,
     ChevronUp,
     Loader2,
+    Mail,
     Minus,
     Plus,
     Ticket,
@@ -58,6 +59,13 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
         type: 'success' | 'error';
     } | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [email, setEmail] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('cart_email') || '';
+        }
+        return '';
+    });
+    const [emailError, setEmailError] = useState<string | null>(null);
 
     const discountApplied = appliedDiscounts.length > 0;
 
@@ -275,6 +283,19 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
     const handleCheckout = async () => {
         if (cart.length === 0) return;
 
+        // Validate email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email.trim()) {
+            setEmailError('Please enter your email address');
+            return;
+        }
+        if (!emailRegex.test(email.trim())) {
+            setEmailError('Please enter a valid email address');
+            return;
+        }
+        setEmailError(null);
+        localStorage.setItem('cart_email', email.trim());
+
         setIsProcessing(true);
         setMessage(null);
 
@@ -293,6 +314,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
             const response = await axios.post('/checkout', {
                 items,
                 discount_codes: appliedDiscounts,
+                email: email.trim(),
             });
 
             if (response.data.success) {
@@ -386,12 +408,12 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item
                                                                         .description
                                                                         .length >
-                                                                        230
+                                                                    230
                                                                         ? item.description.substring(
-                                                                            0,
-                                                                            230,
-                                                                        ) +
-                                                                        '...'
+                                                                              0,
+                                                                              230,
+                                                                          ) +
+                                                                          '...'
                                                                         : item.description,
                                                             }}
                                                         />
@@ -406,7 +428,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.id,
                                                                     item.type,
                                                                     item.quantity -
-                                                                    1,
+                                                                        1,
                                                                 )
                                                             }
                                                             className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
@@ -422,7 +444,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.id,
                                                                     item.type,
                                                                     item.quantity +
-                                                                    1,
+                                                                        1,
                                                                 )
                                                             }
                                                             className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
@@ -494,9 +516,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     serverBreakdown?.find(
                                                                         (s) =>
                                                                             s.id ===
-                                                                            item.id &&
+                                                                                item.id &&
                                                                             s.type ===
-                                                                            item.type,
+                                                                                item.type,
                                                                     );
 
                                                                 // Determine if THIS unit is discounted (greedy allocation: first N units)
@@ -509,7 +531,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                 const codeUsed =
                                                                     sItem
                                                                         ?.codes_applied?.[
-                                                                    i
+                                                                        i
                                                                     ] ||
                                                                     (isUnitDiscounted
                                                                         ? 'Discount'
@@ -523,7 +545,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                 const unitMemberPrice =
                                                                     Number(
                                                                         item.member_price ??
-                                                                        item.price,
+                                                                            item.price,
                                                                     );
                                                                 // If finding member price fails locally, rely on server total?
                                                                 // Better to use available data. If server says discounted, we assume member price is active.
@@ -598,49 +620,49 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                 {/* Applied Discounts Badges */}
                                                 {appliedDiscounts.length >
                                                     0 && (
-                                                        <div className="mb-3 flex flex-wrap gap-2">
-                                                            {appliedDiscounts.map(
-                                                                (code) => (
-                                                                    <span
-                                                                        key={code}
-                                                                        className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-sm font-medium text-gray-800"
+                                                    <div className="mb-3 flex flex-wrap gap-2">
+                                                        {appliedDiscounts.map(
+                                                            (code) => (
+                                                                <span
+                                                                    key={code}
+                                                                    className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-sm font-medium text-gray-800"
+                                                                >
+                                                                    {code}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            removeDiscount(
+                                                                                code,
+                                                                            )
+                                                                        }
+                                                                        className="ml-1.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none"
                                                                     >
-                                                                        {code}
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                removeDiscount(
-                                                                                    code,
-                                                                                )
+                                                                        <span className="sr-only">
+                                                                            Remove
+                                                                            discount
+                                                                            code{' '}
+                                                                            {
+                                                                                code
                                                                             }
-                                                                            className="ml-1.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none"
+                                                                        </span>
+                                                                        <svg
+                                                                            className="h-2 w-2"
+                                                                            stroke="currentColor"
+                                                                            fill="none"
+                                                                            viewBox="0 0 8 8"
                                                                         >
-                                                                            <span className="sr-only">
-                                                                                Remove
-                                                                                discount
-                                                                                code{' '}
-                                                                                {
-                                                                                    code
-                                                                                }
-                                                                            </span>
-                                                                            <svg
-                                                                                className="h-2 w-2"
-                                                                                stroke="currentColor"
-                                                                                fill="none"
-                                                                                viewBox="0 0 8 8"
-                                                                            >
-                                                                                <path
-                                                                                    strokeLinecap="round"
-                                                                                    strokeWidth="1.5"
-                                                                                    d="M1 1l6 6m0-6L1 7"
-                                                                                />
-                                                                            </svg>
-                                                                        </button>
-                                                                    </span>
-                                                                ),
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                                            <path
+                                                                                strokeLinecap="round"
+                                                                                strokeWidth="1.5"
+                                                                                d="M1 1l6 6m0-6L1 7"
+                                                                            />
+                                                                        </svg>
+                                                                    </button>
+                                                                </span>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 <div className="flex space-x-2">
                                                     <input
@@ -737,6 +759,41 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                 </div>
                             </dl>
 
+                            {/* Email Input */}
+                            <div className="mt-6 border-t border-gray-200 pt-6">
+                                <label
+                                    htmlFor="email"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Email address{' '}
+                                    <span className="text-red-500">*</span>
+                                </label>
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Your order confirmation will be sent here
+                                </p>
+                                <div className="relative mt-2">
+                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <Mail className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        value={email}
+                                        onChange={(e) => {
+                                            setEmail(e.target.value);
+                                            if (emailError) setEmailError(null);
+                                        }}
+                                        className={`block w-full rounded-md border ${emailError ? 'border-red-300' : 'border-gray-300'} py-2 pl-10 text-black placeholder-gray-500 shadow-sm focus:border-black focus:ring-black sm:text-sm`}
+                                        placeholder="you@example.com"
+                                    />
+                                </div>
+                                {emailError && (
+                                    <p className="mt-1 text-sm text-red-600">
+                                        {emailError}
+                                    </p>
+                                )}
+                            </div>
+
                             {message && (
                                 <div
                                     className={`mt-4 rounded-md p-3 ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
@@ -764,7 +821,8 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                     disabled={
                                         cart.length === 0 ||
                                         isProcessing ||
-                                        cartWarnings.length > 0
+                                        cartWarnings.length > 0 ||
+                                        !email.trim()
                                     }
                                     onClick={handleCheckout}
                                     className="flex w-full items-center justify-center border border-transparent bg-black px-4 py-3 text-base font-medium text-white uppercase shadow-sm hover:bg-gray-800 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"

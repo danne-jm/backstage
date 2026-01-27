@@ -278,10 +278,7 @@ export default function StoreManager() {
         };
     });
 
-    const seriesMax = Math.max(
-        1,
-        ...onlineSellableSeries.flatMap((s) => s.series),
-    );
+
 
     // Pagination for Latest Card Sales
     const pageSize = 100;
@@ -351,7 +348,9 @@ export default function StoreManager() {
                                 totalOffice={totalOffice}
                                 totalOnline={totalOnline}
                                 onlineSellablesCount={onlineSellablesCount}
-                                topSellerName={onlineSellableTotals[0]?.name ?? '—'}
+                                topSellerName={
+                                    onlineSellableTotals[0]?.name ?? '—'
+                                }
                             />
                         </div>
 

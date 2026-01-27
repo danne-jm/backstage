@@ -56,14 +56,16 @@ class OnlinePaymentController extends Controller
             'items.*.use_member_price' => ['nullable', 'boolean'],
             'discount_codes' => ['nullable', 'array'],
             'discount_codes.*' => ['string'],
+            'email' => ['required', 'email', 'max:255'],
         ]);
 
         $items = $validated['items'];
         $codes = $validated['discount_codes'] ?? [];
+        $email = $validated['email'];
 
         try {
             // Process within a database transaction
-            $result = DB::transaction(function () use ($items, $codes) {
+            $result = DB::transaction(function () use ($items, $codes, $email) {
                 // Perform strict discount allocation with pessimistic locking
                 $allocation = $this->allocator->allocate($items, $codes, true);
 
@@ -86,6 +88,8 @@ class OnlinePaymentController extends Controller
                     'discount_codes' => count($codes) > 0 ? $codes : null,
                     'payment_status' => PaymentResult::STATUS_PENDING,
                     'payment_gateway' => $this->paymentGateway->getName(),
+                    'email' => $email,
+                    'mail_success' => false,
                 ]);
 
                 // Create sales records (linked to pending transaction)

@@ -41,7 +41,9 @@ export default function Warehouse() {
     };
 
     // Use a ref to track realtime updates
-    const [realtimeUpdates, setRealtimeUpdates] = useState<Record<number, number>>({});
+    const [realtimeUpdates, setRealtimeUpdates] = useState<
+        Record<number, number>
+    >({});
 
     // Derive localItems from props and apply realtime updates
     const localItems = React.useMemo(() => {
@@ -243,7 +245,7 @@ export default function Warehouse() {
                                                 column: 'name',
                                                 dir:
                                                     s.column === 'name' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -272,7 +274,7 @@ export default function Warehouse() {
                                                 column: 'quantity',
                                                 dir:
                                                     s.column === 'quantity' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -301,7 +303,7 @@ export default function Warehouse() {
                                                 column: 'category',
                                                 dir:
                                                     s.column === 'category' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -323,7 +325,7 @@ export default function Warehouse() {
                                                 column: 'category',
                                                 dir:
                                                     s.column === 'category' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -353,7 +355,7 @@ export default function Warehouse() {
                                                 dir:
                                                     s.column ===
                                                         'last_modified' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -382,7 +384,7 @@ export default function Warehouse() {
                                                 column: 'changed_by',
                                                 dir:
                                                     s.column === 'changed_by' &&
-                                                        s.dir === 'asc'
+                                                    s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -510,8 +512,8 @@ export default function Warehouse() {
                                     <td className="px-6 py-4">
                                         {item.last_modified
                                             ? new Date(
-                                                item.last_modified,
-                                            ).toLocaleString()
+                                                  item.last_modified,
+                                              ).toLocaleString()
                                             : '-'}
                                     </td>
                                     <td className="px-6 py-4">

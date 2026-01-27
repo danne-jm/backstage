@@ -68,6 +68,23 @@ class DevelopmentPaymentGateway implements PaymentGatewayInterface
             'completed_at' => now(),
         ]);
 
+        // Dispatch confirmation email in the background
+        if ($transaction->email) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($transaction->email)
+                    ->queue(new \App\Mail\OrderConfirmation($transaction));
+                
+                $transaction->update(['mail_success' => true]);
+            } catch (\Exception $e) {
+                $transaction->update(['mail_success' => false]);
+                Log::error('Failed to queue order confirmation email', [
+                    'transaction_id' => $transaction->id,
+                    'email' => $transaction->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         return PaymentResult::success(
             paymentId: $paymentId,
             message: 'Payment completed successfully (development mode)',

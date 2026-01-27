@@ -229,7 +229,7 @@
     <div class="container">
         <div class="header">
             <div class="brand-logo">
-                <img src="{{ config('app.store_url') }}/favicon.ico" alt="ESN" width="80" height="80">
+                <img src="{{ config('app.store_url') }}/images/social/esnstar.png" alt="ESN" width="80" height="80">
             </div>
             <h1 class="title">Thank you for your purchase!</h1>
             <p class="subtitle">Your order has been confirmed. Please save your reference IDs below.</p>
@@ -286,7 +286,7 @@
 
         <div class="important-notice">
             <p class="important-notice-text">
-                <strong>Important:</strong> Please save your reference IDs or return to this page later. You may still need to register to the event(s) and/or product(s) and might have to provide them in your form submission!
+                <strong>Important:</strong> Please save your reference IDs or return to this email later. You may still need to register to the event(s) and/or product(s) and might have to provide them in your form submission!
             </p>
         </div>
 
