@@ -27,6 +27,7 @@ describe('Race Condition Protection', function () {
                 ],
             ],
             'discount_codes' => [],
+            'email' => 'test@example.com',
         ];
 
         // First request should succeed
@@ -102,6 +103,7 @@ describe('Race Condition Protection', function () {
                     ],
                 ],
                 'discount_codes' => [],
+                'email' => 'test@example.com',
             ]);
 
             if ($response->status() === 200) {
