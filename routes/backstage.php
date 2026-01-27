@@ -234,6 +234,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('permission:update_event');
         Route::post('attendees/validate-purchases', [App\Http\Controllers\Backstage\EventAttendeeController::class, 'validatePurchases'])->name('events.attendees.validate-purchases')
             ->middleware('permission:update_event');
+        Route::post('attendees/verify-emails', [App\Http\Controllers\Backstage\EventAttendeeController::class, 'verifyEmails'])->name('events.attendees.verify-emails')
+            ->middleware('permission:update_event');
         Route::get('sheets', [App\Http\Controllers\Backstage\EventAttendeeController::class, 'listSheets'])->name('events.sheets');
         Route::get('sheet-data', [App\Http\Controllers\Backstage\EventAttendeeController::class, 'getSheetData'])->name('events.sheet-data');
         Route::post('attendees/update', [App\Http\Controllers\Backstage\EventAttendeeController::class, 'update'])->name('events.attendees.update')

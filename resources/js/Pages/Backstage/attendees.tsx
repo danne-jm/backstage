@@ -39,6 +39,7 @@ import {
     Save,
     Trash2,
     TriangleAlert,
+    MailCheck,
 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
@@ -282,12 +283,16 @@ export default function EventAttendees({ event }: { event: any }) {
         Record<number, boolean | null>
     >({});
     const [isValidating, setIsValidating] = React.useState(false);
+    const [isVerifyingEmails, setIsVerifyingEmails] = React.useState(false);
 
     // Find column indices for purchase_identifier and has_paid
     const purchaseIdentifierColIndex = React.useMemo(() => {
         return headers.findIndex(
             (h) => h.toLowerCase() === 'purchase_identifier',
         );
+    }, [headers]);
+    const emailColIndex = React.useMemo(() => {
+        return headers.findIndex((h) => h.toLowerCase() === 'email');
     }, [headers]);
 
     // Validate purchase identifiers against online_sales
@@ -324,6 +329,28 @@ export default function EventAttendees({ event }: { event: any }) {
             );
         } finally {
             setIsValidating(false);
+        }
+    };
+
+    const verifyEmails = async () => {
+        setIsVerifyingEmails(true);
+        try {
+            const res = await axios.post(
+                `/sellables/events/${event.id}/attendees/verify-emails`,
+            );
+            toast.success(
+                `Checked ${res.data.total_checked} emails. ${res.data.valid_count} valid, ${res.data.invalid_count} suspicious. Visual feedback applied to Google Sheet.`,
+            );
+            if (sheetName) {
+                await fetchSheetData(sheetName);
+            }
+        } catch (e: any) {
+            console.error('Email verification failed:', e);
+            toast.error(
+                `Verification failed: ${e.response?.data?.error || e.message}`,
+            );
+        } finally {
+            setIsVerifyingEmails(false);
         }
     };
 
@@ -520,7 +547,28 @@ export default function EventAttendees({ event }: { event: any }) {
                                 ) : (
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
                                 )}
-                                Validate
+                                Validate Payments
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={verifyEmails}
+                                disabled={
+                                    isVerifyingEmails ||
+                                    emailColIndex === -1 ||
+                                    rows.length === 0
+                                }
+                                title={
+                                    emailColIndex === -1
+                                        ? 'No email column found'
+                                        : 'Verify email domain legitemacy (does not check specific mailboxes)'
+                                }
+                            >
+                                {isVerifyingEmails ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <MailCheck className="mr-2 h-4 w-4" />
+                                )}
+                                Verify Domains
                             </Button>
                             <Button
                                 variant="outline"
@@ -548,7 +596,7 @@ export default function EventAttendees({ event }: { event: any }) {
                         {headers.length === 0 || rows.length === 0 ? (
                             <div className="flex h-24 items-center justify-center text-center text-muted-foreground">
                                 {event.google_spreadsheet_id &&
-                                event.google_sheet_name
+                                    event.google_sheet_name
                                     ? 'No data found in the configured spreadsheet.'
                                     : 'No spreadsheet configured. Configure a Google Sheet above and save.'}
                             </div>
@@ -573,14 +621,14 @@ export default function EventAttendees({ event }: { event: any }) {
                                                         {};
                                                     if (
                                                         cellIdx ===
-                                                            purchaseIdentifierColIndex &&
+                                                        purchaseIdentifierColIndex &&
                                                         validationResults[
-                                                            rowIdx
+                                                        rowIdx
                                                         ] !== undefined
                                                     ) {
                                                         if (
                                                             validationResults[
-                                                                rowIdx
+                                                            rowIdx
                                                             ] === true
                                                         ) {
                                                             bgStyle = {
@@ -589,7 +637,7 @@ export default function EventAttendees({ event }: { event: any }) {
                                                             }; // Green for valid
                                                         } else if (
                                                             validationResults[
-                                                                rowIdx
+                                                            rowIdx
                                                             ] === false
                                                         ) {
                                                             bgStyle = {
@@ -697,18 +745,18 @@ export default function EventAttendees({ event }: { event: any }) {
                                         'is_empty',
                                         'is_not_empty',
                                     ].includes(rule.operator) && (
-                                        <Input
-                                            placeholder="Value..."
-                                            value={rule.value}
-                                            onChange={(e) =>
-                                                updateFilterRule(
-                                                    idx,
-                                                    'value',
-                                                    e.target.value,
-                                                )
-                                            }
-                                        />
-                                    )}
+                                            <Input
+                                                placeholder="Value..."
+                                                value={rule.value}
+                                                onChange={(e) =>
+                                                    updateFilterRule(
+                                                        idx,
+                                                        'value',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        )}
                                 </div>
                                 <Button
                                     variant="ghost"

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\OnlineSale;
 use App\Services\GoogleSheetsService;
+use App\Services\EmailVerificationService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request; // Import Schema
 use Illuminate\Support\Facades\DB; // Import Blueprint
@@ -309,6 +310,85 @@ class EventAttendeeController extends Controller
             ]);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Validation failed: '.$e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Verify email addresses for attendees in the Google Sheet.
+     * Updates background colors for invalid emails.
+     */
+    public function verifyEmails(Request $request, Event $event)
+    {
+        $spreadsheetId = $event->google_spreadsheet_id;
+        $sheetName = $event->google_sheet_name;
+
+        if (! $spreadsheetId || ! $sheetName) {
+            return response()->json(['error' => 'Event has no configured spreadsheet or sheet'], 400);
+        }
+
+        try {
+            $service = new GoogleSheetsService;
+            $verifier = new EmailVerificationService;
+
+            // Fetch ALL rows (unfiltered)
+            $allData = $service->getSheetData($spreadsheetId, $sheetName);
+
+            if (empty($allData) || count($allData) < 2) {
+                return response()->json(['error' => 'No data found in sheet'], 400);
+            }
+
+            $headers = array_map(fn($h) => strtolower(trim($h)), $allData[0]);
+            $emailCol = array_search('email', $headers);
+
+            if ($emailCol === false) {
+                return response()->json(['error' => 'Email column not found'], 400);
+            }
+
+            $sheetId = $service->getSheetId($spreadsheetId, $sheetName);
+            $cellFormats = [];
+            $results = [];
+            $validCount = 0;
+            $invalidCount = 0;
+
+            // Colors
+            $greenColor = ['red' => 0.576, 'green' => 0.769, 'blue' => 0.490];
+            $redColor = ['red' => 0.918, 'green' => 0.600, 'blue' => 0.600];
+
+            for ($i = 1; $i < count($allData); $i++) {
+                $email = trim($allData[$i][$emailCol] ?? '');
+                if (empty($email)) continue;
+
+                $verification = $verifier->verify($email);
+                $isValid = $verification['valid'];
+
+                $cellFormats[] = [
+                    'row' => $i,
+                    'col' => $emailCol,
+                    'color' => $isValid ? $greenColor : $redColor,
+                ];
+
+                if ($isValid) {
+                    $validCount++;
+                } else {
+                    $invalidCount++;
+                }
+
+                $results[$i] = $verification;
+            }
+
+            if (!empty($cellFormats)) {
+                $service->applyCellFormatting($spreadsheetId, $sheetId, $cellFormats);
+            }
+
+            return response()->json([
+                'valid_count' => $validCount,
+                'invalid_count' => $invalidCount,
+                'total_checked' => $validCount + $invalidCount,
+                'results' => $results
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Verification failed: ' . $e->getMessage()], 500);
         }
     }
 
