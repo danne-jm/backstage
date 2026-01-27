@@ -61,79 +61,89 @@ class OnlinePaymentController extends Controller
         $items = $validated['items'];
         $codes = $validated['discount_codes'] ?? [];
 
-        // Process within a database transaction
-        $result = DB::transaction(function () use ($items, $codes) {
-            // Perform strict discount allocation with pessimistic locking
-            $allocation = $this->allocator->allocate($items, $codes, true);
+        try {
+            // Process within a database transaction
+            $result = DB::transaction(function () use ($items, $codes) {
+                // Perform strict discount allocation with pessimistic locking
+                $allocation = $this->allocator->allocate($items, $codes, true);
 
-            // Validate stock and prepare sales data
-            $salesToCreate = $this->validateStockAndPrepareSales($allocation);
+                // Validate stock and prepare sales data
+                $salesToCreate = $this->validateStockAndPrepareSales($allocation);
 
-            // Calculate totals
-            $subtotal = collect($salesToCreate)->sum('amount');
-            $processingFee = round($subtotal * config('services.sumup.processing_fee_rate', 0.02), 2);
-            $totalAmount = $subtotal + $processingFee;
+                // Calculate totals
+                $subtotal = collect($salesToCreate)->sum('amount');
+                $processingFee = round($subtotal * config('services.sumup.processing_fee_rate', 0.02), 2);
+                $totalAmount = $subtotal + $processingFee;
 
-            // Generate secure reference ID
-            $referenceId = Str::random(64);
+                // Generate secure reference ID
+                $referenceId = Str::random(64);
 
-            // Create transaction in PENDING status
-            $transaction = OnlineTransaction::create([
-                'reference_id' => $referenceId,
-                'total_amount' => $totalAmount,
-                'processing_fee' => $processingFee,
-                'discount_codes' => count($codes) > 0 ? $codes : null,
-                'payment_status' => PaymentResult::STATUS_PENDING,
-                'payment_gateway' => $this->paymentGateway->getName(),
-            ]);
-
-            // Create sales records (linked to pending transaction)
-            foreach ($salesToCreate as $saleData) {
-                $sale = OnlineSale::create([
-                    'online_transaction_id' => $transaction->id,
-                    'product_id' => $saleData['product_id'],
-                    'event_id' => $saleData['event_id'],
-                    'method' => 'card',
-                    'amount' => $saleData['amount'],
-                    'ticket_type' => $saleData['ticket_type'],
-                    'sold_at' => now(),
-                    'details' => [
-                        'item_name' => $saleData['item_name'],
-                        'ticket_type' => $saleData['ticket_type'],
-                        'code_used' => $saleData['code_used'],
-                    ],
+                // Create transaction in PENDING status
+                $transaction = OnlineTransaction::create([
+                    'reference_id' => $referenceId,
+                    'total_amount' => $totalAmount,
+                    'processing_fee' => $processingFee,
+                    'discount_codes' => count($codes) > 0 ? $codes : null,
+                    'payment_status' => PaymentResult::STATUS_PENDING,
+                    'payment_gateway' => $this->paymentGateway->getName(),
                 ]);
-                \App\Events\StoreUpdated::dispatch($sale);
-            }
 
-            // Update stock counts (optimistic - will be reverted if payment fails)
-            $this->updateStockCounts($salesToCreate);
+                // Create sales records (linked to pending transaction)
+                foreach ($salesToCreate as $saleData) {
+                    $sale = OnlineSale::create([
+                        'online_transaction_id' => $transaction->id,
+                        'product_id' => $saleData['product_id'],
+                        'event_id' => $saleData['event_id'],
+                        'method' => 'card',
+                        'amount' => $saleData['amount'],
+                        'ticket_type' => $saleData['ticket_type'],
+                        'sold_at' => now(),
+                        'details' => [
+                            'item_name' => $saleData['item_name'],
+                            'ticket_type' => $saleData['ticket_type'],
+                            'code_used' => $saleData['code_used'],
+                        ],
+                    ]);
+                    \App\Events\StoreUpdated::dispatch($sale);
+                }
 
-            // Track discount usage
-            $this->trackDiscountUsage($transaction, $salesToCreate);
+                // Update stock counts (optimistic - will be reverted if payment fails)
+                $this->updateStockCounts($salesToCreate);
 
-            // Initiate payment via gateway
-            $paymentResult = $this->paymentGateway->createPayment($transaction, [
-                'description' => 'Store Purchase - '.$transaction->reference_id,
-                'items' => $salesToCreate,
-            ]);
+                // Track discount usage
+                $this->trackDiscountUsage($transaction, $salesToCreate);
 
-            return [
-                'transaction' => $transaction,
-                'payment_result' => $paymentResult,
-            ];
-        });
+                // Initiate payment via gateway
+                try {
+                    $paymentResult = $this->paymentGateway->createPayment($transaction, [
+                        'description' => 'Store Purchase - ' . $transaction->reference_id,
+                        'items' => $salesToCreate,
+                    ]);
+                } catch (\Exception $e) {
+                    throw $e; // Re-throw to trigger rollback
+                }
+
+                // If payment initialization failed, throw exception to rollback DB transaction
+                if ($paymentResult->isFailed()) {
+                    throw new \Exception($paymentResult->message ?? 'Payment initialization failed');
+                }
+
+                return [
+                    'transaction' => $transaction,
+                    'payment_result' => $paymentResult,
+                ];
+            });
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 422);
+        }
 
         $transaction = $result['transaction'];
         $paymentResult = $result['payment_result'];
-
-        // Handle payment gateway response
-        if ($paymentResult->isFailed()) {
-            return response()->json([
-                'success' => false,
-                'error' => $paymentResult->message ?? 'Payment initialization failed',
-            ], 422);
-        }
 
         // For development gateway, auto-verify the payment
         if ($paymentResult->metadata['auto_complete'] ?? false) {
@@ -145,7 +155,7 @@ class OnlinePaymentController extends Controller
             if ($verifyResult->isSuccessful()) {
                 return response()->json([
                     'success' => true,
-                    'redirect_url' => '/confirmation?bag='.$transaction->reference_id,
+                    'redirect_url' => '/confirmation?bag=' . $transaction->reference_id,
                 ]);
             }
         }
@@ -160,10 +170,10 @@ class OnlinePaymentController extends Controller
             ]);
         }
 
-        // Fallback for development mode without checkout URL
+        // Fallback or specific gateway logic
         return response()->json([
             'success' => true,
-            'redirect_url' => '/confirmation?bag='.$transaction->reference_id,
+            'redirect_url' => '/confirmation?bag=' . $transaction->reference_id,
         ]);
     }
 

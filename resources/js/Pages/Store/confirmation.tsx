@@ -200,12 +200,17 @@ export default function Confirmation({ transaction, items }: Props) {
 
                     <div className="mt-8 text-center">
                         <Link
-                            href={typeof window !== 'undefined' ? window.location.href : '/'}
-                            className="inline-block rounded-md bg-black px-6 py-3 font-medium text-white uppercase transition-colors hover:bg-gray-800 print:text-sm print:px-4 print:py-2"
+                            href="/"
+                            className="no-print inline-block rounded-md bg-black px-6 py-3 font-medium text-white uppercase transition-colors hover:bg-gray-800"
                         >
-                            <span className="no-print">Continue Shopping</span>
-                            <span className="hidden print:inline">View Receipt</span>
+                            Continue Shopping
                         </Link>
+                        <a
+                            href={typeof window !== 'undefined' ? window.location.href : '#'}
+                            className="hidden print:inline-block rounded-md bg-black px-4 py-2 text-sm font-medium text-white uppercase"
+                        >
+                            View Receipt
+                        </a>
                     </div>
 
                     {/* Important notice - shown both on web and in print */}

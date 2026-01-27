@@ -50,7 +50,7 @@ class CheckoutTest extends TestCase
     {
         $response = $this->postJson('http://store.localhost/validate-cart', [
             'items' => [
-                ['id' => 9999, 'quantity' => 1, 'type' => 'product'],
+                ['id' => '9999', 'quantity' => 1, 'type' => 'product'],
             ],
         ]);
 

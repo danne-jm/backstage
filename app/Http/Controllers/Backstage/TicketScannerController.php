@@ -29,7 +29,7 @@ class TicketScannerController extends Controller
     public function import(Request $request)
     {
         $data = $request->validate([
-            'event_id' => 'required|integer',
+            'event_id' => 'required|string',
             'samples' => 'required|array',
         ]);
 
