@@ -449,9 +449,10 @@ export function SalesChart({
                                                             ? 'end'
                                                             : 'middle'
                                                 }
-                                                fontSize="7"
+                                                fontSize="5"
+                                                fontWeight="300"
                                                 fill="currentColor"
-                                                opacity={0.6}
+                                                opacity={0.5}
                                             >
                                                 {formattedDate}
                                             </text>
@@ -485,18 +486,30 @@ export function SalesChart({
                                             )
                                             .join(' ');
 
+                                        const isSinglePoint = points.length === 1;
+
                                         return (
-                                            <path
-                                                key={`series-${idx}`}
-                                                d={d}
-                                                fill="none"
-                                                stroke={s.color}
-                                                strokeWidth={2}
-                                                strokeOpacity={0.95}
-                                                style={{
-                                                    pointerEvents: 'none',
-                                                }}
-                                            />
+                                            <g key={`series-${idx}`}>
+                                                <path
+                                                    d={d}
+                                                    fill="none"
+                                                    stroke={s.color}
+                                                    strokeWidth={1.5}
+                                                    strokeOpacity={0.95}
+                                                    style={{
+                                                        pointerEvents: 'none',
+                                                    }}
+                                                />
+                                                {isSinglePoint && (
+                                                    <circle
+                                                        cx={points[0].x}
+                                                        cy={points[0].y}
+                                                        r={3}
+                                                        fill={s.color}
+                                                        stroke="none"
+                                                    />
+                                                )}
+                                            </g>
                                         );
                                     })}
 
@@ -538,10 +551,10 @@ export function SalesChart({
                                                 key={`hover-point-${i}`}
                                                 cx={point.x}
                                                 cy={point.y}
-                                                r={4}
+                                                r={3}
                                                 fill={point.color}
                                                 stroke="white"
-                                                strokeWidth={2}
+                                                strokeWidth={1}
                                                 style={{
                                                     pointerEvents: 'none',
                                                 }}

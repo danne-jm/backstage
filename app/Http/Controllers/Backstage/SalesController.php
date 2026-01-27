@@ -61,7 +61,7 @@ class SalesController extends Controller
                 // Prepare hour buckets
                 $hours = [];
                 $cursor = (clone $start)->startOfHour();
-                $endCursor = (clone $end)->startOfHour()->addHour(); // Include current hour
+                $endCursor = (clone $end)->startOfHour()->addHours(2); // Include current hour + 1 future hour
 
                 while ($cursor->lt($endCursor)) {
                     $hours[$cursor->format('Y-m-d H:00:00')] = [

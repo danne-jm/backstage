@@ -71,3 +71,14 @@ export interface OnlineSale {
     product?: { name?: string };
     event?: { name?: string };
 }
+
+export interface OfficeSale {
+    id: number;
+    product_id?: number | null;
+    event_id?: number | null;
+    method?: string;
+    amount: number;
+    sold_at: string;
+    product?: { name?: string };
+    event?: { name?: string };
+}
