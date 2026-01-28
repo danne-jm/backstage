@@ -95,6 +95,8 @@ export default function ShopShow({ item }: Props) {
     const isSoldOut =
         isVariantSoldOut || (!item.variants_config && isItemSoldOut);
 
+    const [isAdded, setIsAdded] = useState(false);
+
     const handleAddToCart = () => {
         if (
             item.variants_config &&
@@ -114,7 +116,10 @@ export default function ShopShow({ item }: Props) {
                     ? selectedOptions
                     : undefined,
         });
-        // Feedback via badge update is immediate.
+
+        // Trigger animation
+        setIsAdded(true);
+        setTimeout(() => setIsAdded(false), 1000);
     };
 
     const hasMultipleImages = item.images && item.images.length > 1;
@@ -443,15 +448,30 @@ export default function ShopShow({ item }: Props) {
                                                         !isSelectionComplete
                                                     }
                                                     onClick={handleAddToCart}
-                                                    className={`flex w-full cursor-pointer items-center justify-center gap-2 border border-black bg-white px-8 py-4 text-base font-medium text-black uppercase hover:bg-gray-50 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:outline-none ${!isSelectionComplete ? 'cursor-not-allowed opacity-50' : ''}`}
+                                                    className={`
+                                                        flex w-full cursor-pointer items-center justify-center gap-2 border border-black px-8 py-4 text-base font-medium uppercase text-black
+                                                        focus:outline-none focus:ring-0 focus-visible:ring-0
+                                                        transition duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]
+                                                        ${!isSelectionComplete ? 'cursor-not-allowed opacity-50 bg-gray-100' : 'bg-white hover:bg-gray-50'}
+                                                        ${isAdded ? 'scale-105' : 'scale-100'}
+                                                    `}
                                                 >
-                                                    {item.variants_config &&
-                                                        item.variants_config
-                                                            .length > 0 &&
-                                                        !isSelectionComplete
-                                                        ? 'Select Options'
-                                                        : 'Add to cart'}{' '}
-                                                    <ShoppingCart className="h-4 w-4" />
+                                                    {isAdded ? (
+                                                        <>
+                                                            <span>Added!</span>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check"><path d="M20 6 9 17l-5-5" /></svg>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            {item.variants_config &&
+                                                                item.variants_config
+                                                                    .length > 0 &&
+                                                                !isSelectionComplete
+                                                                ? 'Select Options'
+                                                                : 'Add to cart'}{' '}
+                                                            <ShoppingCart className="h-4 w-4" />
+                                                        </>
+                                                    )}
                                                 </button>
                                             </>
                                         )}

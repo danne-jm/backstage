@@ -45,9 +45,17 @@ export default function ShopLayout({ children }: PropsWithChildren) {
                             <span className="sr-only">Cart</span>
                             <ShoppingBag className="h-6 w-6" />
                             {mounted && cartCount > 0 && (
-                                <span className="absolute -top-2 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs leading-none font-bold text-white">
-                                    {cartCount}
-                                </span>
+                                <div
+                                    className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full"
+                                    style={{
+                                        background:
+                                            'conic-gradient(#7ac143 0deg 90deg, #f47b20 90deg 180deg, #00aeef 180deg 270deg, #ec008c 270deg 360deg)',
+                                    }}
+                                >
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-black">
+                                        {cartCount}
+                                    </span>
+                                </div>
                             )}
                         </Link>
                     </nav>

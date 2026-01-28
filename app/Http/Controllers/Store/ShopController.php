@@ -82,7 +82,7 @@ class ShopController extends Controller
 
         return Inertia::render('Store/cart', [
             'sellables' => $events->concat($products),
-            'processingFeeRate' => config('services.sumup.processing_fee_rate', 0.02),
+            'processingFeeRate' => config('services.sumup.processing_fee_rate', 0.02), 
         ]);
     }
 
