@@ -10,6 +10,8 @@ interface SaleItem {
     type: 'product' | 'event';
     amount: number;
     ticket_type: string | null;
+    variant_options?: Record<string, string> | null;
+    code_used?: string | null;
 }
 
 interface Transaction {
@@ -122,56 +124,79 @@ export default function Confirmation({ transaction, items }: Props) {
                         </div>
 
                         <div className="space-y-4 print:space-y-2">
-                            {items.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="print-compact-card rounded-lg border border-gray-200 bg-white p-4"
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <h3 className="print-text-sm font-medium text-gray-900">
-                                                {item.name}
-                                            </h3>
-                                            {item.ticket_type ===
-                                                'with_card' && (
-                                                <p className="print-text-xs mt-1 text-sm text-gray-500">
-                                                    With ESNcard
-                                                </p>
-                                            )}
-                                            <p className="print-text-sm mt-2 text-sm font-medium text-gray-900 print:mt-1">
-                                                €
-                                                {Number(item.amount).toFixed(2)}
-                                            </p>
-                                        </div>
-                                        <div className="ml-4 text-right">
-                                            <p className="print-text-xs mb-1 text-xs text-gray-500">
-                                                Reference ID
-                                            </p>
-                                            <div className="flex items-center gap-2">
-                                                <code className="print-text-xs rounded bg-gray-100 px-3 py-1.5 font-mono text-sm font-bold text-gray-800 print:bg-transparent print:px-0 print:py-0">
-                                                    {item.reference_id}
-                                                </code>
-                                                <button
-                                                    onClick={() =>
-                                                        copyToClipboard(
-                                                            item.reference_id,
+                            {items.map((item) => {
+                                const hasVariants =
+                                    item.variant_options &&
+                                    Object.keys(item.variant_options).length >
+                                        0;
+                                const hasEsnCardDiscount =
+                                    item.code_used &&
+                                    item.ticket_type === 'with_card';
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        className="print-compact-card rounded-lg border border-gray-200 bg-white p-4"
+                                    >
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <h3 className="print-text-sm font-medium text-gray-900">
+                                                    {item.name}
+                                                </h3>
+                                                {hasVariants && (
+                                                    <p className="print-text-xs mt-1 text-sm text-gray-500">
+                                                        {Object.entries(
+                                                            item.variant_options!,
                                                         )
-                                                    }
-                                                    className="no-print rounded-md p-1.5 transition-colors hover:bg-gray-100"
-                                                    title="Copy reference ID"
-                                                >
-                                                    {copiedId ===
-                                                    item.reference_id ? (
-                                                        <Check className="h-4 w-4 text-green-500" />
-                                                    ) : (
-                                                        <Copy className="h-4 w-4 text-gray-400" />
+                                                            .map(
+                                                                ([key, value]) =>
+                                                                    `${key}: ${value}`,
+                                                            )
+                                                            .join(', ')}
+                                                    </p>
+                                                )}
+                                                {hasEsnCardDiscount && (
+                                                    <p className="print-text-xs mt-1 text-sm text-gray-500">
+                                                        With ESNcard
+                                                    </p>
+                                                )}
+                                                <p className="print-text-sm mt-2 text-sm font-medium text-gray-900 print:mt-1">
+                                                    €
+                                                    {Number(item.amount).toFixed(
+                                                        2,
                                                     )}
-                                                </button>
+                                                </p>
+                                            </div>
+                                            <div className="ml-4 text-right">
+                                                <p className="print-text-xs mb-1 text-xs text-gray-500">
+                                                    Reference ID
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="print-text-xs rounded bg-gray-100 px-3 py-1.5 font-mono text-sm font-bold text-gray-800 print:bg-transparent print:px-0 print:py-0">
+                                                        {item.reference_id}
+                                                    </code>
+                                                    <button
+                                                        onClick={() =>
+                                                            copyToClipboard(
+                                                                item.reference_id,
+                                                            )
+                                                        }
+                                                        className="no-print rounded-md p-1.5 transition-colors hover:bg-gray-100"
+                                                        title="Copy reference ID"
+                                                    >
+                                                        {copiedId ===
+                                                        item.reference_id ? (
+                                                            <Check className="h-4 w-4 text-green-500" />
+                                                        ) : (
+                                                            <Copy className="h-4 w-4 text-gray-400" />
+                                                        )}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         <div className="mt-6 space-y-2 border-t border-gray-200 pt-6 print:mt-3 print:space-y-1 print:pt-3">
@@ -216,7 +241,7 @@ export default function Confirmation({ transaction, items }: Props) {
                             }
                             className="hidden rounded-md bg-black px-4 py-2 text-sm font-medium text-white uppercase print:inline-block"
                         >
-                            View Receipt
+                            View Order
                         </a>
                     </div>
 

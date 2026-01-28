@@ -81,26 +81,53 @@ export function LatestCardSalesList({
                 <div className="space-y-4">
                     {onlineSales.length > 0 ? (
                         <div className="max-h-[70vh] space-y-4 overflow-y-auto">
-                            {visibleOnlineSales.map((sale: any) => (
-                                <div
-                                    key={sale.id}
-                                    className="flex items-center justify-between rounded-lg border p-4"
-                                >
-                                    <div>
-                                        <h3 className="font-medium">
-                                            {sale.product?.name ||
-                                                sale.event?.name ||
-                                                'Unknown Item'}
-                                        </h3>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            {formatDateTime(sale.sold_at)}
-                                        </p>
+                            {visibleOnlineSales.map((sale: any) => {
+                                const hasVariants =
+                                    sale.details?.options &&
+                                    Object.keys(sale.details.options).length >
+                                        0;
+                                const hasEsnCardDiscount =
+                                    sale.details?.code_used &&
+                                    sale.ticket_type === 'with_card';
+
+                                return (
+                                    <div
+                                        key={sale.id}
+                                        className="flex items-center justify-between rounded-lg border p-4"
+                                    >
+                                        <div>
+                                            <h3 className="font-medium">
+                                                {sale.product?.name ||
+                                                    sale.event?.name ||
+                                                    'Unknown Item'}
+                                            </h3>
+                                            {hasVariants && (
+                                                <p className="mt-0.5 text-sm text-muted-foreground">
+                                                    {Object.entries(
+                                                        sale.details.options,
+                                                    )
+                                                        .map(
+                                                            ([key, value]) =>
+                                                                `${key}: ${value}`,
+                                                        )
+                                                        .join(', ')}
+                                                </p>
+                                            )}
+                                            {hasEsnCardDiscount && (
+                                                <p className="mt-0.5 text-sm text-muted-foreground">
+                                                    With ESNcard
+                                                </p>
+                                            )}
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                {formatDateTime(sale.sold_at)}
+                                            </p>
+                                        </div>
+                                        <div className="text-lg font-medium">
+                                            €{sale.amount}
+                                        </div>
                                     </div>
-                                    <div className="text-lg font-medium">
-                                        €{sale.amount}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                             {/* Pagination controls when there are multiple pages */}
                             {totalOnlinePages > 1 && (
                                 <div className="mt-2 flex items-center justify-between">

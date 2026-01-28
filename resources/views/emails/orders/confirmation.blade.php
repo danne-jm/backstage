@@ -239,12 +239,26 @@
             <h2 class="summary-heading">Order Summary</h2>
             
             @foreach($transaction->sales as $sale)
+                @php
+                    $itemName = $sale->product ? $sale->product->name : ($sale->event ? $sale->event->name : 'Unknown Item');
+                    $variantOptions = $sale->details['options'] ?? null;
+                    $codeUsed = $sale->details['code_used'] ?? null;
+                    $hasVariants = $variantOptions && is_array($variantOptions) && count($variantOptions) > 0;
+                    $hasEsnCardDiscount = $codeUsed && $sale->ticket_type === 'with_card';
+                @endphp
                 <div class="item-card">
                     <table style="width: 100%;">
                         <tr>
                             <td style="vertical-align: top; width: 60%;">
-                                <div class="item-name">{{ $sale->product ? $sale->product->name : ($sale->event ? $sale->event->name : 'Unknown Item') }}</div>
-                                @if($sale->ticket_type === 'with_card')
+                                <div class="item-name">{{ $itemName }}</div>
+                                @if($hasVariants)
+                                    <div class="item-type">
+                                        @foreach($variantOptions as $key => $value)
+                                            {{ $key }}: {{ $value }}@if(!$loop->last), @endif
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if($hasEsnCardDiscount)
                                     <div class="item-type">With ESNcard</div>
                                 @endif
                             </td>

@@ -123,7 +123,7 @@ class OnlinePaymentController extends Controller
                 // Initiate payment via gateway
                 try {
                     $paymentResult = $this->paymentGateway->createPayment($transaction, [
-                        'description' => 'Store Purchase - ' . $transaction->reference_id,
+                        'description' => 'Store Purchase - '.$transaction->reference_id,
                         'items' => $salesToCreate,
                     ]);
                 } catch (\Exception $e) {
@@ -162,7 +162,7 @@ class OnlinePaymentController extends Controller
             if ($verifyResult->isSuccessful()) {
                 return response()->json([
                     'success' => true,
-                    'redirect_url' => '/confirmation?bag=' . $transaction->reference_id,
+                    'redirect_url' => '/confirmation?bag='.$transaction->reference_id,
                 ]);
             }
         }
@@ -180,7 +180,7 @@ class OnlinePaymentController extends Controller
         // Fallback or specific gateway logic
         return response()->json([
             'success' => true,
-            'redirect_url' => '/confirmation?bag=' . $transaction->reference_id,
+            'redirect_url' => '/confirmation?bag='.$transaction->reference_id,
         ]);
     }
 
@@ -307,6 +307,8 @@ class OnlinePaymentController extends Controller
                 'type' => $type,
                 'amount' => $sale->amount,
                 'ticket_type' => $sale->ticket_type,
+                'variant_options' => $sale->details['options'] ?? null,
+                'code_used' => $sale->details['code_used'] ?? null,
             ];
         });
 
@@ -364,7 +366,7 @@ class OnlinePaymentController extends Controller
                 $key .= '-'.$ticketType;
             }
             // Include options in the key to track variant stock separately
-            if (!empty($unit['options'])) {
+            if (! empty($unit['options'])) {
                 $key .= '-'.md5(json_encode($unit['options']));
             }
 
@@ -403,14 +405,19 @@ class OnlinePaymentController extends Controller
                 // simple array comparison (keys must match)
                 $vOpts = $v->options;
                 $inOpts = $options;
-                if (count($vOpts) !== count($inOpts)) return false;
-                foreach ($inOpts as $k => $val) {
-                    if (!isset($vOpts[$k]) || $vOpts[$k] !== $val) return false;
+                if (count($vOpts) !== count($inOpts)) {
+                    return false;
                 }
+                foreach ($inOpts as $k => $val) {
+                    if (! isset($vOpts[$k]) || $vOpts[$k] !== $val) {
+                        return false;
+                    }
+                }
+
                 return true;
             });
 
-            if (!$variant) {
+            if (! $variant) {
                 throw ValidationException::withMessages([
                     'stock' => "Variant not available for {$entity->name}.",
                 ]);
@@ -421,8 +428,9 @@ class OnlinePaymentController extends Controller
                     'stock' => "Selected variant for {$entity->name} is sold out.",
                 ]);
             }
-            // If variant exists and has stock, we proceed. 
-            // We do NOT check main product stock if we matched a variant, 
+
+            // If variant exists and has stock, we proceed.
+            // We do NOT check main product stock if we matched a variant,
             // assuming variants track their own independent stock in this system.
             return;
         }
@@ -467,7 +475,7 @@ class OnlinePaymentController extends Controller
     {
         foreach ($salesToCreate as $saleData) {
             // Updated SellableVariant if options exist
-            if (!empty($saleData['options'])) {
+            if (! empty($saleData['options'])) {
                 // Find and increment variant
                 $type = $saleData['product_id'] ? 'App\\Models\\Product' : 'App\\Models\\Event';
                 $id = $saleData['product_id'] ?? $saleData['event_id'];
@@ -478,13 +486,18 @@ class OnlinePaymentController extends Controller
                 $variants = \App\Models\SellableVariant::where('sellable_type', $type)
                     ->where('sellable_id', $id)
                     ->get();
-                
+
                 $matchedHandler = $variants->first(function ($v) use ($options) {
                     $vOpts = $v->options;
-                    if (count($vOpts) !== count($options)) return false;
-                        foreach ($options as $k => $val) {
-                            if (!isset($vOpts[$k]) || $vOpts[$k] !== $val) return false;
+                    if (count($vOpts) !== count($options)) {
+                        return false;
+                    }
+                    foreach ($options as $k => $val) {
+                        if (! isset($vOpts[$k]) || $vOpts[$k] !== $val) {
+                            return false;
                         }
+                    }
+
                     return true;
                 });
 
@@ -519,27 +532,32 @@ class OnlinePaymentController extends Controller
         foreach ($transaction->sales as $sale) {
             $options = $sale->details['options'] ?? null;
             if ($options) {
-                 $maxRetries = 3;
-                 // Revert variant stock
-                 $type = $sale->product_id ? 'App\\Models\\Product' : 'App\\Models\\Event';
-                 $id = $sale->product_id ?? $sale->event_id;
-                 
-                  $variants = \App\Models\SellableVariant::where('sellable_type', $type)
+                $maxRetries = 3;
+                // Revert variant stock
+                $type = $sale->product_id ? 'App\\Models\\Product' : 'App\\Models\\Event';
+                $id = $sale->product_id ?? $sale->event_id;
+
+                $variants = \App\Models\SellableVariant::where('sellable_type', $type)
                     ->where('sellable_id', $id)
                     ->get();
-                
-                 $matchedHandler = $variants->first(function ($v) use ($options) {
-                     $vOpts = $v->options;
-                     if (count($vOpts) !== count($options)) return false;
-                         foreach ($options as $k => $val) {
-                             if (!isset($vOpts[$k]) || $vOpts[$k] !== $val) return false;
-                         }
-                     return true;
-                 });
- 
-                 if ($matchedHandler) {
-                     $matchedHandler->decrement('sold_count');
-                 }
+
+                $matchedHandler = $variants->first(function ($v) use ($options) {
+                    $vOpts = $v->options;
+                    if (count($vOpts) !== count($options)) {
+                        return false;
+                    }
+                    foreach ($options as $k => $val) {
+                        if (! isset($vOpts[$k]) || $vOpts[$k] !== $val) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+                if ($matchedHandler) {
+                    $matchedHandler->decrement('sold_count');
+                }
             }
 
             if ($sale->event_id) {

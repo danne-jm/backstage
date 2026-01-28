@@ -82,7 +82,13 @@ export interface OnlineSale {
     event_id?: number | null;
     method?: string;
     amount: number;
-    details?: any;
+    details?: {
+        item_name?: string;
+        ticket_type?: string | null;
+        code_used?: string | null;
+        options?: Record<string, string> | null;
+    };
+    ticket_type?: string | null;
     sold_at: string;
     product?: { name?: string };
     event?: { name?: string };
