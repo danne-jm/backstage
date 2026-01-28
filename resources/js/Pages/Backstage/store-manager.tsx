@@ -187,12 +187,23 @@ export default function StoreManager() {
         });
     };
 
-    // Quick stats - uses onlineSales which is filtered by period
-    const totalOffice = sales.reduce((s, r) => s + (r.office_total || 0), 0);
-    const totalOnline = onlineSales.reduce(
-        (s, os) => s + (parseFloat(String(os.amount || 0)) || 0),
-        0,
-    );
+    // Quick stats - Calculate correctly based on method
+    // Office = office sales (method != card, usually 'cash')
+    // Card = online sales + office sales (method == card)
+    const totalOffice = officeSales.reduce((acc, os) => {
+        if (os.method === 'card') return acc;
+        return acc + (parseFloat(String(os.amount || 0)) || 0);
+    }, 0);
+
+    const totalOnline =
+        onlineSales.reduce(
+            (s, os) => s + (parseFloat(String(os.amount || 0)) || 0),
+            0,
+        ) +
+        officeSales.reduce((acc, os) => {
+            if (os.method !== 'card') return acc;
+            return acc + (parseFloat(String(os.amount || 0)) || 0);
+        }, 0);
 
     const sellables: Sellable[] = [...products, ...events];
 

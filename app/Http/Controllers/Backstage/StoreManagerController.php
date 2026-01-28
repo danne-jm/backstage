@@ -25,7 +25,7 @@ class StoreManagerController extends Controller
         $cacheKey = 'store_manager_data_' . md5(json_encode($request->all()));
 
         $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($request, $now) {
-            $products = Product::orderBy('name')->get()->map(function ($p) {
+            $products = Product::with('variants')->orderBy('name')->get()->map(function ($p) {
                 return [
                     'id' => $p->id,
                     'type' => 'product',
@@ -43,10 +43,20 @@ class StoreManagerController extends Controller
                     'remaining_with_card' => $p->remaining_with_card,
                     'remaining_without_card' => $p->remaining_without_card,
                     'is_online_sellable' => $p->is_online_sellable,
+                    // New fields for Sellables UI
+                    'images_list' => $p->images_list,
+                    'variants_config' => $p->variants_config,
+                    'instagram_link' => $p->instagram_link,
+                    'variants' => $p->variants->map(fn ($v) => [
+                        'id' => $v->id,
+                        'options' => $v->options,
+                        'quantity' => $v->quantity,
+                        'sold_count' => $v->sold_count,
+                    ]),
                 ];
             });
 
-            $events = Event::with('responsibleUser')
+            $events = Event::with(['responsibleUser', 'variants'])
                 ->where('event_date', '>=', $now)
                 ->orderBy('event_date', 'asc')
                 ->get()
@@ -75,6 +85,16 @@ class StoreManagerController extends Controller
                         'google_spreadsheet_id' => $e->google_spreadsheet_id,
                         'is_online_sellable' => $e->is_online_sellable,
                         'responsible_user_id' => $e->responsible_user_id,
+                        // New fields for Sellables UI
+                        'images_list' => $e->images_list,
+                        'variants_config' => $e->variants_config,
+                        'instagram_link' => $e->instagram_link,
+                        'variants' => $e->variants->map(fn ($v) => [
+                            'id' => $v->id, // ULID
+                            'options' => $v->options,
+                            'quantity' => $v->quantity,
+                            'sold_count' => $v->sold_count,
+                        ]),
                     ];
                 });
 

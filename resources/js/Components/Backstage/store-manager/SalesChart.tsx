@@ -63,13 +63,144 @@ export function SalesChart({
     // Compute combined series based on toggle state
     // Each sellable's series = (office sales if showOffice) + (online sales if showCard)
     const combinedSeries = useMemo(() => {
-        return onlineSellableSeries.map((s) => {
+        // 1. Identify ALL unique keys from known sellables AND actual sales
+        const allKeys = new Set<string>();
+
+        // Add known sellables
+        onlineSellableSeries.forEach(s => allKeys.add(`${s.type}-${s.id}`));
+
+        // Add keys from sales data
+        if (showCard) {
+            onlineSales.forEach(os => {
+                const type = os.product_id ? 'product' : 'event';
+                const id = os.product_id || os.event_id;
+                if (id) allKeys.add(`${type}-${id}`);
+                else allKeys.add('unknown-null');
+            });
+            officeSales.filter(os => os.method === 'card').forEach(os => {
+                const type = os.product_id ? 'product' : 'event';
+                const id = os.product_id || os.event_id;
+                if (id) allKeys.add(`${type}-${id}`);
+                else allKeys.add('unknown-null');
+            });
+        }
+        if (showOffice) {
+            officeSales.filter(os => os.method !== 'card').forEach(os => {
+                const type = os.product_id ? 'product' : 'event';
+                const id = os.product_id || os.event_id;
+                if (id) allKeys.add(`${type}-${id}`);
+                else allKeys.add('unknown-null');
+            });
+        }
+
+        return Array.from(allKeys).map((key) => {
+            if (key === 'unknown-null') {
+                // Calculate series for Unknown/Orphaned items (missing IDs)
+                const series = dateKeys.map((dk) => {
+                    let total = 0;
+                    if (showCard) {
+                        total += onlineSales.reduce((acc, os) => {
+                            if (os.product_id || os.event_id) return acc;
+
+                            const soldAt = os.sold_at || '';
+                            let matchKey: string;
+                            if (isHourlyData) {
+                                const dateObj = new Date(soldAt);
+                                const year = dateObj.getFullYear();
+                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                const day = String(dateObj.getDate()).padStart(2, '0');
+                                const hour = String(dateObj.getHours()).padStart(2, '0');
+                                matchKey = `${year}-${month}-${day} ${hour}:00:00`;
+                            } else {
+                                matchKey = soldAt.split('T')[0].split(' ')[0];
+                            }
+                            if (matchKey !== dk) return acc;
+                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                        }, 0);
+
+                        total += officeSales.reduce((acc, os) => {
+                            if (os.method !== 'card') return acc;
+                            if (os.product_id || os.event_id) return acc;
+
+                            const soldAt = os.sold_at || '';
+                            let matchKey: string;
+                            if (isHourlyData) {
+                                const dateObj = new Date(soldAt);
+                                const year = dateObj.getFullYear();
+                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                const day = String(dateObj.getDate()).padStart(2, '0');
+                                const hour = String(dateObj.getHours()).padStart(2, '0');
+                                matchKey = `${year}-${month}-${day} ${hour}:00:00`;
+                            } else {
+                                matchKey = soldAt.split('T')[0].split(' ')[0];
+                            }
+                            if (matchKey !== dk) return acc;
+                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                        }, 0);
+                    }
+                    if (showOffice) {
+                        total += officeSales.reduce((acc, os) => {
+                            if (os.method === 'card') return acc;
+                            if (os.product_id || os.event_id) return acc;
+
+                            const soldAt = os.sold_at || '';
+                            let matchKey: string;
+                            if (isHourlyData) {
+                                const dateObj = new Date(soldAt);
+                                const year = dateObj.getFullYear();
+                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                const day = String(dateObj.getDate()).padStart(2, '0');
+                                const hour = String(dateObj.getHours()).padStart(2, '0');
+                                matchKey = `${year}-${month}-${day} ${hour}:00:00`;
+                            } else {
+                                matchKey = soldAt.split('T')[0].split(' ')[0];
+                            }
+                            if (matchKey !== dk) return acc;
+                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                        }, 0);
+                    }
+                    return total;
+                });
+                return {
+                    id: 'unknown',
+                    type: 'product' as const,
+                    name: 'Unknown Item',
+                    color: '#9ca3af',
+                    series
+                };
+            }
+
+            const [type, id] = key.split('-');
+
+            // Try to find metadata in known series
+            const known = onlineSellableSeries.find(s => s.type === type && String(s.id) === String(id));
+
+            // If unknown, try to find name from ANY sale record
+            let name = known?.name;
+            if (!name) {
+                const saleFn = (os: OnlineSale | OfficeSale) => {
+                    const osType = os.product_id ? 'product' : 'event';
+                    const osId = os.product_id || os.event_id;
+                    return String(osType) === String(type) && String(osId) === String(id);
+                };
+                const match = onlineSales.find(saleFn) || officeSales.find(saleFn);
+                name = match?.product?.name || match?.event?.name || `Unknown ${type === 'product' ? 'Product' : 'Item'} ${id}`;
+            }
+
+            const color = known?.color || '#9ca3af'; // Default gray for unknown
+
             const series = dateKeys.map((dk) => {
                 let total = 0;
 
                 // Add online sales for this date if Card toggle is on
                 if (showCard) {
                     total += onlineSales.reduce((acc, os) => {
+                        const osType = os.product_id ? 'product' : 'event';
+                        const osId = os.product_id || os.event_id;
+                        if (!osId) return acc; // Skip null IDs (handled in unknown-null)
+
+                        if (String(osType) !== String(type) || String(osId) !== String(id)) return acc;
+
                         const soldAt = os.sold_at || '';
                         let matchKey: string;
                         if (isHourlyData) {
@@ -82,30 +213,60 @@ export function SalesChart({
                                 2,
                                 '0',
                             );
-                            const hour = String(dateObj.getHours()).padStart(
-                                2,
-                                '0',
-                            );
+                            const hour = String(
+                                dateObj.getHours(),
+                            ).padStart(2, '0');
                             matchKey = `${year}-${month}-${day} ${hour}:00:00`;
                         } else {
                             matchKey = soldAt.split('T')[0].split(' ')[0];
                         }
                         if (matchKey !== dk) return acc;
-                        if (s.type === 'product' && os.product_id === s.id)
-                            return (
-                                acc + (parseFloat(String(os.amount || 0)) || 0)
+                        return acc + (parseFloat(String(os.amount || 0)) || 0);
+                    }, 0);
+
+                    // Also add Office sales made via CARD
+                    total += officeSales.reduce((acc, os) => {
+                        if (os.method !== 'card') return acc;
+                        const osType = os.product_id ? 'product' : 'event';
+                        const osId = os.product_id || os.event_id;
+                        if (!osId) return acc; // Skip null IDs
+
+                        if (String(osType) !== String(type) || String(osId) !== String(id)) return acc;
+
+                        const soldAt = os.sold_at || '';
+                        let matchKey: string;
+                        if (isHourlyData) {
+                            const dateObj = new Date(soldAt);
+                            const year = dateObj.getFullYear();
+                            const month = String(
+                                dateObj.getMonth() + 1,
+                            ).padStart(2, '0');
+                            const day = String(dateObj.getDate()).padStart(
+                                2,
+                                '0',
                             );
-                        if (s.type === 'event' && os.event_id === s.id)
-                            return (
-                                acc + (parseFloat(String(os.amount || 0)) || 0)
-                            );
-                        return acc;
+                            const hour = String(
+                                dateObj.getHours(),
+                            ).padStart(2, '0');
+                            matchKey = `${year}-${month}-${day} ${hour}:00:00`;
+                        } else {
+                            matchKey = soldAt.split('T')[0].split(' ')[0];
+                        }
+                        if (matchKey !== dk) return acc;
+                        return acc + (parseFloat(String(os.amount || 0)) || 0);
                     }, 0);
                 }
 
-                // Add office sales for this date if Office toggle is on
+                // Add office sales for this date if Office toggle is on (CASH ONLY)
                 if (showOffice) {
                     total += officeSales.reduce((acc, os) => {
+                        if (os.method === 'card') return acc;
+                        const osType = os.product_id ? 'product' : 'event';
+                        const osId = os.product_id || os.event_id;
+                        if (!osId) return acc; // Skip null IDs
+
+                        if (String(osType) !== String(type) || String(osId) !== String(id)) return acc;
+
                         const soldAt = os.sold_at || '';
                         let matchKey: string;
                         if (isHourlyData) {
@@ -118,31 +279,27 @@ export function SalesChart({
                                 2,
                                 '0',
                             );
-                            const hour = String(dateObj.getHours()).padStart(
-                                2,
-                                '0',
-                            );
+                            const hour = String(
+                                dateObj.getHours(),
+                            ).padStart(2, '0');
                             matchKey = `${year}-${month}-${day} ${hour}:00:00`;
                         } else {
                             matchKey = soldAt.split('T')[0].split(' ')[0];
                         }
                         if (matchKey !== dk) return acc;
-                        if (s.type === 'product' && os.product_id === s.id)
-                            return (
-                                acc + (parseFloat(String(os.amount || 0)) || 0)
-                            );
-                        if (s.type === 'event' && os.event_id === s.id)
-                            return (
-                                acc + (parseFloat(String(os.amount || 0)) || 0)
-                            );
-                        return acc;
+                        return acc + (parseFloat(String(os.amount || 0)) || 0);
                     }, 0);
                 }
 
                 return total;
             });
-            return { ...s, series };
-        });
+            return { id, type, name, color, series };
+        })
+            .filter((s) => {
+                // Filter out ANY series that has 0 total across the entire period
+                const overallTotal = s.series.reduce((a, b) => a + b, 0);
+                return overallTotal > 0;
+            });
     }, [
         onlineSellableSeries,
         dateKeys,
@@ -152,6 +309,37 @@ export function SalesChart({
         showOffice,
         showCard,
     ]);
+
+    // Color palette for chart lines
+    const colorPalette = [
+        '#3B82F6', // Blue
+        '#EF4444', // Red
+        '#10B981', // Emerald
+        '#F59E0B', // Amber
+        '#8B5CF6', // Violet
+        '#EC4899', // Pink
+        '#06B6D4', // Cyan
+        '#F97316', // Orange
+        '#6366F1', // Indigo
+        '#84CC16', // Lime
+        '#14B8A6', // Teal
+        '#D946EF', // Fuchsia
+        '#64748B', // Slate
+    ];
+
+    const getColor = (index: number, id: string) => {
+        if (id === 'unknown') return '#9ca3af'; // Gray for unknown
+        // Use palette first, then hash if we run out
+        if (index < colorPalette.length) return colorPalette[index];
+
+        // Simple hash for consistent colors beyond palette
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) {
+            hash = id.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const c = (hash & 0x00ffffff).toString(16).toUpperCase();
+        return '#' + '00000'.substring(0, 6 - c.length) + c;
+    };
 
     // Calculate dynamic max based on combined series
     const visibleMax = Math.max(1, ...combinedSeries.flatMap((s) => s.series));
@@ -171,78 +359,98 @@ export function SalesChart({
             }
         >();
 
-        // Process online sales if Card toggle is on
-        if (showCard) {
-            onlineSales.forEach((os) => {
-                const amount = parseFloat(String(os.amount || 0)) || 0;
-                const type = os.product_id ? 'product' : 'event';
-                const id = os.product_id || os.event_id;
-                if (!id) return;
+        // Helper to track color assignment index
+        let colorIndex = 0;
+        const colorMap = new Map<string, string>();
 
-                const key = `${type}-${id}`;
-                const existing = totalsMap.get(key);
+        // Pre-assign colors to known series first for consistency
+        onlineSellableSeries.forEach(s => {
+            const key = `${s.type}-${s.id}`;
+            // If the backend provided a color, use it? Or override for uniqueness?
+            // Let's stick to our palette for guaranteed uniqueness if backend colors are colliding
+            // checking if backend provided something specific (usually they don't, just random)
+            colorMap.set(key, getColor(colorIndex++, String(s.id)));
+        });
 
-                if (existing) {
-                    existing.total += amount;
-                    existing.count += 1;
-                } else {
-                    const seriesMeta = onlineSellableSeries.find(
-                        (s) => s.type === type && String(s.id) === String(id),
-                    );
-                    const name =
-                        os.product?.name ||
-                        os.event?.name ||
-                        seriesMeta?.name ||
-                        `${type === 'product' ? 'Product' : 'Event'} ${id}`;
-                    totalsMap.set(key, {
-                        id: String(id),
-                        type,
-                        name,
-                        total: amount,
-                        count: 1,
-                        color: seriesMeta?.color || '#6B7280',
-                    });
+        const processSale = (
+            os: OnlineSale | OfficeSale,
+            isOffice: boolean,
+        ) => {
+            const amount = parseFloat(String(os.amount || 0)) || 0;
+            const type = os.product_id ? 'product' : 'event';
+            const id = os.product_id || os.event_id || 'unknown'; // Handle null ID
+
+            // correct method check
+            if (isOffice) {
+                const method = (os as OfficeSale).method;
+                if (method === 'card' && !showCard) return;
+                if (method !== 'card' && !showOffice) return;
+            } else {
+                if (!showCard) return;
+            }
+
+            const key = id === 'unknown' ? 'unknown' : `${type}-${id}`;
+            const existing = totalsMap.get(key);
+
+            if (existing) {
+                existing.total += amount;
+                existing.count += 1;
+            } else {
+                // If it's a known item, grab metadata
+                const seriesMeta = onlineSellableSeries.find(
+                    (s) => s.type === type && String(s.id) === String(id),
+                );
+
+                let name = seriesMeta?.name;
+                if (!name) {
+                    if (id === 'unknown') name = 'Unknown Item';
+                    else name = os.product?.name || os.event?.name || `${type === 'product' ? 'Product' : 'Event'} ${id}`;
                 }
-            });
-        }
 
-        // Process office sales if Office toggle is on
-        if (showOffice) {
-            officeSales.forEach((os) => {
-                const amount = parseFloat(String(os.amount || 0)) || 0;
-                const type = os.product_id ? 'product' : 'event';
-                const id = os.product_id || os.event_id;
-                if (!id) return;
-
-                const key = `${type}-${id}`;
-                const existing = totalsMap.get(key);
-
-                if (existing) {
-                    existing.total += amount;
-                    existing.count += 1;
-                } else {
-                    const seriesMeta = onlineSellableSeries.find(
-                        (s) => s.type === type && String(s.id) === String(id),
-                    );
-                    const name =
-                        os.product?.name ||
-                        os.event?.name ||
-                        seriesMeta?.name ||
-                        `${type === 'product' ? 'Product' : 'Event'} ${id}`;
-                    totalsMap.set(key, {
-                        id: String(id),
-                        type,
-                        name,
-                        total: amount,
-                        count: 1,
-                        color: seriesMeta?.color || '#6B7280',
-                    });
+                // Determine Color
+                if (!colorMap.has(key)) {
+                    if (id === 'unknown') colorMap.set(key, '#9ca3af');
+                    else colorMap.set(key, getColor(colorIndex++, String(id)));
                 }
-            });
-        }
 
-        return Array.from(totalsMap.values()).sort((a, b) => b.count - a.count);
+                totalsMap.set(key, {
+                    id: String(id),
+                    type,
+                    name,
+                    total: amount,
+                    count: 1,
+                    color: colorMap.get(key)!,
+                });
+            }
+        };
+
+        // Process online sales (always Card)
+        onlineSales.forEach((os) => processSale(os, false));
+
+        // Process office sales (mix of Card/Cash)
+        officeSales.forEach((os) => processSale(os, true));
+
+        return Array.from(totalsMap.values()).sort((a, b) => b.total - a.total); // Sort by total revenue
     }, [onlineSales, officeSales, onlineSellableSeries, showOffice, showCard]);
+
+    // Update combinedSeries colors to match totalsMap
+    // We need to re-map combinedSeries to ensure they use the SAME colors as the legend
+    const coloredCombinedSeries = useMemo(() => {
+        return combinedSeries.map(s => {
+            // Find matching logic
+            const key = s.id === 'unknown' ? 'unknown' : `${s.type}-${s.id}`;
+            const totalEntry = filteredTotals.find(t => {
+                if (t.id === 'unknown' && s.id === 'unknown') return true;
+                return t.type === s.type && t.id === s.id;
+            });
+
+            return {
+                ...s,
+                color: totalEntry?.color || s.color // Fallback to existing if not in totals (shouldn't happen if sales > 0)
+            };
+        });
+    }, [combinedSeries, filteredTotals]);
+
 
     // Chart dimensions - remove left/right padding for perfect alignment
     const leftPad = 0;
@@ -270,8 +478,8 @@ export function SalesChart({
             Math.min(dateKeys.length - 1, dateIndex),
         );
 
-        // Calculate points for this date using combinedSeries
-        const points = combinedSeries
+        // Calculate points for this date using COLORED combinedSeries
+        const points = coloredCombinedSeries
             .map((s) => {
                 const val = s.series[clampedIndex] || 0;
                 const x =
@@ -311,7 +519,7 @@ export function SalesChart({
                         title="Toggle Office Revenue"
                     >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
-                        <span className="text-muted-foreground">Office:</span>
+                        <span className="text-muted-foreground">Cash:</span>
                         <span className="font-medium text-foreground">
                             €{totalOffice.toFixed(2)}
                         </span>
@@ -460,7 +668,7 @@ export function SalesChart({
                                     })}
 
                                     {/* Combined sellable lines (office + online based on toggles) */}
-                                    {combinedSeries.map((s, idx) => {
+                                    {coloredCombinedSeries.map((s, idx) => {
                                         const points = s.series.map(
                                             (val: number, i: number) => {
                                                 const x =
