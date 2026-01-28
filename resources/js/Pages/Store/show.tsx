@@ -74,8 +74,9 @@ export default function ShopShow({ item }: Props) {
 
                     <div className="lg:grid lg:grid-cols-2 lg:gap-x-12">
                         {/* Image Column */}
-                        <div className="mb-10 lg:mb-0 lg:max-w-md">
-                            <div className="relative w-full overflow-hidden rounded-lg">
+                        {/* Image Column */}
+                        <div className="mb-10 flex flex-col gap-4 lg:mb-0">
+                            <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white">
                                 {activeImage ? (
                                     <img
                                         src={activeImage}
@@ -83,30 +84,37 @@ export default function ShopShow({ item }: Props) {
                                         className="h-full w-full object-contain object-center"
                                     />
                                 ) : (
-                                    <div className="flex h-full items-center justify-center bg-gray-100 text-gray-400">
+                                    <div className="flex h-full items-center justify-center text-gray-400">
                                         <span>No Image</span>
                                     </div>
                                 )}
-
-                                {/* Dot navigation for multiple images */}
-                                {hasMultipleImages && (
-                                    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-                                        {item.images!.map((img) => (
-                                            <button
-                                                key={img.id}
-                                                onClick={() =>
-                                                    setActiveImage(img.url)
-                                                }
-                                                className={`h-3 w-3 rounded-full border-2 border-black transition-colors ${activeImage === img.url
-                                                        ? 'bg-black'
-                                                        : 'bg-white hover:bg-gray-200'
-                                                    }`}
-                                                aria-label={`View image ${item.images!.indexOf(img) + 1}`}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
                             </div>
+
+                            {/* Thumbnail Navigation */}
+                            {hasMultipleImages && (
+                                <div className="grid grid-cols-5 gap-4">
+                                    {item.images!.map((img) => (
+                                        <button
+                                            key={img.id}
+                                            onClick={() =>
+                                                setActiveImage(img.url)
+                                            }
+                                            className={`relative aspect-square overflow-hidden rounded-md border-2 transition-all hover:opacity-100 ${activeImage === img.url
+                                                ? 'border-gray-100 opacity-100'
+                                                : 'border-transparent opacity-70'
+                                                }`}
+                                            aria-label={`View image ${item.images!.indexOf(img) + 1
+                                                }`}
+                                        >
+                                            <img
+                                                src={img.url}
+                                                alt=""
+                                                className="h-full w-full object-cover object-center"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Details Column */}
