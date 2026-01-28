@@ -30,6 +30,11 @@ interface Sellable {
     unlimited_with_card?: boolean;
     unlimited_without_card?: boolean;
     is_variable?: boolean;
+    variants?: {
+        id: string;
+        options: Record<string, string>;
+        remaining: number | null;
+    }[];
 }
 
 interface Props {
@@ -170,7 +175,26 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                 item.member_price < item.price;
 
             // Check specific stock
-            if (sellable.is_variable) {
+            // Check specific stock
+            if (sellable.variants && sellable.variants.length > 0) {
+                // Find matching variant
+                const variant = sellable.variants.find((v) => {
+                    const vOpts = v.options || {};
+                    const iOpts = item.options || {};
+                    const vKeys = Object.keys(vOpts);
+                    const iKeys = Object.keys(iOpts);
+                    if (vKeys.length !== iKeys.length) return false;
+                    return vKeys.every((key) => vOpts[key] === iOpts[key]);
+                });
+
+                if (variant) {
+                    if (variant.remaining !== null && variant.remaining < item.quantity) {
+                        warnings.push(
+                            `Insufficient stock for ${item.name} (${Object.values(variant.options).join(', ')}).`,
+                        );
+                    }
+                }
+            } else if (sellable.is_variable) {
                 if (isDiscounted) {
                     // Check member stock
                     if (

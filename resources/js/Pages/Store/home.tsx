@@ -142,7 +142,7 @@ export default function ShopHome({ sellables }: Props) {
                                         <img
                                             src={item.image}
                                             alt={item.name}
-                                            className="h-full w-full transition-transform duration-300 group-hover:scale-105"
+                                            className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                                         />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-300">

@@ -88,9 +88,13 @@ class ShopController extends Controller
 
     private function formatEventForExplore($event)
     {
-        // Null remaining means unlimited in our logic if quantity_with_card is null
-        $remaining = $event->remaining_with_card;
-        $isUnlimited = $event->unlimited_quantity_with_card || is_null($event->quantity_with_card);
+        if ($event->variable_amount) {
+            $remaining = $event->remaining_with_card;
+            $isUnlimited = $event->unlimited_quantity_with_card || is_null($event->quantity_with_card);
+        } else {
+            $remaining = $event->remaining;
+            $isUnlimited = $event->unlimited_quantity || is_null($event->quantity);
+        }
 
         // If unlimited, we enforce true here for frontend clarity
         if ($isUnlimited) {

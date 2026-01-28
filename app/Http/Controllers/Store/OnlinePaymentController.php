@@ -428,10 +428,10 @@ class OnlinePaymentController extends Controller
         }
 
         if ($demand['type'] === 'product') {
-            $remaining = $entity->remaining ?? 0;
-            $isUnlimited = $entity->unlimited_quantity || $entity->unlimited_quantity_with_card;
+            // Product model returns null for remaining if it is unlimited
+            $remaining = $entity->remaining;
 
-            if (! $isUnlimited && $remaining < $count) {
+            if ($remaining !== null && $remaining < $count) {
                 throw ValidationException::withMessages([
                     'stock' => "{$entity->name} is sold out or insufficient stock.",
                 ]);
