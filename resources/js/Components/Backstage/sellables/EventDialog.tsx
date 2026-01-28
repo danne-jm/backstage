@@ -23,7 +23,13 @@ import { Link, router } from '@inertiajs/react';
 import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import * as React from 'react';
 
-import type { BoardUser, Event } from '@/types/sellables';
+import { VariantManager } from '@/Components/Backstage/sellables/VariantManager';
+import type {
+    BoardUser,
+    Event,
+    SellableVariant,
+    VariantConfigItem,
+} from '@/types/sellables';
 
 interface EventDialogProps {
     open: boolean;
@@ -67,6 +73,10 @@ export function EventDialog({
         (number | string)[]
     >([]);
     const [instagramLink, setInstagramLink] = React.useState('');
+    const [variantsConfig, setVariantsConfig] = React.useState<
+        VariantConfigItem[]
+    >([]);
+    const [variants, setVariants] = React.useState<SellableVariant[]>([]);
 
     React.useEffect(() => {
         if (editingEvent) {
@@ -105,6 +115,8 @@ export function EventDialog({
             setNewImages([]);
             setImagesToDelete([]);
             setInstagramLink(editingEvent.instagram_link || '');
+            setVariantsConfig(editingEvent.variants_config || []);
+            setVariants(editingEvent.variants || []);
             setIsOnlineSectionOpen(false);
         } else {
             setEventName('');
@@ -126,6 +138,8 @@ export function EventDialog({
             setNewImages([]);
             setImagesToDelete([]);
             setInstagramLink('');
+            setVariantsConfig([]);
+            setVariants([]);
             setIsOnlineSectionOpen(false);
         }
     }, [editingEvent, open]);
@@ -229,6 +243,36 @@ export function EventDialog({
         // Append deleted images
         imagesToDelete.forEach((id) => {
             formData.append('deleted_images[]', id.toString());
+        });
+
+        // Append Variants
+        variantsConfig.forEach((config, idx) => {
+            formData.append(`variants_config[${idx}][name]`, config.name);
+            config.options.forEach((opt, optIdx) => {
+                formData.append(
+                    `variants_config[${idx}][options][${optIdx}]`,
+                    opt,
+                );
+            });
+        });
+
+        variants.forEach((variant, idx) => {
+            // Append options
+            Object.entries(variant.options).forEach(([key, value]) => {
+                formData.append(
+                    `variants_stock[${idx}][options][${key}]`,
+                    value,
+                );
+            });
+            // Append quantity
+            if (variant.quantity !== null) {
+                formData.append(
+                    `variants_stock[${idx}][quantity]`,
+                    variant.quantity.toString(),
+                );
+            } else {
+                formData.append(`variants_stock[${idx}][quantity]`, ''); // Empty string for unlimited/null
+            }
         });
 
         if (editingEvent) {
@@ -503,6 +547,16 @@ export function EventDialog({
                                             setInstagramLink(e.target.value)
                                         }
                                         placeholder="https://instagram.com/..."
+                                    />
+                                </div>
+                                <div className="border-t pt-4">
+                                    <VariantManager
+                                        initialConfig={variantsConfig}
+                                        initialVariants={variants}
+                                        onChange={(newConfig, newVariants) => {
+                                            setVariantsConfig(newConfig);
+                                            setVariants(newVariants);
+                                        }}
                                     />
                                 </div>
                             </div>

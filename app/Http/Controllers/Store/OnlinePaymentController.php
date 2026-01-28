@@ -33,6 +33,7 @@ class OnlinePaymentController extends Controller
             'items.*.id' => ['required', 'string'], // Keep string as UUIDs are strings
             'items.*.type' => ['required', 'in:product,event'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.options' => ['nullable', 'array'],
             'codes' => ['nullable', 'array'],
             'codes.*' => ['string'],
         ]);
@@ -53,6 +54,7 @@ class OnlinePaymentController extends Controller
             'items.*.id' => ['required', 'string'],
             'items.*.type' => ['required', 'in:product,event'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.options' => ['nullable', 'array'],
             'items.*.use_member_price' => ['nullable', 'boolean'],
             'discount_codes' => ['nullable', 'array'],
             'discount_codes.*' => ['string'],
@@ -106,6 +108,7 @@ class OnlinePaymentController extends Controller
                             'item_name' => $saleData['item_name'],
                             'ticket_type' => $saleData['ticket_type'],
                             'code_used' => $saleData['code_used'],
+                            'options' => $saleData['options'] ?? null,
                         ],
                     ]);
                     \App\Events\StoreUpdated::dispatch($sale);
@@ -352,12 +355,17 @@ class OnlinePaymentController extends Controller
                 'original_price' => $unit['regular_price'],
                 'saved_amount' => $unit['savings'] ?? 0,
                 'is_discounted' => $isDiscounted,
+                'options' => $unit['options'] ?? null,
             ];
 
             // Aggregate stock demands
             $key = $unit['type'].'-'.$unit['id'];
             if ($unit['type'] === 'event') {
                 $key .= '-'.$ticketType;
+            }
+            // Include options in the key to track variant stock separately
+            if (!empty($unit['options'])) {
+                $key .= '-'.md5(json_encode($unit['options']));
             }
 
             if (! isset($stockDemands[$key])) {
@@ -366,6 +374,7 @@ class OnlinePaymentController extends Controller
                     'entity' => $entity,
                     'type' => $unit['type'],
                     'ticket_type' => $ticketType,
+                    'options' => $unit['options'] ?? null,
                 ];
             }
             $stockDemands[$key]['count']++;
@@ -386,6 +395,37 @@ class OnlinePaymentController extends Controller
     {
         $entity = $demand['entity'];
         $count = $demand['count'];
+        $options = $demand['options'] ?? null;
+
+        // Check variant stock first if options exist
+        if ($options) {
+            $variant = $entity->variants->first(function ($v) use ($options) {
+                // simple array comparison (keys must match)
+                $vOpts = $v->options;
+                $inOpts = $options;
+                if (count($vOpts) !== count($inOpts)) return false;
+                foreach ($inOpts as $k => $val) {
+                    if (!isset($vOpts[$k]) || $vOpts[$k] !== $val) return false;
+                }
+                return true;
+            });
+
+            if (!$variant) {
+                throw ValidationException::withMessages([
+                    'stock' => "Variant not available for {$entity->name}.",
+                ]);
+            }
+
+            if ($variant->quantity !== null && ($variant->quantity - $variant->sold_count) < $count) {
+                throw ValidationException::withMessages([
+                    'stock' => "Selected variant for {$entity->name} is sold out.",
+                ]);
+            }
+            // If variant exists and has stock, we proceed. 
+            // We do NOT check main product stock if we matched a variant, 
+            // assuming variants track their own independent stock in this system.
+            return;
+        }
 
         if ($demand['type'] === 'product') {
             $remaining = $entity->remaining ?? 0;
@@ -426,6 +466,33 @@ class OnlinePaymentController extends Controller
     protected function updateStockCounts(array $salesToCreate): void
     {
         foreach ($salesToCreate as $saleData) {
+            // Updated SellableVariant if options exist
+            if (!empty($saleData['options'])) {
+                // Find and increment variant
+                $type = $saleData['product_id'] ? 'App\\Models\\Product' : 'App\\Models\\Event';
+                $id = $saleData['product_id'] ?? $saleData['event_id'];
+                $options = $saleData['options'];
+
+                // Efficiently find matching variant
+                // Since this is inside a loop, N+1 is a risk, but sales batch size is usually small.
+                $variants = \App\Models\SellableVariant::where('sellable_type', $type)
+                    ->where('sellable_id', $id)
+                    ->get();
+                
+                $matchedHandler = $variants->first(function ($v) use ($options) {
+                    $vOpts = $v->options;
+                    if (count($vOpts) !== count($options)) return false;
+                        foreach ($options as $k => $val) {
+                            if (!isset($vOpts[$k]) || $vOpts[$k] !== $val) return false;
+                        }
+                    return true;
+                });
+
+                if ($matchedHandler) {
+                    $matchedHandler->increment('sold_count');
+                }
+            }
+
             if ($saleData['event_id']) {
                 if ($saleData['ticket_type'] === 'with_card') {
                     Event::where('id', $saleData['event_id'])->increment('sold_count_with_card');
@@ -450,6 +517,31 @@ class OnlinePaymentController extends Controller
     protected function revertStockCounts(OnlineTransaction $transaction): void
     {
         foreach ($transaction->sales as $sale) {
+            $options = $sale->details['options'] ?? null;
+            if ($options) {
+                 $maxRetries = 3;
+                 // Revert variant stock
+                 $type = $sale->product_id ? 'App\\Models\\Product' : 'App\\Models\\Event';
+                 $id = $sale->product_id ?? $sale->event_id;
+                 
+                  $variants = \App\Models\SellableVariant::where('sellable_type', $type)
+                    ->where('sellable_id', $id)
+                    ->get();
+                
+                 $matchedHandler = $variants->first(function ($v) use ($options) {
+                     $vOpts = $v->options;
+                     if (count($vOpts) !== count($options)) return false;
+                         foreach ($options as $k => $val) {
+                             if (!isset($vOpts[$k]) || $vOpts[$k] !== $val) return false;
+                         }
+                     return true;
+                 });
+ 
+                 if ($matchedHandler) {
+                     $matchedHandler->decrement('sold_count');
+                 }
+            }
+
             if ($sale->event_id) {
                 if ($sale->ticket_type === 'with_card') {
                     Event::where('id', $sale->event_id)->decrement('sold_count_with_card');

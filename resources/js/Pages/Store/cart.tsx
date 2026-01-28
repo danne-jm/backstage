@@ -305,6 +305,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                 id: item.id,
                 type: item.type,
                 quantity: item.quantity,
+                options: item.options,
                 use_member_price:
                     discountApplied &&
                     item.member_price &&
@@ -367,9 +368,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                 role="list"
                                 className="divide-y divide-gray-200 border-t border-b border-gray-200"
                             >
-                                {sortedCart.map((item) => (
+                                {sortedCart.map((item, idx) => (
                                     <li
-                                        key={`${item.type}-${item.id}`}
+                                        key={`${item.type}-${item.id}-${idx}`}
                                         className="flex py-6 sm:py-10"
                                     >
                                         <div className="flex-shrink-0">
@@ -396,6 +397,16 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                             </Link>
                                                         </h3>
                                                     </div>
+                                                    {item.options && (
+                                                        <div className="mt-1 text-sm text-gray-500">
+                                                            {Object.entries(
+                                                                item.options,
+                                                            ).map(
+                                                                ([key, val]) =>
+                                                                    `${key}: ${val}`,
+                                                            ).join(', ')}
+                                                        </div>
+                                                    )}
                                                     <p className="mt-1 text-sm font-medium text-gray-900">
                                                         €
                                                         {Number(
@@ -431,6 +442,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.type,
                                                                     item.quantity -
                                                                     1,
+                                                                    item.options,
                                                                 )
                                                             }
                                                             className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
@@ -447,6 +459,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.type,
                                                                     item.quantity +
                                                                     1,
+                                                                    item.options,
                                                                 )
                                                             }
                                                             className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
@@ -462,6 +475,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                 removeFromCart(
                                                                     item.id,
                                                                     item.type,
+                                                                    item.options,
                                                                 )
                                                             }
                                                             className="-m-2 inline-flex cursor-pointer p-2 text-gray-400 hover:text-gray-500"

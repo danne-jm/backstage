@@ -23,10 +23,10 @@ class SellablesController extends Controller
 
     public function index(\Illuminate\Http\Request $request)
     {
-        $products = Product::withCount(['sales', 'onlineSales'])->orderBy('name')->get();
+        $products = Product::with('variants')->withCount(['sales', 'onlineSales'])->orderBy('name')->get();
         $now = now();
         // Fetch all live/upcoming events (event_date >= now)
-        $liveEvents = Event::with('responsibleUser')->withCount([
+        $liveEvents = Event::with(['responsibleUser', 'variants'])->withCount([
             'sales',
             'onlineSales',
             'sales as sales_with_card_count' => function ($query) {
@@ -132,6 +132,13 @@ class SellablesController extends Controller
             'is_online_sellable' => $event->is_online_sellable,
             'images_list' => $event->images_list,
             'instagram_link' => $event->instagram_link,
+            'variants_config' => $event->variants_config,
+            'variants' => $event->variants()->get()->map(fn ($v) => [
+                'id' => $v->id, // ULID
+                'options' => $v->options,
+                'quantity' => $v->quantity,
+                'sold_count' => $v->sold_count,
+            ]),
         ];
     }
 
@@ -184,6 +191,7 @@ class SellablesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'variants_config' => ['nullable', 'array'],
             'price' => ['required', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'unlimited_quantity' => ['sometimes', 'boolean'],
@@ -200,6 +208,11 @@ class SellablesController extends Controller
         $normalized = $this->inventoryService->normalizeInput($validated);
 
         $product = Product::create($normalized);
+
+        // Sync Variants
+        if ($request->has('variants_stock')) {
+            $this->syncVariants($product, $request->input('variants_stock'));
+        }
 
         // Handle Image Uploads
         if ($request->hasFile('images')) {
@@ -221,6 +234,7 @@ class SellablesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'variants_config' => ['nullable', 'array'],
             'price' => ['required', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'unlimited_quantity' => ['sometimes', 'boolean'],
@@ -236,6 +250,11 @@ class SellablesController extends Controller
         $normalized = $this->inventoryService->normalizeInput($validated);
 
         $product->update($normalized);
+
+        // Sync Variants
+        if ($request->has('variants_stock')) {
+            $this->syncVariants($product, $request->input('variants_stock'));
+        }
 
         // Handle Image Uploads (Append)
         if ($request->hasFile('images')) {
@@ -270,6 +289,7 @@ class SellablesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'variants_config' => ['nullable', 'array'],
             'event_date' => ['required', 'date'],
             'start_sell_date' => ['required', 'date'],
             'end_sell_date' => ['required', 'date', 'after:start_sell_date'],
@@ -294,6 +314,11 @@ class SellablesController extends Controller
 
         $event = Event::create($normalized);
 
+        // Sync Variants
+        if ($request->has('variants_stock')) {
+            $this->syncVariants($event, $request->input('variants_stock'));
+        }
+
         // Handle Image Uploads
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
@@ -314,6 +339,7 @@ class SellablesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'variants_config' => ['nullable', 'array'],
             'event_date' => ['required', 'date'],
             'start_sell_date' => ['required', 'date'],
             'end_sell_date' => ['required', 'date', 'after:start_sell_date'],
@@ -346,6 +372,11 @@ class SellablesController extends Controller
         }
 
         $event->update($normalized);
+
+        // Sync Variants
+        if ($request->has('variants_stock')) {
+            $this->syncVariants($event, $request->input('variants_stock'));
+        }
 
         // Handle Image Uploads (Append)
         if ($request->hasFile('images')) {
@@ -387,5 +418,43 @@ class SellablesController extends Controller
         $event->delete();
 
         return redirect()->route('sellables');
+    }
+
+    protected function syncVariants($sellable, array $variantsInput)
+    {
+        // Get existing variants
+        $existing = $sellable->variants()->get();
+        $processedIds = [];
+
+        foreach ($variantsInput as $variantData) {
+            $options = $variantData['options'];
+            $quantity = isset($variantData['quantity']) && $variantData['quantity'] !== '' ? (int) $variantData['quantity'] : null;
+
+            // Find existing variant with same options to update
+            // Note: Database check for options JSON equality can be tricky, doing in-memory match for simplicity
+            // provided the number of variants is low.
+            $match = $existing->first(function ($v) use ($options) {
+                // sort keys/values to ensure comparison works
+                $opt1 = $v->options;
+                ksort($opt1);
+                $opt2 = $options;
+                ksort($opt2);
+                return $opt1 == $opt2;
+            });
+
+            if ($match) {
+                $match->update(['quantity' => $quantity]);
+                $processedIds[] = $match->id;
+            } else {
+                $created = $sellable->variants()->create([
+                    'options' => $options,
+                    'quantity' => $quantity,
+                ]);
+                $processedIds[] = $created->id;
+            }
+        }
+
+        // Delete variants that were not in the input (removed combinations)
+        $sellable->variants()->whereNotIn('id', $processedIds)->delete();
     }
 }

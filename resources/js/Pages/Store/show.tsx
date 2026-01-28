@@ -1,3 +1,10 @@
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/Shared/ui/select';
 import { useCart } from '@/hooks/useCart';
 import ShopLayout from '@/layouts/Store/shop-layout';
 import { Head, Link } from '@inertiajs/react';
@@ -24,6 +31,15 @@ interface ShopItem {
     event_date?: string;
     instagram_link?: string | null;
     is_online_sellable?: boolean;
+    variants_config?: { name: string; options: string[] }[] | null;
+    variants?:
+    | {
+        id: string;
+        options: Record<string, string>;
+        quantity: number | null;
+        sold_count: number;
+    }[]
+    | null;
 }
 
 interface Props {
@@ -33,6 +49,9 @@ interface Props {
 export default function ShopShow({ item }: Props) {
     const [quantity, setQuantity] = useState(1);
     const { addToCart } = useCart();
+    const [selectedOptions, setSelectedOptions] = useState<
+        Record<string, string>
+    >({});
 
     // Default to first image or main image
     const [activeImage, setActiveImage] = useState(item.image);
@@ -40,11 +59,60 @@ export default function ShopShow({ item }: Props) {
     const increment = () => setQuantity((q) => q + 1);
     const decrement = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
 
+    const handleOptionSelect = (attribute: string, value: string) => {
+        setSelectedOptions((prev) => ({
+            ...prev,
+            [attribute]: value,
+        }));
+    };
+
+    // Find the current variant stock based on selection
+    const currentVariant =
+        item.variants_config && item.variants
+            ? item.variants.find((v) => {
+                const requiredKeys = item.variants_config!.map((c) => c.name);
+                // Check if all keys match (ignoring extra selections if any)
+                return requiredKeys.every(
+                    (key) => v.options[key] === selectedOptions[key],
+                );
+            })
+            : null;
+
+    // Check if full selection is made
+    const isSelectionComplete =
+        !item.variants_config ||
+        item.variants_config.length === 0 ||
+        item.variants_config.every((c) => selectedOptions[c.name]);
+
+    const isVariantSoldOut =
+        currentVariant &&
+        currentVariant.quantity !== null &&
+        currentVariant.quantity - currentVariant.sold_count <= 0;
+
+    // determine main item sold out status (fallback)
+    const isItemSoldOut = !item.unlimited && (item.remaining ?? 0) <= 0;
+
+    const isSoldOut =
+        isVariantSoldOut || (!item.variants_config && isItemSoldOut);
+
     const handleAddToCart = () => {
+        if (
+            item.variants_config &&
+            item.variants_config.length > 0 &&
+            !isSelectionComplete
+        ) {
+            alert('Please select all options.');
+            return;
+        }
+
         addToCart({
             id: item.id,
             type: item.type,
             quantity: quantity,
+            options:
+                item.variants_config && item.variants_config.length > 0
+                    ? selectedOptions
+                    : undefined,
         });
         // Feedback via badge update is immediate.
     };
@@ -253,6 +321,49 @@ export default function ShopShow({ item }: Props) {
                                             </div>
                                         )}
 
+                                    {/* Variant Selection */}
+                                    {item.variants_config &&
+                                        item.variants_config.length > 0 && (
+                                            <div className="mb-8 space-y-4">
+                                                {item.variants_config.map(
+                                                    (attr) => (
+                                                        <div key={attr.name}>
+                                                            <label className="mb-2 block text-sm font-medium text-gray-700">
+                                                                {attr.name.toUpperCase()}
+                                                            </label>
+                                                            <Select
+                                                                value={selectedOptions[attr.name]}
+                                                                onValueChange={(val) =>
+                                                                    handleOptionSelect(
+                                                                        attr.name,
+                                                                        val,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <SelectTrigger className="w-full sm:w-[50%]">
+                                                                    <SelectValue
+                                                                        placeholder={`Select ${attr.name}`}
+                                                                    />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {attr.options.map(
+                                                                        (opt) => (
+                                                                            <SelectItem
+                                                                                key={opt}
+                                                                                value={opt}
+                                                                            >
+                                                                                {opt}
+                                                                            </SelectItem>
+                                                                        ),
+                                                                    )}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    ),
+                                                )}
+                                            </div>
+                                        )}
+
                                     <div className="mb-8">
                                         <label
                                             htmlFor="quantity"
@@ -316,8 +427,7 @@ export default function ShopShow({ item }: Props) {
                                     </div>
 
                                     <div className="mb-8 space-y-4">
-                                        {!item.unlimited &&
-                                            (item.remaining ?? 0) <= 0 ? (
+                                        {isSoldOut ? (
                                             <button
                                                 type="button"
                                                 disabled
@@ -329,16 +439,18 @@ export default function ShopShow({ item }: Props) {
                                             <>
                                                 <button
                                                     type="button"
-                                                    className="w-full bg-black px-8 py-4 text-base font-medium text-white uppercase hover:bg-gray-800 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:outline-none"
-                                                >
-                                                    Buy now
-                                                </button>
-                                                <button
-                                                    type="button"
+                                                    disabled={
+                                                        !isSelectionComplete
+                                                    }
                                                     onClick={handleAddToCart}
-                                                    className="flex w-full cursor-pointer items-center justify-center gap-2 border border-black bg-white px-8 py-4 text-base font-medium text-black uppercase hover:bg-gray-50 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:outline-none"
+                                                    className={`flex w-full cursor-pointer items-center justify-center gap-2 border border-black bg-white px-8 py-4 text-base font-medium text-black uppercase hover:bg-gray-50 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:outline-none ${!isSelectionComplete ? 'cursor-not-allowed opacity-50' : ''}`}
                                                 >
-                                                    Add to cart{' '}
+                                                    {item.variants_config &&
+                                                        item.variants_config
+                                                            .length > 0 &&
+                                                        !isSelectionComplete
+                                                        ? 'Select Options'
+                                                        : 'Add to cart'}{' '}
                                                     <ShoppingCart className="h-4 w-4" />
                                                 </button>
                                             </>

@@ -101,6 +101,7 @@ class DiscountAllocator
                     'savings' => $savings,
                     'can_discount' => $canDiscount,
                     'entity' => $entity,
+                    'options' => $item['options'] ?? null,
                     'original_item_index' => $item['id'].'-'.$item['type'], // tracking
                 ];
             }

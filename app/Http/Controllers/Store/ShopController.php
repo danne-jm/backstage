@@ -117,6 +117,8 @@ class ShopController extends Controller
             'unlimited_without_card' => $event->unlimited_quantity_without_card,
             'instagram_link' => $event->instagram_link,
             'is_online_sellable' => $event->is_online_sellable,
+            'variants_config' => $event->variants_config,
+            'variants' => $event->variants,
         ];
     }
 
@@ -142,6 +144,8 @@ class ShopController extends Controller
             'unlimited' => $isUnlimited,
             'instagram_link' => $product->instagram_link,
             'is_online_sellable' => $product->is_online_sellable,
+            'variants_config' => $product->variants_config,
+            'variants' => $product->variants,
         ];
     }
 }

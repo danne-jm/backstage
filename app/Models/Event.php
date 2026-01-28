@@ -24,6 +24,7 @@ class Event extends Model
     protected $fillable = [
         'name',
         'description',
+        'variants_config',
         'event_date',
         'start_sell_date',
         'end_sell_date',
@@ -60,6 +61,7 @@ class Event extends Model
             'unlimited_quantity_with_card' => 'boolean',
             'unlimited_quantity_without_card' => 'boolean',
             'attendee_filter_config' => 'array',
+            'variants_config' => 'array',
         ];
     }
 
@@ -87,6 +89,11 @@ class Event extends Model
     public function images(): HasMany
     {
         return $this->hasMany(EventImage::class);
+    }
+
+    public function variants()
+    {
+        return $this->morphMany(SellableVariant::class, 'sellable');
     }
 
     /**

@@ -22,7 +22,7 @@ class Product extends Model
             ->dontSubmitEmptyLogs();
     }
 
-    protected $fillable = ['name', 'description', 'price', 'member_price', 'type', 'quantity', 'unlimited_quantity', 'variable_amount', 'quantity_with_card', 'unlimited_quantity_with_card', 'quantity_without_card', 'unlimited_quantity_without_card', 'is_online_sellable', 'instagram_link'];
+    protected $fillable = ['name', 'description', 'variants_config', 'price', 'member_price', 'type', 'quantity', 'unlimited_quantity', 'variable_amount', 'quantity_with_card', 'unlimited_quantity_with_card', 'quantity_without_card', 'unlimited_quantity_without_card', 'is_online_sellable', 'instagram_link'];
 
     protected $appends = ['remaining', 'image', 'images_list'];
 
@@ -34,6 +34,7 @@ class Product extends Model
             'unlimited_quantity_without_card' => 'boolean',
             'price' => 'decimal:2',
             'variable_amount' => 'boolean',
+            'variants_config' => 'array',
         ];
     }
 
@@ -50,6 +51,11 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class);
+    }
+
+    public function variants()
+    {
+        return $this->morphMany(SellableVariant::class, 'sellable');
     }
 
     public function getImageAttribute(): ?string

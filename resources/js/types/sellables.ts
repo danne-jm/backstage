@@ -1,3 +1,15 @@
+export interface VariantConfigItem {
+    name: string;
+    options: string[];
+}
+
+export interface SellableVariant {
+    id?: string;
+    options: Record<string, string>;
+    quantity: number | null;
+    sold_count?: number;
+}
+
 export interface Product {
     id: number;
     type: 'product';
@@ -17,6 +29,8 @@ export interface Product {
     is_online_sellable: boolean;
     images_list?: { id: number | string; url: string }[];
     instagram_link?: string | null;
+    variants_config?: VariantConfigItem[] | null;
+    variants?: SellableVariant[] | null;
 }
 
 export interface Event {
@@ -50,6 +64,8 @@ export interface Event {
     is_online_sellable: boolean;
     images_list?: { id: number | string; url: string }[];
     instagram_link?: string | null;
+    variants_config?: VariantConfigItem[] | null;
+    variants?: SellableVariant[] | null;
 }
 
 export type Sellable = Product | Event;

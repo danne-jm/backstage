@@ -9,10 +9,15 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/Components/Shared/ui/dialog';
+import { VariantManager } from '@/Components/Backstage/sellables/VariantManager';
 import { Input } from '@/Components/Shared/ui/input';
 import { Label } from '@/Components/Shared/ui/label';
 import { Textarea } from '@/Components/Shared/ui/textarea';
-import type { Product } from '@/types/sellables';
+import type {
+    Product,
+    SellableVariant,
+    VariantConfigItem,
+} from '@/types/sellables';
 import { router } from '@inertiajs/react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import * as React from 'react';
@@ -53,6 +58,10 @@ export function ProductDialog({
         (number | string)[]
     >([]);
     const [instagramLink, setInstagramLink] = React.useState('');
+    const [variantsConfig, setVariantsConfig] = React.useState<
+        VariantConfigItem[]
+    >([]);
+    const [variants, setVariants] = React.useState<SellableVariant[]>([]);
 
     React.useEffect(() => {
         if (editingProduct) {
@@ -79,7 +88,10 @@ export function ProductDialog({
             setImagesList(editingProduct.images_list || []);
             setNewImages([]);
             setImagesToDelete([]);
+            setImagesToDelete([]);
             setInstagramLink(editingProduct.instagram_link || '');
+            setVariantsConfig(editingProduct.variants_config || []);
+            setVariants(editingProduct.variants || []);
             setIsOnlineSectionOpen(false);
         } else {
             setProductName('');
@@ -93,7 +105,10 @@ export function ProductDialog({
             setImagesList([]);
             setNewImages([]);
             setImagesToDelete([]);
+            setImagesToDelete([]);
             setInstagramLink('');
+            setVariantsConfig([]);
+            setVariants([]);
             setIsOnlineSectionOpen(false);
         }
     }, [editingProduct, open]);
@@ -174,6 +189,36 @@ export function ProductDialog({
             formData.append('deleted_images[]', id.toString());
         });
 
+        // Append Variants
+        variantsConfig.forEach((config, idx) => {
+            formData.append(`variants_config[${idx}][name]`, config.name);
+            config.options.forEach((opt, optIdx) => {
+                formData.append(
+                    `variants_config[${idx}][options][${optIdx}]`,
+                    opt,
+                );
+            });
+        });
+
+        variants.forEach((variant, idx) => {
+            // Append options
+            Object.entries(variant.options).forEach(([key, value]) => {
+                formData.append(
+                    `variants_stock[${idx}][options][${key}]`,
+                    value,
+                );
+            });
+            // Append quantity
+            if (variant.quantity !== null) {
+                formData.append(
+                    `variants_stock[${idx}][quantity]`,
+                    variant.quantity.toString(),
+                );
+            } else {
+                formData.append(`variants_stock[${idx}][quantity]`, ''); // Empty string for unlimited/null
+            }
+        });
+
         if (editingProduct) {
             formData.append('_method', 'PUT');
             router.post(`/sellables/products/${editingProduct.id}`, formData, {
@@ -236,34 +281,40 @@ export function ProductDialog({
                             onChange={(e) => setProductPrice(e.target.value)}
                         />
                     </div>
-                    <div>
-                        <Label htmlFor="product-quantity">
-                            Quantity (optional)
-                        </Label>
-                        <Input
-                            id="product-quantity"
-                            type="number"
-                            value={productQuantity}
-                            onChange={(e) => setProductQuantity(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="product-variable-amount"
-                            checked={productVariableAmount}
-                            onCheckedChange={(checked) =>
-                                setProductVariableAmount(checked === true)
-                            }
-                        />
-                        <Label
-                            htmlFor="product-variable-amount"
-                            className="cursor-pointer"
-                        >
-                            Variable Amount (separate quantities for
-                            with/without ESNcard)
-                        </Label>
-                    </div>
-                    {productVariableAmount && (
+                    {variantsConfig.length === 0 && (
+                        <>
+                            <div>
+                                <Label htmlFor="product-quantity">
+                                    Quantity (optional)
+                                </Label>
+                                <Input
+                                    id="product-quantity"
+                                    type="number"
+                                    value={productQuantity}
+                                    onChange={(e) =>
+                                        setProductQuantity(e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="product-variable-amount"
+                                    checked={productVariableAmount}
+                                    onCheckedChange={(checked) =>
+                                        setProductVariableAmount(checked === true)
+                                    }
+                                />
+                                <Label
+                                    htmlFor="product-variable-amount"
+                                    className="cursor-pointer"
+                                >
+                                    Variable Amount (separate quantities for
+                                    with/without ESNcard)
+                                </Label>
+                            </div>
+                        </>
+                    )}
+                    {variantsConfig.length === 0 && productVariableAmount && (
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <Label htmlFor="product-quantity-with-card">
@@ -297,6 +348,26 @@ export function ProductDialog({
                             </div>
                         </div>
                     )}
+
+                    {/* Variant Manager Moved Here */}
+                    <div className="border-t pt-4 mt-4">
+                        <Label className="mb-2 block text-base">Variants</Label>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Add variants (e.g. Size, Color) to manage stock for specific options.
+                        </p>
+                        <VariantManager
+                            initialConfig={variantsConfig}
+                            initialVariants={variants}
+                            onChange={(newConfig, newVariants) => {
+                                setVariantsConfig(newConfig);
+                                setVariants(newVariants);
+                                // If variants exist, clear main quantity to avoid confusion (optional, but safer to just disable)
+                                if (newConfig.length > 0) {
+                                    setProductQuantity('');
+                                }
+                            }}
+                        />
+                    </div>
 
                     {/* Collapsible Online Store Section */}
                     <div className="rounded-md border">
@@ -365,6 +436,8 @@ export function ProductDialog({
                                         }
                                         placeholder="https://instagram.com/..."
                                     />
+                                </div>
+                                <div className="border-t pt-4">
                                 </div>
                             </div>
                         )}

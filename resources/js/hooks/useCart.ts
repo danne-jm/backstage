@@ -4,6 +4,7 @@ export interface CartEntry {
     id: string;
     type: 'product' | 'event';
     quantity: number;
+    options?: Record<string, string>;
 }
 
 // This interface is for hydrated cart items (with full data)
@@ -55,9 +56,14 @@ export function useCart() {
         id: string;
         type: 'product' | 'event';
         quantity: number;
+        options?: Record<string, string>;
     }) => {
         const existingIndex = entries.findIndex(
-            (e) => e.id === item.id && e.type === item.type,
+            (e) =>
+                e.id === item.id &&
+                e.type === item.type &&
+                JSON.stringify(e.options || {}) ===
+                JSON.stringify(item.options || {}),
         );
 
         if (existingIndex > -1) {
@@ -67,14 +73,29 @@ export function useCart() {
         } else {
             saveCart([
                 ...entries,
-                { id: item.id, type: item.type, quantity: item.quantity },
+                {
+                    id: item.id,
+                    type: item.type,
+                    quantity: item.quantity,
+                    options: item.options,
+                },
             ]);
         }
     };
 
-    const removeFromCart = (id: string, type: 'product' | 'event') => {
+    const removeFromCart = (
+        id: string,
+        type: 'product' | 'event',
+        options?: Record<string, string>,
+    ) => {
         const newEntries = entries.filter(
-            (e) => !(e.id === id && e.type === type),
+            (e) =>
+                !(
+                    e.id === id &&
+                    e.type === type &&
+                    JSON.stringify(e.options || {}) ===
+                    JSON.stringify(options || {})
+                ),
         );
         saveCart(newEntries);
     };
@@ -83,10 +104,16 @@ export function useCart() {
         id: string,
         type: 'product' | 'event',
         quantity: number,
+        options?: Record<string, string>,
     ) => {
         if (quantity < 1) return;
         const newEntries = entries.map((e) => {
-            if (e.id === id && e.type === type) {
+            if (
+                e.id === id &&
+                e.type === type &&
+                JSON.stringify(e.options || {}) ===
+                JSON.stringify(options || {})
+            ) {
                 return { ...e, quantity };
             }
             return e;
