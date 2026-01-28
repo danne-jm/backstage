@@ -75,7 +75,7 @@ export default function ShopShow({ item }: Props) {
                     <div className="lg:grid lg:grid-cols-2 lg:gap-x-12">
                         {/* Image Column */}
                         <div className="mb-10 lg:mb-0 lg:max-w-md">
-                            <div className="relative aspect-square w-full overflow-hidden rounded-lg">
+                            <div className="relative w-full overflow-hidden rounded-lg">
                                 {activeImage ? (
                                     <img
                                         src={activeImage}
@@ -97,11 +97,10 @@ export default function ShopShow({ item }: Props) {
                                                 onClick={() =>
                                                     setActiveImage(img.url)
                                                 }
-                                                className={`h-3 w-3 rounded-full border-2 border-black transition-colors ${
-                                                    activeImage === img.url
+                                                className={`h-3 w-3 rounded-full border-2 border-black transition-colors ${activeImage === img.url
                                                         ? 'bg-black'
                                                         : 'bg-white hover:bg-gray-200'
-                                                }`}
+                                                    }`}
                                                 aria-label={`View image ${item.images!.indexOf(img) + 1}`}
                                             />
                                         ))}
@@ -209,7 +208,7 @@ export default function ShopShow({ item }: Props) {
                                     {item.is_variable &&
                                         !item.unlimited_without_card &&
                                         (item.remaining_without_card ?? 0) <=
-                                            0 && (
+                                        0 && (
                                             <div className="mb-6 rounded-md bg-yellow-50 p-4">
                                                 <div className="flex">
                                                     <div className="flex-shrink-0">
@@ -310,7 +309,7 @@ export default function ShopShow({ item }: Props) {
 
                                     <div className="mb-8 space-y-4">
                                         {!item.unlimited &&
-                                        (item.remaining ?? 0) <= 0 ? (
+                                            (item.remaining ?? 0) <= 0 ? (
                                             <button
                                                 type="button"
                                                 disabled

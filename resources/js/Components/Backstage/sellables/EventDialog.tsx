@@ -60,9 +60,12 @@ export function EventDialog({
     const [isOnlineSellable, setIsOnlineSellable] = React.useState(false);
     const [isOnlineSectionOpen, setIsOnlineSectionOpen] = React.useState(false);
     const [imagesList, setImagesList] = React.useState<
-        { id: number; url: string }[]
+        { id: number | string; url: string }[]
     >([]);
     const [newImages, setNewImages] = React.useState<File[]>([]);
+    const [imagesToDelete, setImagesToDelete] = React.useState<
+        (number | string)[]
+    >([]);
     const [instagramLink, setInstagramLink] = React.useState('');
 
     React.useEffect(() => {
@@ -100,6 +103,7 @@ export function EventDialog({
             setIsOnlineSellable(editingEvent.is_online_sellable);
             setImagesList(editingEvent.images_list || []);
             setNewImages([]);
+            setImagesToDelete([]);
             setInstagramLink(editingEvent.instagram_link || '');
             setIsOnlineSectionOpen(false);
         } else {
@@ -120,6 +124,7 @@ export function EventDialog({
             setIsOnlineSellable(false);
             setImagesList([]);
             setNewImages([]);
+            setImagesToDelete([]);
             setInstagramLink('');
             setIsOnlineSectionOpen(false);
         }
@@ -147,34 +152,19 @@ export function EventDialog({
         return [...existing, ...incoming];
     }, [imagesList, newImages]);
 
-    const handleRemoveImage = (id: number) => {
-        if (id > 0) {
-            // Server image
-            router.delete(`/sellables/images/${id}`, {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setImagesList((prev) =>
-                        prev.filter((img) => img.id !== id),
-                    );
-                    // Also update editingEvent if possible, but state is local.
-                    // Ideally we should reload the event or just trust the local removal.
-                },
-            });
-        } else {
+    const handleRemoveImage = (id: number | string) => {
+        // Local images have negative number IDs. Server images have ULID matching strings or potentially positive numbers (legacy).
+        // Check if it is a local image (negative number).
+        if (typeof id === 'number' && id < 0) {
             // Local image
-            // id is -1, -2... corresponding to index in newImages (if we map carefully)
-            // But removing by index is safer.
-            // Let's just filter newImages.
-            // Since we regenerate IDs on render, we need stable IDs for local files or just use index.
-            // Re-render will shift IDs.
-            // For simplicity, let's just allow removing server images here.
-            // Users can clear the selection by re-selecting or we implement local removal.
-
-            // Implementing local removal:
             const indexToRemove = id * -1 - 1;
             setNewImages((prev) =>
                 prev.filter((_, idx) => idx !== indexToRemove),
             );
+        } else {
+            // Server image
+            setImagesToDelete((prev) => [...prev, id]);
+            setImagesList((prev) => prev.filter((img) => img.id !== id));
         }
     };
 
@@ -234,6 +224,11 @@ export function EventDialog({
         // Append images
         newImages.forEach((file) => {
             formData.append('images[]', file);
+        });
+
+        // Append deleted images
+        imagesToDelete.forEach((id) => {
+            formData.append('deleted_images[]', id.toString());
         });
 
         if (editingEvent) {

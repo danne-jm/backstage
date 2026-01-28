@@ -3,8 +3,8 @@ import { X } from 'lucide-react';
 import * as React from 'react';
 
 interface ImageManagerProps {
-    images: { id: number; url: string }[];
-    onRemoveImage: (id: number) => void;
+    images: { id: number | string; url: string }[];
+    onRemoveImage: (id: number | string) => void;
     onAddImages: (files: FileList) => void;
 }
 

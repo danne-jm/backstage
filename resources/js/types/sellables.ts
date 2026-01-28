@@ -15,7 +15,7 @@ export interface Product {
     remaining_with_card?: number;
     remaining_without_card?: number;
     is_online_sellable: boolean;
-    images_list?: { id: number; url: string }[];
+    images_list?: { id: number | string; url: string }[];
     instagram_link?: string | null;
 }
 
@@ -48,7 +48,7 @@ export interface Event {
     remaining_with_card: number;
     remaining_without_card: number;
     is_online_sellable: boolean;
-    images_list?: { id: number; url: string }[];
+    images_list?: { id: number | string; url: string }[];
     instagram_link?: string | null;
 }
 

@@ -96,11 +96,10 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('all')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
-                                            activeFilter === 'all'
-                                                ? 'bg-black text-white'
-                                                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        }`}
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'all'
+                                            ? 'bg-black text-white'
+                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                            }`}
                                     >
                                         All
                                     </button>
@@ -108,11 +107,10 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('products')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
-                                            activeFilter === 'products'
-                                                ? 'bg-black text-white'
-                                                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        }`}
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'products'
+                                            ? 'bg-black text-white'
+                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                            }`}
                                     >
                                         Products
                                     </button>
@@ -120,11 +118,10 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('events')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${
-                                            activeFilter === 'events'
-                                                ? 'bg-black text-white'
-                                                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        }`}
+                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'events'
+                                            ? 'bg-black text-white'
+                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                            }`}
                                     >
                                         Events
                                     </button>
@@ -140,12 +137,12 @@ export default function ShopHome({ sellables }: Props) {
                                 href={`/item/${item.type}/${item.id}`}
                                 className="group relative flex flex-col"
                             >
-                                <div className="aspect-h-1 aspect-w-1 h-64 w-full overflow-hidden rounded-lg">
+                                <div className="aspect-h-1 aspect-w-1 h-96 w-full overflow-hidden rounded-lg">
                                     {item.image ? (
                                         <img
                                             src={item.image}
                                             alt={item.name}
-                                            className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                                            className="h-full w-full transition-transform duration-300 group-hover:scale-105"
                                         />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-300">

@@ -46,9 +46,12 @@ export function ProductDialog({
     const [isOnlineSellable, setIsOnlineSellable] = React.useState(false);
     const [isOnlineSectionOpen, setIsOnlineSectionOpen] = React.useState(false);
     const [imagesList, setImagesList] = React.useState<
-        { id: number; url: string }[]
+        { id: number | string; url: string }[]
     >([]);
     const [newImages, setNewImages] = React.useState<File[]>([]);
+    const [imagesToDelete, setImagesToDelete] = React.useState<
+        (number | string)[]
+    >([]);
     const [instagramLink, setInstagramLink] = React.useState('');
 
     React.useEffect(() => {
@@ -75,6 +78,7 @@ export function ProductDialog({
             setIsOnlineSellable(editingProduct.is_online_sellable);
             setImagesList(editingProduct.images_list || []);
             setNewImages([]);
+            setImagesToDelete([]);
             setInstagramLink(editingProduct.instagram_link || '');
             setIsOnlineSectionOpen(false);
         } else {
@@ -88,6 +92,7 @@ export function ProductDialog({
             setIsOnlineSellable(false);
             setImagesList([]);
             setNewImages([]);
+            setImagesToDelete([]);
             setInstagramLink('');
             setIsOnlineSectionOpen(false);
         }
@@ -109,21 +114,16 @@ export function ProductDialog({
         setNewImages((prev) => [...prev, ...filesArray]);
     };
 
-    const handleRemoveImage = (id: number) => {
-        if (id > 0) {
-            router.delete(`/sellables/product-images/${id}`, {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setImagesList((prev) =>
-                        prev.filter((img) => img.id !== id),
-                    );
-                },
-            });
-        } else {
+    const handleRemoveImage = (id: number | string) => {
+        if (typeof id === 'number' && id < 0) {
             const indexToRemove = id * -1 - 1;
             setNewImages((prev) =>
                 prev.filter((_, idx) => idx !== indexToRemove),
             );
+        } else {
+            // Server image
+            setImagesToDelete((prev) => [...prev, id]);
+            setImagesList((prev) => prev.filter((img) => img.id !== id));
         }
     };
 
@@ -167,6 +167,11 @@ export function ProductDialog({
         // Append images
         newImages.forEach((file) => {
             formData.append('images[]', file);
+        });
+
+        // Append deleted images
+        imagesToDelete.forEach((id) => {
+            formData.append('deleted_images[]', id.toString());
         });
 
         if (editingProduct) {

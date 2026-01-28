@@ -248,6 +248,14 @@ class SellablesController extends Controller
                 ]);
             }
         }
+
+        // Handle Image Deletions
+        if ($request->has('deleted_images')) {
+            $deletedIds = $request->input('deleted_images');
+            if (is_array($deletedIds)) {
+                ProductImage::whereIn('id', $deletedIds)->where('product_id', $product->id)->delete();
+            }
+        }
     }
 
     public function destroyProduct(Product $product)
@@ -348,6 +356,14 @@ class SellablesController extends Controller
                     'image_data' => $content,
                     'mime_type' => $file->getMimeType(),
                 ]);
+            }
+        }
+
+        // Handle Image Deletions
+        if ($request->has('deleted_images')) {
+            $deletedIds = $request->input('deleted_images');
+            if (is_array($deletedIds)) {
+                EventImage::whereIn('id', $deletedIds)->where('event_id', $event->id)->delete();
             }
         }
     }
