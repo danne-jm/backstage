@@ -452,7 +452,7 @@ export function SalesChart({
     }, [combinedSeries, filteredTotals]);
 
 
-    // Chart dimensions - remove left/right padding for perfect alignment
+    // Chart dimensions - add left padding for y-axis labels
     const leftPad = 0;
     const bottomPad = 20;
     const topPad = 4;
@@ -577,9 +577,10 @@ export function SalesChart({
                                                     y={y}
                                                     textAnchor="end"
                                                     dominantBaseline="middle"
-                                                    fontSize="8"
+                                                    fontSize="5"
+                                                    fontWeight="300"
                                                     fill="currentColor"
-                                                    opacity={0.6}
+                                                    opacity={0.5}
                                                 >
                                                     €
                                                     {value >= 1000

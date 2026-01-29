@@ -2,6 +2,10 @@ import ShopLayout from '@/layouts/Store/shop-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import {
+    AnnouncementCarousel,
+    type AnnouncementSlide,
+} from '@/Components/Store/AnnouncementCarousel';
 
 interface Sellable {
     id: string;
@@ -30,6 +34,60 @@ export default function ShopHome({ sellables }: Props) {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('filter') || 'all';
     });
+
+    // Define announcement slides
+    const announcementSlides: AnnouncementSlide[] = [
+        {
+            id: 'welcome',
+            title: 'Welcome to the ESN Leuven Web Shop!',
+            subtitle:
+                'Please ensure that you provide your email address accurately during checkout to facilitate communication regarding your order.\n\nApply your member card during checkout to unlock discounts on select items. \n\nYou will receive a reference code for every item you buy. Keep these close at hand, as you might have to provide them in the registration form!',
+            image: '/images/social/esnstar.png',
+            backgroundColor: '#000000ff', // Modern blue (blue-800)
+            textColor: '#ffffff',
+        },
+        //esncard
+        {
+            id: 'esncard-promo',
+            title: 'Get Your ESNcard Today!',
+            subtitle:
+                'Unlock exclusive benefits and discounts with the ESNcard. Available now for students in Leuven. Don\'t miss out on the perks – grab yours today!\n\nThe ESNcard is only for students in Leuven or coming to Leuven, please note that we can\'t sell an ESNcard to outgoing students.',
+            image: '/images/product.png',
+            backgroundColor: '#047857', // Emerald green (emerald-700)
+            textColor: '#ffffff',
+        },
+        //hoodie
+        {
+            id: 'hoodie-promo',
+            title: 'Stay Cozy with Our Exclusive Hoodies!',
+            subtitle:
+                'Experience comfort and style with our limited-edition ESN Leuven hoodies. Perfect for chilly days and showcasing your ESN pride. Get yours now before they\'re gone!',
+            image: '/images/hoodie.jpeg',
+            backgroundColor: '#9D174D', // Vibrant pink (pink-800)
+            textColor: '#ffffff',
+        },
+        //Enchanted garden gala giveaway
+        {
+            id: 'giveaway',
+            title: 'Enchanted Garden Gala Giveaway!',
+            subtitle:
+                'Join us for the Enchanted Garden Gala Giveaway! Don\'t miss out on the excitement – secure your spot now!',
+            image: '/images/giveaway.jpg',
+            backgroundColor: '#1E3A8A',
+            textColor: '#ffffff',
+        },
+        //welcome weekend
+        {
+            id: 'welcome-weekend',
+            title: 'Join Us for the Welcome Weekend Event!',
+            subtitle:
+                'Kick off the new semester with fun activities, great company, and unforgettable memories. Don\'t miss out on the excitement – secure your spot now!',
+            image: '/images/event1.jpg',
+            backgroundColor: '#1E3A8A',
+            textColor: '#ffffff',
+        }
+
+    ];
 
     // Filter sellables based on active filter
     const filteredSellables = useMemo(() => {
@@ -61,17 +119,15 @@ export default function ShopHome({ sellables }: Props) {
     return (
         <ShopLayout>
             <Head title="Welcome" />
-            <div className="bg-white">
-                <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                    <div className="mb-12 text-center">
-                        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                            Welcome to our Shop
-                        </h1>
-                        <p className="mt-3 text-lg text-gray-600">
-                            Browse our latest products and events.
-                        </p>
-                    </div>
 
+            <div className="bg-white">
+                {/* Announcement Carousel */}
+                <div className="mx-auto max-w-7xl px-2 pt-8 sm:px-4 lg:px-6">
+                    <AnnouncementCarousel slides={announcementSlides} />
+                </div>
+
+                {/* Content - More padding */}
+                <div className="mx-auto max-w-7xl px-2 py-8 sm:px-4 lg:px-6">
                     {/* Collapsible Filter Bar */}
                     <div className="mb-8 border-b border-gray-200">
                         <button
