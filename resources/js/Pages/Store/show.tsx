@@ -33,13 +33,13 @@ interface ShopItem {
     is_online_sellable?: boolean;
     variants_config?: { name: string; options: string[] }[] | null;
     variants?:
-    | {
-        id: string;
-        options: Record<string, string>;
-        quantity: number | null;
-        sold_count: number;
-    }[]
-    | null;
+        | {
+              id: string;
+              options: Record<string, string>;
+              quantity: number | null;
+              sold_count: number;
+          }[]
+        | null;
 }
 
 interface Props {
@@ -70,12 +70,12 @@ export default function ShopShow({ item }: Props) {
     const currentVariant =
         item.variants_config && item.variants
             ? item.variants.find((v) => {
-                const requiredKeys = item.variants_config!.map((c) => c.name);
-                // Check if all keys match (ignoring extra selections if any)
-                return requiredKeys.every(
-                    (key) => v.options[key] === selectedOptions[key],
-                );
-            })
+                  const requiredKeys = item.variants_config!.map((c) => c.name);
+                  // Check if all keys match (ignoring extra selections if any)
+                  return requiredKeys.every(
+                      (key) => v.options[key] === selectedOptions[key],
+                  );
+              })
             : null;
 
     // Check if full selection is made
@@ -128,7 +128,7 @@ export default function ShopShow({ item }: Props) {
         <ShopLayout>
             <Head title={item.name} />
             <div className="min-h-[calc(100vh-200px)] bg-white">
-                <div className="mx-auto max-w-7xl px-4 py-4 sm:py-8 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-8 lg:px-8">
                     {/* Breadcrumbs */}
                     <nav className="mb-4 flex items-center text-xs font-medium text-gray-500 sm:mb-8 sm:text-sm">
                         <Link href="/" className="hover:text-gray-900">
@@ -142,7 +142,9 @@ export default function ShopShow({ item }: Props) {
                             {item.type}s
                         </Link>
                         <span className="mx-1 sm:mx-2">/</span>
-                        <span className="truncate text-gray-900">{item.name}</span>
+                        <span className="truncate text-gray-900">
+                            {item.name}
+                        </span>
                     </nav>
 
                     <div className="lg:grid lg:grid-cols-2 lg:gap-x-12">
@@ -157,7 +159,9 @@ export default function ShopShow({ item }: Props) {
                                     />
                                 ) : (
                                     <div className="flex h-full items-center justify-center text-gray-400">
-                                        <span className="text-sm">No Image</span>
+                                        <span className="text-sm">
+                                            No Image
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -171,12 +175,14 @@ export default function ShopShow({ item }: Props) {
                                             onClick={() =>
                                                 setActiveImage(img.url)
                                             }
-                                            className={`relative aspect-square overflow-hidden rounded-md border-2 transition-all hover:opacity-100 ${activeImage === img.url
-                                                ? 'border-gray-100 opacity-100'
-                                                : 'border-transparent opacity-70'
-                                                }`}
-                                            aria-label={`View image ${item.images!.indexOf(img) + 1
-                                                }`}
+                                            className={`relative aspect-square overflow-hidden rounded-md border-2 transition-all hover:opacity-100 ${
+                                                activeImage === img.url
+                                                    ? 'border-gray-100 opacity-100'
+                                                    : 'border-transparent opacity-70'
+                                            }`}
+                                            aria-label={`View image ${
+                                                item.images!.indexOf(img) + 1
+                                            }`}
                                         >
                                             <img
                                                 src={img.url}
@@ -288,7 +294,7 @@ export default function ShopShow({ item }: Props) {
                                     {item.is_variable &&
                                         !item.unlimited_without_card &&
                                         (item.remaining_without_card ?? 0) <=
-                                        0 && (
+                                            0 && (
                                             <div className="mb-4 rounded-md bg-yellow-50 p-3 sm:mb-6 sm:p-4">
                                                 <div className="flex">
                                                     <div className="flex-shrink-0">
@@ -336,8 +342,15 @@ export default function ShopShow({ item }: Props) {
                                                                 {attr.name.toUpperCase()}
                                                             </label>
                                                             <Select
-                                                                value={selectedOptions[attr.name]}
-                                                                onValueChange={(val) =>
+                                                                value={
+                                                                    selectedOptions[
+                                                                        attr
+                                                                            .name
+                                                                    ]
+                                                                }
+                                                                onValueChange={(
+                                                                    val,
+                                                                ) =>
                                                                     handleOptionSelect(
                                                                         attr.name,
                                                                         val,
@@ -351,12 +364,20 @@ export default function ShopShow({ item }: Props) {
                                                                 </SelectTrigger>
                                                                 <SelectContent>
                                                                     {attr.options.map(
-                                                                        (opt) => (
+                                                                        (
+                                                                            opt,
+                                                                        ) => (
                                                                             <SelectItem
-                                                                                key={opt}
-                                                                                value={opt}
+                                                                                key={
+                                                                                    opt
+                                                                                }
+                                                                                value={
+                                                                                    opt
+                                                                                }
                                                                             >
-                                                                                {opt}
+                                                                                {
+                                                                                    opt
+                                                                                }
                                                                             </SelectItem>
                                                                         ),
                                                                     )}
@@ -435,7 +456,7 @@ export default function ShopShow({ item }: Props) {
                                             <button
                                                 type="button"
                                                 disabled
-                                                className="w-full cursor-not-allowed bg-gray-300 px-6 py-3 text-sm font-medium uppercase text-gray-500 focus:outline-none sm:px-8 sm:py-4 sm:text-base"
+                                                className="w-full cursor-not-allowed bg-gray-300 px-6 py-3 text-sm font-medium text-gray-500 uppercase focus:outline-none sm:px-8 sm:py-4 sm:text-base"
                                             >
                                                 Sold Out
                                             </button>
@@ -447,26 +468,32 @@ export default function ShopShow({ item }: Props) {
                                                         !isSelectionComplete
                                                     }
                                                     onClick={handleAddToCart}
-                                                    className={`
-                                                        flex w-full cursor-pointer items-center justify-center gap-2 border border-black px-6 py-3 text-sm font-medium uppercase text-black
-                                                        focus:outline-none focus:ring-0 focus-visible:ring-0
-                                                        transition duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]
-                                                        sm:px-8 sm:py-4 sm:text-base
-                                                        ${!isSelectionComplete ? 'cursor-not-allowed opacity-50 bg-gray-100' : 'bg-white hover:bg-gray-50'}
-                                                        ${isAdded ? 'scale-105' : 'scale-100'}
-                                                    `}
+                                                    className={`flex w-full cursor-pointer items-center justify-center gap-2 border border-black px-6 py-3 text-sm font-medium text-black uppercase transition duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] focus:ring-0 focus:outline-none focus-visible:ring-0 sm:px-8 sm:py-4 sm:text-base ${!isSelectionComplete ? 'cursor-not-allowed bg-gray-100 opacity-50' : 'bg-white hover:bg-gray-50'} ${isAdded ? 'scale-105' : 'scale-100'} `}
                                                 >
                                                     {isAdded ? (
                                                         <>
                                                             <span>Added!</span>
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check"><path d="M20 6 9 17l-5-5" /></svg>
+                                                            <svg
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                width="16"
+                                                                height="16"
+                                                                viewBox="0 0 24 24"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                strokeWidth="3"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                className="lucide lucide-check"
+                                                            >
+                                                                <path d="M20 6 9 17l-5-5" />
+                                                            </svg>
                                                         </>
                                                     ) : (
                                                         <>
                                                             {item.variants_config &&
-                                                                item.variants_config
-                                                                    .length > 0 &&
-                                                                !isSelectionComplete
+                                                            item.variants_config
+                                                                .length > 0 &&
+                                                            !isSelectionComplete
                                                                 ? 'Select Options'
                                                                 : 'Add to cart'}{' '}
                                                             <ShoppingCart className="h-4 w-4" />
@@ -481,7 +508,7 @@ export default function ShopShow({ item }: Props) {
 
                             {item.type === 'event' && item.event_date && (
                                 <div className="mb-4 border-b border-gray-200 pb-4 sm:mb-6 sm:pb-6">
-                                    <h3 className="mb-1 text-xs font-medium uppercase text-gray-500 sm:text-sm">
+                                    <h3 className="mb-1 text-xs font-medium text-gray-500 uppercase sm:text-sm">
                                         Event Date
                                     </h3>
                                     <p className="text-base font-semibold text-gray-900 sm:text-lg">

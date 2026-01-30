@@ -105,12 +105,12 @@ export default function StoreManager() {
                         period === 'month'
                             ? 30
                             : period === '7days'
-                                ? 7
-                                : period === '24hours'
-                                    ? 1
-                                    : period === 'lastShift'
-                                        ? 0
-                                        : 14;
+                              ? 7
+                              : period === '24hours'
+                                ? 1
+                                : period === 'lastShift'
+                                  ? 0
+                                  : 14;
 
                     const hourly = period === '24hours';
                     let summaryUrl = `/sales/summary?days=${days}${hourly ? '&hourly=true' : ''}`;
@@ -191,13 +191,17 @@ export default function StoreManager() {
         if (sellable.type === 'product') {
             setProducts((prev) =>
                 prev.map((p) =>
-                    p.id === sellable.id ? { ...p, is_online_sellable: isOnline } : p,
+                    p.id === sellable.id
+                        ? { ...p, is_online_sellable: isOnline }
+                        : p,
                 ),
             );
         } else {
             setEvents((prev) =>
                 prev.map((e) =>
-                    e.id === sellable.id ? { ...e, is_online_sellable: isOnline } : e,
+                    e.id === sellable.id
+                        ? { ...e, is_online_sellable: isOnline }
+                        : e,
                 ),
             );
         }
@@ -309,8 +313,6 @@ export default function StoreManager() {
             color: palette[idx % palette.length],
         };
     });
-
-
 
     // Pagination for Latest Card Sales
     const pageSize = 100;

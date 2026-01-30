@@ -29,7 +29,7 @@ export function AnnouncementCarousel({
                 if (prev >= 100) {
                     return 0;
                 }
-                return prev + (100 / (autoPlayInterval / 100));
+                return prev + 100 / (autoPlayInterval / 100);
             });
         }, 100);
 
@@ -61,13 +61,21 @@ export function AnnouncementCarousel({
                 {/* Background Image / Side */}
                 <div
                     className="relative w-full overflow-hidden bg-gray-900"
-                    style={{ 
-                        aspectRatio: window.innerWidth < 640 ? '16 / 15' : '16 / 10', // 70% taller on mobile (16/9 → 16/15)
+                    style={{
+                        aspectRatio:
+                            window.innerWidth < 640 ? '16 / 15' : '16 / 10', // 70% taller on mobile (16/9 → 16/15)
                     }}
                 >
-                    <div 
+                    <div
                         className="absolute inset-0"
-                        style={isFirstSlide ? { backgroundColor: activeSlide.backgroundColor } : {}}
+                        style={
+                            isFirstSlide
+                                ? {
+                                      backgroundColor:
+                                          activeSlide.backgroundColor,
+                                  }
+                                : {}
+                        }
                     >
                         {!isFirstSlide && (
                             <img
@@ -110,14 +118,20 @@ export function AnnouncementCarousel({
                     <div className="flex-grow" />
 
                     {/* Bottom: Title, Description, and CTA - bottom left with smart overflow handling */}
-                    <div className="flex-shrink-0 max-w-2xl pb-2" style={{ color: activeSlide.textColor || '#ffffff' }}>
-                        <h2 className="mb-1.5 text-base font-bold leading-tight sm:mb-2 sm:text-2xl md:text-3xl lg:text-4xl line-clamp-2 sm:line-clamp-none">
+                    <div
+                        className="max-w-2xl flex-shrink-0 pb-2"
+                        style={{ color: activeSlide.textColor || '#ffffff' }}
+                    >
+                        <h2 className="mb-1.5 line-clamp-2 text-base leading-tight font-bold sm:mb-2 sm:line-clamp-none sm:text-2xl md:text-3xl lg:text-4xl">
                             {activeSlide.title}
                         </h2>
 
-                        <div className="mb-2 text-xs leading-relaxed opacity-90 sm:mb-4 sm:text-sm md:text-base line-clamp-6 sm:line-clamp-none">
+                        <div className="mb-2 line-clamp-6 text-xs leading-relaxed opacity-90 sm:mb-4 sm:line-clamp-none sm:text-sm md:text-base">
                             {activeSlide.subtitle.split('\n').map((line, i) => (
-                                <p key={i} className={i > 0 ? 'mt-1 sm:mt-2' : ''}>
+                                <p
+                                    key={i}
+                                    className={i > 0 ? 'mt-1 sm:mt-2' : ''}
+                                >
                                     {line}
                                 </p>
                             ))}
@@ -144,8 +158,8 @@ export function AnnouncementCarousel({
                                 progress > segmentEnd
                                     ? '25%'
                                     : progress > segmentStart
-                                        ? `${((progress - segmentStart) / 25) * 25}%`
-                                        : '0%';
+                                      ? `${((progress - segmentStart) / 25) * 25}%`
+                                      : '0%';
 
                             return (
                                 <div
@@ -170,10 +184,11 @@ export function AnnouncementCarousel({
                         <button
                             key={slide.id}
                             onClick={() => handleSlideClick(index)}
-                            className={`group relative flex-shrink-0 overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${index === activeIndex
-                                ? 'scale-[1.02] shadow-lg ring-2 ring-black/5'
-                                : 'opacity-70 hover:scale-[1.01] hover:opacity-100 hover:shadow-md'
-                                }`}
+                            className={`group relative flex-shrink-0 overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${
+                                index === activeIndex
+                                    ? 'scale-[1.02] shadow-lg ring-2 ring-black/5'
+                                    : 'opacity-70 hover:scale-[1.01] hover:opacity-100 hover:shadow-md'
+                            }`}
                         >
                             <div className="flex items-center gap-3 rounded-lg bg-white/80 p-3 backdrop-blur">
                                 <img

@@ -1,11 +1,11 @@
-import ShopLayout from '@/layouts/Store/shop-layout';
-import { Head, Link, router } from '@inertiajs/react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
 import {
     AnnouncementCarousel,
     type AnnouncementSlide,
 } from '@/Components/Store/AnnouncementCarousel';
+import ShopLayout from '@/layouts/Store/shop-layout';
+import { Head, Link, router } from '@inertiajs/react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface Sellable {
     id: string;
@@ -27,8 +27,6 @@ interface Props {
 }
 
 export default function ShopHome({ sellables }: Props) {
-
-
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     // Initialize filter state from URL but keep it managed locally for instant feedback
@@ -39,20 +37,13 @@ export default function ShopHome({ sellables }: Props) {
 
     // Scroll to grid if hash is present
     useEffect(() => {
-        if (window.location.hash === '#product-list' || window.location.hash === '#event-list') {
-            const el = document.getElementById(window.location.hash.substring(1));
-            if (el) {
-                // Offset for header (adjust if needed)
-                const y = el.getBoundingClientRect().top + window.scrollY - 40;
-                window.scrollTo({ top: y, behavior: 'smooth' });
-            }
-        }
-    }, []);
-
-    // Scroll to grid if hash is present
-    useEffect(() => {
-        if (window.location.hash === '#product-list' || window.location.hash === '#event-list') {
-            const el = document.getElementById(window.location.hash.substring(1));
+        if (
+            window.location.hash === '#product-list' ||
+            window.location.hash === '#event-list'
+        ) {
+            const el = document.getElementById(
+                window.location.hash.substring(1),
+            );
             if (el) {
                 // Offset for header (adjust if needed)
                 const y = el.getBoundingClientRect().top + window.scrollY - 40;
@@ -77,7 +68,7 @@ export default function ShopHome({ sellables }: Props) {
             id: 'esncard-promo',
             title: 'Get Your ESNcard Today!',
             subtitle:
-                'Unlock exclusive benefits and discounts with the ESNcard. Available now for students in Leuven. Don\'t miss out on the perks – grab yours today!\n\nThe ESNcard is only for students in Leuven or coming to Leuven, please note that we can\'t sell an ESNcard to outgoing students.',
+                "Unlock exclusive benefits and discounts with the ESNcard. Available now for students in Leuven. Don't miss out on the perks – grab yours today!\n\nThe ESNcard is only for students in Leuven or coming to Leuven, please note that we can't sell an ESNcard to outgoing students.",
             image: '/images/product.png',
             backgroundColor: '#047857', // Emerald green (emerald-700)
             textColor: '#ffffff',
@@ -87,7 +78,7 @@ export default function ShopHome({ sellables }: Props) {
             id: 'hoodie-promo',
             title: 'Stay Cozy with Our Exclusive Hoodies!',
             subtitle:
-                'Experience comfort and style with our limited-edition ESN Leuven hoodies. Perfect for chilly days and showcasing your ESN pride. Get yours now before they\'re gone!',
+                "Experience comfort and style with our limited-edition ESN Leuven hoodies. Perfect for chilly days and showcasing your ESN pride. Get yours now before they're gone!",
             image: '/images/hoodie.jpeg',
             backgroundColor: '#9D174D', // Vibrant pink (pink-800)
             textColor: '#ffffff',
@@ -97,7 +88,7 @@ export default function ShopHome({ sellables }: Props) {
             id: 'giveaway',
             title: 'Enchanted Garden Gala Giveaway!',
             subtitle:
-                'Join us for the Enchanted Garden Gala Giveaway! Don\'t miss out on the excitement – secure your spot now!',
+                "Join us for the Enchanted Garden Gala Giveaway! Don't miss out on the excitement – secure your spot now!",
             image: '/images/giveaway.jpg',
             backgroundColor: '#1E3A8A',
             textColor: '#ffffff',
@@ -107,27 +98,15 @@ export default function ShopHome({ sellables }: Props) {
             id: 'welcome-weekend',
             title: 'Join Us for the Welcome Weekend Event!',
             subtitle:
-                'Kick off the new semester with fun activities, great company, and unforgettable memories. Don\'t miss out on the excitement – secure your spot now!',
+                "Kick off the new semester with fun activities, great company, and unforgettable memories. Don't miss out on the excitement – secure your spot now!",
             image: '/images/event1.jpg',
             backgroundColor: '#1E3A8A',
             textColor: '#ffffff',
-        }
-
+        },
     ];
 
     // Filter sellables based on active filter
     const filteredSellables = useMemo(() => {
-    // Scroll to grid if hash is present
-    useEffect(() => {
-        if (window.location.hash === '#product-list' || window.location.hash === '#event-list') {
-            const el = document.getElementById(window.location.hash.substring(1));
-            if (el) {
-                // Offset for header (adjust if needed)
-                const y = el.getBoundingClientRect().top + window.scrollY - 40;
-                window.scrollTo({ top: y, behavior: 'smooth' });
-            }
-        }
-    }, []);
         if (activeFilter === 'products') {
             return sellables.filter((item) => item.type === 'product');
         } else if (activeFilter === 'events') {
@@ -189,10 +168,11 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('all')
                                         }
-                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${activeFilter === 'all'
-                                            ? 'bg-black text-white'
-                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                            }`}
+                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${
+                                            activeFilter === 'all'
+                                                ? 'bg-black text-white'
+                                                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                        }`}
                                     >
                                         All
                                     </button>
@@ -200,10 +180,11 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('products')
                                         }
-                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${activeFilter === 'products'
-                                            ? 'bg-black text-white'
-                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                            }`}
+                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${
+                                            activeFilter === 'products'
+                                                ? 'bg-black text-white'
+                                                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                        }`}
                                     >
                                         Products
                                     </button>
@@ -211,10 +192,11 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('events')
                                         }
-                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${activeFilter === 'events'
-                                            ? 'bg-black text-white'
-                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                            }`}
+                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${
+                                            activeFilter === 'events'
+                                                ? 'bg-black text-white'
+                                                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                        }`}
                                     >
                                         Events
                                     </button>
@@ -224,7 +206,13 @@ export default function ShopHome({ sellables }: Props) {
                     </div>
 
                     <div
-                        id={activeFilter === 'products' ? 'product-list' : activeFilter === 'events' ? 'event-list' : undefined}
+                        id={
+                            activeFilter === 'products'
+                                ? 'product-list'
+                                : activeFilter === 'events'
+                                  ? 'event-list'
+                                  : undefined
+                        }
                         className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6"
                     >
                         {filteredSellables.map((item) => (
@@ -242,7 +230,9 @@ export default function ShopHome({ sellables }: Props) {
                                         />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-300">
-                                            <span className="text-sm">No Image</span>
+                                            <span className="text-sm">
+                                                No Image
+                                            </span>
                                         </div>
                                     )}
                                 </div>

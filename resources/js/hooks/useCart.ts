@@ -65,7 +65,7 @@ export function useCart() {
                 e.id === item.id &&
                 e.type === item.type &&
                 JSON.stringify(e.options || {}) ===
-                JSON.stringify(item.options || {}),
+                    JSON.stringify(item.options || {}),
         );
 
         let newTotal;
@@ -107,7 +107,7 @@ export function useCart() {
                     e.id === id &&
                     e.type === type &&
                     JSON.stringify(e.options || {}) ===
-                    JSON.stringify(options || {})
+                        JSON.stringify(options || {})
                 ),
         );
         saveCart(newEntries);
@@ -125,7 +125,8 @@ export function useCart() {
             (e) =>
                 e.id === id &&
                 e.type === type &&
-                JSON.stringify(e.options || {}) === JSON.stringify(options || {})
+                JSON.stringify(e.options || {}) ===
+                    JSON.stringify(options || {}),
         );
         const currentQty = currentEntry ? currentEntry.quantity : 0;
         const currentTotal = entries.reduce((acc, e) => acc + e.quantity, 0);
@@ -139,7 +140,7 @@ export function useCart() {
                 e.id === id &&
                 e.type === type &&
                 JSON.stringify(e.options || {}) ===
-                JSON.stringify(options || {})
+                    JSON.stringify(options || {})
             ) {
                 return { ...e, quantity };
             }

@@ -26,7 +26,7 @@ export default function ShopLayout({ children }: PropsWithChildren) {
     return (
         <div className="flex min-h-screen flex-col bg-gray-50">
             <header className="border-b border-gray-200 bg-white print:border-none">
-                <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:py-6 sm:px-6 lg:px-8 print:justify-center print:py-4">
+                <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 sm:py-6 lg:px-8 print:justify-center print:py-4">
                     <div className="flex items-center">
                         <Link href="/">
                             <img

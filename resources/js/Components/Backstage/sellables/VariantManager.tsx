@@ -102,7 +102,9 @@ export function VariantManager({
             !newVariants.every((nv, i) => {
                 const ov = variants[i];
                 // quick check options equality
-                return JSON.stringify(nv.options) === JSON.stringify(ov?.options);
+                return (
+                    JSON.stringify(nv.options) === JSON.stringify(ov?.options)
+                );
             });
 
         if (structureChanged) {

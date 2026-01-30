@@ -1,7 +1,15 @@
 import { PlaceholderPattern } from '@/Components/Shared/ui/placeholder-pattern';
 import { OfficeSale, OnlineSale, Sellable } from '@/types/sellables';
 import { useMemo, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+    CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
 
 // Custom tooltip component matching the old chart style
 interface TooltipPayloadItem {
@@ -29,16 +37,23 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
     return (
         <div className="pointer-events-none max-w-[200px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs">
-            <div className="mb-1 text-[10px] font-medium sm:text-xs">{label}</div>
+            <div className="mb-1 text-[10px] font-medium sm:text-xs">
+                {label}
+            </div>
             <div className="space-y-1">
                 {items.map((item) => (
-                    <div key={item.dataKey} className="flex items-center gap-1 text-[10px] sm:gap-2 sm:text-xs">
+                    <div
+                        key={item.dataKey}
+                        className="flex items-center gap-1 text-[10px] sm:gap-2 sm:text-xs"
+                    >
                         <span
                             className="inline-block h-2 w-2 shrink-0 rounded-full"
                             style={{ backgroundColor: item.color }}
                         />
                         <span className="min-w-0 truncate">{item.name}</span>
-                        <span className="ml-auto shrink-0 font-medium">€{Number(item.value).toFixed(2)}</span>
+                        <span className="ml-auto shrink-0 font-medium">
+                            €{Number(item.value).toFixed(2)}
+                        </span>
                     </div>
                 ))}
             </div>
@@ -112,16 +127,24 @@ export function SalesChart({
 
     // Create stable color mapping for all sellables (independent of filters)
     const sellableColorMap = useMemo(() => {
-        const allSellablesMap = new Map<string, { name: string; color: string }>();
+        const allSellablesMap = new Map<
+            string,
+            { name: string; color: string }
+        >();
 
         // Process ALL sales data to identify all sellables (not filtered by showOffice/showCard)
-        const processSalesForColors = (salesList: (OnlineSale | OfficeSale)[]) => {
+        const processSalesForColors = (
+            salesList: (OnlineSale | OfficeSale)[],
+        ) => {
             salesList.forEach((sale) => {
                 const type = sale.product_id ? 'product' : 'event';
                 const id = sale.product_id || sale.event_id;
                 const key = id ? `${type}-${id}` : 'unknown';
-                const name = sale.product?.name || sale.event?.name || (id ? `${type} ${id}` : 'Unknown Item');
-                
+                const name =
+                    sale.product?.name ||
+                    sale.event?.name ||
+                    (id ? `${type} ${id}` : 'Unknown Item');
+
                 if (!allSellablesMap.has(name)) {
                     allSellablesMap.set(name, { name, color: '' });
                 }
@@ -152,7 +175,10 @@ export function SalesChart({
     // Build chart data with all sellables as separate series
     const { chartData, activeSellables } = useMemo(() => {
         // Identify all unique sellables
-        const sellablesMap = new Map<string, { name: string; type: 'product' | 'event' }>();
+        const sellablesMap = new Map<
+            string,
+            { name: string; type: 'product' | 'event' }
+        >();
 
         // Add known sellables
         onlineSellableSeries.forEach((s) => {
@@ -166,12 +192,18 @@ export function SalesChart({
                 const type = sale.product_id ? 'product' : 'event';
                 const id = sale.product_id || sale.event_id;
                 if (!id) {
-                    sellablesMap.set('unknown', { name: 'Unknown Item', type: 'product' });
+                    sellablesMap.set('unknown', {
+                        name: 'Unknown Item',
+                        type: 'product',
+                    });
                     return;
                 }
                 const key = `${type}-${id}`;
                 if (!sellablesMap.has(key)) {
-                    const name = sale.product?.name || sale.event?.name || `${type} ${id}`;
+                    const name =
+                        sale.product?.name ||
+                        sale.event?.name ||
+                        `${type} ${id}`;
                     sellablesMap.set(key, { name, type });
                 }
             });
@@ -191,7 +223,9 @@ export function SalesChart({
                 date: new Date(date).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
-                    ...(isHourlyData ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}),
+                    ...(isHourlyData
+                        ? { hour: '2-digit', minute: '2-digit', hour12: false }
+                        : {}),
                 }),
                 fullDate: date,
             };
@@ -204,9 +238,15 @@ export function SalesChart({
                     if (isHourlyData) {
                         const dateObj = new Date(saleDate);
                         const year = dateObj.getFullYear();
-                        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const month = String(dateObj.getMonth() + 1).padStart(
+                            2,
+                            '0',
+                        );
                         const day = String(dateObj.getDate()).padStart(2, '0');
-                        const hour = String(dateObj.getHours()).padStart(2, '0');
+                        const hour = String(dateObj.getHours()).padStart(
+                            2,
+                            '0',
+                        );
                         return `${year}-${month}-${day} ${hour}:00:00` === date;
                     } else {
                         return saleDate.split('T')[0].split(' ')[0] === date;
@@ -217,13 +257,18 @@ export function SalesChart({
                     // Online sales
                     onlineSales.forEach((os) => {
                         if (!matchDate(os.sold_at || '')) return;
-                        if (key === 'unknown' && !os.product_id && !os.event_id) {
+                        if (
+                            key === 'unknown' &&
+                            !os.product_id &&
+                            !os.event_id
+                        ) {
                             total += parseFloat(String(os.amount || 0)) || 0;
                         } else {
                             const osType = os.product_id ? 'product' : 'event';
                             const osId = os.product_id || os.event_id;
                             if (`${osType}-${osId}` === key) {
-                                total += parseFloat(String(os.amount || 0)) || 0;
+                                total +=
+                                    parseFloat(String(os.amount || 0)) || 0;
                             }
                         }
                     });
@@ -233,13 +278,21 @@ export function SalesChart({
                         .filter((os) => os.method === 'card')
                         .forEach((os) => {
                             if (!matchDate(os.sold_at || '')) return;
-                            if (key === 'unknown' && !os.product_id && !os.event_id) {
-                                total += parseFloat(String(os.amount || 0)) || 0;
+                            if (
+                                key === 'unknown' &&
+                                !os.product_id &&
+                                !os.event_id
+                            ) {
+                                total +=
+                                    parseFloat(String(os.amount || 0)) || 0;
                             } else {
-                                const osType = os.product_id ? 'product' : 'event';
+                                const osType = os.product_id
+                                    ? 'product'
+                                    : 'event';
                                 const osId = os.product_id || os.event_id;
                                 if (`${osType}-${osId}` === key) {
-                                    total += parseFloat(String(os.amount || 0)) || 0;
+                                    total +=
+                                        parseFloat(String(os.amount || 0)) || 0;
                                 }
                             }
                         });
@@ -251,13 +304,21 @@ export function SalesChart({
                         .filter((os) => os.method !== 'card')
                         .forEach((os) => {
                             if (!matchDate(os.sold_at || '')) return;
-                            if (key === 'unknown' && !os.product_id && !os.event_id) {
-                                total += parseFloat(String(os.amount || 0)) || 0;
+                            if (
+                                key === 'unknown' &&
+                                !os.product_id &&
+                                !os.event_id
+                            ) {
+                                total +=
+                                    parseFloat(String(os.amount || 0)) || 0;
                             } else {
-                                const osType = os.product_id ? 'product' : 'event';
+                                const osType = os.product_id
+                                    ? 'product'
+                                    : 'event';
                                 const osId = os.product_id || os.event_id;
                                 if (`${osType}-${osId}` === key) {
-                                    total += parseFloat(String(os.amount || 0)) || 0;
+                                    total +=
+                                        parseFloat(String(os.amount || 0)) || 0;
                                 }
                             }
                         });
@@ -271,7 +332,10 @@ export function SalesChart({
         });
 
         // Get ALL sellables with transaction counts (not just revenue)
-        const totals = new Map<string, { name: string; total: number; count: number }>();
+        const totals = new Map<
+            string,
+            { name: string; total: number; count: number }
+        >();
 
         // Count actual sales transactions (including free items)
         const countSale = (sale: OnlineSale | OfficeSale, name: string) => {
@@ -291,13 +355,14 @@ export function SalesChart({
                 const type = os.product_id ? 'product' : 'event';
                 const id = os.product_id || os.event_id;
                 let name: string;
-                
+
                 if (!id) {
                     name = 'Unknown Item';
                 } else {
-                    name = os.product?.name || os.event?.name || `${type} ${id}`;
+                    name =
+                        os.product?.name || os.event?.name || `${type} ${id}`;
                 }
-                
+
                 countSale(os, name);
             });
 
@@ -308,13 +373,16 @@ export function SalesChart({
                     const type = os.product_id ? 'product' : 'event';
                     const id = os.product_id || os.event_id;
                     let name: string;
-                    
+
                     if (!id) {
                         name = 'Unknown Item';
                     } else {
-                        name = os.product?.name || os.event?.name || `${type} ${id}`;
+                        name =
+                            os.product?.name ||
+                            os.event?.name ||
+                            `${type} ${id}`;
                     }
-                    
+
                     countSale(os, name);
                 });
         }
@@ -327,13 +395,16 @@ export function SalesChart({
                     const type = os.product_id ? 'product' : 'event';
                     const id = os.product_id || os.event_id;
                     let name: string;
-                    
+
                     if (!id) {
                         name = 'Unknown Item';
                     } else {
-                        name = os.product?.name || os.event?.name || `${type} ${id}`;
+                        name =
+                            os.product?.name ||
+                            os.event?.name ||
+                            `${type} ${id}`;
                     }
-                    
+
                     countSale(os, name);
                 });
         }
@@ -347,9 +418,19 @@ export function SalesChart({
             }));
 
         return { chartData: data, activeSellables: sellables };
-    }, [dateKeys, isHourlyData, onlineSales, officeSales, onlineSellableSeries, showOffice, showCard, sellableColorMap]);
+    }, [
+        dateKeys,
+        isHourlyData,
+        onlineSales,
+        officeSales,
+        onlineSellableSeries,
+        showOffice,
+        showCard,
+        sellableColorMap,
+    ]);
 
-    const displayedTotal = (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
+    const displayedTotal =
+        (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
 
     return (
         <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
@@ -363,7 +444,9 @@ export function SalesChart({
                     >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
                         <span className="text-muted-foreground">Cash:</span>
-                        <span className="font-medium text-foreground">€{totalOffice.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">
+                            €{totalOffice.toFixed(2)}
+                        </span>
                     </button>
                     <button
                         onClick={() => setShowCard(!showCard)}
@@ -372,9 +455,11 @@ export function SalesChart({
                     >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
                         <span className="text-muted-foreground">Card:</span>
-                        <span className="font-medium text-foreground">€{totalOnline.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">
+                            €{totalOnline.toFixed(2)}
+                        </span>
                     </button>
-                    <div className="ml-0 whitespace-nowrap text-sm font-semibold sm:ml-1">
+                    <div className="ml-0 text-sm font-semibold whitespace-nowrap sm:ml-1">
                         €{displayedTotal.toFixed(2)}
                     </div>
                 </div>
@@ -385,27 +470,52 @@ export function SalesChart({
                 <>
                     <div className="relative min-h-0 w-full flex-1">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -12.5, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.08} />
+                            <LineChart
+                                data={chartData}
+                                margin={{
+                                    top: 5,
+                                    right: 5,
+                                    left: -12.5,
+                                    bottom: 5,
+                                }}
+                            >
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    stroke="currentColor"
+                                    strokeOpacity={0.08}
+                                />
                                 <XAxis
                                     dataKey="date"
-                                    tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.5 }}
+                                    tick={{
+                                        fontSize: 11,
+                                        fill: 'currentColor',
+                                        opacity: 0.5,
+                                    }}
                                     stroke="currentColor"
                                     strokeOpacity={0.2}
                                 />
                                 <YAxis
-                                    tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.5 }}
+                                    tick={{
+                                        fontSize: 11,
+                                        fill: 'currentColor',
+                                        opacity: 0.5,
+                                    }}
                                     stroke="currentColor"
                                     strokeOpacity={0.2}
                                     domain={[0, 'auto']}
                                     tickFormatter={(value) =>
-                                        value >= 1000 ? `€${(value / 1000).toFixed(1)}k` : `€${value}`
+                                        value >= 1000
+                                            ? `€${(value / 1000).toFixed(1)}k`
+                                            : `€${value}`
                                     }
                                     width={50}
                                 />
                                 <Tooltip
                                     content={<CustomTooltip />}
-                                    cursor={{ stroke: 'currentColor', strokeOpacity: 0.2 }}
+                                    cursor={{
+                                        stroke: 'currentColor',
+                                        strokeOpacity: 0.2,
+                                    }}
                                 />
                                 {activeSellables.map((sellable) => (
                                     <Line
@@ -423,12 +533,21 @@ export function SalesChart({
                     </div>
 
                     <div className="mt-2 shrink-0 text-xs">
-                        <div className="mb-1 text-muted-foreground">Active sellables</div>
+                        <div className="mb-1 text-muted-foreground">
+                            Active sellables
+                        </div>
                         <div className="space-y-1 pr-2">
                             {activeSellables.length > 0 ? (
                                 activeSellables.map((s) => {
-                                    const overall = activeSellables.reduce((a, it) => a + it.total, 0) || 0;
-                                    const pct = overall === 0 ? 0 : (s.total / overall) * 100;
+                                    const overall =
+                                        activeSellables.reduce(
+                                            (a, it) => a + it.total,
+                                            0,
+                                        ) || 0;
+                                    const pct =
+                                        overall === 0
+                                            ? 0
+                                            : (s.total / overall) * 100;
 
                                     return (
                                         <div
@@ -438,24 +557,38 @@ export function SalesChart({
                                             <div className="flex min-w-0 flex-1 items-center gap-2">
                                                 <span
                                                     className="inline-block h-2 w-2 shrink-0 rounded-full"
-                                                    style={{ backgroundColor: s.color }}
+                                                    style={{
+                                                        backgroundColor:
+                                                            s.color,
+                                                    }}
                                                 />
                                                 <div className="flex min-w-0 flex-1 items-baseline gap-2">
-                                                    <span className="truncate" title={s.name}>
+                                                    <span
+                                                        className="truncate"
+                                                        title={s.name}
+                                                    >
                                                         {s.name}
                                                     </span>
-                                                    <span className="shrink-0 text-muted-foreground">x {s.count}</span>
+                                                    <span className="shrink-0 text-muted-foreground">
+                                                        x {s.count}
+                                                    </span>
                                                 </div>
                                             </div>
                                             <div className="flex shrink-0 items-baseline gap-3">
-                                                <div className="font-medium">€{s.total.toFixed(2)}</div>
-                                                <div className="text-muted-foreground">{pct.toFixed(1)}%</div>
+                                                <div className="font-medium">
+                                                    €{s.total.toFixed(2)}
+                                                </div>
+                                                <div className="text-muted-foreground">
+                                                    {pct.toFixed(1)}%
+                                                </div>
                                             </div>
                                         </div>
                                     );
                                 })
                             ) : (
-                                <div className="text-muted-foreground">No sales in this period</div>
+                                <div className="text-muted-foreground">
+                                    No sales in this period
+                                </div>
                             )}
                         </div>
                     </div>

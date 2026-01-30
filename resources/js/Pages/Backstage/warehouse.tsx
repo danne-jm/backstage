@@ -28,7 +28,15 @@ type Item = {
 };
 
 // Lazy loaded image component
-function LazyImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+function LazyImage({
+    src,
+    alt,
+    className,
+}: {
+    src: string;
+    alt: string;
+    className?: string;
+}) {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isInView, setIsInView] = useState(false);
     const imgRef = useRef<HTMLImageElement>(null);
@@ -45,7 +53,7 @@ function LazyImage({ src, alt, className }: { src: string; alt: string; classNam
                     }
                 });
             },
-            { rootMargin: '50px' }
+            { rootMargin: '50px' },
         );
 
         observer.observe(imgRef.current);

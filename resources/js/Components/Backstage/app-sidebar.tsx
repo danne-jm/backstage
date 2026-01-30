@@ -183,7 +183,7 @@ export function AppSidebar() {
 
                     <div
                         id="sidebar-quicklinks"
-                        className={`${footerExpanded ? 'block' : 'hidden'} px-3`}
+                        className={`${footerExpanded ? 'block' : 'hidden'}`}
                     >
                         <NavFooter items={footerNavItems} />
                     </div>

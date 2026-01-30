@@ -34,12 +34,12 @@ import {
     CheckCircle2,
     Filter,
     Loader2,
+    MailCheck,
     Plus,
     RotateCw,
     Save,
     Trash2,
     TriangleAlert,
-    MailCheck,
 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
@@ -596,7 +596,7 @@ export default function EventAttendees({ event }: { event: any }) {
                         {headers.length === 0 || rows.length === 0 ? (
                             <div className="flex h-24 items-center justify-center text-center text-muted-foreground">
                                 {event.google_spreadsheet_id &&
-                                    event.google_sheet_name
+                                event.google_sheet_name
                                     ? 'No data found in the configured spreadsheet.'
                                     : 'No spreadsheet configured. Configure a Google Sheet above and save.'}
                             </div>
@@ -621,14 +621,14 @@ export default function EventAttendees({ event }: { event: any }) {
                                                         {};
                                                     if (
                                                         cellIdx ===
-                                                        purchaseIdentifierColIndex &&
+                                                            purchaseIdentifierColIndex &&
                                                         validationResults[
-                                                        rowIdx
+                                                            rowIdx
                                                         ] !== undefined
                                                     ) {
                                                         if (
                                                             validationResults[
-                                                            rowIdx
+                                                                rowIdx
                                                             ] === true
                                                         ) {
                                                             bgStyle = {
@@ -637,7 +637,7 @@ export default function EventAttendees({ event }: { event: any }) {
                                                             }; // Green for valid
                                                         } else if (
                                                             validationResults[
-                                                            rowIdx
+                                                                rowIdx
                                                             ] === false
                                                         ) {
                                                             bgStyle = {
@@ -745,18 +745,18 @@ export default function EventAttendees({ event }: { event: any }) {
                                         'is_empty',
                                         'is_not_empty',
                                     ].includes(rule.operator) && (
-                                            <Input
-                                                placeholder="Value..."
-                                                value={rule.value}
-                                                onChange={(e) =>
-                                                    updateFilterRule(
-                                                        idx,
-                                                        'value',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        )}
+                                        <Input
+                                            placeholder="Value..."
+                                            value={rule.value}
+                                            onChange={(e) =>
+                                                updateFilterRule(
+                                                    idx,
+                                                    'value',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                    )}
                                 </div>
                                 <Button
                                     variant="ghost"

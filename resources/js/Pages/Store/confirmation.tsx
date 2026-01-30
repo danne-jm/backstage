@@ -89,9 +89,9 @@ export default function Confirmation({ transaction, items }: Props) {
                 }}
             />
             <div className="min-h-screen bg-white">
-                <div className="mx-auto max-w-3xl px-4 py-8 sm:py-16 sm:px-6 lg:px-8 print:px-0 print:py-2">
+                <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8 print:px-0 print:py-2">
                     <div className="no-print text-center">
-                        <CheckCircle className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-green-500" />
+                        <CheckCircle className="mx-auto h-12 w-12 text-green-500 sm:h-16 sm:w-16" />
                         <h1 className="mt-3 text-2xl font-bold tracking-tight text-gray-900 sm:mt-4 sm:text-3xl">
                             Thank you for your purchase!
                         </h1>
@@ -118,7 +118,9 @@ export default function Confirmation({ transaction, items }: Props) {
                                     title="Download summary as PDF"
                                 >
                                     <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                    <span className="hidden sm:inline">Download</span>
+                                    <span className="hidden sm:inline">
+                                        Download
+                                    </span>
                                 </button>
                             </div>
                         </div>
@@ -139,7 +141,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                         className="print-compact-card rounded-lg border border-gray-200 bg-white p-3 sm:p-4"
                                     >
                                         <div className="flex items-start justify-between gap-2">
-                                            <div className="flex-1 min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <h3 className="print-text-sm text-sm font-medium text-gray-900 sm:text-base">
                                                     {item.name}
                                                 </h3>
@@ -149,7 +151,10 @@ export default function Confirmation({ transaction, items }: Props) {
                                                             item.variant_options!,
                                                         )
                                                             .map(
-                                                                ([key, value]) =>
+                                                                ([
+                                                                    key,
+                                                                    value,
+                                                                ]) =>
                                                                     `${key}: ${value}`,
                                                             )
                                                             .join(', ')}
@@ -162,9 +167,9 @@ export default function Confirmation({ transaction, items }: Props) {
                                                 )}
                                                 <p className="print-text-sm mt-1.5 text-sm font-medium text-gray-900 sm:mt-2 sm:text-base print:mt-1">
                                                     €
-                                                    {Number(item.amount).toFixed(
-                                                        2,
-                                                    )}
+                                                    {Number(
+                                                        item.amount,
+                                                    ).toFixed(2)}
                                                 </p>
                                             </div>
                                             <div className="ml-2 flex-shrink-0 text-right sm:ml-4">
@@ -229,7 +234,7 @@ export default function Confirmation({ transaction, items }: Props) {
                     <div className="mt-6 text-center sm:mt-8">
                         <Link
                             href="/"
-                            className="no-print inline-block rounded-md bg-black px-5 py-2.5 text-sm font-medium uppercase text-white transition-colors hover:bg-gray-800 sm:px-6 sm:py-3 sm:text-base"
+                            className="no-print inline-block rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white uppercase transition-colors hover:bg-gray-800 sm:px-6 sm:py-3 sm:text-base"
                         >
                             Continue Shopping
                         </Link>
@@ -239,7 +244,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                     ? window.location.href
                                     : '#'
                             }
-                            className="hidden rounded-md bg-black px-4 py-2 text-sm font-medium uppercase text-white print:inline-block"
+                            className="hidden rounded-md bg-black px-4 py-2 text-sm font-medium text-white uppercase print:inline-block"
                         >
                             View Order
                         </a>

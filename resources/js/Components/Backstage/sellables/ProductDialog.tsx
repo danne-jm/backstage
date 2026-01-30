@@ -1,4 +1,5 @@
 import { ImageManager } from '@/Components/Backstage/sellables/ImageManager';
+import { VariantManager } from '@/Components/Backstage/sellables/VariantManager';
 import { Button } from '@/Components/Shared/ui/button';
 import { Checkbox } from '@/Components/Shared/ui/checkbox';
 import {
@@ -9,7 +10,6 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/Components/Shared/ui/dialog';
-import { VariantManager } from '@/Components/Backstage/sellables/VariantManager';
 import { Input } from '@/Components/Shared/ui/input';
 import { Label } from '@/Components/Shared/ui/label';
 import { Textarea } from '@/Components/Shared/ui/textarea';
@@ -301,7 +301,9 @@ export function ProductDialog({
                                     id="product-variable-amount"
                                     checked={!!productVariableAmount}
                                     onCheckedChange={(checked) =>
-                                        setProductVariableAmount(checked === true)
+                                        setProductVariableAmount(
+                                            checked === true,
+                                        )
                                     }
                                 />
                                 <Label
@@ -350,10 +352,11 @@ export function ProductDialog({
                     )}
 
                     {/* Variant Manager Moved Here */}
-                    <div className="border-t pt-4 mt-4">
+                    <div className="mt-4 border-t pt-4">
                         <Label className="mb-2 block text-base">Variants</Label>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Add variants (e.g. Size, Color) to manage stock for specific options.
+                        <p className="mb-4 text-sm text-gray-500">
+                            Add variants (e.g. Size, Color) to manage stock for
+                            specific options.
                         </p>
                         <VariantManager
                             initialConfig={variantsConfig}
@@ -437,8 +440,7 @@ export function ProductDialog({
                                         placeholder="https://instagram.com/..."
                                     />
                                 </div>
-                                <div className="border-t pt-4">
-                                </div>
+                                <div className="border-t pt-4"></div>
                             </div>
                         )}
                     </div>

@@ -79,7 +79,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
         return entries
             .map((entry): CartItem | null => {
                 const sellable = sellables.find(
-                    (s) => String(s.id) === String(entry.id) && s.type === entry.type,
+                    (s) =>
+                        String(s.id) === String(entry.id) &&
+                        s.type === entry.type,
                 );
                 if (!sellable) return null;
                 return {
@@ -146,7 +148,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
             if (!validIds.has(`${entry.type}-${entry.id}`)) {
                 // Determine if it was just set to not sellable or deleted
                 const exists = sellables.find(
-                    (s) => String(s.id) === String(entry.id) && s.type === entry.type,
+                    (s) =>
+                        String(s.id) === String(entry.id) &&
+                        s.type === entry.type,
                 );
                 if (exists && exists.is_online_sellable === false) {
                     setMessage({
@@ -188,7 +192,10 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                 });
 
                 if (variant) {
-                    if (variant.remaining !== null && variant.remaining < item.quantity) {
+                    if (
+                        variant.remaining !== null &&
+                        variant.remaining < item.quantity
+                    ) {
                         warnings.push(
                             `Insufficient stock for ${item.name} (${Object.values(variant.options).join(', ')}).`,
                         );
@@ -374,7 +381,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
         <ShopLayout>
             <Head title="Shopping Cart" />
             <div className="bg-white">
-                <div className="mx-auto max-w-7xl px-4 py-8 sm:py-16 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8">
                     <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
                         Shopping Cart
                     </h1>
@@ -425,10 +432,15 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                         <div className="mt-1 text-xs text-gray-500 sm:text-sm">
                                                             {Object.entries(
                                                                 item.options,
-                                                            ).map(
-                                                                ([key, val]) =>
-                                                                    `${key}: ${val}`,
-                                                            ).join(', ')}
+                                                            )
+                                                                .map(
+                                                                    ([
+                                                                        key,
+                                                                        val,
+                                                                    ]) =>
+                                                                        `${key}: ${val}`,
+                                                                )
+                                                                .join(', ')}
                                                         </div>
                                                     )}
                                                     <p className="mt-1 text-sm font-medium text-gray-900">
@@ -445,12 +457,12 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item
                                                                         .description
                                                                         .length >
-                                                                        230
+                                                                    230
                                                                         ? item.description.substring(
-                                                                            0,
-                                                                            230,
-                                                                        ) +
-                                                                        '...'
+                                                                              0,
+                                                                              230,
+                                                                          ) +
+                                                                          '...'
                                                                         : item.description,
                                                             }}
                                                         />
@@ -465,7 +477,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.id,
                                                                     item.type,
                                                                     item.quantity -
-                                                                    1,
+                                                                        1,
                                                                     item.options,
                                                                 )
                                                             }
@@ -482,7 +494,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.id,
                                                                     item.type,
                                                                     item.quantity +
-                                                                    1,
+                                                                        1,
                                                                     item.options,
                                                                 )
                                                             }
@@ -556,9 +568,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     serverBreakdown?.find(
                                                                         (s) =>
                                                                             s.id ===
-                                                                            item.id &&
+                                                                                item.id &&
                                                                             s.type ===
-                                                                            item.type,
+                                                                                item.type,
                                                                     );
 
                                                                 // Determine if THIS unit is discounted (greedy allocation: first N units)
@@ -571,7 +583,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                 const codeUsed =
                                                                     sItem
                                                                         ?.codes_applied?.[
-                                                                    i
+                                                                        i
                                                                     ] ||
                                                                     (isUnitDiscounted
                                                                         ? 'Discount'
@@ -585,7 +597,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                 const unitMemberPrice =
                                                                     Number(
                                                                         item.member_price ??
-                                                                        item.price,
+                                                                            item.price,
                                                                     );
                                                                 // If finding member price fails locally, rely on server total?
                                                                 // Better to use available data. If server says discounted, we assume member price is active.
@@ -660,49 +672,49 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                 {/* Applied Discounts Badges */}
                                                 {appliedDiscounts.length >
                                                     0 && (
-                                                        <div className="mb-2 flex flex-wrap gap-1.5 sm:mb-3 sm:gap-2">
-                                                            {appliedDiscounts.map(
-                                                                (code) => (
-                                                                    <span
-                                                                        key={code}
-                                                                        className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 sm:px-2.5 sm:text-sm"
+                                                    <div className="mb-2 flex flex-wrap gap-1.5 sm:mb-3 sm:gap-2">
+                                                        {appliedDiscounts.map(
+                                                            (code) => (
+                                                                <span
+                                                                    key={code}
+                                                                    className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 sm:px-2.5 sm:text-sm"
+                                                                >
+                                                                    {code}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            removeDiscount(
+                                                                                code,
+                                                                            )
+                                                                        }
+                                                                        className="ml-1 inline-flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none sm:ml-1.5 sm:h-4 sm:w-4"
                                                                     >
-                                                                        {code}
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                removeDiscount(
-                                                                                    code,
-                                                                                )
+                                                                        <span className="sr-only">
+                                                                            Remove
+                                                                            discount
+                                                                            code{' '}
+                                                                            {
+                                                                                code
                                                                             }
-                                                                            className="ml-1 inline-flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none sm:ml-1.5 sm:h-4 sm:w-4"
+                                                                        </span>
+                                                                        <svg
+                                                                            className="h-2 w-2"
+                                                                            stroke="currentColor"
+                                                                            fill="none"
+                                                                            viewBox="0 0 8 8"
                                                                         >
-                                                                            <span className="sr-only">
-                                                                                Remove
-                                                                                discount
-                                                                                code{' '}
-                                                                                {
-                                                                                    code
-                                                                                }
-                                                                            </span>
-                                                                            <svg
-                                                                                className="h-2 w-2"
-                                                                                stroke="currentColor"
-                                                                                fill="none"
-                                                                                viewBox="0 0 8 8"
-                                                                            >
-                                                                                <path
-                                                                                    strokeLinecap="round"
-                                                                                    strokeWidth="1.5"
-                                                                                    d="M1 1l6 6m0-6L1 7"
-                                                                                />
-                                                                            </svg>
-                                                                        </button>
-                                                                    </span>
-                                                                ),
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                                            <path
+                                                                                strokeLinecap="round"
+                                                                                strokeWidth="1.5"
+                                                                                d="M1 1l6 6m0-6L1 7"
+                                                                            />
+                                                                        </svg>
+                                                                    </button>
+                                                                </span>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 <div className="flex gap-2">
                                                     <input
@@ -821,7 +833,10 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                         value={email}
                                         onChange={(e) => {
                                             setEmail(e.target.value);
-                                            localStorage.setItem('cart_email', e.target.value);
+                                            localStorage.setItem(
+                                                'cart_email',
+                                                e.target.value,
+                                            );
                                             if (emailError) setEmailError(null);
                                         }}
                                         className={`block w-full rounded-md border ${emailError ? 'border-red-300' : 'border-gray-300'} py-2 pl-9 text-sm text-black placeholder-gray-500 shadow-sm focus:border-black focus:ring-black sm:pl-10`}
@@ -866,7 +881,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                         !email.trim()
                                     }
                                     onClick={handleCheckout}
-                                    className="flex w-full items-center justify-center border border-transparent bg-black px-4 py-2.5 text-sm font-medium uppercase text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50 disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-base"
+                                    className="flex w-full items-center justify-center border border-transparent bg-black px-4 py-2.5 text-sm font-medium text-white uppercase shadow-sm hover:bg-gray-800 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-base"
                                 >
                                     {isProcessing ? (
                                         <>
