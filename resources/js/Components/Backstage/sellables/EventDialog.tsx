@@ -417,7 +417,7 @@ export function EventDialog({
                     <div className="flex items-center space-x-2">
                         <Checkbox
                             id="variable-amount"
-                            checked={variableAmount}
+                            checked={!!variableAmount}
                             onCheckedChange={(checked) =>
                                 setVariableAmount(checked === true)
                             }
@@ -505,7 +505,7 @@ export function EventDialog({
                                 <div className="flex items-center space-x-2">
                                     <Checkbox
                                         id="online-sellable"
-                                        checked={isOnlineSellable}
+                                        checked={!!isOnlineSellable}
                                         onCheckedChange={(checked) =>
                                             setIsOnlineSellable(
                                                 checked === true,

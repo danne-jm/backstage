@@ -299,7 +299,7 @@ export function ProductDialog({
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="product-variable-amount"
-                                    checked={productVariableAmount}
+                                    checked={!!productVariableAmount}
                                     onCheckedChange={(checked) =>
                                         setProductVariableAmount(checked === true)
                                     }
@@ -393,7 +393,7 @@ export function ProductDialog({
                                 <div className="flex items-center space-x-2">
                                     <Checkbox
                                         id="online-sellable"
-                                        checked={isOnlineSellable}
+                                        checked={!!isOnlineSellable}
                                         onCheckedChange={(checked) =>
                                             setIsOnlineSellable(
                                                 checked === true,
