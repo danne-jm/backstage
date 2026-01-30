@@ -1,8 +1,52 @@
 import { PlaceholderPattern } from '@/Components/Shared/ui/placeholder-pattern';
 import { OfficeSale, OnlineSale, Sellable } from '@/types/sellables';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Vibrant color palette for chart lines - defined outside component for stable reference
+// Custom tooltip component matching the old chart style
+interface TooltipPayloadItem {
+    dataKey?: string | number;
+    name?: string;
+    value?: number;
+    color?: string;
+}
+
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: TooltipPayloadItem[];
+    label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+    if (!active || !payload || payload.length === 0) return null;
+
+    // Filter out zero values and sort by value descending
+    const items = payload
+        .filter((p) => p.value !== undefined && p.value > 0)
+        .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+
+    if (items.length === 0) return null;
+
+    return (
+        <div className="pointer-events-none max-w-[200px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs">
+            <div className="mb-1 text-[10px] font-medium sm:text-xs">{label}</div>
+            <div className="space-y-1">
+                {items.map((item) => (
+                    <div key={item.dataKey} className="flex items-center gap-1 text-[10px] sm:gap-2 sm:text-xs">
+                        <span
+                            className="inline-block h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: item.color }}
+                        />
+                        <span className="min-w-0 truncate">{item.name}</span>
+                        <span className="ml-auto shrink-0 font-medium">€{Number(item.value).toFixed(2)}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// Vibrant color palette for chart lines
 const COLOR_PALETTE = [
     '#FF00FF', // Magenta
     '#00FFFF', // Cyan
@@ -23,21 +67,6 @@ const COLOR_PALETTE = [
     '#FF00DD', // Fuchsia
     '#00FFAA', // Mint
 ];
-
-// Stable color getter function
-const getColor = (index: number, id: string): string => {
-    if (id === 'unknown') return '#888888'; // Gray for unknown
-    // Use palette first, then hash if we run out
-    if (index < COLOR_PALETTE.length) return COLOR_PALETTE[index];
-
-    // Simple hash for consistent colors beyond palette
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-        hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const c = (hash & 0x00ffffff).toString(16).toUpperCase();
-    return '#' + '00000'.substring(0, 6 - c.length) + c;
-};
 
 interface SalesChartProps {
     loading: boolean;
@@ -66,20 +95,6 @@ interface SalesChartProps {
     topSellerName: string;
 }
 
-interface HoverData {
-    dateIndex: number;
-    date: string;
-    mouseX: number;
-    mouseY: number;
-    points: Array<{
-        name: string;
-        value: number;
-        color: string;
-        x: number;
-        y: number;
-    }>;
-}
-
 export function SalesChart({
     loading,
     sales,
@@ -91,459 +106,161 @@ export function SalesChart({
 }: SalesChartProps) {
     const [showOffice, setShowOffice] = useState(true);
     const [showCard, setShowCard] = useState(true);
-    const [hover, setHover] = useState<HoverData | null>(null);
-    const svgRef = useRef<SVGSVGElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [containerSize, setContainerSize] = useState({ width: 600, height: 200 });
-
-    // Track container size changes (sidebar expand/collapse)
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        const updateSize = () => {
-            const rect = container.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 0) {
-                setContainerSize({ 
-                    width: Math.floor(rect.width), 
-                    height: Math.floor(rect.height) 
-                });
-            }
-        };
-
-        // Initial size after a small delay to ensure layout is ready
-        requestAnimationFrame(updateSize);
-
-        // Observe resize (handles sidebar toggle, window resize, etc.)
-        const observer = new ResizeObserver(() => {
-            requestAnimationFrame(updateSize);
-        });
-        observer.observe(container);
-
-        return () => observer.disconnect();
-    }, []);
 
     const dateKeys = sales.map((s) => s.date);
     const isHourlyData = dateKeys.length > 0 && dateKeys[0].includes(':');
 
-    // Compute combined series based on toggle state
-    // Each sellable's series = (office sales if showOffice) + (online sales if showCard)
-    const combinedSeries = useMemo(() => {
-        // 1. Identify ALL unique keys from known sellables AND actual sales
-        const allKeys = new Set<string>();
+    // Build chart data with all sellables as separate series
+    const { chartData, activeSellables } = useMemo(() => {
+        // Identify all unique sellables
+        const sellablesMap = new Map<string, { name: string; type: 'product' | 'event' }>();
 
         // Add known sellables
-        onlineSellableSeries.forEach(s => allKeys.add(`${s.type}-${s.id}`));
-
-        // Add keys from sales data
-        if (showCard) {
-            onlineSales.forEach(os => {
-                const type = os.product_id ? 'product' : 'event';
-                const id = os.product_id || os.event_id;
-                if (id) allKeys.add(`${type}-${id}`);
-                else allKeys.add('unknown-null');
-            });
-            officeSales.filter(os => os.method === 'card').forEach(os => {
-                const type = os.product_id ? 'product' : 'event';
-                const id = os.product_id || os.event_id;
-                if (id) allKeys.add(`${type}-${id}`);
-                else allKeys.add('unknown-null');
-            });
-        }
-        if (showOffice) {
-            officeSales.filter(os => os.method !== 'card').forEach(os => {
-                const type = os.product_id ? 'product' : 'event';
-                const id = os.product_id || os.event_id;
-                if (id) allKeys.add(`${type}-${id}`);
-                else allKeys.add('unknown-null');
-            });
-        }
-
-        return Array.from(allKeys).map((key) => {
-            if (key === 'unknown-null') {
-                // Calculate series for Unknown/Orphaned items (missing IDs)
-                const series = dateKeys.map((dk) => {
-                    let total = 0;
-                    if (showCard) {
-                        total += onlineSales.reduce((acc, os) => {
-                            if (os.product_id || os.event_id) return acc;
-
-                            const soldAt = os.sold_at || '';
-                            let matchKey: string;
-                            if (isHourlyData) {
-                                const dateObj = new Date(soldAt);
-                                const year = dateObj.getFullYear();
-                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                                const day = String(dateObj.getDate()).padStart(2, '0');
-                                const hour = String(dateObj.getHours()).padStart(2, '0');
-                                matchKey = `${year}-${month}-${day} ${hour}:00:00`;
-                            } else {
-                                matchKey = soldAt.split('T')[0].split(' ')[0];
-                            }
-                            if (matchKey !== dk) return acc;
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
-                        }, 0);
-
-                        total += officeSales.reduce((acc, os) => {
-                            if (os.method !== 'card') return acc;
-                            if (os.product_id || os.event_id) return acc;
-
-                            const soldAt = os.sold_at || '';
-                            let matchKey: string;
-                            if (isHourlyData) {
-                                const dateObj = new Date(soldAt);
-                                const year = dateObj.getFullYear();
-                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                                const day = String(dateObj.getDate()).padStart(2, '0');
-                                const hour = String(dateObj.getHours()).padStart(2, '0');
-                                matchKey = `${year}-${month}-${day} ${hour}:00:00`;
-                            } else {
-                                matchKey = soldAt.split('T')[0].split(' ')[0];
-                            }
-                            if (matchKey !== dk) return acc;
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
-                        }, 0);
-                    }
-                    if (showOffice) {
-                        total += officeSales.reduce((acc, os) => {
-                            if (os.method === 'card') return acc;
-                            if (os.product_id || os.event_id) return acc;
-
-                            const soldAt = os.sold_at || '';
-                            let matchKey: string;
-                            if (isHourlyData) {
-                                const dateObj = new Date(soldAt);
-                                const year = dateObj.getFullYear();
-                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                                const day = String(dateObj.getDate()).padStart(2, '0');
-                                const hour = String(dateObj.getHours()).padStart(2, '0');
-                                matchKey = `${year}-${month}-${day} ${hour}:00:00`;
-                            } else {
-                                matchKey = soldAt.split('T')[0].split(' ')[0];
-                            }
-                            if (matchKey !== dk) return acc;
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
-                        }, 0);
-                    }
-                    return total;
-                });
-                return {
-                    id: 'unknown',
-                    type: 'product' as const,
-                    name: 'Unknown Item',
-                    color: '#9ca3af',
-                    series
-                };
-            }
-
-            const [type, id] = key.split('-');
-
-            // Try to find metadata in known series
-            const known = onlineSellableSeries.find(s => s.type === type && String(s.id) === String(id));
-
-            // If unknown, try to find name from ANY sale record
-            let name = known?.name;
-            if (!name) {
-                const saleFn = (os: OnlineSale | OfficeSale) => {
-                    const osType = os.product_id ? 'product' : 'event';
-                    const osId = os.product_id || os.event_id;
-                    return String(osType) === String(type) && String(osId) === String(id);
-                };
-                const match = onlineSales.find(saleFn) || officeSales.find(saleFn);
-                name = match?.product?.name || match?.event?.name || `Unknown ${type === 'product' ? 'Product' : 'Item'} ${id}`;
-            }
-
-            const color = known?.color || '#9ca3af'; // Default gray for unknown
-
-            const series = dateKeys.map((dk) => {
-                let total = 0;
-
-                // Add online sales for this date if Card toggle is on
-                if (showCard) {
-                    total += onlineSales.reduce((acc, os) => {
-                        const osType = os.product_id ? 'product' : 'event';
-                        const osId = os.product_id || os.event_id;
-                        if (!osId) return acc; // Skip null IDs (handled in unknown-null)
-
-                        if (String(osType) !== String(type) || String(osId) !== String(id)) return acc;
-
-                        const soldAt = os.sold_at || '';
-                        let matchKey: string;
-                        if (isHourlyData) {
-                            const dateObj = new Date(soldAt);
-                            const year = dateObj.getFullYear();
-                            const month = String(
-                                dateObj.getMonth() + 1,
-                            ).padStart(2, '0');
-                            const day = String(dateObj.getDate()).padStart(
-                                2,
-                                '0',
-                            );
-                            const hour = String(
-                                dateObj.getHours(),
-                            ).padStart(2, '0');
-                            matchKey = `${year}-${month}-${day} ${hour}:00:00`;
-                        } else {
-                            matchKey = soldAt.split('T')[0].split(' ')[0];
-                        }
-                        if (matchKey !== dk) return acc;
-                        return acc + (parseFloat(String(os.amount || 0)) || 0);
-                    }, 0);
-
-                    // Also add Office sales made via CARD
-                    total += officeSales.reduce((acc, os) => {
-                        if (os.method !== 'card') return acc;
-                        const osType = os.product_id ? 'product' : 'event';
-                        const osId = os.product_id || os.event_id;
-                        if (!osId) return acc; // Skip null IDs
-
-                        if (String(osType) !== String(type) || String(osId) !== String(id)) return acc;
-
-                        const soldAt = os.sold_at || '';
-                        let matchKey: string;
-                        if (isHourlyData) {
-                            const dateObj = new Date(soldAt);
-                            const year = dateObj.getFullYear();
-                            const month = String(
-                                dateObj.getMonth() + 1,
-                            ).padStart(2, '0');
-                            const day = String(dateObj.getDate()).padStart(
-                                2,
-                                '0',
-                            );
-                            const hour = String(
-                                dateObj.getHours(),
-                            ).padStart(2, '0');
-                            matchKey = `${year}-${month}-${day} ${hour}:00:00`;
-                        } else {
-                            matchKey = soldAt.split('T')[0].split(' ')[0];
-                        }
-                        if (matchKey !== dk) return acc;
-                        return acc + (parseFloat(String(os.amount || 0)) || 0);
-                    }, 0);
-                }
-
-                // Add office sales for this date if Office toggle is on (CASH ONLY)
-                if (showOffice) {
-                    total += officeSales.reduce((acc, os) => {
-                        if (os.method === 'card') return acc;
-                        const osType = os.product_id ? 'product' : 'event';
-                        const osId = os.product_id || os.event_id;
-                        if (!osId) return acc; // Skip null IDs
-
-                        if (String(osType) !== String(type) || String(osId) !== String(id)) return acc;
-
-                        const soldAt = os.sold_at || '';
-                        let matchKey: string;
-                        if (isHourlyData) {
-                            const dateObj = new Date(soldAt);
-                            const year = dateObj.getFullYear();
-                            const month = String(
-                                dateObj.getMonth() + 1,
-                            ).padStart(2, '0');
-                            const day = String(dateObj.getDate()).padStart(
-                                2,
-                                '0',
-                            );
-                            const hour = String(
-                                dateObj.getHours(),
-                            ).padStart(2, '0');
-                            matchKey = `${year}-${month}-${day} ${hour}:00:00`;
-                        } else {
-                            matchKey = soldAt.split('T')[0].split(' ')[0];
-                        }
-                        if (matchKey !== dk) return acc;
-                        return acc + (parseFloat(String(os.amount || 0)) || 0);
-                    }, 0);
-                }
-
-                return total;
-            });
-            return { id, type, name, color, series };
-        })
-            .filter((s) => {
-                // Filter out ANY series that has 0 total across the entire period
-                const overallTotal = s.series.reduce((a, b) => a + b, 0);
-                return overallTotal > 0;
-            });
-    }, [
-        onlineSellableSeries,
-        dateKeys,
-        isHourlyData,
-        onlineSales,
-        officeSales,
-        showOffice,
-        showCard,
-    ]);
-
-    // Calculate dynamic max based on combined series
-    const visibleMax = Math.max(1, ...combinedSeries.flatMap((s) => s.series));
-
-    // Compute dynamic sellable totals based on toggle state
-    // This includes ALL items that have sales (not just online sellables)
-    const filteredTotals = useMemo(() => {
-        const totalsMap = new Map<
-            string,
-            {
-                id: string;
-                type: 'product' | 'event';
-                name: string;
-                total: number;
-                count: number;
-                color: string;
-            }
-        >();
-
-        // Helper to track color assignment index
-        let colorIndex = 0;
-        const colorMap = new Map<string, string>();
-
-        // Pre-assign colors to known series first for consistency
-        onlineSellableSeries.forEach(s => {
+        onlineSellableSeries.forEach((s) => {
             const key = `${s.type}-${s.id}`;
-            // If the backend provided a color, use it? Or override for uniqueness?
-            // Let's stick to our palette for guaranteed uniqueness if backend colors are colliding
-            // checking if backend provided something specific (usually they don't, just random)
-            colorMap.set(key, getColor(colorIndex++, String(s.id)));
+            sellablesMap.set(key, { name: s.name, type: s.type });
         });
 
-        const processSale = (
-            os: OnlineSale | OfficeSale,
-            isOffice: boolean,
-        ) => {
-            const amount = parseFloat(String(os.amount || 0)) || 0;
-            const type = os.product_id ? 'product' : 'event';
-            const id = os.product_id || os.event_id || 'unknown'; // Handle null ID
-
-            // correct method check
-            if (isOffice) {
-                const method = (os as OfficeSale).method;
-                if (method === 'card' && !showCard) return;
-                if (method !== 'card' && !showOffice) return;
-            } else {
-                if (!showCard) return;
-            }
-
-            const key = id === 'unknown' ? 'unknown' : `${type}-${id}`;
-            const existing = totalsMap.get(key);
-
-            if (existing) {
-                existing.total += amount;
-                existing.count += 1;
-            } else {
-                // If it's a known item, grab metadata
-                const seriesMeta = onlineSellableSeries.find(
-                    (s) => s.type === type && String(s.id) === String(id),
-                );
-
-                let name = seriesMeta?.name;
-                if (!name) {
-                    if (id === 'unknown') name = 'Unknown Item';
-                    else name = os.product?.name || os.event?.name || `${type === 'product' ? 'Product' : 'Event'} ${id}`;
+        // Add sellables from sales data
+        const processSales = (salesList: (OnlineSale | OfficeSale)[]) => {
+            salesList.forEach((sale) => {
+                const type = sale.product_id ? 'product' : 'event';
+                const id = sale.product_id || sale.event_id;
+                if (!id) {
+                    sellablesMap.set('unknown', { name: 'Unknown Item', type: 'product' });
+                    return;
                 }
-
-                // Determine Color
-                if (!colorMap.has(key)) {
-                    if (id === 'unknown') colorMap.set(key, '#9ca3af');
-                    else colorMap.set(key, getColor(colorIndex++, String(id)));
+                const key = `${type}-${id}`;
+                if (!sellablesMap.has(key)) {
+                    const name = sale.product?.name || sale.event?.name || `${type} ${id}`;
+                    sellablesMap.set(key, { name, type });
                 }
-
-                totalsMap.set(key, {
-                    id: String(id),
-                    type,
-                    name,
-                    total: amount,
-                    count: 1,
-                    color: colorMap.get(key)!,
-                });
-            }
+            });
         };
 
-        // Process online sales (always Card)
-        onlineSales.forEach((os) => processSale(os, false));
+        if (showCard) {
+            processSales(onlineSales);
+            processSales(officeSales.filter((os) => os.method === 'card'));
+        }
+        if (showOffice) {
+            processSales(officeSales.filter((os) => os.method !== 'card'));
+        }
 
-        // Process office sales (mix of Card/Cash)
-        officeSales.forEach((os) => processSale(os, true));
+        // Build data points for each date
+        const data = dateKeys.map((date) => {
+            const dataPoint: any = {
+                date: new Date(date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    ...(isHourlyData ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}),
+                }),
+                fullDate: date,
+            };
 
-        return Array.from(totalsMap.values()).sort((a, b) => b.total - a.total); // Sort by total revenue
-    }, [onlineSales, officeSales, onlineSellableSeries, showOffice, showCard]);
+            // Calculate sales for each sellable at this date
+            sellablesMap.forEach((meta, key) => {
+                let total = 0;
 
-    // Update combinedSeries colors to match totalsMap
-    // We need to re-map combinedSeries to ensure they use the SAME colors as the legend
-    const coloredCombinedSeries = useMemo(() => {
-        return combinedSeries.map(s => {
-            // Find matching total entry
-            const totalEntry = filteredTotals.find(t => {
-                if (t.id === 'unknown' && s.id === 'unknown') return true;
-                return t.type === s.type && t.id === s.id;
+                const matchDate = (saleDate: string) => {
+                    if (isHourlyData) {
+                        const dateObj = new Date(saleDate);
+                        const year = dateObj.getFullYear();
+                        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const day = String(dateObj.getDate()).padStart(2, '0');
+                        const hour = String(dateObj.getHours()).padStart(2, '0');
+                        return `${year}-${month}-${day} ${hour}:00:00` === date;
+                    } else {
+                        return saleDate.split('T')[0].split(' ')[0] === date;
+                    }
+                };
+
+                if (showCard) {
+                    // Online sales
+                    onlineSales.forEach((os) => {
+                        if (!matchDate(os.sold_at || '')) return;
+                        if (key === 'unknown' && !os.product_id && !os.event_id) {
+                            total += parseFloat(String(os.amount || 0)) || 0;
+                        } else {
+                            const osType = os.product_id ? 'product' : 'event';
+                            const osId = os.product_id || os.event_id;
+                            if (`${osType}-${osId}` === key) {
+                                total += parseFloat(String(os.amount || 0)) || 0;
+                            }
+                        }
+                    });
+
+                    // Office card sales
+                    officeSales
+                        .filter((os) => os.method === 'card')
+                        .forEach((os) => {
+                            if (!matchDate(os.sold_at || '')) return;
+                            if (key === 'unknown' && !os.product_id && !os.event_id) {
+                                total += parseFloat(String(os.amount || 0)) || 0;
+                            } else {
+                                const osType = os.product_id ? 'product' : 'event';
+                                const osId = os.product_id || os.event_id;
+                                if (`${osType}-${osId}` === key) {
+                                    total += parseFloat(String(os.amount || 0)) || 0;
+                                }
+                            }
+                        });
+                }
+
+                if (showOffice) {
+                    // Office cash sales
+                    officeSales
+                        .filter((os) => os.method !== 'card')
+                        .forEach((os) => {
+                            if (!matchDate(os.sold_at || '')) return;
+                            if (key === 'unknown' && !os.product_id && !os.event_id) {
+                                total += parseFloat(String(os.amount || 0)) || 0;
+                            } else {
+                                const osType = os.product_id ? 'product' : 'event';
+                                const osId = os.product_id || os.event_id;
+                                if (`${osType}-${osId}` === key) {
+                                    total += parseFloat(String(os.amount || 0)) || 0;
+                                }
+                            }
+                        });
+                }
+
+                // Use 0 instead of null so lines show along y=0 axis
+                dataPoint[meta.name] = total;
             });
 
-            return {
-                ...s,
-                color: totalEntry?.color || s.color // Fallback to existing if not in totals (shouldn't happen if sales > 0)
-            };
+            return dataPoint;
         });
-    }, [combinedSeries, filteredTotals]);
 
+        // Get active sellables (those with any non-zero totals across the period)
+        const totals = new Map<string, { name: string; total: number; count: number }>();
 
-    // Chart dimensions - viewBox coordinates matching container size
-    const leftPad = 38; // Space for y-axis labels - aligned with "Active sellables" below
-    const bottomPad = 24;
-    const topPad = 8;
-    const rightPad = 8;
-    // ViewBox dimensions match container for 1:1 coordinate mapping
-    const svgWidth = Math.max(200, containerSize.width);
-    const svgHeight = Math.max(100, containerSize.height);
-    const chartW = Math.max(1, svgWidth - leftPad - rightPad);
-    const chartH = Math.max(1, svgHeight - topPad - bottomPad);
-
-    const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-        if (!svgRef.current || !sales || sales.length === 0) return;
-
-        const rect = svgRef.current.getBoundingClientRect();
-        // Scale mouse position to viewBox coordinates
-        const scaleX = svgWidth / rect.width;
-        const scaleY = svgHeight / rect.height;
-        const svgX = (e.clientX - rect.left) * scaleX;
-
-        // Find closest date index based on mouse X position
-        const chartX = svgX - leftPad;
-        const ratio = chartX / chartW;
-        const dateIndex = Math.round(ratio * (dateKeys.length - 1));
-        const clampedIndex = Math.max(
-            0,
-            Math.min(dateKeys.length - 1, dateIndex),
-        );
-
-        // Calculate points for this date using COLORED combinedSeries
-        const points = coloredCombinedSeries
-            .map((s) => {
-                const val = s.series[clampedIndex] || 0;
-                const x =
-                    leftPad +
-                    (clampedIndex / Math.max(1, dateKeys.length - 1)) * chartW;
-                const y = topPad + chartH - (val / visibleMax) * chartH;
-                return { name: s.name, value: val, color: s.color, x, y };
-            })
-            .filter((p) => p.value > 0);
-
-        setHover({
-            dateIndex: clampedIndex,
-            date: dateKeys[clampedIndex],
-            mouseX: e.clientX - rect.left,
-            mouseY: e.clientY - rect.top,
-            points,
+        data.forEach((point) => {
+            Object.keys(point).forEach((key) => {
+                if (key === 'date' || key === 'fullDate') return;
+                const value = point[key];
+                if (value !== undefined && value > 0) {
+                    const existing = totals.get(key);
+                    if (existing) {
+                        existing.total += value;
+                        existing.count += 1;
+                    } else {
+                        totals.set(key, { name: key, total: value, count: 1 });
+                    }
+                }
+            });
         });
-    };
 
-    // Calculate Y-axis ticks (5 ticks including 0)
-    const yTicks = 5;
-    const yStep = visibleMax / (yTicks - 1);
-    const yTickValues = Array.from({ length: yTicks }, (_, i) => yStep * i);
+        const sellables = Array.from(totals.values())
+            .sort((a, b) => b.total - a.total)
+            .map((item, index) => ({
+                ...item,
+                color: COLOR_PALETTE[index % COLOR_PALETTE.length],
+            }));
 
-    // Calculate dynamic total based on visible categories
-    const displayedTotal =
-        (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
+        return { chartData: data, activeSellables: sellables };
+    }, [dateKeys, isHourlyData, onlineSales, officeSales, onlineSellableSeries, showOffice, showCard]);
+
+    const displayedTotal = (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
 
     return (
         <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
@@ -557,9 +274,7 @@ export function SalesChart({
                     >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
                         <span className="text-muted-foreground">Cash:</span>
-                        <span className="font-medium text-foreground">
-                            €{totalOffice.toFixed(2)}
-                        </span>
+                        <span className="font-medium text-foreground">€{totalOffice.toFixed(2)}</span>
                     </button>
                     <button
                         onClick={() => setShowCard(!showCard)}
@@ -568,11 +283,9 @@ export function SalesChart({
                     >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
                         <span className="text-muted-foreground">Card:</span>
-                        <span className="font-medium text-foreground">
-                            €{totalOnline.toFixed(2)}
-                        </span>
+                        <span className="font-medium text-foreground">€{totalOnline.toFixed(2)}</span>
                     </button>
-                    <div className="ml-0 text-sm font-semibold whitespace-nowrap sm:ml-1">
+                    <div className="ml-0 whitespace-nowrap text-sm font-semibold sm:ml-1">
                         €{displayedTotal.toFixed(2)}
                     </div>
                 </div>
@@ -581,342 +294,79 @@ export function SalesChart({
                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
             ) : (
                 <>
-                    <div ref={containerRef} className="relative min-h-0 w-full flex-1">
-                        <svg
-                            ref={svgRef}
-                            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                            preserveAspectRatio="none"
-                            className="absolute inset-0 h-full w-full"
-                            onMouseMove={handleMouseMove}
-                            onMouseLeave={() => setHover(null)}
-                        >
-                            {sales && sales.length > 0 && (
-                                <>
-                                    {/* Y-axis grid lines and labels */}
-                                    {yTickValues.map((value, i) => {
-                                        const y =
-                                            topPad +
-                                            chartH -
-                                            (value / visibleMax) * chartH;
-                                        return (
-                                            <g key={`y-tick-${i}`}>
-                                                <line
-                                                    x1={leftPad}
-                                                    y1={y}
-                                                    x2={leftPad + chartW}
-                                                    y2={y}
-                                                    stroke="currentColor"
-                                                    strokeOpacity={0.08}
-                                                    strokeWidth={1}
-                                                    vectorEffect="non-scaling-stroke"
-                                                />
-                                                <text
-                                                    x={leftPad - 8}
-                                                    y={y}
-                                                    textAnchor="end"
-                                                    dominantBaseline="middle"
-                                                    style={{ fontSize: '11px', fontWeight: 400 }}
-                                                    fill="currentColor"
-                                                    opacity={0.5}
-                                                >
-                                                    €
-                                                    {value >= 1000
-                                                        ? `${(value / 1000).toFixed(1)}k`
-                                                        : value.toFixed(0)}
-                                                </text>
-                                            </g>
-                                        );
-                                    })}
-
-                                    {/* X-axis labels - intelligently spaced to prevent overflow */}
-                                    {dateKeys.map((date, i) => {
-                                        // Detect if this is hourly data (has hour component)
-                                        const isHourly = date.includes(':');
-
-                                        // Show fewer labels based on data points and container width
-                                        const labelsPerWidth = Math.floor(containerSize.width / 80); // ~80px per label
-                                        const step = Math.max(1, Math.ceil(dateKeys.length / Math.max(3, labelsPerWidth)));
-
-                                        // Always show first and last, then every nth
-                                        const shouldShow =
-                                            i === 0 ||
-                                            i === dateKeys.length - 1 ||
-                                            i % step === 0;
-
-                                        if (!shouldShow) return null;
-
-                                        const x =
-                                            leftPad +
-                                            (i /
-                                                Math.max(
-                                                    1,
-                                                    dateKeys.length - 1,
-                                                )) *
-                                            chartW;
-                                        const y = topPad + chartH + 15;
-
-                                        let formattedDate;
-                                        if (isHourly) {
-                                            // Format as time (e.g., "14:00")
-                                            const dateObj = new Date(date);
-                                            formattedDate =
-                                                dateObj.toLocaleTimeString(
-                                                    'en-US',
-                                                    {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                        hour12: false,
-                                                    },
-                                                );
-                                        } else {
-                                            // Format as date (e.g., "Jan 25")
-                                            formattedDate = new Date(
-                                                date,
-                                            ).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                            });
-                                        }
-
-                                        return (
-                                            <text
-                                                key={`x-label-${i}`}
-                                                x={x}
-                                                y={y}
-                                                textAnchor={
-                                                    i === 0
-                                                        ? 'start'
-                                                        : i ===
-                                                            dateKeys.length - 1
-                                                            ? 'end'
-                                                            : 'middle'
-                                                }
-                                                style={{ fontSize: '11px', fontWeight: 400 }}
-                                                fill="currentColor"
-                                                opacity={0.5}
-                                            >
-                                                {formattedDate}
-                                            </text>
-                                        );
-                                    })}
-
-                                    {/* Combined sellable lines (office + online based on toggles) */}
-                                    {coloredCombinedSeries.map((s, idx) => {
-                                        const points = s.series.map(
-                                            (val: number, i: number) => {
-                                                const x =
-                                                    leftPad +
-                                                    (i /
-                                                        Math.max(
-                                                            1,
-                                                            dateKeys.length - 1,
-                                                        )) *
-                                                    chartW;
-                                                const y =
-                                                    topPad +
-                                                    chartH -
-                                                    (val / visibleMax) * chartH;
-                                                return { x, y };
-                                            },
-                                        );
-
-                                        const d = points
-                                            .map(
-                                                (p, i) =>
-                                                    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`,
-                                            )
-                                            .join(' ');
-
-                                        const isSinglePoint = points.length === 1;
-
-                                        return (
-                                            <g key={`series-${idx}`}>
-                                                <path
-                                                    d={d}
-                                                    fill="none"
-                                                    stroke={s.color}
-                                                    strokeWidth={2}
-                                                    strokeOpacity={0.9}
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    vectorEffect="non-scaling-stroke"
-                                                    style={{
-                                                        pointerEvents: 'none',
-                                                    }}
-                                                />
-                                                {isSinglePoint && (
-                                                    <circle
-                                                        cx={points[0].x}
-                                                        cy={points[0].y}
-                                                        r={4}
-                                                        fill={s.color}
-                                                        stroke="none"
-                                                    />
-                                                )}
-                                            </g>
-                                        );
-                                    })}
-
-                                    {/* Vertical hover line */}
-                                    {hover && (
-                                        <line
-                                            x1={
-                                                leftPad +
-                                                (hover.dateIndex /
-                                                    Math.max(
-                                                        1,
-                                                        dateKeys.length - 1,
-                                                    )) *
-                                                chartW
-                                            }
-                                            y1={topPad}
-                                            x2={
-                                                leftPad +
-                                                (hover.dateIndex /
-                                                    Math.max(
-                                                        1,
-                                                        dateKeys.length - 1,
-                                                    )) *
-                                                chartW
-                                            }
-                                            y2={topPad + chartH}
-                                            stroke="currentColor"
-                                            strokeOpacity={0.2}
-                                            strokeWidth={1}
-                                            strokeDasharray="4,4"
-                                            vectorEffect="non-scaling-stroke"
-                                            style={{ pointerEvents: 'none' }}
-                                        />
-                                    )}
-
-                                    {/* Circle indicators on hover */}
-                                    {hover &&
-                                        hover.points.map((point, i) => (
-                                            <circle
-                                                key={`hover-point-${i}`}
-                                                cx={point.x}
-                                                cy={point.y}
-                                                r={4}
-                                                fill={point.color}
-                                                stroke="white"
-                                                strokeWidth={1.5}
-                                                vectorEffect="non-scaling-stroke"
-                                                style={{
-                                                    pointerEvents: 'none',
-                                                }}
-                                            />
-                                        ))}
-                                </>
-                            )}
-                        </svg>
-
-                        {/* Tooltip */}
-                        {hover && hover.points.length > 0 && (
-                            <div
-                                className="pointer-events-none absolute z-10 max-w-[200px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs"
-                                style={{
-                                    left:
-                                        hover.mouseX > containerSize.width / 2
-                                            ? `${hover.mouseX - 180}px`
-                                            : `${hover.mouseX + 12}px`,
-                                    top:
-                                        hover.mouseY > containerSize.height / 2
-                                            ? `${hover.mouseY - 80}px`
-                                            : `${hover.mouseY + 10}px`,
-                                }}
-                            >
-                                <div className="mb-1 text-[10px] font-medium sm:text-xs">
-                                    {new Date(hover.date).toLocaleDateString(
-                                        'en-US',
-                                        {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric',
-                                        },
-                                    )}
-                                </div>
-                                <div className="space-y-1">
-                                    {hover.points.map((item, i) => (
-                                        <div
-                                            key={i}
-                                            className="flex items-center gap-1 text-[10px] sm:gap-2 sm:text-xs"
-                                        >
-                                            <span
-                                                className="inline-block h-2 w-2 shrink-0 rounded-full"
-                                                style={{
-                                                    backgroundColor: item.color,
-                                                }}
-                                            />
-                                            <span className="min-w-0 truncate">
-                                                {item.name}
-                                            </span>
-                                            <span className="ml-auto shrink-0 font-medium">
-                                                €{item.value.toFixed(2)}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                    <div className="relative min-h-0 w-full flex-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -12.5, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.08} />
+                                <XAxis
+                                    dataKey="date"
+                                    tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.5 }}
+                                    stroke="currentColor"
+                                    strokeOpacity={0.2}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.5 }}
+                                    stroke="currentColor"
+                                    strokeOpacity={0.2}
+                                    domain={[0, 'auto']}
+                                    tickFormatter={(value) =>
+                                        value >= 1000 ? `€${(value / 1000).toFixed(1)}k` : `€${value}`
+                                    }
+                                    width={50}
+                                />
+                                <Tooltip
+                                    content={<CustomTooltip />}
+                                    cursor={{ stroke: 'currentColor', strokeOpacity: 0.2 }}
+                                />
+                                {activeSellables.map((sellable) => (
+                                    <Line
+                                        key={sellable.name}
+                                        type="monotone"
+                                        dataKey={sellable.name}
+                                        stroke={sellable.color}
+                                        strokeWidth={2}
+                                        dot={false}
+                                        activeDot={{ r: 4 }}
+                                    />
+                                ))}
+                            </LineChart>
+                        </ResponsiveContainer>
                     </div>
 
                     <div className="mt-2 shrink-0 text-xs">
-                        <div className="mb-1 text-muted-foreground">
-                            Active sellables
-                        </div>
+                        <div className="mb-1 text-muted-foreground">Active sellables</div>
                         <div className="space-y-1 pr-2">
-                            {filteredTotals.length > 0 ? (
-                                filteredTotals.map((s) => {
-                                    const overall =
-                                        filteredTotals.reduce(
-                                            (a, it) => a + it.total,
-                                            0,
-                                        ) || 0;
-                                    const pct =
-                                        overall === 0
-                                            ? 0
-                                            : (s.total / overall) * 100;
+                            {activeSellables.length > 0 ? (
+                                activeSellables.map((s) => {
+                                    const overall = activeSellables.reduce((a, it) => a + it.total, 0) || 0;
+                                    const pct = overall === 0 ? 0 : (s.total / overall) * 100;
 
                                     return (
                                         <div
-                                            key={`sellable-${s.type}-${s.id}`}
+                                            key={s.name}
                                             className="flex items-center justify-between gap-3 text-[10px] sm:text-xs"
                                         >
                                             <div className="flex min-w-0 flex-1 items-center gap-2">
                                                 <span
                                                     className="inline-block h-2 w-2 shrink-0 rounded-full"
-                                                    style={{
-                                                        backgroundColor:
-                                                            s.color,
-                                                    }}
+                                                    style={{ backgroundColor: s.color }}
                                                 />
                                                 <div className="flex min-w-0 flex-1 items-baseline gap-2">
-                                                    <span
-                                                        className="truncate"
-                                                        title={s.name}
-                                                    >
+                                                    <span className="truncate" title={s.name}>
                                                         {s.name}
                                                     </span>
-                                                    <span className="shrink-0 text-muted-foreground">
-                                                        x {s.count}
-                                                    </span>
+                                                    <span className="shrink-0 text-muted-foreground">x {s.count}</span>
                                                 </div>
                                             </div>
                                             <div className="flex shrink-0 items-baseline gap-3">
-                                                <div className="font-medium">
-                                                    €{s.total.toFixed(2)}
-                                                </div>
-                                                <div className="text-muted-foreground">
-                                                    {pct.toFixed(1)}%
-                                                </div>
+                                                <div className="font-medium">€{s.total.toFixed(2)}</div>
+                                                <div className="text-muted-foreground">{pct.toFixed(1)}%</div>
                                             </div>
                                         </div>
                                     );
                                 })
                             ) : (
-                                <div className="text-muted-foreground">
-                                    No sales in this period
-                                </div>
+                                <div className="text-muted-foreground">No sales in this period</div>
                             )}
                         </div>
                     </div>
