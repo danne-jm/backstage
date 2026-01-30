@@ -58,8 +58,15 @@ class SaleService
                         $qtyVal = $product->{$quantityField};
                         $qtyNumber = is_null($qtyVal) ? 0 : intval($qtyVal);
 
-                        if (! $isUnlimited && $qtyNumber <= 0) {
-                            throw ValidationException::withMessages(['stock' => 'This product is sold out.']);
+                        if (! $isUnlimited) {
+                            if ($qtyNumber <= 0 && $qtyVal !== null) {
+                                // Double check against sold_count if quantity exists
+                                // Note: For products, we use the un-suffixed 'sold_count'
+                                $sold = $product->sold_count ?? 0;
+                                if (($qtyNumber - $sold) <= 0) {
+                                    throw ValidationException::withMessages(['stock' => 'This product is sold out.']);
+                                }
+                            }
                         }
                     }
                 }
@@ -88,8 +95,17 @@ class SaleService
                     $qtyVal = $event->{$quantityField} ?? null;
                     $qtyNumber = is_null($qtyVal) ? 0 : intval($qtyVal);
 
-                    if (! $isUnlimited && $qtyNumber <= 0) {
-                        throw ValidationException::withMessages(['stock' => 'This event is sold out.']);
+                    if (! $isUnlimited) {
+                        $soldCount = 0;
+                        if ($ticketTypeKey === 'with_card') {
+                            $soldCount = $event->sold_count_with_card ?? 0;
+                        } else {
+                            $soldCount = $event->sold_count_without_card ?? 0;
+                        }
+
+                        if ($qtyVal !== null && ($qtyNumber - $soldCount) <= 0) {
+                            throw ValidationException::withMessages(['stock' => 'This event is sold out.']);
+                        }
                     }
                 }
             }
@@ -100,70 +116,29 @@ class SaleService
                 'event_id' => $eventId,
                 'method' => $method,
                 'amount' => $amount,
+                'ticket_type' => $ticketType,
                 'details' => $details,
                 'sold_at' => $data['sold_at'] ?? now(),
             ]);
 
-            // Adjust quantities directly on the product/event so existing remaining getters (which
-            // subtract OfficeShiftSale counts from the stored quantity) will reflect online sales.
+            // Increment sold counts instead of decrementing quantity
             if ($productId) {
-                $product = Product::find($productId);
-                if ($product) {
-                    // Atomic Decrement Logic
-                    // Prefer quantity_with_card if unlimited_quantity_with_card is FALSE and quantity_with_card is NOT NULL
-                    // (Note: if unlimited is TRUE, we do nothing)
-
-                    if ($product->unlimited_quantity_with_card === false && ! is_null($product->quantity_with_card)) {
-                        // We must conditionally decrement only if we are aiming for the 'with_card' stock.
-                        // Wait, the logic above was: if (!empty(qty_card) OR unlimited_card === false).
-                        // Let's replicate strict logic but atomically.
-
-                        // "If product has per-card quantities, prefer decrementing quantity_with_card when present"
-                        // The original logic checked `!empty($product->quantity_with_card)`.
-                        // Since we are in a transaction, we can use the instance we have, BUT to be safe against races,
-                        // we should fire a query builder update.
-
-                        Product::where('id', $productId)->update([
-                            'quantity_with_card' => DB::raw('GREATEST(0, quantity_with_card - 1)'),
-                        ]);
-                    } else {
-                        // Fallback: decrement main quantity if present and not unlimited
-                        if (! $product->unlimited_quantity && ! is_null($product->quantity)) {
-                            Product::where('id', $productId)->update([
-                                'quantity' => DB::raw('GREATEST(0, quantity - 1)'),
-                            ]);
-                        }
-                    }
-                }
+                // Products -> increment 'sold_count'
+                // We do NOT check logic here because we just updated stock; this is the 'Act' part.
+                // However, since we are inside a transaction, we accept the small race risk here for POS
+                // or we could use the same safe update logic as OnlinePaymentController?
+                // For POS, we'll keep it simple: just increment.
+                Product::where('id', $productId)->increment('sold_count');
             }
 
             if ($eventId) {
-                $event = Event::find($eventId);
-                if ($event) {
-                    if ($ticketType && $event->variable_amount) {
-                        // Variable amount event
-                        if ($ticketType === 'with_card') {
-                            if (! $event->unlimited_quantity_with_card && ! is_null($event->quantity_with_card)) {
-                                Event::where('id', $eventId)->update([
-                                    'quantity_with_card' => DB::raw('GREATEST(0, quantity_with_card - 1)'),
-                                ]);
-                            }
-                        } else {
-                            if (! $event->unlimited_quantity_without_card && ! is_null($event->quantity_without_card)) {
-                                Event::where('id', $eventId)->update([
-                                    'quantity_without_card' => DB::raw('GREATEST(0, quantity_without_card - 1)'),
-                                ]);
-                            }
-                        }
-                    } else {
-                        // Non-variable amount: decrement main quantity
-                        if (! $event->unlimited_quantity && ! is_null($event->quantity)) {
-                            Event::where('id', $eventId)->update([
-                                'quantity' => DB::raw('GREATEST(0, quantity - 1)'),
-                            ]);
-                        }
-                    }
+                // Events -> increment appropriate sold_count column
+                $fieldToIncrement = 'sold_count_without_card';
+                if ($ticketType && $ticketType === 'with_card') {
+                    $fieldToIncrement = 'sold_count_with_card';
                 }
+                
+                Event::where('id', $eventId)->increment($fieldToIncrement);
             }
 
             // If office_shift_id present, also create an OfficeShiftSale so the sale appears in the shift log

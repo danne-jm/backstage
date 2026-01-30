@@ -511,15 +511,11 @@ class OnlinePaymentController extends Controller
             // Atomic Update for Variant
             if (! empty($saleData['variant_id'])) {
                 // Use the resolved variant ID to ensure we update the exact same row we validated.
-                // CRITICAL: Use atomic update with condition to prevent race conditions.
-                // even though we validated 'read-only' earlier, another transaction could have sold it.
                 $updated = SellableVariant::where('id', $saleData['variant_id'])
-                    ->whereRaw('(quantity IS NULL OR sold_count < quantity)')
+                    ->whereRaw('(quantity IS NULL OR sold_count + 1 <= quantity)')
                     ->increment('sold_count');
 
                 if (! $updated) {
-                    // Logic: If increment failed, it means stock changed between validation and now.
-                    // Throwing exception here triggers rollback of the entire checkout transaction.
                     $type = $saleData['product_id'] ? 'product' : 'event';
                     throw new \Exception("One or more items became sold out during processing.");
                 }
@@ -529,11 +525,11 @@ class OnlinePaymentController extends Controller
                 $eventUpdated = false;
                 if ($saleData['ticket_type'] === 'with_card') {
                     $eventUpdated = Event::where('id', $saleData['event_id'])
-                        ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card < quantity_with_card)')
+                        ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card + 1 <= quantity_with_card)')
                         ->increment('sold_count_with_card');
                 } else {
                     $eventUpdated = Event::where('id', $saleData['event_id'])
-                        ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card < quantity_without_card)')
+                        ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card + 1 <= quantity_without_card)')
                         ->increment('sold_count_without_card');
                 }
 
@@ -547,7 +543,7 @@ class OnlinePaymentController extends Controller
 
             if ($saleData['product_id']) {
                 $productUpdated = Product::where('id', $saleData['product_id'])
-                    ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count < quantity)')
+                    ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count + 1 <= quantity)')
                     ->increment('sold_count');
 
                 if (! $productUpdated) {
