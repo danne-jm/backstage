@@ -58,6 +58,8 @@ export function useCart() {
         quantity: number;
         options?: Record<string, string>;
     }) => {
+        // Calculate current total cart count
+        const currentTotal = entries.reduce((acc, e) => acc + e.quantity, 0);
         const existingIndex = entries.findIndex(
             (e) =>
                 e.id === item.id &&
@@ -65,6 +67,17 @@ export function useCart() {
                 JSON.stringify(e.options || {}) ===
                 JSON.stringify(item.options || {}),
         );
+
+        let newTotal;
+        if (existingIndex > -1) {
+            newTotal = currentTotal + item.quantity;
+        } else {
+            newTotal = currentTotal + item.quantity;
+        }
+        if (newTotal > 20) {
+            alert('You can only add up to 20 items to your cart.');
+            return;
+        }
 
         if (existingIndex > -1) {
             const newEntries = [...entries];
@@ -107,6 +120,20 @@ export function useCart() {
         options?: Record<string, string>,
     ) => {
         if (quantity < 1) return;
+        // Calculate what the new total would be if this item's quantity is updated
+        const currentEntry = entries.find(
+            (e) =>
+                e.id === id &&
+                e.type === type &&
+                JSON.stringify(e.options || {}) === JSON.stringify(options || {})
+        );
+        const currentQty = currentEntry ? currentEntry.quantity : 0;
+        const currentTotal = entries.reduce((acc, e) => acc + e.quantity, 0);
+        const newTotal = currentTotal - currentQty + quantity;
+        if (newTotal > 20) {
+            alert('You can only have up to 20 items in your cart.');
+            return;
+        }
         const newEntries = entries.map((e) => {
             if (
                 e.id === id &&

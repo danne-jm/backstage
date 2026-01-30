@@ -128,27 +128,26 @@ export default function ShopShow({ item }: Props) {
         <ShopLayout>
             <Head title={item.name} />
             <div className="min-h-[calc(100vh-200px)] bg-white">
-                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 py-4 sm:py-8 sm:px-6 lg:px-8">
                     {/* Breadcrumbs */}
-                    <nav className="mb-8 flex items-center text-sm font-medium text-gray-500">
+                    <nav className="mb-4 flex items-center text-xs font-medium text-gray-500 sm:mb-8 sm:text-sm">
                         <Link href="/" className="hover:text-gray-900">
                             Home
                         </Link>
-                        <span className="mx-2">/</span>
+                        <span className="mx-1 sm:mx-2">/</span>
                         <Link
-                            href={`/?filter=${item.type}s`}
+                            href={`/?filter=${item.type}s#${item.type}-list`}
                             className="capitalize hover:text-gray-900"
                         >
                             {item.type}s
                         </Link>
-                        <span className="mx-2">/</span>
-                        <span className="text-gray-900">{item.name}</span>
+                        <span className="mx-1 sm:mx-2">/</span>
+                        <span className="truncate text-gray-900">{item.name}</span>
                     </nav>
 
                     <div className="lg:grid lg:grid-cols-2 lg:gap-x-12">
                         {/* Image Column */}
-                        {/* Image Column */}
-                        <div className="mb-10 flex flex-col gap-4 lg:mb-0">
+                        <div className="mb-6 flex flex-col gap-3 sm:mb-10 sm:gap-4 lg:mb-0">
                             <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white">
                                 {activeImage ? (
                                     <img
@@ -158,14 +157,14 @@ export default function ShopShow({ item }: Props) {
                                     />
                                 ) : (
                                     <div className="flex h-full items-center justify-center text-gray-400">
-                                        <span>No Image</span>
+                                        <span className="text-sm">No Image</span>
                                     </div>
                                 )}
                             </div>
 
                             {/* Thumbnail Navigation */}
                             {hasMultipleImages && (
-                                <div className="grid grid-cols-5 gap-4">
+                                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-4">
                                     {item.images!.map((img) => (
                                         <button
                                             key={img.id}
@@ -192,12 +191,12 @@ export default function ShopShow({ item }: Props) {
 
                         {/* Details Column */}
                         <div className="flex flex-col">
-                            <h1 className="mb-4 text-4xl font-bold tracking-tight text-black sm:text-5xl">
+                            <h1 className="mb-3 text-2xl font-bold tracking-tight text-black sm:mb-4 sm:text-4xl lg:text-5xl">
                                 {item.name}
                             </h1>
 
                             {!item.is_online_sellable ? (
-                                <div className="mb-6 rounded-md bg-red-50 p-4">
+                                <div className="mb-4 rounded-md bg-red-50 p-3 sm:mb-6 sm:p-4">
                                     <div className="flex">
                                         <div className="flex-shrink-0">
                                             <svg
@@ -227,14 +226,14 @@ export default function ShopShow({ item }: Props) {
                                 </div>
                             ) : (
                                 <>
-                                    <p className="mb-8 text-4xl font-bold text-black">
+                                    <p className="mb-4 text-2xl font-bold text-black sm:mb-8 sm:text-4xl">
                                         €{Number(item.price).toFixed(2)}
                                     </p>
 
                                     {item.member_price !== null &&
                                         item.member_price !== undefined &&
                                         item.member_price < item.price && (
-                                            <div className="mb-6 rounded-r-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
+                                            <div className="mb-4 rounded-r-lg border-l-4 border-emerald-500 bg-emerald-50 p-3 sm:mb-6 sm:p-4">
                                                 <div className="flex items-start">
                                                     <div className="flex-shrink-0">
                                                         <svg
@@ -290,7 +289,7 @@ export default function ShopShow({ item }: Props) {
                                         !item.unlimited_without_card &&
                                         (item.remaining_without_card ?? 0) <=
                                         0 && (
-                                            <div className="mb-6 rounded-md bg-yellow-50 p-4">
+                                            <div className="mb-4 rounded-md bg-yellow-50 p-3 sm:mb-6 sm:p-4">
                                                 <div className="flex">
                                                     <div className="flex-shrink-0">
                                                         {/* Exclamation icon */}
@@ -329,7 +328,7 @@ export default function ShopShow({ item }: Props) {
                                     {/* Variant Selection */}
                                     {item.variants_config &&
                                         item.variants_config.length > 0 && (
-                                            <div className="mb-8 space-y-4">
+                                            <div className="mb-4 space-y-3 sm:mb-8 sm:space-y-4">
                                                 {item.variants_config.map(
                                                     (attr) => (
                                                         <div key={attr.name}>
@@ -345,7 +344,7 @@ export default function ShopShow({ item }: Props) {
                                                                     )
                                                                 }
                                                             >
-                                                                <SelectTrigger className="w-full sm:w-[50%]">
+                                                                <SelectTrigger className="w-full">
                                                                     <SelectValue
                                                                         placeholder={`Select ${attr.name}`}
                                                                     />
@@ -369,7 +368,7 @@ export default function ShopShow({ item }: Props) {
                                             </div>
                                         )}
 
-                                    <div className="mb-8">
+                                    <div className="mb-4 sm:mb-8">
                                         <label
                                             htmlFor="quantity"
                                             className="mb-2 block text-sm font-medium text-gray-700"
@@ -377,16 +376,16 @@ export default function ShopShow({ item }: Props) {
                                             QUANTITY
                                         </label>
                                         <div className="flex items-center justify-between">
-                                            <div className="flex h-12 w-32 items-center border border-gray-300">
+                                            <div className="flex h-10 w-28 items-center border border-gray-300 sm:h-12 sm:w-32">
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         decrement();
                                                     }}
-                                                    className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
+                                                    className="flex h-full w-8 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100 sm:w-10"
                                                 >
-                                                    <Minus className="h-4 w-4" />
+                                                    <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
                                                 </button>
                                                 <input
                                                     type="number"
@@ -403,7 +402,7 @@ export default function ShopShow({ item }: Props) {
                                                             ),
                                                         )
                                                     }
-                                                    className="no-spinner h-full w-full flex-1 appearance-none border-none p-0 text-center font-medium text-black focus:ring-0"
+                                                    className="no-spinner h-full w-full flex-1 appearance-none border-none p-0 text-center text-sm font-medium text-black focus:ring-0 sm:text-base"
                                                     readOnly={false}
                                                 />
                                                 <button
@@ -412,9 +411,9 @@ export default function ShopShow({ item }: Props) {
                                                         e.preventDefault();
                                                         increment();
                                                     }}
-                                                    className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
+                                                    className="flex h-full w-8 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100 sm:w-10"
                                                 >
-                                                    <Plus className="h-4 w-4" />
+                                                    <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                                                 </button>
                                             </div>
                                             {item.instagram_link && (
@@ -425,18 +424,18 @@ export default function ShopShow({ item }: Props) {
                                                     className="flex items-center justify-center transition-opacity hover:opacity-70"
                                                     aria-label="View on Instagram"
                                                 >
-                                                    <Instagram className="h-8 w-8 text-black" />
+                                                    <Instagram className="h-7 w-7 text-black sm:h-8 sm:w-8" />
                                                 </a>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="mb-8 space-y-4">
+                                    <div className="mb-4 space-y-3 sm:mb-8 sm:space-y-4">
                                         {isSoldOut ? (
                                             <button
                                                 type="button"
                                                 disabled
-                                                className="w-full cursor-not-allowed bg-gray-300 px-8 py-4 text-base font-medium text-gray-500 uppercase focus:outline-none"
+                                                className="w-full cursor-not-allowed bg-gray-300 px-6 py-3 text-sm font-medium uppercase text-gray-500 focus:outline-none sm:px-8 sm:py-4 sm:text-base"
                                             >
                                                 Sold Out
                                             </button>
@@ -449,9 +448,10 @@ export default function ShopShow({ item }: Props) {
                                                     }
                                                     onClick={handleAddToCart}
                                                     className={`
-                                                        flex w-full cursor-pointer items-center justify-center gap-2 border border-black px-8 py-4 text-base font-medium uppercase text-black
+                                                        flex w-full cursor-pointer items-center justify-center gap-2 border border-black px-6 py-3 text-sm font-medium uppercase text-black
                                                         focus:outline-none focus:ring-0 focus-visible:ring-0
                                                         transition duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]
+                                                        sm:px-8 sm:py-4 sm:text-base
                                                         ${!isSelectionComplete ? 'cursor-not-allowed opacity-50 bg-gray-100' : 'bg-white hover:bg-gray-50'}
                                                         ${isAdded ? 'scale-105' : 'scale-100'}
                                                     `}
@@ -480,11 +480,11 @@ export default function ShopShow({ item }: Props) {
                             )}
 
                             {item.type === 'event' && item.event_date && (
-                                <div className="mb-6 border-b border-gray-200 pb-6">
-                                    <h3 className="mb-1 text-sm font-medium text-gray-500 uppercase">
+                                <div className="mb-4 border-b border-gray-200 pb-4 sm:mb-6 sm:pb-6">
+                                    <h3 className="mb-1 text-xs font-medium uppercase text-gray-500 sm:text-sm">
                                         Event Date
                                     </h3>
-                                    <p className="text-lg font-semibold text-gray-900">
+                                    <p className="text-base font-semibold text-gray-900 sm:text-lg">
                                         {new Date(
                                             item.event_date,
                                         ).toLocaleDateString('en-US', {
@@ -497,7 +497,7 @@ export default function ShopShow({ item }: Props) {
                                 </div>
                             )}
 
-                            <div className="prose prose-sm text-gray-500">
+                            <div className="prose prose-sm max-w-none text-gray-500">
                                 <div
                                     dangerouslySetInnerHTML={{
                                         __html: item.description || '',

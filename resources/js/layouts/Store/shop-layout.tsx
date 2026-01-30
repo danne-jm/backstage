@@ -26,13 +26,13 @@ export default function ShopLayout({ children }: PropsWithChildren) {
     return (
         <div className="flex min-h-screen flex-col bg-gray-50">
             <header className="border-b border-gray-200 bg-white print:border-none">
-                <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-8 sm:px-6 lg:px-8 print:justify-center print:py-4">
+                <div className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:py-6 sm:px-6 lg:px-8 print:justify-center print:py-4">
                     <div className="flex items-center">
                         <Link href="/">
                             <img
                                 src="/images/BE-LEUV-ESN.webp"
                                 alt="Association Logo"
-                                className="h-20 w-auto print:h-24"
+                                className="h-14 w-auto sm:h-16 md:h-20 print:h-20"
                             />
                         </Link>
                     </div>
@@ -43,16 +43,16 @@ export default function ShopLayout({ children }: PropsWithChildren) {
                             className="relative text-gray-900 hover:text-gray-600"
                         >
                             <span className="sr-only">Cart</span>
-                            <ShoppingBag className="h-6 w-6" />
+                            <ShoppingBag className="h-6 w-6 sm:h-6 sm:w-6" />
                             {mounted && cartCount > 0 && (
                                 <div
-                                    className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full"
+                                    className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full"
                                     style={{
                                         background:
                                             'conic-gradient(#7ac143 0deg 90deg, #f47b20 90deg 180deg, #00aeef 180deg 270deg, #ec008c 270deg 360deg)',
                                     }}
                                 >
-                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-black">
+                                    <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-[9px] font-bold text-black">
                                         {cartCount}
                                     </span>
                                 </div>

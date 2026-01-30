@@ -374,12 +374,12 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
         <ShopLayout>
             <Head title="Shopping Cart" />
             <div className="bg-white">
-                <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                <div className="mx-auto max-w-7xl px-4 py-8 sm:py-16 sm:px-6 lg:px-8">
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
                         Shopping Cart
                     </h1>
 
-                    <div className="mt-12 lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12 xl:gap-x-16">
+                    <div className="mt-8 lg:mt-12 lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12 xl:gap-x-16">
                         <section
                             aria-labelledby="cart-heading"
                             className="lg:col-span-7"
@@ -395,7 +395,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                 {sortedCart.map((item, idx) => (
                                     <li
                                         key={`${item.type}-${item.id}-${idx}`}
-                                        className="flex py-6 sm:py-10"
+                                        className="flex py-4 sm:py-6 lg:py-10"
                                     >
                                         <div className="flex-shrink-0">
                                             <img
@@ -404,15 +404,15 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                     '/images/product.png'
                                                 }
                                                 alt={item.name}
-                                                className="h-24 w-24 rounded-md object-contain object-center sm:h-48 sm:w-48"
+                                                className="h-20 w-20 rounded-md object-contain object-center sm:h-32 sm:w-32 lg:h-48 lg:w-48"
                                             />
                                         </div>
 
-                                        <div className="ml-4 flex flex-1 flex-col justify-between sm:ml-6">
-                                            <div className="relative pr-9 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:pr-0">
+                                        <div className="ml-3 flex flex-1 flex-col justify-between sm:ml-4 lg:ml-6">
+                                            <div className="relative pr-8 sm:grid sm:grid-cols-2 sm:gap-x-4 sm:pr-0 lg:gap-x-6">
                                                 <div>
                                                     <div className="flex justify-between">
-                                                        <h3 className="text-sm">
+                                                        <h3 className="text-sm sm:text-base">
                                                             <Link
                                                                 href={`/item/${item.type}/${item.id}`}
                                                                 className="font-medium text-gray-700 hover:text-gray-800"
@@ -422,7 +422,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                         </h3>
                                                     </div>
                                                     {item.options && (
-                                                        <div className="mt-1 text-sm text-gray-500">
+                                                        <div className="mt-1 text-xs text-gray-500 sm:text-sm">
                                                             {Object.entries(
                                                                 item.options,
                                                             ).map(
@@ -439,7 +439,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                     </p>
                                                     {item.description && (
                                                         <div
-                                                            className="mt-1 text-sm text-gray-500"
+                                                            className="mt-1 hidden text-sm text-gray-500 sm:block"
                                                             dangerouslySetInnerHTML={{
                                                                 __html:
                                                                     item
@@ -457,8 +457,8 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                     )}
                                                 </div>
 
-                                                <div className="mt-4 sm:mt-0 sm:pr-9">
-                                                    <div className="flex h-10 w-32 items-center border border-gray-300">
+                                                <div className="mt-3 sm:mt-0 sm:pr-9">
+                                                    <div className="flex h-8 w-24 items-center border border-gray-300 sm:h-10 sm:w-32">
                                                         <button
                                                             onClick={() =>
                                                                 updateQuantity(
@@ -469,11 +469,11 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.options,
                                                                 )
                                                             }
-                                                            className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
+                                                            className="flex h-full w-8 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100 sm:w-10"
                                                         >
-                                                            <Minus className="h-4 w-4" />
+                                                            <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
                                                         </button>
-                                                        <span className="flex flex-1 items-center justify-center font-medium text-black">
+                                                        <span className="flex flex-1 items-center justify-center text-sm font-medium text-black">
                                                             {item.quantity}
                                                         </span>
                                                         <button
@@ -486,9 +486,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.options,
                                                                 )
                                                             }
-                                                            className="flex h-full w-10 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100"
+                                                            className="flex h-full w-8 cursor-pointer items-center justify-center text-gray-600 hover:bg-gray-100 sm:w-10"
                                                         >
-                                                            <Plus className="h-4 w-4" />
+                                                            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                                                         </button>
                                                     </div>
 
@@ -502,12 +502,12 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.options,
                                                                 )
                                                             }
-                                                            className="-m-2 inline-flex cursor-pointer p-2 text-gray-400 hover:text-gray-500"
+                                                            className="-m-1 inline-flex cursor-pointer p-1 text-gray-400 hover:text-gray-500 sm:-m-2 sm:p-2"
                                                         >
                                                             <span className="sr-only">
                                                                 Remove
                                                             </span>
-                                                            <Trash2 className="h-5 w-5" />
+                                                            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -517,7 +517,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                 ))}
                             </ul>
                             {cart.length === 0 && (
-                                <p className="py-6 text-center text-gray-500">
+                                <p className="py-6 text-center text-sm text-gray-500 sm:text-base">
                                     Your cart is empty.
                                 </p>
                             )}
@@ -526,16 +526,16 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                         {/* Order Summary */}
                         <section
                             aria-labelledby="summary-heading"
-                            className="mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8"
+                            className="mt-8 rounded-lg bg-gray-50 px-4 py-4 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8"
                         >
                             <h2
                                 id="summary-heading"
-                                className="text-lg font-medium text-gray-900"
+                                className="text-base font-medium text-gray-900 sm:text-lg"
                             >
                                 Order summary
                             </h2>
 
-                            <dl className="mt-6 space-y-4">
+                            <dl className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
                                 {/* Item Breakdown */}
                                 {sortedCart.flatMap((item) =>
                                     Array.from({ length: item.quantity }).map(
@@ -545,11 +545,11 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                     key={`${item.type}-${item.id}-${i}`}
                                                     className="flex flex-col border-b border-gray-100 py-2 last:border-0"
                                                 >
-                                                    <div className="flex w-full items-baseline justify-between">
-                                                        <dt className="text-sm text-gray-600">
+                                                    <div className="flex w-full items-baseline justify-between gap-2">
+                                                        <dt className="text-xs text-gray-600 sm:text-sm">
                                                             {item.name}
                                                         </dt>
-                                                        <dd className="text-right text-sm font-medium text-gray-900">
+                                                        <dd className="flex-shrink-0 text-right text-xs font-medium text-gray-900 sm:text-sm">
                                                             {(() => {
                                                                 // Find server data for this item type
                                                                 const sItem =
@@ -594,8 +594,8 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     isUnitDiscounted
                                                                 ) {
                                                                     return (
-                                                                        <div className="flex flex-col items-end">
-                                                                            <div className="flex items-center gap-2">
+                                                                        <div className="flex flex-col items-end gap-0.5">
+                                                                            <div className="flex items-center gap-1 sm:gap-2">
                                                                                 <span className="text-xs text-emerald-700">
                                                                                     {codeUsed &&
                                                                                         `(${codeUsed})`}
@@ -606,7 +606,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                                         2,
                                                                                     )}
                                                                                 </span>
-                                                                                <span>
+                                                                                <span className="text-xs sm:text-sm">
                                                                                     €
                                                                                     {unitMemberPrice.toFixed(
                                                                                         2,
@@ -636,7 +636,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                 )}
 
                                 {/* Collapsible Discount Code */}
-                                <div className="border-t border-gray-200 pt-4">
+                                <div className="border-t border-gray-200 pt-3 sm:pt-4">
                                     <button
                                         type="button"
                                         onClick={() =>
@@ -646,9 +646,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                     >
                                         <span>Discount Code</span>
                                         {isDiscountOpen ? (
-                                            <ChevronUp className="h-5 w-5 text-gray-500 transition-transform duration-200" />
+                                            <ChevronUp className="h-4 w-4 text-gray-500 transition-transform duration-200 sm:h-5 sm:w-5" />
                                         ) : (
-                                            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200" />
+                                            <ChevronDown className="h-4 w-4 text-gray-500 transition-transform duration-200 sm:h-5 sm:w-5" />
                                         )}
                                     </button>
 
@@ -656,16 +656,16 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                         className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isDiscountOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                                     >
                                         <div className="overflow-hidden p-1">
-                                            <div className="mt-4 pb-1">
+                                            <div className="mt-3 pb-1 sm:mt-4">
                                                 {/* Applied Discounts Badges */}
                                                 {appliedDiscounts.length >
                                                     0 && (
-                                                        <div className="mb-3 flex flex-wrap gap-2">
+                                                        <div className="mb-2 flex flex-wrap gap-1.5 sm:mb-3 sm:gap-2">
                                                             {appliedDiscounts.map(
                                                                 (code) => (
                                                                     <span
                                                                         key={code}
-                                                                        className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-sm font-medium text-gray-800"
+                                                                        className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 sm:px-2.5 sm:text-sm"
                                                                     >
                                                                         {code}
                                                                         <button
@@ -675,7 +675,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                                     code,
                                                                                 )
                                                                             }
-                                                                            className="ml-1.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none"
+                                                                            className="ml-1 inline-flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none sm:ml-1.5 sm:h-4 sm:w-4"
                                                                         >
                                                                             <span className="sr-only">
                                                                                 Remove
@@ -704,7 +704,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                         </div>
                                                     )}
 
-                                                <div className="flex space-x-2">
+                                                <div className="flex gap-2">
                                                     <input
                                                         type="text"
                                                         id="discount-code"
@@ -714,7 +714,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className="block w-full rounded-md border border-gray-300 p-2 text-black placeholder-gray-500 shadow-sm focus:border-black focus:ring-black sm:text-sm"
+                                                        className="block w-full rounded-md border border-gray-300 p-2 text-sm text-black placeholder-gray-500 shadow-sm focus:border-black focus:ring-black"
                                                         placeholder="Enter ESNcard code"
                                                     />
                                                     <button
@@ -722,7 +722,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                         onClick={
                                                             handleApplyDiscount
                                                         }
-                                                        className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-300"
+                                                        className="flex-shrink-0 rounded-md bg-gray-200 px-3 py-2 text-xs font-medium text-gray-900 hover:bg-gray-300 sm:px-4 sm:text-sm"
                                                     >
                                                         Apply
                                                     </button>
@@ -732,21 +732,21 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-baseline justify-between border-t border-gray-200 pt-4">
+                                <div className="flex items-baseline justify-between border-t border-gray-200 pt-3 sm:pt-4">
                                     <dt className="text-sm text-gray-600">
                                         Subtotal
                                     </dt>
                                     <dd className="text-sm font-medium text-gray-900">
                                         {serverTotal !== null ? (
                                             serverTotal < originalTotal ? (
-                                                <div className="flex flex-col items-end">
+                                                <div className="flex flex-col items-end gap-0.5">
                                                     <span className="text-xs text-gray-500 line-through">
                                                         €
                                                         {originalTotal.toFixed(
                                                             2,
                                                         )}
                                                     </span>
-                                                    <span className="mt-1 font-medium text-gray-900">
+                                                    <span className="mt-0.5 font-medium text-gray-900 sm:mt-1">
                                                         €
                                                         {Number(
                                                             serverTotal,
@@ -783,11 +783,11 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                     </dd>
                                 </div>
 
-                                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                                    <dt className="text-base font-medium text-gray-900">
+                                <div className="flex items-center justify-between border-t border-gray-200 pt-3 sm:pt-4">
+                                    <dt className="text-sm font-medium text-gray-900 sm:text-base">
                                         Order total
                                     </dt>
-                                    <dd className="text-2xl font-bold text-gray-900">
+                                    <dd className="text-xl font-bold text-gray-900 sm:text-2xl">
                                         €
                                         {(
                                             Number(
@@ -800,7 +800,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                             </dl>
 
                             {/* Email Input */}
-                            <div className="mt-6 border-t border-gray-200 pt-6">
+                            <div className="mt-4 border-t border-gray-200 pt-4 sm:mt-6 sm:pt-6">
                                 <label
                                     htmlFor="email"
                                     className="block text-sm font-medium text-gray-700"
@@ -813,7 +813,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                 </p>
                                 <div className="relative mt-2">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <Mail className="h-5 w-5 text-gray-400" />
+                                        <Mail className="h-4 w-4 text-gray-400 sm:h-5 sm:w-5" />
                                     </div>
                                     <input
                                         type="email"
@@ -824,12 +824,12 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                             localStorage.setItem('cart_email', e.target.value);
                                             if (emailError) setEmailError(null);
                                         }}
-                                        className={`block w-full rounded-md border ${emailError ? 'border-red-300' : 'border-gray-300'} py-2 pl-10 text-black placeholder-gray-500 shadow-sm focus:border-black focus:ring-black sm:text-sm`}
+                                        className={`block w-full rounded-md border ${emailError ? 'border-red-300' : 'border-gray-300'} py-2 pl-9 text-sm text-black placeholder-gray-500 shadow-sm focus:border-black focus:ring-black sm:pl-10`}
                                         placeholder="you@example.com"
                                     />
                                 </div>
                                 {emailError && (
-                                    <p className="mt-1 text-sm text-red-600">
+                                    <p className="mt-1 text-xs text-red-600 sm:text-sm">
                                         {emailError}
                                     </p>
                                 )}
@@ -837,18 +837,18 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
 
                             {message && (
                                 <div
-                                    className={`mt-4 rounded-md p-3 ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
+                                    className={`mt-3 rounded-md p-2.5 text-sm sm:mt-4 sm:p-3 ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
                                 >
                                     {message.text}
                                 </div>
                             )}
 
                             {cartWarnings.length > 0 && (
-                                <div className="mt-4 rounded-md bg-yellow-50 p-3 text-yellow-700">
+                                <div className="mt-3 rounded-md bg-yellow-50 p-2.5 text-sm text-yellow-700 sm:mt-4 sm:p-3">
                                     <p className="font-bold">
                                         Please adjust your cart:
                                     </p>
-                                    <ul className="list-disc pl-5">
+                                    <ul className="list-disc pl-5 text-xs sm:text-sm">
                                         {cartWarnings.map((w, i) => (
                                             <li key={i}>{w}</li>
                                         ))}
@@ -856,7 +856,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                 </div>
                             )}
 
-                            <div className="mt-6">
+                            <div className="mt-4 sm:mt-6">
                                 <button
                                     type="button"
                                     disabled={
@@ -866,11 +866,11 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                         !email.trim()
                                     }
                                     onClick={handleCheckout}
-                                    className="flex w-full items-center justify-center border border-transparent bg-black px-4 py-3 text-base font-medium text-white uppercase shadow-sm hover:bg-gray-800 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex w-full items-center justify-center border border-transparent bg-black px-4 py-2.5 text-sm font-medium uppercase text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50 disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-base"
                                 >
                                     {isProcessing ? (
                                         <>
-                                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin sm:h-5 sm:w-5" />
                                             Processing...
                                         </>
                                     ) : (

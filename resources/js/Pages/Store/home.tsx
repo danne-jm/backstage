@@ -1,7 +1,7 @@
 import ShopLayout from '@/layouts/Store/shop-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
     AnnouncementCarousel,
     type AnnouncementSlide,
@@ -27,6 +27,8 @@ interface Props {
 }
 
 export default function ShopHome({ sellables }: Props) {
+
+
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     // Initialize filter state from URL but keep it managed locally for instant feedback
@@ -35,11 +37,35 @@ export default function ShopHome({ sellables }: Props) {
         return urlParams.get('filter') || 'all';
     });
 
+    // Scroll to grid if hash is present
+    useEffect(() => {
+        if (window.location.hash === '#product-list' || window.location.hash === '#event-list') {
+            const el = document.getElementById(window.location.hash.substring(1));
+            if (el) {
+                // Offset for header (adjust if needed)
+                const y = el.getBoundingClientRect().top + window.scrollY - 40;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+            }
+        }
+    }, []);
+
+    // Scroll to grid if hash is present
+    useEffect(() => {
+        if (window.location.hash === '#product-list' || window.location.hash === '#event-list') {
+            const el = document.getElementById(window.location.hash.substring(1));
+            if (el) {
+                // Offset for header (adjust if needed)
+                const y = el.getBoundingClientRect().top + window.scrollY - 40;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+            }
+        }
+    }, []);
+
     // Define announcement slides
     const announcementSlides: AnnouncementSlide[] = [
         {
             id: 'welcome',
-            title: 'Welcome to the ESN Leuven Web Shop!',
+            title: 'Welcome to the Web Shop!',
             subtitle:
                 'Please ensure that you provide your email address accurately during checkout to facilitate communication regarding your order.\n\nApply your member card during checkout to unlock discounts on select items. \n\nYou will receive a reference code for every item you buy. Keep these close at hand, as you might have to provide them in the registration form!',
             image: '/images/social/esnstar.png',
@@ -91,6 +117,17 @@ export default function ShopHome({ sellables }: Props) {
 
     // Filter sellables based on active filter
     const filteredSellables = useMemo(() => {
+    // Scroll to grid if hash is present
+    useEffect(() => {
+        if (window.location.hash === '#product-list' || window.location.hash === '#event-list') {
+            const el = document.getElementById(window.location.hash.substring(1));
+            if (el) {
+                // Offset for header (adjust if needed)
+                const y = el.getBoundingClientRect().top + window.scrollY - 40;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+            }
+        }
+    }, []);
         if (activeFilter === 'products') {
             return sellables.filter((item) => item.type === 'product');
         } else if (activeFilter === 'events') {
@@ -122,18 +159,18 @@ export default function ShopHome({ sellables }: Props) {
 
             <div className="bg-white">
                 {/* Announcement Carousel */}
-                <div className="mx-auto max-w-7xl px-2 pt-8 sm:px-4 lg:px-6">
+                <div className="mx-auto max-w-7xl px-2 pt-4 sm:px-4 sm:pt-8 lg:px-6">
                     <AnnouncementCarousel slides={announcementSlides} />
                 </div>
 
                 {/* Content - More padding */}
-                <div className="mx-auto max-w-7xl px-2 py-8 sm:px-4 lg:px-6">
+                <div className="mx-auto max-w-7xl px-2 py-4 sm:px-4 sm:py-8 lg:px-6">
                     {/* Collapsible Filter Bar */}
-                    <div className="mb-8 border-b border-gray-200">
+                    <div className="mb-4 border-b border-gray-200 sm:mb-8">
                         <button
                             type="button"
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className="flex w-full items-center justify-between py-4 text-left text-sm font-medium text-gray-900 focus:outline-none"
+                            className="flex w-full items-center justify-between py-3 text-left text-sm font-medium text-gray-900 focus:outline-none sm:py-4"
                         >
                             <span>Filter by Type</span>
                             {isFilterOpen ? (
@@ -147,12 +184,12 @@ export default function ShopHome({ sellables }: Props) {
                             className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isFilterOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                         >
                             <div className="overflow-hidden">
-                                <div className="flex gap-3 pb-4">
+                                <div className="flex gap-2 pb-3 sm:gap-3 sm:pb-4">
                                     <button
                                         onClick={() =>
                                             handleFilterChange('all')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'all'
+                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${activeFilter === 'all'
                                             ? 'bg-black text-white'
                                             : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                                             }`}
@@ -163,7 +200,7 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('products')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'products'
+                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${activeFilter === 'products'
                                             ? 'bg-black text-white'
                                             : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                                             }`}
@@ -174,7 +211,7 @@ export default function ShopHome({ sellables }: Props) {
                                         onClick={() =>
                                             handleFilterChange('events')
                                         }
-                                        className={`rounded-md px-6 py-2 font-medium transition-colors ${activeFilter === 'events'
+                                        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors sm:px-6 sm:text-base ${activeFilter === 'events'
                                             ? 'bg-black text-white'
                                             : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                                             }`}
@@ -186,14 +223,17 @@ export default function ShopHome({ sellables }: Props) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-12">
+                    <div
+                        id={activeFilter === 'products' ? 'product-list' : activeFilter === 'events' ? 'event-list' : undefined}
+                        className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6"
+                    >
                         {filteredSellables.map((item) => (
                             <Link
                                 key={`${item.type}-${item.id}`}
                                 href={`/item/${item.type}/${item.id}`}
                                 className="group relative flex flex-col"
                             >
-                                <div className="aspect-h-1 aspect-w-1 h-96 w-full overflow-hidden rounded-lg">
+                                <div className="aspect-h-1 aspect-w-1 h-48 w-full overflow-hidden rounded-lg sm:h-56 lg:h-64">
                                     {item.image ? (
                                         <img
                                             src={item.image}
@@ -202,25 +242,25 @@ export default function ShopHome({ sellables }: Props) {
                                         />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-300">
-                                            <span>No Image</span>
+                                            <span className="text-sm">No Image</span>
                                         </div>
                                     )}
                                 </div>
-                                <div className="mt-4 flex flex-col">
-                                    <h3 className="text-base font-semibold text-gray-900">
+                                <div className="mt-2 flex flex-col sm:mt-3">
+                                    <h3 className="text-sm font-semibold text-gray-900">
                                         <span
                                             aria-hidden="true"
                                             className="absolute inset-0"
                                         />
                                         {item.name}
                                     </h3>
-                                    <p className="mt-1 text-lg font-bold text-gray-900">
+                                    <p className="mt-1 text-base font-bold text-gray-900">
                                         €{Number(item.price).toFixed(2)}
                                     </p>
                                     {!item.unlimited &&
                                         item.remaining !== null &&
                                         item.remaining <= 0 && (
-                                            <p className="text-sm font-medium text-red-600">
+                                            <p className="text-xs font-medium text-red-600">
                                                 Sold Out
                                             </p>
                                         )}
@@ -230,7 +270,7 @@ export default function ShopHome({ sellables }: Props) {
                     </div>
 
                     {filteredSellables.length === 0 && (
-                        <div className="mt-12 text-center text-gray-500">
+                        <div className="mt-8 text-center text-sm text-gray-500 sm:mt-12 sm:text-base">
                             No items currently available for sale.
                         </div>
                     )}

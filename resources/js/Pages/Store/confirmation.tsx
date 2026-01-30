@@ -89,24 +89,24 @@ export default function Confirmation({ transaction, items }: Props) {
                 }}
             />
             <div className="min-h-screen bg-white">
-                <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8 print:px-0 print:py-2">
+                <div className="mx-auto max-w-3xl px-4 py-8 sm:py-16 sm:px-6 lg:px-8 print:px-0 print:py-2">
                     <div className="no-print text-center">
-                        <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
-                        <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
+                        <CheckCircle className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-green-500" />
+                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-gray-900 sm:mt-4 sm:text-3xl">
                             Thank you for your purchase!
                         </h1>
-                        <p className="mt-2 text-gray-600">
+                        <p className="mt-2 text-sm text-gray-600 sm:text-base">
                             Your order has been confirmed. Please save your
                             reference IDs below.
                         </p>
                     </div>
 
-                    <div className="mt-12 rounded-lg bg-gray-50 p-6 print:mt-2 print:border print:p-3">
-                        <div className="mb-6 flex items-baseline justify-between print:mb-3">
-                            <h2 className="text-lg font-medium text-gray-900 print:text-base">
+                    <div className="mt-8 rounded-lg bg-gray-50 p-4 sm:mt-12 sm:p-6 print:mt-2 print:border print:p-3">
+                        <div className="mb-4 flex items-baseline justify-between sm:mb-6 print:mb-3">
+                            <h2 className="text-base font-medium text-gray-900 sm:text-lg print:text-base">
                                 Order Summary
                             </h2>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 {/* Transaction ID - hidden on web, shown in print */}
                                 <span className="hidden font-mono text-xs text-gray-600 print:inline-block">
                                     Purchasing Reference #{transaction.id}
@@ -114,16 +114,16 @@ export default function Confirmation({ transaction, items }: Props) {
                                 {/* Download button - shown on web, hidden in print */}
                                 <button
                                     onClick={handlePrint}
-                                    className="no-print flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+                                    className="no-print flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 sm:gap-1.5 sm:px-3 sm:py-1.5"
                                     title="Download summary as PDF"
                                 >
-                                    <FileText className="h-3.5 w-3.5" />
-                                    Download
+                                    <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    <span className="hidden sm:inline">Download</span>
                                 </button>
                             </div>
                         </div>
 
-                        <div className="space-y-4 print:space-y-2">
+                        <div className="space-y-3 sm:space-y-4 print:space-y-2">
                             {items.map((item) => {
                                 const hasVariants =
                                     item.variant_options &&
@@ -136,15 +136,15 @@ export default function Confirmation({ transaction, items }: Props) {
                                 return (
                                     <div
                                         key={item.id}
-                                        className="print-compact-card rounded-lg border border-gray-200 bg-white p-4"
+                                        className="print-compact-card rounded-lg border border-gray-200 bg-white p-3 sm:p-4"
                                     >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <h3 className="print-text-sm font-medium text-gray-900">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="print-text-sm text-sm font-medium text-gray-900 sm:text-base">
                                                     {item.name}
                                                 </h3>
                                                 {hasVariants && (
-                                                    <p className="print-text-xs mt-1 text-sm text-gray-500">
+                                                    <p className="print-text-xs mt-1 text-xs text-gray-500 sm:text-sm">
                                                         {Object.entries(
                                                             item.variant_options!,
                                                         )
@@ -156,23 +156,23 @@ export default function Confirmation({ transaction, items }: Props) {
                                                     </p>
                                                 )}
                                                 {hasEsnCardDiscount && (
-                                                    <p className="print-text-xs mt-1 text-sm text-gray-500">
+                                                    <p className="print-text-xs mt-1 text-xs text-gray-500 sm:text-sm">
                                                         With ESNcard
                                                     </p>
                                                 )}
-                                                <p className="print-text-sm mt-2 text-sm font-medium text-gray-900 print:mt-1">
+                                                <p className="print-text-sm mt-1.5 text-sm font-medium text-gray-900 sm:mt-2 sm:text-base print:mt-1">
                                                     €
                                                     {Number(item.amount).toFixed(
                                                         2,
                                                     )}
                                                 </p>
                                             </div>
-                                            <div className="ml-4 text-right">
+                                            <div className="ml-2 flex-shrink-0 text-right sm:ml-4">
                                                 <p className="print-text-xs mb-1 text-xs text-gray-500">
                                                     Reference ID
                                                 </p>
-                                                <div className="flex items-center gap-2">
-                                                    <code className="print-text-xs rounded bg-gray-100 px-3 py-1.5 font-mono text-sm font-bold text-gray-800 print:bg-transparent print:px-0 print:py-0">
+                                                <div className="flex items-center gap-1 sm:gap-2">
+                                                    <code className="print-text-xs rounded bg-gray-100 px-2 py-1 font-mono text-xs font-bold text-gray-800 sm:px-3 sm:py-1.5 sm:text-sm print:bg-transparent print:px-0 print:py-0">
                                                         {item.reference_id}
                                                     </code>
                                                     <button
@@ -181,14 +181,14 @@ export default function Confirmation({ transaction, items }: Props) {
                                                                 item.reference_id,
                                                             )
                                                         }
-                                                        className="no-print rounded-md p-1.5 transition-colors hover:bg-gray-100"
+                                                        className="no-print rounded-md p-1 transition-colors hover:bg-gray-100 sm:p-1.5"
                                                         title="Copy reference ID"
                                                     >
                                                         {copiedId ===
                                                         item.reference_id ? (
-                                                            <Check className="h-4 w-4 text-green-500" />
+                                                            <Check className="h-3.5 w-3.5 text-green-500 sm:h-4 sm:w-4" />
                                                         ) : (
-                                                            <Copy className="h-4 w-4 text-gray-400" />
+                                                            <Copy className="h-3.5 w-3.5 text-gray-400 sm:h-4 sm:w-4" />
                                                         )}
                                                     </button>
                                                 </div>
@@ -199,7 +199,7 @@ export default function Confirmation({ transaction, items }: Props) {
                             })}
                         </div>
 
-                        <div className="mt-6 space-y-2 border-t border-gray-200 pt-6 print:mt-3 print:space-y-1 print:pt-3">
+                        <div className="mt-4 space-y-1.5 border-t border-gray-200 pt-4 sm:mt-6 sm:space-y-2 sm:pt-6 print:mt-3 print:space-y-1 print:pt-3">
                             <div className="print-text-xs flex justify-between text-sm text-gray-600">
                                 <span>Subtotal</span>
                                 <span>€{subtotal.toFixed(2)}</span>
@@ -214,7 +214,7 @@ export default function Confirmation({ transaction, items }: Props) {
                                 </span>
                             </div>
 
-                            <div className="print-text-sm flex justify-between border-t border-gray-200 pt-2 text-lg font-bold text-gray-900 print:pt-1">
+                            <div className="print-text-sm flex justify-between border-t border-gray-200 pt-1.5 text-base font-bold text-gray-900 sm:pt-2 sm:text-lg print:pt-1">
                                 <span>Total</span>
                                 <span>
                                     €
@@ -226,10 +226,10 @@ export default function Confirmation({ transaction, items }: Props) {
                         </div>
                     </div>
 
-                    <div className="mt-8 text-center">
+                    <div className="mt-6 text-center sm:mt-8">
                         <Link
                             href="/"
-                            className="no-print inline-block rounded-md bg-black px-6 py-3 font-medium text-white uppercase transition-colors hover:bg-gray-800"
+                            className="no-print inline-block rounded-md bg-black px-5 py-2.5 text-sm font-medium uppercase text-white transition-colors hover:bg-gray-800 sm:px-6 sm:py-3 sm:text-base"
                         >
                             Continue Shopping
                         </Link>
@@ -239,15 +239,15 @@ export default function Confirmation({ transaction, items }: Props) {
                                     ? window.location.href
                                     : '#'
                             }
-                            className="hidden rounded-md bg-black px-4 py-2 text-sm font-medium text-white uppercase print:inline-block"
+                            className="hidden rounded-md bg-black px-4 py-2 text-sm font-medium uppercase text-white print:inline-block"
                         >
                             View Order
                         </a>
                     </div>
 
                     {/* Important notice - shown both on web and in print */}
-                    <div className="mt-8 rounded-lg border border-yellow-200 bg-yellow-50 p-4 print:mt-4 print:p-2">
-                        <p className="print-text-xs text-sm text-yellow-800">
+                    <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-3 sm:mt-8 sm:p-4 print:mt-4 print:p-2">
+                        <p className="print-text-xs text-xs text-yellow-800 sm:text-sm">
                             <strong>Important:</strong> Please save your
                             reference IDs or return to this page later. You may
                             still need to register to the event(s) and/or

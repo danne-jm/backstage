@@ -52,43 +52,51 @@ export function AnnouncementCarousel({
 
     const activeSlide = slides[activeIndex];
     const isFirstSlide = activeIndex === 0;
+    const esnColors = ['#7ac143', '#f47b20', '#00aeef', '#ec008c'];
 
     return (
-        <div className="relative flex flex-col gap-4 lg:flex-row">
-            {/* Main Hero Slide */}
-            <div className="relative flex-1 overflow-hidden rounded-2xl">
+        <div className="relative flex flex-col gap-4 sm:gap-5 lg:flex-row">
+            {/* Main Hero Slide - Increased size by 25% overall, 70% more on mobile */}
+            <div className="relative flex-1 overflow-hidden rounded-lg sm:rounded-2xl">
                 {/* Background Image / Side */}
                 <div
-                    className="relative aspect-video w-full overflow-hidden bg-gray-900"
-                    style={isFirstSlide ? { backgroundColor: activeSlide.backgroundColor } : {}}
+                    className="relative w-full overflow-hidden bg-gray-900"
+                    style={{ 
+                        aspectRatio: window.innerWidth < 640 ? '16 / 15' : '16 / 10', // 70% taller on mobile (16/9 → 16/15)
+                    }}
                 >
-                    {!isFirstSlide && (
-                        <img
-                            src={activeSlide.image}
-                            alt={activeSlide.title}
-                            className="absolute inset-0 h-full w-full object-cover"
-                        />
-                    )}
+                    <div 
+                        className="absolute inset-0"
+                        style={isFirstSlide ? { backgroundColor: activeSlide.backgroundColor } : {}}
+                    >
+                        {!isFirstSlide && (
+                            <img
+                                src={activeSlide.image}
+                                alt={activeSlide.title}
+                                className="absolute inset-0 h-full w-full object-cover"
+                            />
+                        )}
 
-                    {/* Gradient overlay for text readability - only for non-first slides */}
-                    {!isFirstSlide && (
-                        <>
-                            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 via-40% to-transparent" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 via-50% to-transparent" />
-                        </>
-                    )}
+                        {/* Gradient overlay for text readability - only for non-first slides */}
+                        {!isFirstSlide && (
+                            <>
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 via-40% to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 via-50% to-transparent" />
+                            </>
+                        )}
 
-                    {isFirstSlide && (
-                        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
-                    )}
+                        {isFirstSlide && (
+                            <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
+                        )}
+                    </div>
                 </div>
 
                 {/* Content Overlay */}
-                <div className="absolute inset-0 flex flex-col justify-between p-6 sm:p-8 lg:p-12">
-                    {/* Top: Image for first slide only */}
-                    <div>
+                <div className="absolute inset-0 flex flex-col p-4 sm:p-7 md:p-10 lg:p-14">
+                    {/* Top: Image for first slide only - top left on mobile, reduced by 30% */}
+                    <div className="flex-shrink-0">
                         {isFirstSlide && (
-                            <div className="h-16 w-16 sm:h-20 sm:w-20">
+                            <div className="h-7 w-7 sm:h-16 sm:w-16 md:h-20 md:w-20">
                                 <img
                                     src={activeSlide.image}
                                     alt=""
@@ -98,15 +106,18 @@ export function AnnouncementCarousel({
                         )}
                     </div>
 
-                    {/* Bottom: Title, Description, and CTA */}
-                    <div className="max-w-2xl" style={{ color: activeSlide.textColor || '#ffffff' }}>
-                        <h2 className="mb-2 text-2xl font-bold sm:text-3xl lg:text-4xl">
+                    {/* Spacer to push content to bottom */}
+                    <div className="flex-grow" />
+
+                    {/* Bottom: Title, Description, and CTA - bottom left with smart overflow handling */}
+                    <div className="flex-shrink-0 max-w-2xl pb-2" style={{ color: activeSlide.textColor || '#ffffff' }}>
+                        <h2 className="mb-1.5 text-base font-bold leading-tight sm:mb-2 sm:text-2xl md:text-3xl lg:text-4xl line-clamp-2 sm:line-clamp-none">
                             {activeSlide.title}
                         </h2>
 
-                        <div className="mb-4 text-sm opacity-90 sm:text-base">
+                        <div className="mb-2 text-xs leading-relaxed opacity-90 sm:mb-4 sm:text-sm md:text-base line-clamp-6 sm:line-clamp-none">
                             {activeSlide.subtitle.split('\n').map((line, i) => (
-                                <p key={i} className={i > 0 ? 'mt-2' : ''}>
+                                <p key={i} className={i > 0 ? 'mt-1 sm:mt-2' : ''}>
                                     {line}
                                 </p>
                             ))}
@@ -115,70 +126,67 @@ export function AnnouncementCarousel({
                         {activeSlide.ctaText && activeSlide.ctaLink && (
                             <a
                                 href={activeSlide.ctaLink}
-                                className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-sm font-semibold text-black shadow hover:bg-gray-100 transition-colors sm:px-8"
+                                className="inline-flex items-center justify-center rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black shadow transition-colors hover:bg-gray-100 sm:px-6 sm:py-3 sm:text-sm md:px-8"
                             >
                                 {activeSlide.ctaText}
                             </a>
                         )}
                     </div>
                 </div>
+
+                {/* Progress Bar - moved to hero bottom on all screens */}
+                <div className="absolute bottom-0 left-0 z-10 h-1 w-full overflow-hidden">
+                    <div className="flex h-full">
+                        {esnColors.map((color, i) => {
+                            const segmentStart = i * 25;
+                            const segmentEnd = (i + 1) * 25;
+                            const width =
+                                progress > segmentEnd
+                                    ? '25%'
+                                    : progress > segmentStart
+                                        ? `${((progress - segmentStart) / 25) * 25}%`
+                                        : '0%';
+
+                            return (
+                                <div
+                                    key={color}
+                                    className="h-full"
+                                    style={{
+                                        width,
+                                        background: color,
+                                        transition: 'width 0.1s linear',
+                                    }}
+                                />
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
 
-            {/* Thumbnail Navigation - Right Side - Narrower */}
-            <div className="flex flex-row gap-3 lg:w-64 lg:flex-col">
+            {/* Thumbnail Navigation - Hidden on mobile, visible on lg+ */}
+            <div className="hidden lg:flex lg:w-80 lg:flex-col lg:gap-4">
                 {slides.map((slide, index) => {
-                    const esnColors = ['#7ac143', '#f47b20', '#00aeef', '#ec008c'];
-
                     return (
                         <button
                             key={slide.id}
                             onClick={() => handleSlideClick(index)}
                             className={`group relative flex-shrink-0 overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${index === activeIndex
-                                ? 'shadow-lg scale-[1.02] ring-2 ring-black/5'
-                                : 'opacity-70 hover:opacity-100 hover:shadow-md hover:scale-[1.01]'
+                                ? 'scale-[1.02] shadow-lg ring-2 ring-black/5'
+                                : 'opacity-70 hover:scale-[1.01] hover:opacity-100 hover:shadow-md'
                                 }`}
                         >
-                            <div className="flex items-center gap-3 rounded-lg bg-white/80 backdrop-blur p-3">
+                            <div className="flex items-center gap-3 rounded-lg bg-white/80 p-3 backdrop-blur">
                                 <img
                                     src={slide.image}
                                     alt={slide.title}
-                                    className="h-12 w-12 flex-shrink-0 rounded object-cover"
+                                    className="h-14 w-14 flex-shrink-0 rounded object-cover"
                                 />
-                                <div className="hidden flex-1 text-left lg:block">
+                                <div className="flex-1 text-left">
                                     <p className="line-clamp-2 text-xs font-semibold text-gray-900">
                                         {slide.title}
                                     </p>
                                 </div>
                             </div>
-                            {/* Progress Bar with ESN colors progressing */}
-                            {index === activeIndex && (
-                                <div className="absolute bottom-0 left-0 h-1 w-full overflow-hidden rounded-b-lg">
-                                    <div className="flex h-full">
-                                        {esnColors.map((color, i) => {
-                                            const segmentStart = i * 25;
-                                            const segmentEnd = (i + 1) * 25;
-                                            const width =
-                                                progress > segmentEnd
-                                                    ? '25%'
-                                                    : progress > segmentStart
-                                                        ? `${((progress - segmentStart) / 25) * 25}%`
-                                                        : '0%';
-
-                                            return (
-                                                <div
-                                                    key={color}
-                                                    className="h-full"
-                                                    style={{
-                                                        width,
-                                                        background: color,
-                                                        transition: 'width 0.1s linear',
-                                                    }}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
                         </button>
                     );
                 })}
