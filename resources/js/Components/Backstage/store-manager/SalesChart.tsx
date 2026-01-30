@@ -110,6 +110,45 @@ export function SalesChart({
     const dateKeys = sales.map((s) => s.date);
     const isHourlyData = dateKeys.length > 0 && dateKeys[0].includes(':');
 
+    // Create stable color mapping for all sellables (independent of filters)
+    const sellableColorMap = useMemo(() => {
+        const allSellablesMap = new Map<string, { name: string; color: string }>();
+
+        // Process ALL sales data to identify all sellables (not filtered by showOffice/showCard)
+        const processSalesForColors = (salesList: (OnlineSale | OfficeSale)[]) => {
+            salesList.forEach((sale) => {
+                const type = sale.product_id ? 'product' : 'event';
+                const id = sale.product_id || sale.event_id;
+                const key = id ? `${type}-${id}` : 'unknown';
+                const name = sale.product?.name || sale.event?.name || (id ? `${type} ${id}` : 'Unknown Item');
+                
+                if (!allSellablesMap.has(name)) {
+                    allSellablesMap.set(name, { name, color: '' });
+                }
+            });
+        };
+
+        // Process online sellable series
+        onlineSellableSeries.forEach((s) => {
+            if (!allSellablesMap.has(s.name)) {
+                allSellablesMap.set(s.name, { name: s.name, color: '' });
+            }
+        });
+
+        // Process all sales
+        processSalesForColors(onlineSales);
+        processSalesForColors(officeSales);
+
+        // Sort by name for stable ordering and assign colors
+        const sortedNames = Array.from(allSellablesMap.keys()).sort();
+        const colorMap = new Map<string, string>();
+        sortedNames.forEach((name, index) => {
+            colorMap.set(name, COLOR_PALETTE[index % COLOR_PALETTE.length]);
+        });
+
+        return colorMap;
+    }, [onlineSales, officeSales, onlineSellableSeries]);
+
     // Build chart data with all sellables as separate series
     const { chartData, activeSellables } = useMemo(() => {
         // Identify all unique sellables
@@ -231,34 +270,84 @@ export function SalesChart({
             return dataPoint;
         });
 
-        // Get active sellables (those with any non-zero totals across the period)
+        // Get ALL sellables with transaction counts (not just revenue)
         const totals = new Map<string, { name: string; total: number; count: number }>();
 
-        data.forEach((point) => {
-            Object.keys(point).forEach((key) => {
-                if (key === 'date' || key === 'fullDate') return;
-                const value = point[key];
-                if (value !== undefined && value > 0) {
-                    const existing = totals.get(key);
-                    if (existing) {
-                        existing.total += value;
-                        existing.count += 1;
-                    } else {
-                        totals.set(key, { name: key, total: value, count: 1 });
-                    }
+        // Count actual sales transactions (including free items)
+        const countSale = (sale: OnlineSale | OfficeSale, name: string) => {
+            const amount = parseFloat(String(sale.amount || 0)) || 0;
+            const existing = totals.get(name);
+            if (existing) {
+                existing.total += amount;
+                existing.count += 1;
+            } else {
+                totals.set(name, { name, total: amount, count: 1 });
+            }
+        };
+
+        // Process online sales
+        if (showCard) {
+            onlineSales.forEach((os) => {
+                const type = os.product_id ? 'product' : 'event';
+                const id = os.product_id || os.event_id;
+                let name: string;
+                
+                if (!id) {
+                    name = 'Unknown Item';
+                } else {
+                    name = os.product?.name || os.event?.name || `${type} ${id}`;
                 }
+                
+                countSale(os, name);
             });
-        });
+
+            // Office card sales
+            officeSales
+                .filter((os) => os.method === 'card')
+                .forEach((os) => {
+                    const type = os.product_id ? 'product' : 'event';
+                    const id = os.product_id || os.event_id;
+                    let name: string;
+                    
+                    if (!id) {
+                        name = 'Unknown Item';
+                    } else {
+                        name = os.product?.name || os.event?.name || `${type} ${id}`;
+                    }
+                    
+                    countSale(os, name);
+                });
+        }
+
+        // Process office cash sales
+        if (showOffice) {
+            officeSales
+                .filter((os) => os.method !== 'card')
+                .forEach((os) => {
+                    const type = os.product_id ? 'product' : 'event';
+                    const id = os.product_id || os.event_id;
+                    let name: string;
+                    
+                    if (!id) {
+                        name = 'Unknown Item';
+                    } else {
+                        name = os.product?.name || os.event?.name || `${type} ${id}`;
+                    }
+                    
+                    countSale(os, name);
+                });
+        }
 
         const sellables = Array.from(totals.values())
+            .filter((item) => item.count > 0) // Only show items that were actually sold
             .sort((a, b) => b.total - a.total)
-            .map((item, index) => ({
+            .map((item) => ({
                 ...item,
-                color: COLOR_PALETTE[index % COLOR_PALETTE.length],
+                color: sellableColorMap.get(item.name) || COLOR_PALETTE[0],
             }));
 
         return { chartData: data, activeSellables: sellables };
-    }, [dateKeys, isHourlyData, onlineSales, officeSales, onlineSellableSeries, showOffice, showCard]);
+    }, [dateKeys, isHourlyData, onlineSales, officeSales, onlineSellableSeries, showOffice, showCard, sellableColorMap]);
 
     const displayedTotal = (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,7 +13,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, \Illuminate\Database\Eloquent\Concerns\HasUlids;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, Notifiable, TwoFactorAuthenticatable;
 
     use \Spatie\Activitylog\Traits\LogsActivity;
 
@@ -102,6 +103,36 @@ class User extends Authenticatable
             'last_seen_at' => 'datetime',
             'gmail_refresh_token' => 'encrypted',
         ];
+    }
+
+    /**
+     * Custom accessor for the pinned attribute to handle double-encoded JSON.
+     */
+    protected function pinned(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                if (is_null($value)) {
+                    return [];
+                }
+
+                // If it's already an array, return it
+                if (is_array($value)) {
+                    return $value;
+                }
+
+                // Try to decode if it's a JSON string
+                $decoded = json_decode($value, true);
+
+                // If the decoded value is still a string (double-encoded), decode again
+                if (is_string($decoded)) {
+                    $decoded = json_decode($decoded, true);
+                }
+
+                return is_array($decoded) ? $decoded : [];
+            },
+            set: fn ($value) => is_array($value) ? json_encode($value) : $value
+        );
     }
 
     /**

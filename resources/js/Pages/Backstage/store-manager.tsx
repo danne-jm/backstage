@@ -187,9 +187,24 @@ export default function StoreManager() {
             data.google_spreadsheet_id = sellable.google_spreadsheet_id;
         }
 
+        // Optimistic update
+        if (sellable.type === 'product') {
+            setProducts((prev) =>
+                prev.map((p) =>
+                    p.id === sellable.id ? { ...p, is_online_sellable: isOnline } : p,
+                ),
+            );
+        } else {
+            setEvents((prev) =>
+                prev.map((e) =>
+                    e.id === sellable.id ? { ...e, is_online_sellable: isOnline } : e,
+                ),
+            );
+        }
+
         router.put(url, data, {
             preserveState: true,
-            onSuccess: () => load(),
+            onSuccess: () => {},
         });
     };
 
@@ -340,6 +355,41 @@ export default function StoreManager() {
             // Also reload full data to ensure consistency
             load(onlinePage, pageSize);
         });
+
+        channel.listen(
+            'SellableUpdated',
+            (e: { sellable: Product | Event }) => {
+                const s = e.sellable;
+                if (s.type === 'product') {
+                    setProducts((prev) => {
+                        const idx = prev.findIndex((p) => p.id === s.id);
+                        if (idx >= 0) {
+                            const newArr = [...prev];
+                            newArr[idx] = s as Product;
+                            return newArr;
+                        }
+                        return [...prev, s as Product].sort((a, b) =>
+                            a.name.localeCompare(b.name),
+                        );
+                    });
+                } else if (s.type === 'event') {
+                    setEvents((prev) => {
+                        const idx = prev.findIndex((ev) => ev.id === s.id);
+                        if (idx >= 0) {
+                            const newArr = [...prev];
+                            newArr[idx] = s as Event;
+                            return newArr;
+                        }
+                        return [...prev, s as Event].sort((a, b) =>
+                            (a.event_date || '').localeCompare(
+                                b.event_date || '',
+                            ),
+                        );
+                    });
+                }
+            },
+        );
+
         return () => {
             window.Echo?.leave('store-stats');
         };
@@ -447,7 +497,7 @@ export default function StoreManager() {
                 open={productDialogOpen}
                 onOpenChange={setProductDialogOpen}
                 editingProduct={editingProduct}
-                onSuccess={load}
+                onSuccess={() => {}}
             />
 
             <EventDialog
@@ -455,7 +505,7 @@ export default function StoreManager() {
                 onOpenChange={setEventDialogOpen}
                 editingEvent={editingEvent}
                 boardUsers={boardUsers}
-                onSuccess={load}
+                onSuccess={() => {}}
             />
         </>
     );

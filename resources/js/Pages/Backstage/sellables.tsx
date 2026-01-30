@@ -24,14 +24,74 @@ export default function Sellables() {
     // (no manual scroll save/restore) rely on dialog library's default behaviour
     const props = usePage<SharedData>().props;
 
-    const products: Product[] = Array.isArray(props['products'])
-        ? props['products']
-        : [];
-    const eventsRaw = props['events'];
-    const events: Event[] = React.useMemo(
-        () => (Array.isArray(eventsRaw) ? eventsRaw : []),
-        [eventsRaw],
+    const [products, setProducts] = React.useState<Product[]>(
+        Array.isArray(props['products']) ? props['products'] : [],
     );
+    const [events, setEvents] = React.useState<Event[]>(
+        Array.isArray(props['events']) ? props['events'] : [],
+    );
+
+    // Sync state with props when they change (e.g. navigation)
+    React.useEffect(() => {
+        if (Array.isArray(props['products'])) {
+            setProducts(props['products']);
+        }
+    }, [props['products']]);
+
+    React.useEffect(() => {
+        if (Array.isArray(props['events'])) {
+            setEvents(props['events']);
+        }
+    }, [props['events']]);
+
+    // Listen to Reverb updates
+    React.useEffect(() => {
+        if (!window.Echo) return;
+        const channel = window.Echo.private('store-stats');
+
+        channel.listen(
+            'SellableUpdated',
+            (e: { sellable: Product | Event }) => {
+                const s = e.sellable;
+                if (s.type === 'product') {
+                    setProducts((prev) => {
+                        const idx = prev.findIndex((p) => p.id === s.id);
+                        if (idx >= 0) {
+                            // Update existing
+                            const newArr = [...prev];
+                            newArr[idx] = s as Product;
+                            return newArr;
+                        }
+                        // Add new
+                        return [...prev, s as Product].sort((a, b) =>
+                            a.name.localeCompare(b.name),
+                        );
+                    });
+                } else if (s.type === 'event') {
+                    setEvents((prev) => {
+                        const idx = prev.findIndex((ev) => ev.id === s.id);
+                        if (idx >= 0) {
+                            // Update existing
+                            const newArr = [...prev];
+                            newArr[idx] = s as Event;
+                            return newArr;
+                        }
+                        // Add new
+                        return [...prev, s as Event].sort((a, b) =>
+                            (a.event_date || '').localeCompare(
+                                b.event_date || '',
+                            ),
+                        );
+                    });
+                }
+            },
+        );
+
+        return () => {
+            window.Echo?.leave('store-stats');
+        };
+    }, []);
+
     const expiredPaginationProp: any = props['expired_pagination'] ?? null;
     const { auth } = usePage().props as unknown as { auth: any };
     const permissions = auth?.user?.permissions || [];

@@ -221,7 +221,7 @@ export function EventPreview({
                                     <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
                                         <Checkbox
                                             id={`online-${event.id}`}
-                                            checked={isOnline}
+                                            checked={!!isOnline}
                                             onCheckedChange={(checked) =>
                                                 onSetOnline(
                                                     event.id,
@@ -265,7 +265,7 @@ export function EventPreview({
                                     <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
                                         <Checkbox
                                             id={`online-${event.id}`}
-                                            checked={isOnline}
+                                            checked={!!isOnline}
                                             onCheckedChange={(checked) =>
                                                 onSetOnline(
                                                     event.id,

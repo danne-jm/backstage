@@ -168,7 +168,7 @@ export function ProductPreview({
                         <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
                             <Checkbox
                                 id={`online-${product.id}`}
-                                checked={isOnline}
+                                checked={!!isOnline}
                                 onCheckedChange={(checked) =>
                                     onSetOnline(
                                         product.id,

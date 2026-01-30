@@ -226,6 +226,9 @@ class SellablesController extends Controller
             }
         }
 
+        $product->load('variants');
+        \App\Events\SellableUpdated::dispatch($product);
+
         return redirect()->route('sellables');
     }
 
@@ -275,6 +278,9 @@ class SellablesController extends Controller
                 ProductImage::whereIn('id', $deletedIds)->where('product_id', $product->id)->delete();
             }
         }
+
+        $product->load('variants');
+        \App\Events\SellableUpdated::dispatch($product);
     }
 
     public function destroyProduct(Product $product)
@@ -330,6 +336,9 @@ class SellablesController extends Controller
                 ]);
             }
         }
+
+        $event->load('variants', 'responsibleUser');
+        \App\Events\SellableUpdated::dispatch($event);
 
         return redirect()->route('sellables');
     }
@@ -397,6 +406,9 @@ class SellablesController extends Controller
                 EventImage::whereIn('id', $deletedIds)->where('event_id', $event->id)->delete();
             }
         }
+
+        $event->load('variants', 'responsibleUser');
+        \App\Events\SellableUpdated::dispatch($event);
     }
 
     public function destroyImage(EventImage $image)
