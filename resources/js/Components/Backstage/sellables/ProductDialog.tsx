@@ -234,10 +234,7 @@ export function ProductDialog({
                         variant.quantity.toString(),
                     );
                 } else {
-                    formData.append(
-                        `variants_stock[${idx}][quantity]`,
-                        '',
-                    ); // Empty string for unlimited/null
+                    formData.append(`variants_stock[${idx}][quantity]`, ''); // Empty string for unlimited/null
                 }
             });
         } else {
@@ -409,7 +406,9 @@ export function ProductDialog({
                                             type="number"
                                             value={productQuantity}
                                             onChange={(e) =>
-                                                setProductQuantity(e.target.value)
+                                                setProductQuantity(
+                                                    e.target.value,
+                                                )
                                             }
                                             className="mt-1"
                                         />

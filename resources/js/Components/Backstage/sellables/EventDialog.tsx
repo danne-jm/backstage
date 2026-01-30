@@ -288,10 +288,7 @@ export function EventDialog({
                         variant.quantity.toString(),
                     );
                 } else {
-                    formData.append(
-                        `variants_stock[${idx}][quantity]`,
-                        '',
-                    ); // Empty string for unlimited/null
+                    formData.append(`variants_stock[${idx}][quantity]`, ''); // Empty string for unlimited/null
                 }
             });
         } else {
@@ -634,7 +631,6 @@ export function EventDialog({
                                         placeholder="https://instagram.com/..."
                                     />
                                 </div>
-
                             </div>
                         )}
                     </div>

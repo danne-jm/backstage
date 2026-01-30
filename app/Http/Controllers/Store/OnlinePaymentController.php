@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Models\SellableVariant;
 use Inertia\Inertia;
 
 class OnlinePaymentController extends Controller
@@ -382,9 +383,31 @@ class OnlinePaymentController extends Controller
             $stockDemands[$key]['count']++;
         }
 
-        // Validate stock for each demand
-        foreach ($stockDemands as $demand) {
-            $this->validateStockDemand($demand);
+        // Validate stock for each demand and resolve variants
+        $resolvedVariants = [];
+        foreach ($stockDemands as $key => $demand) {
+            $variant = $this->validateStockDemand($demand);
+            if ($variant) {
+                $resolvedVariants[$key] = $variant->id;
+            }
+        }
+
+        // Inject resolved variant IDs into salesToCreate for atomic updates later
+        foreach ($salesToCreate as &$sale) {
+            $type = $sale['product_id'] ? 'product' : 'event';
+            $id = $sale['product_id'] ?? $sale['event_id'];
+            
+            $key = $type.'-'.$id;
+            if ($type === 'event') {
+                $key .= '-'.$sale['ticket_type'];
+            }
+            if (! empty($sale['options'])) {
+                $key .= '-'.md5(json_encode($sale['options']));
+            }
+
+            if (isset($resolvedVariants[$key])) {
+                $sale['variant_id'] = $resolvedVariants[$key];
+            }
         }
 
         return $salesToCreate;
@@ -393,11 +416,20 @@ class OnlinePaymentController extends Controller
     /**
      * Validate a single stock demand.
      */
-    protected function validateStockDemand(array $demand): void
+    protected function validateStockDemand(array $demand): ?SellableVariant
     {
         $entity = $demand['entity'];
         $count = $demand['count'];
         $options = $demand['options'] ?? null;
+
+        // Security Check: Zombie Sale Prevention
+        // If the entity now requires variants (variants_config is set) but no options were provided, block it.
+        // This stops users who have "simple" products in cart that were later switched to "variant" products.
+        if (! empty($entity->variants_config) && empty($options)) {
+            throw ValidationException::withMessages([
+                'items' => "{$entity->name} requires you to select an option (e.g. size/color).",
+            ]);
+        }
 
         // Check variant stock first if options exist
         if ($options) {
@@ -432,7 +464,7 @@ class OnlinePaymentController extends Controller
             // If variant exists and has stock, we proceed.
             // We do NOT check main product stock if we matched a variant,
             // assuming variants track their own independent stock in this system.
-            return;
+            return $variant;
         }
 
         if ($demand['type'] === 'product') {
@@ -474,35 +506,20 @@ class OnlinePaymentController extends Controller
     protected function updateStockCounts(array $salesToCreate): void
     {
         foreach ($salesToCreate as $saleData) {
-            // Updated SellableVariant if options exist
-            if (! empty($saleData['options'])) {
-                // Find and increment variant
-                $type = $saleData['product_id'] ? 'App\\Models\\Product' : 'App\\Models\\Event';
-                $id = $saleData['product_id'] ?? $saleData['event_id'];
-                $options = $saleData['options'];
+            // Atomic Update for Variant
+            if (! empty($saleData['variant_id'])) {
+                // Use the resolved variant ID to ensure we update the exact same row we validated.
+                // CRITICAL: Use atomic update with condition to prevent race conditions.
+                // even though we validated 'read-only' earlier, another transaction could have sold it.
+                $updated = SellableVariant::where('id', $saleData['variant_id'])
+                    ->whereRaw('(quantity IS NULL OR sold_count < quantity)')
+                    ->increment('sold_count');
 
-                // Efficiently find matching variant
-                // Since this is inside a loop, N+1 is a risk, but sales batch size is usually small.
-                $variants = \App\Models\SellableVariant::where('sellable_type', $type)
-                    ->where('sellable_id', $id)
-                    ->get();
-
-                $matchedHandler = $variants->first(function ($v) use ($options) {
-                    $vOpts = $v->options;
-                    if (count($vOpts) !== count($options)) {
-                        return false;
-                    }
-                    foreach ($options as $k => $val) {
-                        if (! isset($vOpts[$k]) || $vOpts[$k] !== $val) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                });
-
-                if ($matchedHandler) {
-                    $matchedHandler->increment('sold_count');
+                if (! $updated) {
+                    // Logic: If increment failed, it means stock changed between validation and now.
+                    // Throwing exception here triggers rollback of the entire checkout transaction.
+                    $type = $saleData['product_id'] ? 'product' : 'event';
+                    throw new \Exception("One or more items became sold out during processing.");
                 }
             }
 

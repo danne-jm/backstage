@@ -27,7 +27,9 @@ export function AnnouncementCarousel({
         const progressInterval = setInterval(() => {
             setProgress((prevProgress) => {
                 if (prevProgress >= 100) {
-                    setActiveIndex((prevIndex) => (prevIndex + 1) % slides.length);
+                    setActiveIndex(
+                        (prevIndex) => (prevIndex + 1) % slides.length,
+                    );
                     return 0;
                 }
                 return prevProgress + 100 / (autoPlayInterval / 100);
@@ -65,9 +67,9 @@ export function AnnouncementCarousel({
                         style={
                             isFirstSlide
                                 ? {
-                                    backgroundColor:
-                                        activeSlide.backgroundColor,
-                                }
+                                      backgroundColor:
+                                          activeSlide.backgroundColor,
+                                  }
                                 : {}
                         }
                     >
@@ -152,8 +154,8 @@ export function AnnouncementCarousel({
                                 progress > segmentEnd
                                     ? '25%'
                                     : progress > segmentStart
-                                        ? `${((progress - segmentStart) / 25) * 25}%`
-                                        : '0%';
+                                      ? `${((progress - segmentStart) / 25) * 25}%`
+                                      : '0%';
 
                             return (
                                 <div
@@ -178,10 +180,11 @@ export function AnnouncementCarousel({
                         <button
                             key={slide.id}
                             onClick={() => handleSlideClick(index)}
-                            className={`group relative flex-shrink-0 overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${index === activeIndex
+                            className={`group relative flex-shrink-0 overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${
+                                index === activeIndex
                                     ? 'scale-[1.02] shadow-lg ring-2 ring-black/5'
                                     : 'opacity-70 hover:scale-[1.01] hover:opacity-100 hover:shadow-md'
-                                }`}
+                            }`}
                         >
                             <div className="flex items-center gap-3 rounded-lg bg-white/80 p-3 backdrop-blur">
                                 <img

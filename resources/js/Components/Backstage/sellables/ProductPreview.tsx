@@ -144,7 +144,10 @@ export function ProductPreview({
                                                                 null && (
                                                                 <span className="text-gray-500">
                                                                     {' '}
-                                                                    | {remaining}{' '}
+                                                                    |{' '}
+                                                                    {
+                                                                        remaining
+                                                                    }{' '}
                                                                     remain
                                                                 </span>
                                                             )}
