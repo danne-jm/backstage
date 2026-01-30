@@ -10,7 +10,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Item extends Model
 {
-    use HasFactory, LogsActivity, \Illuminate\Database\Eloquent\Concerns\HasUlids;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, LogsActivity;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -28,6 +28,7 @@ class Item extends Model
         'category',
         'image',
         'image_data',
+        'compressed',
         'last_modified',
         'changed_by',
     ];
@@ -35,6 +36,7 @@ class Item extends Model
     protected $casts = [
         'category' => 'array',
         'last_modified' => 'datetime',
+        'compressed' => 'boolean',
     ];
 
     // expose an image_url attribute for convenient rendering on the frontend

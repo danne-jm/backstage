@@ -14,7 +14,7 @@ import {
     Plus,
     Search,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 
 type Item = {
@@ -26,6 +26,49 @@ type Item = {
     changed_by: string | null;
     image_url?: string | null;
 };
+
+// Lazy loaded image component
+function LazyImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [isInView, setIsInView] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
+
+    useEffect(() => {
+        if (!imgRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        setIsInView(true);
+                        observer.disconnect();
+                    }
+                });
+            },
+            { rootMargin: '50px' }
+        );
+
+        observer.observe(imgRef.current);
+
+        return () => observer.disconnect();
+    }, []);
+
+    return (
+        <div ref={imgRef} className={className}>
+            {isInView ? (
+                <img
+                    src={src}
+                    alt={alt}
+                    className={`${className} transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    onLoad={() => setIsLoaded(true)}
+                    loading="lazy"
+                />
+            ) : (
+                <div className={`${className} animate-pulse bg-muted`} />
+            )}
+        </div>
+    );
+}
 
 export default function Warehouse() {
     const breadcrumbs: BreadcrumbItem[] = [
@@ -493,15 +536,11 @@ export default function Warehouse() {
                                     </td>
                                     <td className="px-6 py-4">
                                         {(item as any).image_url ? (
-                                            <div>
-                                                <img
-                                                    src={
-                                                        (item as any).image_url
-                                                    }
-                                                    alt={item.name}
-                                                    className="h-16 w-16 rounded object-cover"
-                                                />
-                                            </div>
+                                            <LazyImage
+                                                src={(item as any).image_url}
+                                                alt={item.name}
+                                                className="h-16 w-16 rounded object-cover"
+                                            />
                                         ) : null}
                                     </td>
                                     <td className="px-6 py-4">

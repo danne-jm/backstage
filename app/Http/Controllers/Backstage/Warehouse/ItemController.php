@@ -84,15 +84,14 @@ class ItemController extends Controller
             $path = $file->store('items', 'public');
             $data['image'] = $path;
 
-            // also store a data URI representation in the database for direct rendering
+            // Compress and store a thumbnail as data URI for faster page loads
             try {
-                $contents = file_get_contents($file->getRealPath());
-                $b64 = base64_encode($contents);
-                $mime = $file->getClientMimeType() ?? 'application/octet-stream';
-                $data['image_data'] = "data:{$mime};base64,{$b64}";
+                $this->createCompressedThumbnail($file, $data);
+                $data['compressed'] = true;
             } catch (\Throwable $e) {
                 // if encoding to DB fails, continue without image_data
                 $data['image_data'] = null;
+                $data['compressed'] = false;
             }
         }
 
@@ -116,6 +115,7 @@ class ItemController extends Controller
             }
             $data['image'] = null;
             $data['image_data'] = null;
+            $data['compressed'] = false;
         }
 
         // handle optional image upload; replace existing image if provided
@@ -127,14 +127,13 @@ class ItemController extends Controller
                 Storage::disk('public')->delete($item->image);
             }
             $data['image'] = $path;
-            // store data URI in DB as well
+            // Compress and store a thumbnail as data URI for faster page loads
             try {
-                $contents = file_get_contents($file->getRealPath());
-                $b64 = base64_encode($contents);
-                $mime = $file->getClientMimeType() ?? 'application/octet-stream';
-                $data['image_data'] = "data:{$mime};base64,{$b64}";
+                $this->createCompressedThumbnail($file, $data);
+                $data['compressed'] = true;
             } catch (\Throwable $e) {
                 $data['image_data'] = null;
+                $data['compressed'] = false;
             }
             // ensure remove flag is reset
             $data['remove_image'] = false;
@@ -156,5 +155,63 @@ class ItemController extends Controller
         $item->delete();
 
         return redirect()->route('warehouse')->with('success', 'Item deleted');
+    }
+
+    /**
+     * Create a compressed thumbnail and store as data URI
+     */
+    protected function createCompressedThumbnail($file, array &$data): void
+    {
+        $maxWidth = 128;
+        $maxHeight = 128;
+        $quality = 100; // Reduced from 100% to 100% for smaller file size
+
+        $mime = $file->getClientMimeType() ?? 'image/jpeg';
+        $filePath = $file->getRealPath();
+
+        // Create image from file
+        $sourceImage = match (true) {
+            str_contains($mime, 'jpeg'), str_contains($mime, 'jpg') => @imagecreatefromjpeg($filePath),
+            str_contains($mime, 'png') => @imagecreatefrompng($filePath),
+            str_contains($mime, 'gif') => @imagecreatefromgif($filePath),
+            str_contains($mime, 'webp') => @imagecreatefromwebp($filePath),
+            default => false,
+        };
+
+        if (! $sourceImage) {
+            $data['image_data'] = null;
+
+            return;
+        }
+
+        $width = imagesx($sourceImage);
+        $height = imagesy($sourceImage);
+
+        // Calculate new dimensions
+        $ratio = min($maxWidth / $width, $maxHeight / $height);
+        $newWidth = (int) ($width * $ratio);
+        $newHeight = (int) ($height * $ratio);
+
+        // Create thumbnail
+        $thumbnail = imagecreatetruecolor($newWidth, $newHeight);
+
+        // Preserve transparency for PNG
+        if (str_contains($mime, 'png')) {
+            imagealphablending($thumbnail, false);
+            imagesavealpha($thumbnail, true);
+        }
+
+        imagecopyresampled($thumbnail, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        // Output to buffer
+        ob_start();
+        imagejpeg($thumbnail, null, $quality);
+        $thumbnailData = ob_get_clean();
+
+        imagedestroy($sourceImage);
+        imagedestroy($thumbnail);
+
+        $b64 = base64_encode($thumbnailData);
+        $data['image_data'] = "data:image/jpeg;base64,{$b64}";
     }
 }
