@@ -498,6 +498,8 @@ class OnlinePaymentController extends Controller
                 }
             }
         }
+
+        return null;
     }
 
     /**
@@ -524,17 +526,34 @@ class OnlinePaymentController extends Controller
             }
 
             if ($saleData['event_id']) {
+                $eventUpdated = false;
                 if ($saleData['ticket_type'] === 'with_card') {
-                    Event::where('id', $saleData['event_id'])->increment('sold_count_with_card');
+                    $eventUpdated = Event::where('id', $saleData['event_id'])
+                        ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card < quantity_with_card)')
+                        ->increment('sold_count_with_card');
                 } else {
-                    Event::where('id', $saleData['event_id'])->increment('sold_count_without_card');
+                    $eventUpdated = Event::where('id', $saleData['event_id'])
+                        ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card < quantity_without_card)')
+                        ->increment('sold_count_without_card');
                 }
+
+                if (! $eventUpdated) {
+                    throw new \Exception("Event tickets sold out during processing.");
+                }
+
                 $event = Event::find($saleData['event_id']);
                 \App\Events\InventoryUpdated::dispatch($event->id, 'event', $event->remaining, $event->remaining_with_card, $event->remaining_without_card);
             }
 
             if ($saleData['product_id']) {
-                Product::where('id', $saleData['product_id'])->increment('sold_count');
+                $productUpdated = Product::where('id', $saleData['product_id'])
+                    ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count < quantity)')
+                    ->increment('sold_count');
+
+                if (! $productUpdated) {
+                    throw new \Exception("Product sold out during processing.");
+                }
+
                 $product = Product::find($saleData['product_id']);
                 \App\Events\InventoryUpdated::dispatch($product->id, 'product', $product->remaining);
             }
