@@ -11,7 +11,7 @@ import {
 } from '@/Components/Shared/ui/table';
 import { SellableVariant, VariantConfigItem } from '@/types/sellables';
 import { Plus, Trash, X } from 'lucide-react';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 interface VariantManagerProps {
     initialConfig?: VariantConfigItem[] | null;
@@ -60,10 +60,11 @@ export function VariantManager({
         return combinations;
     };
 
-    // Re-generate list of variants when config changes
-    useEffect(() => {
+    const updateConfig = (newConfig: VariantConfigItem[]) => {
+        setConfig(newConfig);
+
         const combinations = generateCombinations(
-            config.filter((c) => c.name && c.options.length > 0),
+            newConfig.filter((c) => c.name && c.options.length > 0),
         );
 
         const newVariants: SellableVariant[] = combinations.map((combo) => {
@@ -87,16 +88,6 @@ export function VariantManager({
             };
         });
 
-        // Trigger change up ONLY if different (to avoid loop, check lengths or deep eq?)
-        // For simplicity, we just set internal state for display, and parent gets updated on specific actions?
-        // Actually, we should keep `variants` in sync with the generated list, but ONLY if the list of combinations technically changed.
-        // However, user input (quantity) also changes `variants`.
-
-        // Current issue: This effect runs on `config` change.
-        // If we update `variants` state here, we risk loops if not careful, but `variants` isn't in dependency array.
-        // We only want to 're-sync' variants list when config structure changes.
-
-        // Let's compare newVariants with current variants (sans quantity updates) to see if structure changed.
         const structureChanged =
             newVariants.length !== variants.length ||
             !newVariants.every((nv, i) => {
@@ -109,9 +100,11 @@ export function VariantManager({
 
         if (structureChanged) {
             setVariants(newVariants);
-            onChange(config, newVariants);
+            onChange(newConfig, newVariants);
+        } else {
+            onChange(newConfig, variants);
         }
-    }, [config]);
+    };
 
     // Manual update of variant quantity
     const updateVariantQuantity = (index: number, val: string) => {
@@ -126,28 +119,27 @@ export function VariantManager({
     };
 
     const addAttribute = () => {
-        setConfig([...config, { name: '', options: [] }]);
+        updateConfig([...config, { name: '', options: [] }]);
     };
 
     const removeAttribute = (index: number) => {
         const newConfig = [...config];
         newConfig.splice(index, 1);
-        setConfig(newConfig);
-        // Effect will handle variant list update
+        updateConfig(newConfig);
     };
 
     const updateAttributeName = (index: number, name: string) => {
         const newConfig = [...config];
-        newConfig[index].name = name;
-        setConfig(newConfig);
+        newConfig[index] = { ...newConfig[index], name };
+        updateConfig(newConfig);
     };
 
     const addOption = (index: number, option: string) => {
         if (!option) return;
         const newConfig = [...config];
         if (!newConfig[index].options.includes(option)) {
-            newConfig[index].options.push(option);
-            setConfig(newConfig);
+            newConfig[index].options = [...newConfig[index].options, option];
+            updateConfig(newConfig);
         }
     };
 
@@ -156,7 +148,7 @@ export function VariantManager({
         newConfig[attrIndex].options = newConfig[attrIndex].options.filter(
             (o) => o !== optionToRemove,
         );
-        setConfig(newConfig);
+        updateConfig(newConfig);
     };
 
     return (

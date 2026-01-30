@@ -24,25 +24,27 @@ export default function Sellables() {
     // (no manual scroll save/restore) rely on dialog library's default behaviour
     const props = usePage<SharedData>().props;
 
+    const { products: productsProp, events: eventsProp } = props as any;
+
     const [products, setProducts] = React.useState<Product[]>(
-        Array.isArray(props['products']) ? props['products'] : [],
+        Array.isArray(productsProp) ? productsProp : [],
     );
     const [events, setEvents] = React.useState<Event[]>(
-        Array.isArray(props['events']) ? props['events'] : [],
+        Array.isArray(eventsProp) ? eventsProp : [],
     );
 
     // Sync state with props when they change (e.g. navigation)
     React.useEffect(() => {
-        if (Array.isArray(props['products'])) {
-            setProducts(props['products']);
+        if (Array.isArray(productsProp)) {
+            setProducts(productsProp);
         }
-    }, [props['products']]);
+    }, [productsProp]);
 
     React.useEffect(() => {
-        if (Array.isArray(props['events'])) {
-            setEvents(props['events']);
+        if (Array.isArray(eventsProp)) {
+            setEvents(eventsProp);
         }
-    }, [props['events']]);
+    }, [eventsProp]);
 
     // Listen to Reverb updates
     React.useEffect(() => {
@@ -384,8 +386,8 @@ export default function Sellables() {
                                 const prevEvDate =
                                     idx > 0
                                         ? parseDate(
-                                              orderedEvents[idx - 1].event_date,
-                                          )
+                                            orderedEvents[idx - 1].event_date,
+                                        )
                                         : null;
                                 const prevIsPast = prevEvDate
                                     ? prevEvDate.getTime() < now.getTime()

@@ -139,7 +139,7 @@ export function SalesChart({
             salesList.forEach((sale) => {
                 const type = sale.product_id ? 'product' : 'event';
                 const id = sale.product_id || sale.event_id;
-                const key = id ? `${type}-${id}` : 'unknown';
+
                 const name =
                     sale.product?.name ||
                     sale.event?.name ||

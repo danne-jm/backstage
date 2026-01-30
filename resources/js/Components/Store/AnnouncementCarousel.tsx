@@ -25,23 +25,17 @@ export function AnnouncementCarousel({
 
     useEffect(() => {
         const progressInterval = setInterval(() => {
-            setProgress((prev) => {
-                if (prev >= 100) {
+            setProgress((prevProgress) => {
+                if (prevProgress >= 100) {
+                    setActiveIndex((prevIndex) => (prevIndex + 1) % slides.length);
                     return 0;
                 }
-                return prev + 100 / (autoPlayInterval / 100);
+                return prevProgress + 100 / (autoPlayInterval / 100);
             });
         }, 100);
 
         return () => clearInterval(progressInterval);
-    }, [autoPlayInterval]);
-
-    useEffect(() => {
-        if (progress >= 100) {
-            setActiveIndex((prev) => (prev + 1) % slides.length);
-            setProgress(0);
-        }
-    }, [progress, slides.length]);
+    }, [autoPlayInterval, slides.length]);
 
     const handleSlideClick = (index: number) => {
         setActiveIndex(index);
@@ -71,9 +65,9 @@ export function AnnouncementCarousel({
                         style={
                             isFirstSlide
                                 ? {
-                                      backgroundColor:
-                                          activeSlide.backgroundColor,
-                                  }
+                                    backgroundColor:
+                                        activeSlide.backgroundColor,
+                                }
                                 : {}
                         }
                     >
@@ -158,8 +152,8 @@ export function AnnouncementCarousel({
                                 progress > segmentEnd
                                     ? '25%'
                                     : progress > segmentStart
-                                      ? `${((progress - segmentStart) / 25) * 25}%`
-                                      : '0%';
+                                        ? `${((progress - segmentStart) / 25) * 25}%`
+                                        : '0%';
 
                             return (
                                 <div
@@ -184,11 +178,10 @@ export function AnnouncementCarousel({
                         <button
                             key={slide.id}
                             onClick={() => handleSlideClick(index)}
-                            className={`group relative flex-shrink-0 overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${
-                                index === activeIndex
+                            className={`group relative flex-shrink-0 overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${index === activeIndex
                                     ? 'scale-[1.02] shadow-lg ring-2 ring-black/5'
                                     : 'opacity-70 hover:scale-[1.01] hover:opacity-100 hover:shadow-md'
-                            }`}
+                                }`}
                         >
                             <div className="flex items-center gap-3 rounded-lg bg-white/80 p-3 backdrop-blur">
                                 <img
