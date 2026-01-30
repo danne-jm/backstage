@@ -1,3 +1,4 @@
+import { Badge } from '@/Components/Shared/ui/badge';
 import { Button } from '@/Components/Shared/ui/button';
 import {
     Dialog,
@@ -93,13 +94,14 @@ export function PreviousShiftSalesLog({
                                                             {sale.name ?? 'N/A'}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 capitalize">
-                                                        <span
-                                                            className="block w-full truncate"
+                                                    <td className="py-3">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="capitalize"
                                                             title={sale.method}
                                                         >
                                                             {sale.method}
-                                                        </span>
+                                                        </Badge>
                                                     </td>
                                                     <td className="py-3">
                                                         <div className="flex items-center gap-2">

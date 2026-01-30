@@ -1,4 +1,5 @@
 import { Alert, AlertTitle } from '@/Components/Shared/ui/alert';
+import { Badge } from '@/Components/Shared/ui/badge';
 import { Button } from '@/Components/Shared/ui/button';
 import {
     Dialog,
@@ -1528,12 +1529,12 @@ export default function Office() {
                                                                             d.label
                                                                         }
                                                                     </div>
-                                                                    <div className="text-sm text-muted-foreground">
+                                                                    {/* <div className="text-sm text-muted-foreground">
                                                                         {d.label ===
                                                                             'Pink Token'
                                                                             ? 'jeton'
                                                                             : ''}
-                                                                    </div>
+                                                                    </div> */}
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
                                                                     <Button
@@ -2301,9 +2302,9 @@ export default function Office() {
                             <table className="w-full table-fixed text-sm">
                                 <thead>
                                     <tr className="text-left text-xs text-muted-foreground">
-                                        <th className="w-[25%] px-1">Item</th>
+                                        <th className="w-[20%] px-1">Item</th>
                                         <th className="w-[10%] px-1">Method</th>
-                                        <th className="w-[15%] px-1">Amount</th>
+                                        <th className="w-[10%] px-1">Amount</th>
                                         <th className="w-[20%] px-1">
                                             Description
                                         </th>
@@ -2313,7 +2314,9 @@ export default function Office() {
                                         <th className="w-[15%] px-1">
                                             Sold at
                                         </th>
-                                        <th className="sr-only">Actions</th>{' '}
+                                        <th className="w-[10%] px-1 text-right">
+                                            <span className="sr-only">Actions</span>
+                                        </th>{' '}
                                         {/* Hidden column for alignment */}
                                     </tr>
                                 </thead>
@@ -2336,12 +2339,13 @@ export default function Office() {
                                                 </div>
                                             </td>
                                             <td className="px-1 py-3 overflow-hidden">
-                                                <div
-                                                    className="w-full truncate"
+                                                <Badge
+                                                    variant="outline"
+                                                    className="capitalize"
                                                     title={String(s.method)}
                                                 >
                                                     {s.method}
-                                                </div>
+                                                </Badge>
                                             </td>
                                             <td className="px-1 py-3 overflow-hidden">
                                                 <div className="flex items-center gap-1.5">
@@ -2562,11 +2566,11 @@ export default function Office() {
                                             <div className="rounded-lg border bg-muted/40 px-3 py-1 text-sm">
                                                 {d.label}
                                             </div>
-                                            <div className="text-sm text-muted-foreground">
+                                            {/* <div className="text-sm text-muted-foreground">
                                                 {d.label === 'Pink Token'
                                                     ? 'jeton'
                                                     : ''}
-                                            </div>
+                                            </div> */}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Button

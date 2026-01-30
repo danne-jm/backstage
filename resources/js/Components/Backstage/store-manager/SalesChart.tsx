@@ -1,6 +1,43 @@
 import { PlaceholderPattern } from '@/Components/Shared/ui/placeholder-pattern';
 import { OfficeSale, OnlineSale, Sellable } from '@/types/sellables';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+// Vibrant color palette for chart lines - defined outside component for stable reference
+const COLOR_PALETTE = [
+    '#FF00FF', // Magenta
+    '#00FFFF', // Cyan
+    '#FF1493', // Deep Pink
+    '#FFD700', // Gold
+    '#00FF00', // Lime
+    '#FF4500', // Orange Red
+    '#8A2BE2', // Blue Violet
+    '#FF69B4', // Hot Pink
+    '#00CED1', // Dark Turquoise
+    '#FF6347', // Tomato
+    '#7FFF00', // Chartreuse
+    '#FF00AA', // Neon Pink
+    '#00FF7F', // Spring Green
+    '#FF1492', // Deep Pink 2
+    '#1E90FF', // Dodger Blue
+    '#FFFF00', // Yellow
+    '#FF00DD', // Fuchsia
+    '#00FFAA', // Mint
+];
+
+// Stable color getter function
+const getColor = (index: number, id: string): string => {
+    if (id === 'unknown') return '#888888'; // Gray for unknown
+    // Use palette first, then hash if we run out
+    if (index < COLOR_PALETTE.length) return COLOR_PALETTE[index];
+
+    // Simple hash for consistent colors beyond palette
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const c = (hash & 0x00ffffff).toString(16).toUpperCase();
+    return '#' + '00000'.substring(0, 6 - c.length) + c;
+};
 
 interface SalesChartProps {
     loading: boolean;
@@ -56,6 +93,35 @@ export function SalesChart({
     const [showCard, setShowCard] = useState(true);
     const [hover, setHover] = useState<HoverData | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerSize, setContainerSize] = useState({ width: 600, height: 200 });
+
+    // Track container size changes (sidebar expand/collapse)
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const updateSize = () => {
+            const rect = container.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                setContainerSize({ 
+                    width: Math.floor(rect.width), 
+                    height: Math.floor(rect.height) 
+                });
+            }
+        };
+
+        // Initial size after a small delay to ensure layout is ready
+        requestAnimationFrame(updateSize);
+
+        // Observe resize (handles sidebar toggle, window resize, etc.)
+        const observer = new ResizeObserver(() => {
+            requestAnimationFrame(updateSize);
+        });
+        observer.observe(container);
+
+        return () => observer.disconnect();
+    }, []);
 
     const dateKeys = sales.map((s) => s.date);
     const isHourlyData = dateKeys.length > 0 && dateKeys[0].includes(':');
@@ -310,37 +376,6 @@ export function SalesChart({
         showCard,
     ]);
 
-    // Color palette for chart lines
-    const colorPalette = [
-        '#3B82F6', // Blue
-        '#EF4444', // Red
-        '#10B981', // Emerald
-        '#F59E0B', // Amber
-        '#8B5CF6', // Violet
-        '#EC4899', // Pink
-        '#06B6D4', // Cyan
-        '#F97316', // Orange
-        '#6366F1', // Indigo
-        '#84CC16', // Lime
-        '#14B8A6', // Teal
-        '#D946EF', // Fuchsia
-        '#64748B', // Slate
-    ];
-
-    const getColor = (index: number, id: string) => {
-        if (id === 'unknown') return '#9ca3af'; // Gray for unknown
-        // Use palette first, then hash if we run out
-        if (index < colorPalette.length) return colorPalette[index];
-
-        // Simple hash for consistent colors beyond palette
-        let hash = 0;
-        for (let i = 0; i < id.length; i++) {
-            hash = id.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const c = (hash & 0x00ffffff).toString(16).toUpperCase();
-        return '#' + '00000'.substring(0, 6 - c.length) + c;
-    };
-
     // Calculate dynamic max based on combined series
     const visibleMax = Math.max(1, ...combinedSeries.flatMap((s) => s.series));
 
@@ -437,8 +472,7 @@ export function SalesChart({
     // We need to re-map combinedSeries to ensure they use the SAME colors as the legend
     const coloredCombinedSeries = useMemo(() => {
         return combinedSeries.map(s => {
-            // Find matching logic
-            const key = s.id === 'unknown' ? 'unknown' : `${s.type}-${s.id}`;
+            // Find matching total entry
             const totalEntry = filteredTotals.find(t => {
                 if (t.id === 'unknown' && s.id === 'unknown') return true;
                 return t.type === s.type && t.id === s.id;
@@ -452,21 +486,24 @@ export function SalesChart({
     }, [combinedSeries, filteredTotals]);
 
 
-    // Chart dimensions - add left padding for y-axis labels
-    const leftPad = 0;
-    const bottomPad = 20;
-    const topPad = 4;
-    const rightPad = 0;
-    const viewBoxWidth = 360;
-    const viewBoxHeight = 100;
-    const chartW = viewBoxWidth - leftPad - rightPad;
-    const chartH = viewBoxHeight - topPad - bottomPad;
+    // Chart dimensions - viewBox coordinates matching container size
+    const leftPad = 38; // Space for y-axis labels - aligned with "Active sellables" below
+    const bottomPad = 24;
+    const topPad = 8;
+    const rightPad = 8;
+    // ViewBox dimensions match container for 1:1 coordinate mapping
+    const svgWidth = Math.max(200, containerSize.width);
+    const svgHeight = Math.max(100, containerSize.height);
+    const chartW = Math.max(1, svgWidth - leftPad - rightPad);
+    const chartH = Math.max(1, svgHeight - topPad - bottomPad);
 
     const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
         if (!svgRef.current || !sales || sales.length === 0) return;
 
         const rect = svgRef.current.getBoundingClientRect();
-        const scaleX = viewBoxWidth / rect.width;
+        // Scale mouse position to viewBox coordinates
+        const scaleX = svgWidth / rect.width;
+        const scaleY = svgHeight / rect.height;
         const svgX = (e.clientX - rect.left) * scaleX;
 
         // Find closest date index based on mouse X position
@@ -544,12 +581,12 @@ export function SalesChart({
                 <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
             ) : (
                 <>
-                    <div className="relative min-h-0 w-full flex-1">
+                    <div ref={containerRef} className="relative min-h-0 w-full flex-1">
                         <svg
                             ref={svgRef}
-                            viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
-                            className="h-full w-full"
-                            preserveAspectRatio="xMidYMid meet"
+                            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                            preserveAspectRatio="none"
+                            className="absolute inset-0 h-full w-full"
                             onMouseMove={handleMouseMove}
                             onMouseLeave={() => setHover(null)}
                         >
@@ -569,16 +606,16 @@ export function SalesChart({
                                                     x2={leftPad + chartW}
                                                     y2={y}
                                                     stroke="currentColor"
-                                                    strokeOpacity={0.1}
+                                                    strokeOpacity={0.08}
                                                     strokeWidth={1}
+                                                    vectorEffect="non-scaling-stroke"
                                                 />
                                                 <text
-                                                    x={leftPad - 3}
+                                                    x={leftPad - 8}
                                                     y={y}
                                                     textAnchor="end"
                                                     dominantBaseline="middle"
-                                                    fontSize="5"
-                                                    fontWeight="300"
+                                                    style={{ fontSize: '11px', fontWeight: 400 }}
                                                     fill="currentColor"
                                                     opacity={0.5}
                                                 >
@@ -596,13 +633,9 @@ export function SalesChart({
                                         // Detect if this is hourly data (has hour component)
                                         const isHourly = date.includes(':');
 
-                                        // Show fewer labels for more data points
-                                        const step =
-                                            dateKeys.length > 20
-                                                ? 4
-                                                : dateKeys.length > 10
-                                                    ? 2
-                                                    : 1;
+                                        // Show fewer labels based on data points and container width
+                                        const labelsPerWidth = Math.floor(containerSize.width / 80); // ~80px per label
+                                        const step = Math.max(1, Math.ceil(dateKeys.length / Math.max(3, labelsPerWidth)));
 
                                         // Always show first and last, then every nth
                                         const shouldShow =
@@ -620,7 +653,7 @@ export function SalesChart({
                                                     dateKeys.length - 1,
                                                 )) *
                                             chartW;
-                                        const y = topPad + chartH + 12;
+                                        const y = topPad + chartH + 15;
 
                                         let formattedDate;
                                         if (isHourly) {
@@ -658,8 +691,7 @@ export function SalesChart({
                                                             ? 'end'
                                                             : 'middle'
                                                 }
-                                                fontSize="5"
-                                                fontWeight="300"
+                                                style={{ fontSize: '11px', fontWeight: 400 }}
                                                 fill="currentColor"
                                                 opacity={0.5}
                                             >
@@ -703,8 +735,11 @@ export function SalesChart({
                                                     d={d}
                                                     fill="none"
                                                     stroke={s.color}
-                                                    strokeWidth={1.5}
-                                                    strokeOpacity={0.95}
+                                                    strokeWidth={2}
+                                                    strokeOpacity={0.9}
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    vectorEffect="non-scaling-stroke"
                                                     style={{
                                                         pointerEvents: 'none',
                                                     }}
@@ -713,7 +748,7 @@ export function SalesChart({
                                                     <circle
                                                         cx={points[0].x}
                                                         cy={points[0].y}
-                                                        r={3}
+                                                        r={4}
                                                         fill={s.color}
                                                         stroke="none"
                                                     />
@@ -746,9 +781,10 @@ export function SalesChart({
                                             }
                                             y2={topPad + chartH}
                                             stroke="currentColor"
-                                            strokeOpacity={0.3}
+                                            strokeOpacity={0.2}
                                             strokeWidth={1}
-                                            strokeDasharray="3,3"
+                                            strokeDasharray="4,4"
+                                            vectorEffect="non-scaling-stroke"
                                             style={{ pointerEvents: 'none' }}
                                         />
                                     )}
@@ -760,10 +796,11 @@ export function SalesChart({
                                                 key={`hover-point-${i}`}
                                                 cx={point.x}
                                                 cy={point.y}
-                                                r={3}
+                                                r={4}
                                                 fill={point.color}
                                                 stroke="white"
-                                                strokeWidth={1}
+                                                strokeWidth={1.5}
+                                                vectorEffect="non-scaling-stroke"
                                                 style={{
                                                     pointerEvents: 'none',
                                                 }}
@@ -779,11 +816,11 @@ export function SalesChart({
                                 className="pointer-events-none absolute z-10 max-w-[200px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs"
                                 style={{
                                     left:
-                                        hover.mouseX > 180
-                                            ? `${hover.mouseX - 220}px`
-                                            : `${hover.mouseX + 10}px`,
+                                        hover.mouseX > containerSize.width / 2
+                                            ? `${hover.mouseX - 180}px`
+                                            : `${hover.mouseX + 12}px`,
                                     top:
-                                        hover.mouseY > 80
+                                        hover.mouseY > containerSize.height / 2
                                             ? `${hover.mouseY - 80}px`
                                             : `${hover.mouseY + 10}px`,
                                 }}
