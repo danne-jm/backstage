@@ -65,14 +65,14 @@ export function PreviousShiftSalesLog({
                                 <table className="w-full table-fixed text-sm">
                                     <thead>
                                         <tr className="text-left text-xs text-muted-foreground">
-                                            <th className="w-4/12">Item</th>
-                                            <th className="w-2/12">Method</th>
-                                            <th className="w-2/12">Amount</th>
-                                            <th className="w-3/12">
+                                            <th className="w-[25%] px-1">Item</th>
+                                            <th className="w-[10%] px-1">Method</th>
+                                            <th className="w-[15%] px-1">Amount</th>
+                                            <th className="w-[20%] px-1">
                                                 Description
                                             </th>
-                                            <th className="w-2/12">Sold by</th>
-                                            <th className="w-2/12">Sold at</th>
+                                            <th className="w-[15%] px-1">Sold by</th>
+                                            <th className="w-[15%] px-1">Sold at</th>
                                         </tr>
                                     </thead>
                                     <tbody className="mt-2">
@@ -84,7 +84,7 @@ export function PreviousShiftSalesLog({
                                                 >
                                                     <td className="py-3">
                                                         <span
-                                                            className="block max-w-[20rem] truncate"
+                                                            className="block w-full truncate"
                                                             title={
                                                                 sale.name ??
                                                                 'N/A'
@@ -95,7 +95,7 @@ export function PreviousShiftSalesLog({
                                                     </td>
                                                     <td className="py-3 capitalize">
                                                         <span
-                                                            className="block max-w-[8rem] truncate"
+                                                            className="block w-full truncate"
                                                             title={sale.method}
                                                         >
                                                             {sale.method}
@@ -104,13 +104,13 @@ export function PreviousShiftSalesLog({
                                                     <td className="py-3">
                                                         <div className="flex items-center gap-2">
                                                             <span
-                                                                className="block max-w-[8rem] truncate"
+                                                                className="block w-full truncate"
                                                                 title={`€${Number(sale.amount ?? 0).toFixed(2)}`}
                                                             >
                                                                 €
                                                                 {Number(
                                                                     sale.amount ??
-                                                                        0,
+                                                                    0,
                                                                 ).toFixed(2)}
                                                             </span>
                                                             {String(
@@ -135,7 +135,7 @@ export function PreviousShiftSalesLog({
                                                     </td>
                                                     <td className="py-3">
                                                         <span
-                                                            className="block max-w-[20rem] truncate"
+                                                            className="block w-full truncate"
                                                             title={
                                                                 sale.description ??
                                                                 ''
@@ -147,7 +147,7 @@ export function PreviousShiftSalesLog({
                                                     </td>
                                                     <td className="py-3">
                                                         <span
-                                                            className="block max-w-[16rem] truncate"
+                                                            className="block w-full truncate"
                                                             title={
                                                                 staffMap.get(
                                                                     sale.sold_by,
@@ -162,7 +162,7 @@ export function PreviousShiftSalesLog({
                                                     </td>
                                                     <td className="py-3">
                                                         <span
-                                                            className="block max-w-[12rem] truncate"
+                                                            className="block w-full truncate"
                                                             title={
                                                                 sale.sold_at ??
                                                                 sale.created_at ??
@@ -170,11 +170,11 @@ export function PreviousShiftSalesLog({
                                                             }
                                                         >
                                                             {(sale.sold_at ??
-                                                            sale.created_at)
+                                                                sale.created_at)
                                                                 ? new Date(
-                                                                      sale.sold_at ??
-                                                                          sale.created_at,
-                                                                  ).toLocaleString()
+                                                                    sale.sold_at ??
+                                                                    sale.created_at,
+                                                                ).toLocaleString()
                                                                 : 'N/A'}
                                                         </span>
                                                     </td>

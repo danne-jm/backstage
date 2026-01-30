@@ -147,8 +147,14 @@ export default function StoreManager() {
         setEventDialogOpen(true);
     };
 
-    const handleSetOnline = async (sellableId: number, isOnline: boolean) => {
-        const sellable = sellables.find((s) => s.id === sellableId);
+    const handleSetOnline = async (
+        sellableId: number,
+        isOnline: boolean,
+        type?: 'product' | 'event',
+    ) => {
+        const sellable = sellables.find(
+            (s) => s.id === sellableId && (!type || s.type === type),
+        );
         if (!sellable) return;
 
         const url =

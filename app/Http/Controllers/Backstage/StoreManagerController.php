@@ -21,10 +21,8 @@ class StoreManagerController extends Controller
         $now = now();
 
         // Cache for 30 seconds to prevent DB stampede from store displays
-        // Create a unique key based on query params (page, period, etc)
-        $cacheKey = 'store_manager_data_' . md5(json_encode($request->all()));
 
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($request, $now) {
+
             $products = Product::with('variants')->orderBy('name')->get()->map(function ($p) {
                 return [
                     'id' => $p->id,
@@ -173,8 +171,7 @@ class StoreManagerController extends Controller
                 'boardUsers' => $boardUsers,
                 'lastClosedShiftDate' => $lastClosedShift?->ended_at?->toIso8601String(),
             ];
-        });
 
-        return response()->json($data);
+
     }
 }

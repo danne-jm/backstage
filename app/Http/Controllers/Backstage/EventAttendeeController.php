@@ -66,8 +66,11 @@ class EventAttendeeController extends Controller
             return response()->json(['error' => 'Event has no configured spreadsheet or sheet name'], 400);
         }
 
-        // Cache Key needs to include spreadsheet and sheetname
-        $cacheKey = 'sheet_data_' . md5($spreadsheetId . $sheetName);
+        // Cache Key needs to include spreadsheet, sheetname, AND filter config
+        // This ensures that updating the filter immediately invalidates the cache (effectively)
+        // because it generates a new key.
+        $filterHash = md5(json_encode($event->attendee_filter_config ?? []));
+        $cacheKey = 'sheet_data_' . md5($spreadsheetId . $sheetName . $filterHash);
 
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($spreadsheetId, $sheetName, $event) {
             try {

@@ -281,38 +281,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:view_ticket_distributor');
 
     // Fetch attendees for a specific event from Google Sheets (raw data, no parsing)
-    Route::get('ticketing/attendees/{event}', function (\App\Models\Event $event) {
-        return \Illuminate\Support\Facades\Cache::remember('ticketing_attendees_' . $event->id, 60, function () use ($event) {
-            try {
-                // Check if event has spreadsheet configured
-                if (! $event->google_spreadsheet_id || ! $event->google_sheet_name) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Spreadsheet not configured for this event',
-                        'rows' => [],
-                    ]);
-                }
-
-                // Fetch raw data from Google Sheets
-                $service = new \App\Services\GoogleSheetsService;
-                $rows = $service->getSheetData($event->google_spreadsheet_id, $event->google_sheet_name);
-
-                // Apply Filtering Logic
-                $rows = $event->filterRows($rows);
-
-                return response()->json([
-                    'success' => true,
-                    'rows' => $rows ?? [],
-                ]);
-            } catch (\Throwable $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to fetch attendees: '.$e->getMessage(),
-                    'rows' => [],
-                ], 500);
-            }
-        });
-    })->name('ticketing.attendees')->middleware('permission:view_ticket_distributor');
+    Route::get('ticketing/attendees/{event}', [App\Http\Controllers\Backstage\TicketingController::class, 'getAttendees'])
+        ->name('ticketing.attendees')
+        ->middleware('permission:view_ticket_distributor');
 
     // Gmail OAuth connect for per-user sending (routes are registered publicly above)
     // Ticket scanner page
