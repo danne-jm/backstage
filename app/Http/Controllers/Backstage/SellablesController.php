@@ -102,6 +102,9 @@ class SellablesController extends Controller
      */
     protected function formatEvent(Event $event)
     {
+        // Only include variants if variants_config is not null/empty
+        $hasVariants = ! empty($event->variants_config);
+
         return [
             'id' => $event->id,
             'name' => $event->name,
@@ -132,13 +135,13 @@ class SellablesController extends Controller
             'is_online_sellable' => $event->is_online_sellable,
             'images_list' => $event->images_list,
             'instagram_link' => $event->instagram_link,
-            'variants_config' => $event->variants_config,
-            'variants' => $event->variants()->get()->map(fn ($v) => [
+            'variants_config' => $hasVariants ? $event->variants_config : null,
+            'variants' => $hasVariants ? $event->variants()->get()->map(fn ($v) => [
                 'id' => $v->id, // ULID
                 'options' => $v->options,
                 'quantity' => $v->quantity,
                 'sold_count' => $v->sold_count,
-            ]),
+            ]) : [],
         ];
     }
 
@@ -191,7 +194,7 @@ class SellablesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'variants_config' => ['nullable', 'array'],
+            'variants_config' => ['nullable'], // Accept any type, we'll normalize it
             'price' => ['required', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'unlimited_quantity' => ['sometimes', 'boolean'],
@@ -205,12 +208,22 @@ class SellablesController extends Controller
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
         ]);
 
+        // Normalize variants_config: empty string or empty array -> null, otherwise must be array
+        if (array_key_exists('variants_config', $validated)) {
+            if (empty($validated['variants_config']) || $validated['variants_config'] === '') {
+                $validated['variants_config'] = null;
+            } elseif (! is_array($validated['variants_config'])) {
+                // If it's not empty and not an array, validation failed - this shouldn't happen
+                return back()->withErrors(['variants_config' => 'Invalid variants configuration']);
+            }
+        }
+
         $normalized = $this->inventoryService->normalizeInput($validated);
 
         $product = Product::create($normalized);
 
-        // Sync Variants
-        if ($request->has('variants_stock')) {
+        // Sync Variants (only if variants_config is not null/empty)
+        if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
             $this->syncVariants($product, $request->input('variants_stock'));
         }
 
@@ -237,7 +250,7 @@ class SellablesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'variants_config' => ['nullable', 'array'],
+            'variants_config' => ['nullable'], // Accept any type, we'll normalize it
             'price' => ['required', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'unlimited_quantity' => ['sometimes', 'boolean'],
@@ -250,13 +263,27 @@ class SellablesController extends Controller
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
         ]);
 
+        // Normalize variants_config: empty string or empty array -> null, otherwise must be array
+        if (array_key_exists('variants_config', $validated)) {
+            if (empty($validated['variants_config']) || $validated['variants_config'] === '') {
+                $validated['variants_config'] = null;
+            } elseif (! is_array($validated['variants_config'])) {
+                // If it's not empty and not an array, validation failed - this shouldn't happen
+                return back()->withErrors(['variants_config' => 'Invalid variants configuration']);
+            }
+        }
+
         $normalized = $this->inventoryService->normalizeInput($validated);
 
         $product->update($normalized);
 
-        // Sync Variants
-        if ($request->has('variants_stock')) {
+        // Sync or Clear Variants
+        if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
+            // Sync variants if we have both stock data and config
             $this->syncVariants($product, $request->input('variants_stock'));
+        } else {
+            // Delete all variants if variants_config is null/empty or no stock data provided
+            $product->variants()->delete();
         }
 
         // Handle Image Uploads (Append)
@@ -295,7 +322,7 @@ class SellablesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'variants_config' => ['nullable', 'array'],
+            'variants_config' => ['nullable'], // Accept any type, we'll normalize it
             'event_date' => ['required', 'date'],
             'start_sell_date' => ['required', 'date'],
             'end_sell_date' => ['required', 'date', 'after:start_sell_date'],
@@ -316,12 +343,22 @@ class SellablesController extends Controller
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
         ]);
 
+        // Normalize variants_config: empty string or empty array -> null, otherwise must be array
+        if (array_key_exists('variants_config', $validated)) {
+            if (empty($validated['variants_config']) || $validated['variants_config'] === '') {
+                $validated['variants_config'] = null;
+            } elseif (! is_array($validated['variants_config'])) {
+                // If it's not empty and not an array, validation failed - this shouldn't happen
+                return back()->withErrors(['variants_config' => 'Invalid variants configuration']);
+            }
+        }
+
         $normalized = $this->inventoryService->normalizeInput($validated);
 
         $event = Event::create($normalized);
 
-        // Sync Variants
-        if ($request->has('variants_stock')) {
+        // Sync Variants (only if variants_config is not null/empty)
+        if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
             $this->syncVariants($event, $request->input('variants_stock'));
         }
 
@@ -348,7 +385,7 @@ class SellablesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'variants_config' => ['nullable', 'array'],
+            'variants_config' => ['nullable'], // Accept any type, we'll normalize it
             'event_date' => ['required', 'date'],
             'start_sell_date' => ['required', 'date'],
             'end_sell_date' => ['required', 'date', 'after:start_sell_date'],
@@ -368,6 +405,16 @@ class SellablesController extends Controller
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
         ]);
 
+        // Normalize variants_config: empty string or empty array -> null, otherwise must be array
+        if (array_key_exists('variants_config', $validated)) {
+            if (empty($validated['variants_config']) || $validated['variants_config'] === '') {
+                $validated['variants_config'] = null;
+            } elseif (! is_array($validated['variants_config'])) {
+                // If it's not empty and not an array, validation failed - this shouldn't happen
+                return back()->withErrors(['variants_config' => 'Invalid variants configuration']);
+            }
+        }
+
         $normalized = $this->inventoryService->normalizeInput($validated);
 
         // If google_spreadsheet_id is not provided on update, do not overwrite existing value
@@ -382,9 +429,13 @@ class SellablesController extends Controller
 
         $event->update($normalized);
 
-        // Sync Variants
-        if ($request->has('variants_stock')) {
+        // Sync or Clear Variants
+        if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
+            // Sync variants if we have both stock data and config
             $this->syncVariants($event, $request->input('variants_stock'));
+        } else {
+            // Delete all variants if variants_config is null/empty or no stock data provided
+            $event->variants()->delete();
         }
 
         // Handle Image Uploads (Append)
@@ -451,6 +502,7 @@ class SellablesController extends Controller
                 ksort($opt1);
                 $opt2 = $options;
                 ksort($opt2);
+
                 return $opt1 == $opt2;
             });
 

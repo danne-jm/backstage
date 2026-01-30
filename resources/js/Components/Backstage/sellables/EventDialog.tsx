@@ -77,6 +77,9 @@ export function EventDialog({
         VariantConfigItem[]
     >([]);
     const [variants, setVariants] = React.useState<SellableVariant[]>([]);
+    const [stockMode, setStockMode] = React.useState<'simple' | 'variants'>(
+        'simple',
+    );
 
     React.useEffect(() => {
         if (editingEvent) {
@@ -117,6 +120,11 @@ export function EventDialog({
             setInstagramLink(editingEvent.instagram_link || '');
             setVariantsConfig(editingEvent.variants_config || []);
             setVariants(editingEvent.variants || []);
+            setStockMode(
+                (editingEvent.variants_config || []).length > 0
+                    ? 'variants'
+                    : 'simple',
+            );
             setIsOnlineSectionOpen(false);
         } else {
             setEventName('');
@@ -140,6 +148,7 @@ export function EventDialog({
             setInstagramLink('');
             setVariantsConfig([]);
             setVariants([]);
+            setStockMode('simple');
             setIsOnlineSectionOpen(false);
         }
     }, [editingEvent, open]);
@@ -192,14 +201,12 @@ export function EventDialog({
         formData.append('price_with_card', priceWithCard.toString());
         formData.append('price_without_card', priceWithoutCard.toString());
 
-        if (!variableAmount) {
+        if (stockMode === 'simple' && !variableAmount) {
             if (quantity) formData.append('quantity', quantity.toString());
             formData.append(
                 'unlimited_quantity',
                 (!quantity).toString() ? '1' : '0',
             );
-            // booleans in FormData are strings 'true'/'false' or '1'/'0'. Laravel validation 'boolean' supports '1', 'true', 'on', 'yes'.
-            // Actually, we should send '1' or '0'.
         } else {
             formData.append('quantity', ''); // clear if variable
         }
@@ -214,7 +221,7 @@ export function EventDialog({
 
         formData.append('variable_amount', variableAmount ? '1' : '0');
 
-        if (variableAmount) {
+        if (stockMode === 'simple' && variableAmount) {
             if (quantityWithCard)
                 formData.append('quantity_with_card', quantityWithCard);
             formData.append(
@@ -245,35 +252,52 @@ export function EventDialog({
             formData.append('deleted_images[]', id.toString());
         });
 
-        // Append Variants
-        variantsConfig.forEach((config, idx) => {
-            formData.append(`variants_config[${idx}][name]`, config.name);
-            config.options.forEach((opt, optIdx) => {
-                formData.append(
-                    `variants_config[${idx}][options][${optIdx}]`,
-                    opt,
-                );
-            });
-        });
+        // Append Variants or Quantity based on mode
+        if (stockMode === 'variants') {
+            // mode: variants -> clear simple quantity
+            formData.append('quantity', '');
+            formData.append('unlimited_quantity', '0');
+            formData.append('variable_amount', '0');
+            formData.append('quantity_with_card', '');
+            formData.append('unlimited_quantity_with_card', '0');
+            formData.append('quantity_without_card', '');
+            formData.append('unlimited_quantity_without_card', '0');
 
-        variants.forEach((variant, idx) => {
-            // Append options
-            Object.entries(variant.options).forEach(([key, value]) => {
-                formData.append(
-                    `variants_stock[${idx}][options][${key}]`,
-                    value,
-                );
+            variantsConfig.forEach((config, idx) => {
+                formData.append(`variants_config[${idx}][name]`, config.name);
+                config.options.forEach((opt, optIdx) => {
+                    formData.append(
+                        `variants_config[${idx}][options][${optIdx}]`,
+                        opt,
+                    );
+                });
             });
-            // Append quantity
-            if (variant.quantity !== null) {
-                formData.append(
-                    `variants_stock[${idx}][quantity]`,
-                    variant.quantity.toString(),
-                );
-            } else {
-                formData.append(`variants_stock[${idx}][quantity]`, ''); // Empty string for unlimited/null
-            }
-        });
+
+            variants.forEach((variant, idx) => {
+                // Append options
+                Object.entries(variant.options).forEach(([key, value]) => {
+                    formData.append(
+                        `variants_stock[${idx}][options][${key}]`,
+                        value,
+                    );
+                });
+                // Append quantity
+                if (variant.quantity !== null) {
+                    formData.append(
+                        `variants_stock[${idx}][quantity]`,
+                        variant.quantity.toString(),
+                    );
+                } else {
+                    formData.append(
+                        `variants_stock[${idx}][quantity]`,
+                        '',
+                    ); // Empty string for unlimited/null
+                }
+            });
+        } else {
+            // mode: simple -> clear variants
+            formData.append('variants_config', '');
+        }
 
         if (editingEvent) {
             // PUT with FormData requires _method='PUT' in Laravel usually
@@ -326,6 +350,7 @@ export function EventDialog({
                             onChange={(e) =>
                                 setEventDescription(e.target.value)
                             }
+                            className="min-h-[100px]"
                         />
                     </div>
                     <div>
@@ -414,64 +439,124 @@ export function EventDialog({
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="variable-amount"
-                            checked={!!variableAmount}
-                            onCheckedChange={(checked) =>
-                                setVariableAmount(checked === true)
-                            }
-                        />
-                        <Label
-                            htmlFor="variable-amount"
-                            className="cursor-pointer"
-                        >
-                            Variable Amount (separate quantities for
-                            with/without ESNcard)
-                        </Label>
-                    </div>
-                    {variableAmount ? (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div>
-                                <Label htmlFor="quantity-with-card">
-                                    Quantity with ESNcard
-                                </Label>
-                                <Input
-                                    id="quantity-with-card"
-                                    type="number"
-                                    value={quantityWithCard}
-                                    onChange={(e) =>
-                                        setQuantityWithCard(e.target.value)
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="quantity-without-card">
-                                    Quantity without ESNcard
-                                </Label>
-                                <Input
-                                    id="quantity-without-card"
-                                    type="number"
-                                    value={quantityWithoutCard}
-                                    onChange={(e) =>
-                                        setQuantityWithoutCard(e.target.value)
-                                    }
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <div>
-                            <Label htmlFor="quantity">
-                                Quantity (optional)
+                    {/* Stock Management Section */}
+                    <div className="space-y-4 rounded-lg border p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <Label className="text-base font-semibold">
+                                Stock Management
                             </Label>
-                            <Input
-                                id="quantity"
-                                type="number"
-                                value={quantity}
-                                onChange={(e) => setQuantity(e.target.value)}
-                            />
+                            <div
+                                role="tablist"
+                                aria-orientation="horizontal"
+                                className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground"
+                            >
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={stockMode === 'simple'}
+                                    onClick={() => setStockMode('simple')}
+                                    className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 ${stockMode === 'simple' ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30' : 'text-foreground dark:text-muted-foreground'}`}
+                                >
+                                    Simple Cap
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={stockMode === 'variants'}
+                                    onClick={() => setStockMode('variants')}
+                                    className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 ${stockMode === 'variants' ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30' : 'text-foreground dark:text-muted-foreground'}`}
+                                >
+                                    Variants
+                                </button>
+                            </div>
                         </div>
-                    )}
+
+                        {stockMode === 'simple' && (
+                            <div className="space-y-4 pt-2">
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="variable-amount"
+                                        checked={!!variableAmount}
+                                        onCheckedChange={(checked) =>
+                                            setVariableAmount(checked === true)
+                                        }
+                                    />
+                                    <Label
+                                        htmlFor="variable-amount"
+                                        className="cursor-pointer"
+                                    >
+                                        Variable Amount (separate quantities for
+                                        with/without ESNcard)
+                                    </Label>
+                                </div>
+                                {variableAmount ? (
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <Label htmlFor="quantity-with-card">
+                                                Quantity with ESNcard
+                                            </Label>
+                                            <Input
+                                                id="quantity-with-card"
+                                                type="number"
+                                                value={quantityWithCard}
+                                                onChange={(e) =>
+                                                    setQuantityWithCard(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="quantity-without-card">
+                                                Quantity without ESNcard
+                                            </Label>
+                                            <Input
+                                                id="quantity-without-card"
+                                                type="number"
+                                                value={quantityWithoutCard}
+                                                onChange={(e) =>
+                                                    setQuantityWithoutCard(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <Label htmlFor="quantity">
+                                            Quantity (optional)
+                                        </Label>
+                                        <Input
+                                            id="quantity"
+                                            type="number"
+                                            value={quantity}
+                                            onChange={(e) =>
+                                                setQuantity(e.target.value)
+                                            }
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {stockMode === 'variants' && (
+                            <div className="pt-2">
+                                <p className="mb-4 text-sm text-gray-500">
+                                    Define attributes (e.g. Size, Color) and set
+                                    stock limits for each combination.
+                                </p>
+                                <VariantManager
+                                    initialConfig={variantsConfig}
+                                    initialVariants={variants}
+                                    onChange={(newConfig, newVariants) => {
+                                        setVariantsConfig(newConfig);
+                                        setVariants(newVariants);
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
                     <div>
                         <Label htmlFor="notes">Notes (optional)</Label>
                         <Textarea
@@ -549,16 +634,7 @@ export function EventDialog({
                                         placeholder="https://instagram.com/..."
                                     />
                                 </div>
-                                <div className="border-t pt-4">
-                                    <VariantManager
-                                        initialConfig={variantsConfig}
-                                        initialVariants={variants}
-                                        onChange={(newConfig, newVariants) => {
-                                            setVariantsConfig(newConfig);
-                                            setVariants(newVariants);
-                                        }}
-                                    />
-                                </div>
+
                             </div>
                         )}
                     </div>

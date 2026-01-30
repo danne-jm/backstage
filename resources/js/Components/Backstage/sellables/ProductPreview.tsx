@@ -94,7 +94,68 @@ export function ProductPreview({
                 </div>
                 <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                        {product.variable_amount ? (
+                        {product.variants_config &&
+                        product.variants_config.length > 0 ? (
+                            <>
+                                <span className="text-muted-foreground">
+                                    Variants:
+                                </span>{' '}
+                                <span className="text-foreground">
+                                    {product.variants_config
+                                        .map((vc) => vc.name)
+                                        .join(', ')}
+                                </span>
+                                {product.variants &&
+                                    product.variants.length > 0 && (
+                                        <div className="mt-1 space-y-0.5">
+                                            {product.variants.map(
+                                                (variant, idx) => {
+                                                    const remaining =
+                                                        variant.quantity !==
+                                                            null &&
+                                                        variant.sold_count !==
+                                                            undefined
+                                                            ? variant.quantity -
+                                                              variant.sold_count
+                                                            : null;
+                                                    return (
+                                                        <div
+                                                            key={
+                                                                variant.id ||
+                                                                idx
+                                                            }
+                                                            className="text-xs text-muted-foreground"
+                                                        >
+                                                            •{' '}
+                                                            {Object.entries(
+                                                                variant.options,
+                                                            )
+                                                                .map(
+                                                                    ([k, v]) =>
+                                                                        `${k}: ${v}`,
+                                                                )
+                                                                .join(', ')}
+                                                            {' - '}
+                                                            {variant.quantity ===
+                                                            null
+                                                                ? 'Unlimited'
+                                                                : `${variant.quantity} total`}
+                                                            {remaining !==
+                                                                null && (
+                                                                <span className="text-gray-500">
+                                                                    {' '}
+                                                                    | {remaining}{' '}
+                                                                    remain
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                },
+                                            )}
+                                        </div>
+                                    )}
+                            </>
+                        ) : product.variable_amount ? (
                             <>
                                 <span className="text-muted-foreground">
                                     Qty w/ ESNcard:

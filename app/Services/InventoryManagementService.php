@@ -35,6 +35,8 @@ class InventoryManagementService
             }
 
             $normalized['unlimited_quantity'] = false;
+            // Clear variants_config when using variable_amount (ESNcard pricing)
+            $normalized['variants_config'] = null;
         } else {
             // Non-variable: if quantity not provided or empty -> unlimited
             if (! array_key_exists('quantity', $normalized) || $normalized['quantity'] === null) {

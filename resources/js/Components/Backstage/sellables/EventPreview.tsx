@@ -166,7 +166,98 @@ export function EventPreview({
                             </span>{' '}
                             €{event.price_without_card}
                         </p>
-                        {event.variable_amount ? (
+                        {event.variants_config &&
+                        event.variants_config.length > 0 ? (
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0">
+                                    <span className="text-muted-foreground">
+                                        Variants:
+                                    </span>{' '}
+                                    <span className="text-foreground">
+                                        {event.variants_config
+                                            .map((vc) => vc.name)
+                                            .join(', ')}
+                                    </span>
+                                    {event.variants &&
+                                        event.variants.length > 0 && (
+                                            <div className="mt-1 space-y-0.5">
+                                                {event.variants.map(
+                                                    (variant, idx) => {
+                                                        const remaining =
+                                                            variant.quantity !==
+                                                                null &&
+                                                            variant.sold_count !==
+                                                                undefined
+                                                                ? variant.quantity -
+                                                                  variant.sold_count
+                                                                : null;
+                                                        return (
+                                                            <div
+                                                                key={
+                                                                    variant.id ||
+                                                                    idx
+                                                                }
+                                                                className="text-xs text-muted-foreground"
+                                                            >
+                                                                •{' '}
+                                                                {Object.entries(
+                                                                    variant.options,
+                                                                )
+                                                                    .map(
+                                                                        ([
+                                                                            k,
+                                                                            v,
+                                                                        ]) =>
+                                                                            `${k}: ${v}`,
+                                                                    )
+                                                                    .join(', ')}
+                                                                {' - '}
+                                                                {variant.quantity ===
+                                                                null
+                                                                    ? 'Unlimited'
+                                                                    : `${variant.quantity} total`}
+                                                                {remaining !==
+                                                                    null && (
+                                                                    <span className="text-gray-500">
+                                                                        {' '}
+                                                                        |{' '}
+                                                                        {
+                                                                            remaining
+                                                                        }{' '}
+                                                                        remain
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    },
+                                                )}
+                                            </div>
+                                        )}
+                                </div>
+
+                                {variant === 'store-manager' && onSetOnline && (
+                                    <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
+                                        <Checkbox
+                                            id={`online-${event.id}`}
+                                            checked={!!isOnline}
+                                            onCheckedChange={(checked) =>
+                                                onSetOnline(
+                                                    event.id,
+                                                    checked === true,
+                                                    'event',
+                                                )
+                                            }
+                                        />
+                                        <label
+                                            htmlFor={`online-${event.id}`}
+                                            className="text-sm leading-none font-medium whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            Sell Online
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                        ) : event.variable_amount ? (
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <span className="text-muted-foreground">

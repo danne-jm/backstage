@@ -54,6 +54,7 @@ class ShopController extends Controller
 
                 return $this->formatProductForExplore($product);
             }
+
             return null;
         });
 
@@ -82,7 +83,7 @@ class ShopController extends Controller
 
         return Inertia::render('Store/cart', [
             'sellables' => $events->concat($products),
-            'processingFeeRate' => config('services.sumup.processing_fee_rate', 0.02), 
+            'processingFeeRate' => config('services.sumup.processing_fee_rate', 0.02),
         ]);
     }
 
@@ -100,6 +101,9 @@ class ShopController extends Controller
         if ($isUnlimited) {
             $remaining = null;
         }
+
+        // Only include variants if variants_config is not null/empty
+        $hasVariants = ! empty($event->variants_config);
 
         return [
             'id' => $event->id,
@@ -121,8 +125,8 @@ class ShopController extends Controller
             'unlimited_without_card' => $event->unlimited_quantity_without_card,
             'instagram_link' => $event->instagram_link,
             'is_online_sellable' => $event->is_online_sellable,
-            'variants_config' => $event->variants_config,
-            'variants' => $event->variants,
+            'variants_config' => $hasVariants ? $event->variants_config : null,
+            'variants' => $hasVariants ? $event->variants : null,
         ];
     }
 
@@ -134,6 +138,9 @@ class ShopController extends Controller
         if ($isUnlimited) {
             $remaining = null;
         }
+
+        // Only include variants if variants_config is not null/empty
+        $hasVariants = ! empty($product->variants_config);
 
         return [
             'id' => $product->id,
@@ -148,8 +155,8 @@ class ShopController extends Controller
             'unlimited' => $isUnlimited,
             'instagram_link' => $product->instagram_link,
             'is_online_sellable' => $product->is_online_sellable,
-            'variants_config' => $product->variants_config,
-            'variants' => $product->variants,
+            'variants_config' => $hasVariants ? $product->variants_config : null,
+            'variants' => $hasVariants ? $product->variants : null,
         ];
     }
 }
