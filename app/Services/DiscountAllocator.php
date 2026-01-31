@@ -49,14 +49,14 @@ class DiscountAllocator
             // can give wrong results (e.g., "9" > "85" as strings but 9 < 85 as numbers)
             $priceWithCard = (float) ($entity->price_with_card ?? 0);
             $priceWithoutCard = (float) ($entity->price_without_card ?? $entity->price_with_card ?? 0);
-            
-            $regularPrice = $item['type'] === 'product' 
-                ? (float) $entity->price 
+
+            $regularPrice = $item['type'] === 'product'
+                ? (float) $entity->price
                 : $priceWithoutCard;
 
             // Determine potential savings
-            $memberPrice = $item['type'] === 'product' 
-                ? (float) $entity->price 
+            $memberPrice = $item['type'] === 'product'
+                ? (float) $entity->price
                 : $priceWithCard;
 
             $canDiscount = false;
@@ -112,9 +112,9 @@ class DiscountAllocator
         // 4. Validate Codes against ESNcard API AND History
         // First, check each code against the official ESNcard API
         $cleanCodes = array_unique(array_filter($codes));
-        $esnService = new ESNcardService();
+        $esnService = new ESNcardService;
         $validExternalCodes = [];
-        
+
         foreach ($cleanCodes as $code) {
             if ($esnService->validate($code)) {
                 $validExternalCodes[] = $code;

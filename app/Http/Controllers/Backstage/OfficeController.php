@@ -18,6 +18,7 @@ use Inertia\Inertia;
 class OfficeController extends Controller
 {
     protected $inventoryService;
+
     protected $saleService;
 
     public function __construct(InventoryService $inventoryService, SaleService $saleService)
@@ -323,7 +324,7 @@ class OfficeController extends Controller
         try {
             // Use SaleService to atomically record sale and update stock
             $sale = $this->saleService->recordOfficeSale($office, $data);
-            
+
             // Dispatch Events
             \App\Events\OfficeSaleCreated::dispatch($office->id, $sale);
 
@@ -342,15 +343,15 @@ class OfficeController extends Controller
             return redirect()->route('office.show', $office);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-             // Extract the first error message for 'stock' or 'items' key if present
-             $errors = $e->errors();
-             if (isset($errors['stock'])) {
-                 return $this->handleStockError($errors['stock'][0]);
-             }
-             if (isset($errors['items'])) {
-                 return $this->handleError('options', $errors['items'][0]);
-             }
-             throw $e;
+            // Extract the first error message for 'stock' or 'items' key if present
+            $errors = $e->errors();
+            if (isset($errors['stock'])) {
+                return $this->handleStockError($errors['stock'][0]);
+            }
+            if (isset($errors['items'])) {
+                return $this->handleError('options', $errors['items'][0]);
+            }
+            throw $e;
         }
     }
 

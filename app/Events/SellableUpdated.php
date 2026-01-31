@@ -4,9 +4,7 @@ namespace App\Events;
 
 use App\Models\Event;
 use App\Models\Product;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -21,7 +19,7 @@ class SellableUpdated implements ShouldBroadcast
     /**
      * Create a new event instance.
      *
-     * @param Product|Event $model
+     * @param  Product|Event  $model
      */
     public function __construct($model)
     {
@@ -94,6 +92,7 @@ class SellableUpdated implements ShouldBroadcast
                 ]),
             ];
         }
+
         return $model;
     }
 

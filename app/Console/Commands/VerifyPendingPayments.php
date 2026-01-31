@@ -84,11 +84,11 @@ class VerifyPendingPayments extends Command
                             // SumUp still says PENDING, but our local timeout (5min) has passed.
                             // We treat this as ABANDONED/EXPIRED.
                             $this->warn('  ⚠ Transaction still pending at gateway. Expiring locally due to timeout.');
-                            
+
                             $transaction->update(['payment_status' => PaymentResult::STATUS_FAILED]);
                             $this->releaseStock($transaction);
                             $failedCount++; // Count as failed/expired
-                            
+
                             Log::info('Payment reconciliation: Force-expired stale pending transaction', [
                                 'transaction_id' => $transaction->id,
                                 'age_minutes' => $transaction->created_at->diffInMinutes(now()),

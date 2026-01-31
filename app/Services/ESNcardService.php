@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 class ESNcardService
 {
     private const API_URL = 'https://esncard.org/services/1.0/card.json';
+
     private const CACHE_TTL = 300; // Cache valid results for 5 minutes
 
     /**
@@ -18,15 +19,15 @@ class ESNcardService
     public function validate(string $code): bool
     {
         $code = trim($code);
-        
+
         if (empty($code)) {
             return false;
         }
 
         // Check cache first to avoid hammering the API
-        $cacheKey = 'esncard_valid_' . md5($code);
+        $cacheKey = 'esncard_valid_'.md5($code);
         $cached = Cache::get($cacheKey);
-        
+
         if ($cached !== null) {
             return $cached;
         }
@@ -35,11 +36,12 @@ class ESNcardService
             $response = Http::timeout(5)
                 ->get(self::API_URL, ['code' => $code]);
 
-            if (!$response->successful()) {
-                Log::warning("ESNcard API returned non-success status", [
+            if (! $response->successful()) {
+                Log::warning('ESNcard API returned non-success status', [
                     'code' => $code,
                     'status' => $response->status(),
                 ]);
+
                 return false;
             }
 
@@ -50,23 +52,24 @@ class ESNcardService
             if (is_array($data) && count($data) > 0) {
                 $card = $data[0];
                 $isValid = isset($card['status']) && $card['status'] === 'available';
-                
+
                 // Cache valid results longer, invalid results shorter
                 Cache::put($cacheKey, $isValid, $isValid ? self::CACHE_TTL : 60);
-                
+
                 return $isValid;
             }
 
             // Empty response means card not found
             Cache::put($cacheKey, false, 60);
+
             return false;
 
         } catch (\Exception $e) {
-            Log::error("ESNcard API error", [
+            Log::error('ESNcard API error', [
                 'code' => $code,
                 'error' => $e->getMessage(),
             ]);
-            
+
             // On API error, don't cache - let retry happen
             return false;
         }
@@ -78,7 +81,7 @@ class ESNcardService
     public function getCardDetails(string $code): ?array
     {
         $code = trim($code);
-        
+
         if (empty($code)) {
             return null;
         }
@@ -94,7 +97,7 @@ class ESNcardService
                 }
             }
         } catch (\Exception $e) {
-            Log::error("ESNcard API error getting details", [
+            Log::error('ESNcard API error getting details', [
                 'code' => $code,
                 'error' => $e->getMessage(),
             ]);

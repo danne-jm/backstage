@@ -182,7 +182,7 @@ describe('Store checkout flow with payment gateway', function () {
         $response->assertSuccessful();
 
         $transaction = OnlineTransaction::first();
-        
+
         $rate = config('services.sumup.processing_fee_rate');
         $expectedFee = round(200 * $rate, 2);
         $expectedTotal = round(200 + $expectedFee, 2);

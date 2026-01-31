@@ -66,18 +66,18 @@ class SaleService
         return DB::transaction(function () use ($shift, $data) {
             $productId = $data['product_id'] ?? null;
             $eventId = $data['event_id'] ?? null;
-            
+
             // Normalize inputs
             $details = [];
             if (isset($data['options'])) {
                 $details['options'] = $data['options'];
             }
-            
+
             // Atomic Stock Deduction
             $stockResult = $this->deductStock(
-                $productId, 
-                $eventId, 
-                $data['ticket_type'] ?? null, 
+                $productId,
+                $eventId,
+                $data['ticket_type'] ?? null,
                 $details
             );
             $resolvedVariant = $stockResult['resolved_variant'] ?? null;
@@ -90,7 +90,7 @@ class SaleService
                 $shift->increment('cash_total', $data['amount']);
                 if (! empty($data['breakdown'])) {
                     $shift->cash_breakdown = OfficeShift::mergeBreakdowns(
-                        $shift->cash_breakdown, 
+                        $shift->cash_breakdown,
                         $data['breakdown']
                     );
                     $shift->save();
@@ -98,7 +98,7 @@ class SaleService
             } else {
                 $shift->increment('card_total', $data['amount']);
             }
-            
+
             // Recalculate helper totals
             $shift->refresh();
             $shift->total_cash = ($shift->start_cash ?? 0) + ($shift->cash_total ?? 0);
@@ -135,12 +135,12 @@ class SaleService
                 } elseif (! empty($details['options'])) {
                     throw ValidationException::withMessages(['items' => "The configuration for {$product->name} has changed. Please re-select the item."]);
                 }
-                
+
                 // Atomic Increment
                 $updated = Product::where('id', $productId)
                     ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count + 1 <= quantity)')
                     ->increment('sold_count');
-                
+
                 if (! $updated) {
                     throw ValidationException::withMessages(['stock' => 'Product sold out.']);
                 }
@@ -151,20 +151,20 @@ class SaleService
             $event = Event::find($eventId);
             if ($event) {
                 $ticketTypeKey = $ticketType ? strtolower($ticketType) : null;
-                
-                 // Variant Check for Events (if applicable)
+
+                // Variant Check for Events (if applicable)
                 if ($event->is_variant_based) {
-                     $options = $details['options'] ?? null;
-                     if (empty($options)) {
-                         throw ValidationException::withMessages(['items' => "{$event->name} requires you to select an option."]);
-                     }
-                     $resolvedVariant = $this->resolveVariant($event, $options);
-                     if (! $resolvedVariant) {
-                         throw ValidationException::withMessages(['stock' => "Variant not available for {$event->name}."]);
-                     }
-                     if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
-                         throw ValidationException::withMessages(['stock' => "Selected variant for {$event->name} is sold out."]);
-                     }
+                    $options = $details['options'] ?? null;
+                    if (empty($options)) {
+                        throw ValidationException::withMessages(['items' => "{$event->name} requires you to select an option."]);
+                    }
+                    $resolvedVariant = $this->resolveVariant($event, $options);
+                    if (! $resolvedVariant) {
+                        throw ValidationException::withMessages(['stock' => "Variant not available for {$event->name}."]);
+                    }
+                    if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
+                        throw ValidationException::withMessages(['stock' => "Selected variant for {$event->name} is sold out."]);
+                    }
                 } elseif (! empty($details['options'])) {
                     throw ValidationException::withMessages(['items' => "The configuration for {$event->name} has changed. Please re-select the item."]);
                 }
@@ -177,7 +177,7 @@ class SaleService
                 } else {
                     $limitCol = $event->variable_amount ? 'quantity_without_card' : 'quantity';
                     $unlimitedCol = $event->variable_amount ? 'unlimited_quantity_without_card' : 'unlimited_quantity';
-                    
+
                     $updated = Event::where('id', $eventId)
                         ->whereRaw("({$unlimitedCol} = 1 OR {$limitCol} IS NULL OR sold_count_without_card + 1 <= {$limitCol})")
                         ->increment('sold_count_without_card');
@@ -235,10 +235,10 @@ class SaleService
         }
 
         if (($itemType === 'custom' || $isManualEntry) && $defaultSoldBy && $defaultSoldBy !== 'SumUp') {
-             // For consistency with old controller logic
-             if (strpos($defaultSoldBy, 'Custom - ') !== 0) {
-                 $defaultSoldBy = 'Custom - '.$defaultSoldBy;
-             }
+            // For consistency with old controller logic
+            if (strpos($defaultSoldBy, 'Custom - ') !== 0) {
+                $defaultSoldBy = 'Custom - '.$defaultSoldBy;
+            }
         }
 
         $snapshot = array_merge([

@@ -55,7 +55,7 @@ class SalesController extends Controller
         }
 
         if ($hourly) {
-            $cacheKey = "sales_summary_hourly_" . md5(json_encode([$start->toString(), $end->toString()]));
+            $cacheKey = 'sales_summary_hourly_'.md5(json_encode([$start->toString(), $end->toString()]));
 
             $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($start, $end) {
                 // Prepare hour buckets
@@ -108,7 +108,7 @@ class SalesController extends Controller
                 'data' => $data,
             ]);
         } else {
-            $cacheKey = "sales_summary_" . md5(json_encode([$start->toString(), $end->toString()]));
+            $cacheKey = 'sales_summary_'.md5(json_encode([$start->toString(), $end->toString()]));
 
             $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 30, function () use ($start, $end) {
                 // Prepare empty date map - only for the actual date range

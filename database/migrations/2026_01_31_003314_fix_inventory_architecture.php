@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
@@ -15,7 +13,7 @@ return new class extends Migration
 
         // 1. Restore Product Quantity (Add back POS sales)
         // POS Sales are defined as OfficeShiftSales (since we trust them for details and they caused decrements)
-        DB::statement("
+        DB::statement('
             UPDATE products p
             SET quantity = quantity + (
                 SELECT COUNT(*)
@@ -23,11 +21,11 @@ return new class extends Migration
                 WHERE oss.product_id = p.id
             )
             WHERE quantity IS NOT NULL
-        ");
+        ');
 
         // 2. Set Product Sold Count (Total Sales = POS + Online)
         // We calculate Fresh Total: OfficeShiftSales + OnlineSales(with transaction)
-        DB::statement("
+        DB::statement('
             UPDATE products p
             SET sold_count = (
                 SELECT COUNT(*)
@@ -39,7 +37,7 @@ return new class extends Migration
                 WHERE os.product_id = p.id
                 AND os.online_transaction_id IS NOT NULL
             )
-        ");
+        ');
 
         // 3. Restore Event Quantity (with_card)
         DB::statement("

@@ -8,7 +8,7 @@ use Spatie\Activitylog\Traits\LogsActivity; // Added this use statement for Logs
 
 class OfficeShift extends Model
 {
-    use HasFactory, LogsActivity, \Illuminate\Database\Eloquent\Concerns\HasUlids; // Combined traits and added HashableId
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, LogsActivity; // Combined traits and added HashableId
 
     public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
     {

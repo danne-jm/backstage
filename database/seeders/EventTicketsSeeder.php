@@ -32,7 +32,7 @@ class EventTicketsSeeder extends Seeder
             $unique = Str::random(8);
             $eventName = $event->name;
             $eventDate = $event->event_date;
-            
+
             $datePart = $eventDate ? \Illuminate\Support\Carbon::parse($eventDate)->format('d-m-Y') : 'nodate';
 
             $sanitizedEvent = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $eventName);

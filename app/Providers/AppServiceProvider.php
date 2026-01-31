@@ -46,7 +46,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Dynamically set APP_NAME based on request host
-        // We use request() helper safely here; if running in console (e.g. queue worker), 
+        // We use request() helper safely here; if running in console (e.g. queue worker),
         // request()->getHost() might not return what we expect, but for web requests it works.
         // For console commands, the default config('app.name') (Backstage) usually suffices or
         // one can force it if needed.

@@ -169,9 +169,10 @@ class TicketScannerController extends Controller
         // Check if ticket belongs to the selected event
         if ($ticket->event_id != $eventId) {
             $ticketEventName = $ticket->event ? $ticket->event->name : 'another event';
+
             return response()->json([
                 'valid' => false,
-                'error' => "Ticket is for '{$ticketEventName}', not the selected event."
+                'error' => "Ticket is for '{$ticketEventName}', not the selected event.",
             ], 400);
         }
 

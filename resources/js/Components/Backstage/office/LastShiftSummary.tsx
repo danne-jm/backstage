@@ -74,10 +74,10 @@ export const LastShiftSummary = forwardRef<
                         </div>
                         <div className="text-sm">
                             {Array.isArray(lastShift.workers) &&
-                            lastShift.workers.length > 0
+                                lastShift.workers.length > 0
                                 ? lastShift.workers
-                                      .map((w: any) => w.name)
-                                      .join(', ')
+                                    .map((w: any) => w.name)
+                                    .join(', ')
                                 : 'None'}
                         </div>
                     </div>
@@ -187,16 +187,16 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.start_cash_breakdown ||
-                                                {},
+                                            {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>
                             </div>
-                            <DialogFooter>
+                            {/* <DialogFooter>
                                 <DialogClose asChild>
                                     <Button variant="secondary">Close</Button>
                                 </DialogClose>
-                            </DialogFooter>
+                            </DialogFooter> */}
                         </DialogContent>
                     </Dialog>
 
@@ -237,16 +237,16 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.end_of_shift_cash_breakdown ||
-                                                {},
+                                            {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>
                             </div>
-                            <DialogFooter>
+                            {/* <DialogFooter>
                                 <DialogClose asChild>
                                     <Button variant="secondary">Close</Button>
                                 </DialogClose>
-                            </DialogFooter>
+                            </DialogFooter> */}
                         </DialogContent>
                     </Dialog>
                 </div>

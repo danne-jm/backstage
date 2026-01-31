@@ -454,7 +454,8 @@ class SalesSeeder extends Seeder
                 ];
                 $service->createOnlineSale($payload);
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         // Insert office shift workers
         DB::table('office_shift_workers')->insert([

@@ -11,7 +11,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Event extends Model
 {
-    use HasFactory, LogsActivity, \Illuminate\Database\Eloquent\Concerns\HasUlids;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, LogsActivity;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -76,7 +76,6 @@ class Event extends Model
     {
         return $this->hasMany(Ticket::class);
     }
-
 
     public function sales()
     {

@@ -285,7 +285,7 @@ function VariantsMatrix({ product }: { product: Product }) {
     if (configs.length === 1) {
         const config = configs[0];
         return (
-            <div className="mt-2 overflow-hidden rounded-md border text-xs">
+            <div className="mt-2 overflow-hidden rounded-md border text-xs md:overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-muted/50">
                         <tr>
@@ -315,7 +315,7 @@ function VariantsMatrix({ product }: { product: Product }) {
     if (configs.length === 2) {
         const [rowConfig, colConfig] = configs; // e.g. Row=Size, Col=Color
         return (
-            <div className="mt-2 overflow-x-auto rounded-md border text-xs">
+            <div className="mt-2 overflow-hidden rounded-md border text-xs md:overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-muted/50">
                         <tr>
@@ -352,7 +352,7 @@ function VariantsMatrix({ product }: { product: Product }) {
 
     // Case 3: > 2 Dimensions -> Simple Table
     return (
-        <div className="mt-2 overflow-x-auto rounded-md border text-xs">
+        <div className="mt-2 overflow-hidden rounded-md border text-xs md:overflow-x-auto">
             <table className="w-full text-left">
                 <thead className="bg-muted/50">
                     <tr>

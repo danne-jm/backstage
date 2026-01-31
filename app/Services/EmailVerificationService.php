@@ -13,23 +13,23 @@ class EmailVerificationService
         $email = trim($email);
 
         // 1. Syntax Check
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return [
                 'valid' => false,
                 'reason' => 'Invalid syntax',
-                'stage' => 'syntax'
+                'stage' => 'syntax',
             ];
         }
 
         // 2. DNS Check
-        $domain = substr(strrchr($email, "@"), 1);
-        if (!checkdnsrr($domain, 'MX')) {
+        $domain = substr(strrchr($email, '@'), 1);
+        if (! checkdnsrr($domain, 'MX')) {
             // Check for A record as a fallback (some servers accept mail via A record)
-            if (!checkdnsrr($domain, 'A')) {
+            if (! checkdnsrr($domain, 'A')) {
                 return [
                     'valid' => false,
                     'reason' => 'Domain has no MX or A records',
-                    'stage' => 'dns'
+                    'stage' => 'dns',
                 ];
             }
         }
@@ -37,7 +37,7 @@ class EmailVerificationService
         return [
             'valid' => true,
             'reason' => 'Valid syntax and DNS records found',
-            'stage' => 'dns'
+            'stage' => 'dns',
         ];
     }
 }

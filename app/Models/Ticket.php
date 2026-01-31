@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Ticket extends Model
 {
-    use HasFactory, \Spatie\Activitylog\Traits\LogsActivity, \Illuminate\Database\Eloquent\Concerns\HasUlids;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, \Spatie\Activitylog\Traits\LogsActivity;
 
     public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
     {

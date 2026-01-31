@@ -22,7 +22,7 @@ return new class extends Migration
         Schema::create('event_tickets', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->timestamps();
-            // Note: We don't need to fully restore the schema for a 'down' on a drop, 
+            // Note: We don't need to fully restore the schema for a 'down' on a drop,
             // but normally we would. For this task, avoiding complexity is fine unless requested.
         });
     }

@@ -277,13 +277,7 @@ export function PreviousShiftSalesLog({
                                         </div>
                                     </div>
                                 </div>
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button variant="secondary">
-                                            Close
-                                        </Button>
-                                    </DialogClose>
-                                </DialogFooter>
+
                             </DialogContent>
                         </Dialog>
 
@@ -328,13 +322,7 @@ export function PreviousShiftSalesLog({
                                         </div>
                                     </div>
                                 </div>
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button variant="secondary">
-                                            Close
-                                        </Button>
-                                    </DialogClose>
-                                </DialogFooter>
+
                             </DialogContent>
                         </Dialog>
                     </>

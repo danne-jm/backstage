@@ -2898,11 +2898,7 @@ export default function Office() {
                                 </div>
                             </div>
                         </div>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="secondary">Close</Button>
-                            </DialogClose>
-                        </DialogFooter>
+
                     </DialogContent>
                 </Dialog>
                 <Dialog
@@ -2946,11 +2942,7 @@ export default function Office() {
                                 </div>
                             </div>
                         </div>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="secondary">Close</Button>
-                            </DialogClose>
-                        </DialogFooter>
+
                     </DialogContent>
                 </Dialog>
                 <Dialog
@@ -2990,11 +2982,7 @@ export default function Office() {
                             This item cannot be added because it is sold out.
                         </DialogDescription>
                         <div className="mt-4">{soldOutText}</div>
-                        <DialogFooter className="mt-4">
-                            <DialogClose asChild>
-                                <Button variant="secondary">Close</Button>
-                            </DialogClose>
-                        </DialogFooter>
+
                     </DialogContent>
                 </Dialog>
             </div>

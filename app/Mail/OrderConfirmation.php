@@ -33,7 +33,7 @@ class OrderConfirmation extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Order Confirmation - ' . $this->transaction->id,
+            subject: 'Order Confirmation - '.$this->transaction->id,
         );
     }
 

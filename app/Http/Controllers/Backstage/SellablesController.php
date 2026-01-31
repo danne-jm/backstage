@@ -293,11 +293,11 @@ class SellablesController extends Controller
         $isVariantBased = $request->input('is_variant_based', false);
 
         if ($isVariantBased) {
-             if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
+            if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
                 $this->syncVariants($product, $request->input('variants_stock'));
             } else {
-                // If variant based but missing config/stock, then we assume user wants to wipe them? 
-                // Creating a safety net here, only delete if explicitly intended or empty. 
+                // If variant based but missing config/stock, then we assume user wants to wipe them?
+                // Creating a safety net here, only delete if explicitly intended or empty.
                 // But for now, if is_variant_based is true, we expect valid variants.
                 $product->variants()->delete();
             }

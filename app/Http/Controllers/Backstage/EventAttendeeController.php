@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Backstage;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\OnlineSale;
-use App\Services\GoogleSheetsService;
 use App\Services\EmailVerificationService;
+use App\Services\GoogleSheetsService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request; // Import Schema
 use Illuminate\Support\Facades\DB; // Import Blueprint
@@ -70,7 +70,7 @@ class EventAttendeeController extends Controller
         // This ensures that updating the filter immediately invalidates the cache (effectively)
         // because it generates a new key.
         $filterHash = md5(json_encode($event->attendee_filter_config ?? []));
-        $cacheKey = 'sheet_data_' . md5($spreadsheetId . $sheetName . $filterHash);
+        $cacheKey = 'sheet_data_'.md5($spreadsheetId.$sheetName.$filterHash);
 
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($spreadsheetId, $sheetName, $event) {
             try {
@@ -340,7 +340,7 @@ class EventAttendeeController extends Controller
                 return response()->json(['error' => 'No data found in sheet'], 400);
             }
 
-            $headers = array_map(fn($h) => strtolower(trim($h)), $allData[0]);
+            $headers = array_map(fn ($h) => strtolower(trim($h)), $allData[0]);
             $emailCol = array_search('email', $headers);
 
             if ($emailCol === false) {
@@ -359,7 +359,9 @@ class EventAttendeeController extends Controller
 
             for ($i = 1; $i < count($allData); $i++) {
                 $email = trim($allData[$i][$emailCol] ?? '');
-                if (empty($email)) continue;
+                if (empty($email)) {
+                    continue;
+                }
 
                 $verification = $verifier->verify($email);
                 $isValid = $verification['valid'];
@@ -379,7 +381,7 @@ class EventAttendeeController extends Controller
                 $results[$i] = $verification;
             }
 
-            if (!empty($cellFormats)) {
+            if (! empty($cellFormats)) {
                 $service->applyCellFormatting($spreadsheetId, $sheetId, $cellFormats);
             }
 
@@ -387,11 +389,11 @@ class EventAttendeeController extends Controller
                 'valid_count' => $validCount,
                 'invalid_count' => $invalidCount,
                 'total_checked' => $validCount + $invalidCount,
-                'results' => $results
+                'results' => $results,
             ]);
 
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Verification failed: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Verification failed: '.$e->getMessage()], 500);
         }
     }
 
