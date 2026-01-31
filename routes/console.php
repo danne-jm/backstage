@@ -15,4 +15,4 @@ Artisan::command('inspire', function () {
 // TRADE-OFF: Stock is held for this duration before being released if payment fails.
 // For high-demand events, reduce to ->everyTenMinutes() or ->everyFiveMinutes()
 // But NEVER go below 5 minutes to avoid checking payments while users are still paying.
-Schedule::command('payments:verify-pending')->everyFifteenMinutes();
+Schedule::command('payments:verify-pending')->everyFiveMinutes();

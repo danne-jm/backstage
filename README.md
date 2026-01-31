@@ -66,19 +66,88 @@ Designed for the physical "Office Shifts" run by volunteers:
 ## 📦 Installation
 
 ### Prerequisites
-- PHP 8.2+
-- Composer
-- Node.js & NPM
-- MySQL
-- Redis
+- **OS**: Linux (Ubuntu/Debian recommended) or macOS
+- **PHP**: 8.2+ (with extensions: bcmath, curl, mbstring, xml, zip, gd)
+- **Composer**: Latest version
+- **Node.js**: 18+ & NPM
+- **Database**: MySQL 8.0+ or MariaDB
+- **Cache/Queue**: Redis
+- **Process Manager**: Supervisor (`sudo apt install supervisor`)
 
 ### Step-by-Step Setup
 
 1. **Clone the repository**
    ```bash
-   git clone [https://github.com/yourusername/backstage.git](https://github.com/yourusername/backstage.git)
+   git clone https://github.com/danne-jm/backstage.git
    cd backstage
+   ```
 
+2. **Install Dependencies**
+   ```bash
+   composer install --optimize-autoloader --no-dev
+   npm install && npm run build
+   ```
+
+3. **Environment Configuration**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+   Edit `.env` and configure:
+   - `DB_*`: Database credentials
+   - `REDIS_*`: Redis connection
+   - `SUMUP_*`: Payment credentials (see below)
+
+4. **SumUp Configuration**
+   To accept payments, you need a SumUp Developer account. Add these to `.env`:
+   ```env
+   SUMUP_API_KEY=sup_sk_...
+   SUMUP_MERCHANT_CODE=M...
+   SUMUP_WEBHOOK_SECRET=your_secret_signing_key
+   ```
+
+5. **Database Setup**
+   ```bash
+   php artisan migrate --seed
+   ```
+
+### 🚀 System Service Setup (Production)
+
+This project uses a custom "Backstage" system service that manages the Queue Worker, Reverb (Websockets), and Task Scheduler automatically.
+
+1. **Install the Service**
+   Run the following as root (`sudo`):
+   ```bash
+   # Copy the service file
+   sudo cp backstage.service /etc/systemd/system/
+   
+   # Reload systemd
+   sudo systemctl daemon-reload
+   
+   # Enable and Start
+   sudo systemctl enable backstage
+   sudo systemctl start backstage
+   ```
+
+2. **Verify Status**
+   ```bash
+   sudo systemctl status backstage
+   ```
+   You should see `Active: active (running)`.
+
+3. **Logs**
+   Logs for the background processes are stored in `storage/logs/`:
+   - `supervisord.log`: Main process manager logs
+   - `worker.log`: Job queue output
+   - `scheduler.log`: Cron task output
+   - `reverb.log`: WebSocket server output
+
+## ✅ Verification
+- Visit `https://your-domain.com`.
+- Login with the admin credentials (default: `admin@example.com` / `password`).
+- Check the System Status page or logs to ensure queues are processing.
+
+---
 
 Live at: 
 - https://laravel.danieljm.dpdns.org

@@ -17,7 +17,7 @@ class VerifyPendingPayments extends Command
      *
      * @var string
      */
-    protected $signature = 'payments:verify-pending {--min-age=15 : Minimum age in minutes for stale transactions}';
+    protected $signature = 'payments:verify-pending {--min-age=5 : Minimum age in minutes for stale transactions}';
 
     /**
      * The console command description.
@@ -72,37 +72,33 @@ class VerifyPendingPayments extends Command
                         $result = $gateway->verifyPayment($transaction->external_payment_id, $transaction);
 
                         if ($result->isSuccessful()) {
+                            // Recovered a valid sale that was just slow to update
                             $this->info('  ✓ Transaction confirmed as PAID.');
                             $successCount++;
-
-                            // Note: The gateway's verifyPayment method automatically updates the DB status to COMPLETED
-                            // You may want to trigger confirmation emails here if needed
-                            // $this->sendConfirmationEmail($transaction);
                         } elseif ($result->isFailed()) {
+                            // Confirmed failure
                             $this->error('  ✗ Transaction failed or expired.');
                             $failedCount++;
-
-                            // Release stock that was reserved by this failed transaction
                             $this->releaseStock($transaction);
-
-                            Log::warning('Payment reconciliation: Transaction marked as failed', [
-                                'transaction_id' => $transaction->id,
-                                'reference' => $transaction->reference_id,
-                                'external_payment_id' => $transaction->external_payment_id,
-                                'reason' => $result->message,
-                            ]);
                         } else {
-                            $this->warn('  ⚠ Transaction still pending.');
-                            $stillPendingCount++;
+                            // SumUp still says PENDING, but our local timeout (5min) has passed.
+                            // We treat this as ABANDONED/EXPIRED.
+                            $this->warn('  ⚠ Transaction still pending at gateway. Expiring locally due to timeout.');
+                            
+                            $transaction->update(['payment_status' => PaymentResult::STATUS_FAILED]);
+                            $this->releaseStock($transaction);
+                            $failedCount++; // Count as failed/expired
+                            
+                            Log::info('Payment reconciliation: Force-expired stale pending transaction', [
+                                'transaction_id' => $transaction->id,
+                                'age_minutes' => $transaction->created_at->diffInMinutes(now()),
+                            ]);
                         }
                     } catch (\Exception $e) {
                         $this->error("  ✗ Exception occurred: {$e->getMessage()}");
-
                         Log::error('Payment reconciliation: Exception during verification', [
                             'transaction_id' => $transaction->id,
-                            'reference' => $transaction->reference_id,
                             'error' => $e->getMessage(),
-                            'trace' => $e->getTraceAsString(),
                         ]);
                     }
                 }

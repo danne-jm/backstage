@@ -46,6 +46,7 @@ return [
         'merchant_code' => env('SUMUP_MERCHANT_CODE'),
         'api_url' => env('SUMUP_API_URL', 'https://api.sumup.com'),
         'return_url' => env('SUMUP_RETURN_URL', env('APP_URL').'/payment/callback'),
+        'webhook_secret' => env('SUMUP_WEBHOOK_SECRET'),
         'processing_fee_rate' => env('SUMUP_PROCESSING_FEE_RATE', 0.02), // 2% default (update if SumUp changes their fees)
     ],
 

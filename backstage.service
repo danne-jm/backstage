@@ -1,0 +1,15 @@
+[Unit]
+Description=Backstage Laravel System Service
+After=network.target
+
+[Service]
+Type=simple
+User=dpdns-laravel-danieljm
+WorkingDirectory=/home/dpdns-laravel-danieljm/htdocs/laravel.danieljm.dpdns.org/backstage
+# Run supervisord using the config we created
+ExecStart=/usr/bin/supervisord -c /home/dpdns-laravel-danieljm/htdocs/laravel.danieljm.dpdns.org/backstage/backstage_supervisor.conf
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
