@@ -10,6 +10,7 @@ use App\Models\OfficeShiftWorker;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\InventoryService;
+use App\Services\SaleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -17,10 +18,12 @@ use Inertia\Inertia;
 class OfficeController extends Controller
 {
     protected $inventoryService;
+    protected $saleService;
 
-    public function __construct(InventoryService $inventoryService)
+    public function __construct(InventoryService $inventoryService, SaleService $saleService)
     {
         $this->inventoryService = $inventoryService;
+        $this->saleService = $saleService;
     }
 
     public function index(Request $request)
@@ -317,151 +320,38 @@ class OfficeController extends Controller
             'options' => ['nullable', 'array'],
         ]);
 
-        $itemType = $data['item_type'] ?? 'product';
-        $isManualEntry = $data['is_manual_entry'] ?? false;
-        $itemName = 'Custom Sale';
-        $itemPrice = $data['amount'];
-        // For manual entries (custom sales), use the provided description.
-        // For quick sales, keep the description from the request (usually empty).
-        $itemDescription = $data['description'] ?? '';
-        $eventId = null;
-        $productId = null;
-        $variantId = null;
-        $variantOptions = null;
+        try {
+            // Use SaleService to atomically record sale and update stock
+            $sale = $this->saleService->recordOfficeSale($office, $data);
+            
+            // Dispatch Events
+            \App\Events\OfficeSaleCreated::dispatch($office->id, $sale);
 
-        if ($itemType === 'event' && ! empty($data['product_id'])) {
-            $event = Event::find($data['product_id']);
-            if ($event) {
-                if ($event->variable_amount) {
-                    $ticketType = $data['ticket_type'] ?? null;
-                    if ($ticketType === 'with_card' && $event->remaining_with_card === 0) {
-                        return $this->handleStockError('Tickets with ESNcard for this event are sold out.');
-                    }
-                    if ($ticketType === 'without_card' && $event->remaining_without_card === 0) {
-                        return $this->handleStockError('Tickets without ESNcard for this event are sold out.');
-                    }
-                } else {
-                    if (! is_null($event->remaining) && $event->remaining === 0) {
-                        return $this->handleStockError('This event is sold out.');
-                    }
+            if ($sale->product_id) {
+                $product = Product::find($sale->product_id);
+                if ($product) {
+                    \App\Events\InventoryUpdated::dispatch($product->id, 'product', $product->remaining);
                 }
-
-                $itemName = $event->name;
-                $eventId = $event->id;
-            }
-        } elseif ($itemType === 'product' && ! empty($data['product_id'])) {
-            $product = Product::find($data['product_id']);
-            if ($product) {
-                $productId = $product->id;
-                $itemName = $product->name;
-
-                if ($product->is_variant_based) {
-                    $variantOptions = $data['options'] ?? null;
-
-                    if (empty($variantOptions)) {
-                        return $this->handleError('options', 'Please select a variant option.');
-                    }
-
-                    // Find the variant
-                    $variant = $product->variants->first(function ($v) use ($variantOptions) {
-                        $vOpts = $v->options;
-                        if (count($vOpts) !== count($variantOptions)) {
-                            return false;
-                        }
-                        foreach ($variantOptions as $k => $val) {
-                            if (! isset($vOpts[$k]) || $vOpts[$k] !== $val) {
-                                return false;
-                            }
-                        }
-
-                        return true;
-                    });
-
-                    if (! $variant) {
-                        return $this->handleStockError('Selected variant not found.');
-                    }
-
-                    if (! is_null($variant->quantity) && ($variant->quantity - $variant->sold_count) <= 0) {
-                        return $this->handleStockError('Selected variant is sold out.');
-                    }
-
-                    $variantId = $variant->id;
-                } else {
-                    if (! is_null($product->remaining) && $product->remaining <= 0) {
-                        return $this->handleStockError('This product is sold out.');
-                    }
+            } elseif ($sale->event_id) {
+                $event = Event::find($sale->event_id);
+                if ($event) {
+                    \App\Events\InventoryUpdated::dispatch($event->id, 'event', $event->remaining, $event->remaining_with_card, $event->remaining_without_card);
                 }
             }
+
+            return redirect()->route('office.show', $office);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+             // Extract the first error message for 'stock' or 'items' key if present
+             $errors = $e->errors();
+             if (isset($errors['stock'])) {
+                 return $this->handleStockError($errors['stock'][0]);
+             }
+             if (isset($errors['items'])) {
+                 return $this->handleError('options', $errors['items'][0]);
+             }
+             throw $e;
         }
-
-        $snapshot = [
-            'item_type' => $itemType,
-            'name' => $itemName,
-            'price' => $itemPrice,
-            'method' => $data['method'],
-            'amount' => $data['amount'],
-            'description' => $itemDescription,
-            'sold_by' => ($itemType === 'custom' || $isManualEntry) ? 'Custom - '.(Auth::user()->name ?? 'unknown') : (Auth::user()->name ?? 'unknown'),
-            'sold_at' => now()->toIso8601String(),
-            'created_at' => now()->toIso8601String(),
-            'ticket_type' => $data['ticket_type'] ?? null,
-            'ticket_label' => $data['ticket_label'] ?? null,
-            'is_manual_entry' => $isManualEntry,
-            'variant_options' => $variantOptions,
-            'variant_id' => $variantId,
-        ];
-
-        $saleBreakdown = ($data['method'] === 'cash' && isset($data['breakdown'])) ? $data['breakdown'] : null;
-
-        $sale = OfficeShiftSale::create([
-            'office_shift_id' => $office->id,
-            'product_id' => $productId,
-            'event_id' => $eventId,
-            'method' => $data['method'],
-            'amount' => $data['amount'],
-            'description' => $itemDescription,
-            'sold_by' => Auth::id(),
-            'sold_at' => now(),
-            'snapshot' => $snapshot,
-            'breakdown' => $saleBreakdown,
-        ]);
-
-        if ($data['method'] === 'cash') {
-            $office->increment('cash_total', $data['amount']);
-            if ($saleBreakdown) {
-                $office->cash_breakdown = OfficeShift::mergeBreakdowns($office->cash_breakdown, $saleBreakdown);
-                $office->save();
-            }
-        } else {
-            $office->increment('card_total', $data['amount']);
-        }
-
-        $this->recalculateTotals($office);
-        \App\Events\OfficeSaleCreated::dispatch($office->id, $sale);
-
-        if ($productId) {
-            $product = Product::find($productId);
-            if ($product) {
-                $product->increment('sold_count');
-                if ($variantId) {
-                    \App\Models\SellableVariant::where('id', $variantId)->increment('sold_count');
-                }
-                \App\Events\InventoryUpdated::dispatch($product->id, 'product', $product->remaining);
-            }
-        } elseif ($eventId) {
-            $event = Event::find($eventId);
-            if ($event) {
-                $ticketType = $data['ticket_type'] ?? null;
-                if ($ticketType === 'with_card') {
-                    $event->increment('sold_count_with_card');
-                } elseif ($ticketType === 'without_card') {
-                    $event->increment('sold_count_without_card');
-                }
-                \App\Events\InventoryUpdated::dispatch($event->id, 'event', $event->remaining, $event->remaining_with_card, $event->remaining_without_card);
-            }
-        }
-
-        return redirect()->route('office.show', $office);
     }
 
     public function removeSale(Request $request, OfficeShift $office)
