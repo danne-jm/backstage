@@ -14,6 +14,7 @@ class InventoryService
     public function getSellableProducts(): Collection
     {
         $products = Product::withCount(['sales', 'onlineSales'])
+            ->with(['variants'])
             ->orderBy('name')
             ->get();
 
@@ -26,6 +27,15 @@ class InventoryService
                 'description' => $product->description,
                 'price' => $product->price,
                 'remaining' => $product->remaining,
+                'is_variant_based' => (bool) $product->is_variant_based,
+                'variants' => $product->variants->map(function ($v) use ($product) {
+                    return [
+                        'id' => $v->id,
+                        'options' => $v->options,
+                        'remaining' => $v->remaining,
+                        'price' => $v->price ?? $product->price,
+                    ];
+                }),
                 'unlimited_quantity' => (bool) ($product->unlimited_quantity ?? false),
                 'unlimited_quantity_with_card' => (bool) ($product->unlimited_quantity_with_card ?? false),
                 'unlimited_quantity_without_card' => (bool) ($product->unlimited_quantity_without_card ?? false),

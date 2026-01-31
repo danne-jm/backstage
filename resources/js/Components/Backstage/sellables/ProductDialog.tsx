@@ -201,6 +201,7 @@ export function ProductDialog({
         // Append Variants or Quantity based on mode
         if (stockMode === 'variants') {
             // mode: variants -> clear simple quantity
+            formData.append('is_variant_based', '1');
             formData.append('quantity', '');
             formData.append('unlimited_quantity', '0');
             formData.append('variable_amount', '0');
@@ -239,6 +240,7 @@ export function ProductDialog({
             });
         } else {
             // mode: simple -> clear variants
+            formData.append('is_variant_based', '0');
             formData.append('variants_config', '');
         }
 

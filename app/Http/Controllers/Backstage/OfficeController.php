@@ -314,15 +314,20 @@ class OfficeController extends Controller
             'ticket_label' => ['nullable', 'string'],
             'breakdown' => ['nullable', 'array'],
             'is_manual_entry' => ['nullable', 'boolean'],
+            'options' => ['nullable', 'array'],
         ]);
 
         $itemType = $data['item_type'] ?? 'product';
         $isManualEntry = $data['is_manual_entry'] ?? false;
         $itemName = 'Custom Sale';
         $itemPrice = $data['amount'];
-        $itemDescription = $data['description'] ?? null;
+        // For manual entries (custom sales), use the provided description.
+        // For quick sales, keep the description from the request (usually empty).
+        $itemDescription = $data['description'] ?? '';
         $eventId = null;
         $productId = null;
+        $variantId = null;
+        $variantOptions = null;
 
         if ($itemType === 'event' && ! empty($data['product_id'])) {
             $event = Event::find($data['product_id']);
@@ -330,46 +335,62 @@ class OfficeController extends Controller
                 if ($event->variable_amount) {
                     $ticketType = $data['ticket_type'] ?? null;
                     if ($ticketType === 'with_card' && $event->remaining_with_card === 0) {
-                        if (request()->wantsJson()) {
-                            return response()->json(['errors' => ['stock' => ['Tickets with ESNcard for this event are sold out.']]], 422);
-                        }
-
-                        return redirect()->back()->withErrors(['sold_out' => 'Tickets with ESNcard for this event are sold out.']);
+                        return $this->handleStockError('Tickets with ESNcard for this event are sold out.');
                     }
                     if ($ticketType === 'without_card' && $event->remaining_without_card === 0) {
-                        if (request()->wantsJson()) {
-                            return response()->json(['errors' => ['stock' => ['Tickets without ESNcard for this event are sold out.']]], 422);
-                        }
-
-                        return redirect()->back()->withErrors(['sold_out' => 'Tickets without ESNcard for this event are sold out.']);
+                        return $this->handleStockError('Tickets without ESNcard for this event are sold out.');
                     }
-                } else { // Not variable amount
-                    if ($event->remaining === 0) {
-                        if (request()->wantsJson()) {
-                            return response()->json(['errors' => ['stock' => ['This event is sold out.']]], 422);
-                        }
-
-                        return redirect()->back()->withErrors(['sold_out' => 'This event is sold out.']);
+                } else {
+                    if (! is_null($event->remaining) && $event->remaining === 0) {
+                        return $this->handleStockError('This event is sold out.');
                     }
                 }
 
                 $itemName = $event->name;
-                $itemDescription = $event->description;
                 $eventId = $event->id;
             }
         } elseif ($itemType === 'product' && ! empty($data['product_id'])) {
             $product = Product::find($data['product_id']);
             if ($product) {
-                if ($product->remaining === 0) {
-                    if (request()->wantsJson()) {
-                        return response()->json(['errors' => ['stock' => ['This product is sold out.']]], 422);
+                $productId = $product->id;
+                $itemName = $product->name;
+
+                if ($product->is_variant_based) {
+                    $variantOptions = $data['options'] ?? null;
+
+                    if (empty($variantOptions)) {
+                        return $this->handleError('options', 'Please select a variant option.');
                     }
 
-                    return redirect()->back()->withErrors(['sold_out' => 'This product is sold out.']);
+                    // Find the variant
+                    $variant = $product->variants->first(function ($v) use ($variantOptions) {
+                        $vOpts = $v->options;
+                        if (count($vOpts) !== count($variantOptions)) {
+                            return false;
+                        }
+                        foreach ($variantOptions as $k => $val) {
+                            if (! isset($vOpts[$k]) || $vOpts[$k] !== $val) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    });
+
+                    if (! $variant) {
+                        return $this->handleStockError('Selected variant not found.');
+                    }
+
+                    if (! is_null($variant->quantity) && ($variant->quantity - $variant->sold_count) <= 0) {
+                        return $this->handleStockError('Selected variant is sold out.');
+                    }
+
+                    $variantId = $variant->id;
+                } else {
+                    if (! is_null($product->remaining) && $product->remaining <= 0) {
+                        return $this->handleStockError('This product is sold out.');
+                    }
                 }
-                $itemName = $product->name;
-                $itemDescription = $product->description;
-                $productId = $product->id;
             }
         }
 
@@ -379,13 +400,15 @@ class OfficeController extends Controller
             'price' => $itemPrice,
             'method' => $data['method'],
             'amount' => $data['amount'],
-            'description' => $data['description'] ?? '',
+            'description' => $itemDescription,
             'sold_by' => ($itemType === 'custom' || $isManualEntry) ? 'Custom - '.(Auth::user()->name ?? 'unknown') : (Auth::user()->name ?? 'unknown'),
             'sold_at' => now()->toIso8601String(),
             'created_at' => now()->toIso8601String(),
             'ticket_type' => $data['ticket_type'] ?? null,
             'ticket_label' => $data['ticket_label'] ?? null,
             'is_manual_entry' => $isManualEntry,
+            'variant_options' => $variantOptions,
+            'variant_id' => $variantId,
         ];
 
         $saleBreakdown = ($data['method'] === 'cash' && isset($data['breakdown'])) ? $data['breakdown'] : null;
@@ -396,7 +419,7 @@ class OfficeController extends Controller
             'event_id' => $eventId,
             'method' => $data['method'],
             'amount' => $data['amount'],
-            'description' => $data['description'] ?? '',
+            'description' => $itemDescription,
             'sold_by' => Auth::id(),
             'sold_at' => now(),
             'snapshot' => $snapshot,
@@ -414,19 +437,26 @@ class OfficeController extends Controller
         }
 
         $this->recalculateTotals($office);
-
-        // Dispatch realtime event for office page listeners
         \App\Events\OfficeSaleCreated::dispatch($office->id, $sale);
 
-        // Dispatch inventory update event if stock was affected
         if ($productId) {
             $product = Product::find($productId);
             if ($product) {
+                $product->increment('sold_count');
+                if ($variantId) {
+                    \App\Models\SellableVariant::where('id', $variantId)->increment('sold_count');
+                }
                 \App\Events\InventoryUpdated::dispatch($product->id, 'product', $product->remaining);
             }
         } elseif ($eventId) {
             $event = Event::find($eventId);
             if ($event) {
+                $ticketType = $data['ticket_type'] ?? null;
+                if ($ticketType === 'with_card') {
+                    $event->increment('sold_count_with_card');
+                } elseif ($ticketType === 'without_card') {
+                    $event->increment('sold_count_without_card');
+                }
                 \App\Events\InventoryUpdated::dispatch($event->id, 'event', $event->remaining, $event->remaining_with_card, $event->remaining_without_card);
             }
         }
@@ -458,6 +488,37 @@ class OfficeController extends Controller
 
                 if ($onlineSale) {
                     $onlineSale->delete();
+                }
+            }
+
+            // INVENTORY RESTORATION
+            if ($sale->product_id) {
+                $product = Product::find($sale->product_id);
+                if ($product) {
+                    $product->decrement('sold_count');
+
+                    $variantId = $sale->snapshot['variant_id'] ?? null;
+                    if ($variantId) {
+                        \App\Models\SellableVariant::where('id', $variantId)->decrement('sold_count');
+                    } elseif (! empty($sale->snapshot['variant_options'])) {
+                        $opts = $sale->snapshot['variant_options'];
+                        $variant = $product->variants->first(function ($v) use ($opts) {
+                            return $v->options == $opts;
+                        });
+                        if ($variant) {
+                            $variant->decrement('sold_count');
+                        }
+                    }
+                }
+            } elseif ($sale->event_id) {
+                $event = Event::find($sale->event_id);
+                if ($event) {
+                    $ticketType = $sale->snapshot['ticket_type'] ?? null;
+                    if ($ticketType === 'with_card') {
+                        $event->decrement('sold_count_with_card');
+                    } elseif ($ticketType === 'without_card') {
+                        $event->decrement('sold_count_without_card');
+                    }
                 }
             }
 
@@ -683,5 +744,19 @@ class OfficeController extends Controller
         $this->recalculateTotals($office);
 
         return redirect()->route('office.show', $office);
+    }
+
+    protected function handleError($field, $message)
+    {
+        if (request()->wantsJson()) {
+            return response()->json(['errors' => [$field => [$message]]], 422);
+        }
+
+        return redirect()->back()->withErrors([$field => $message]);
+    }
+
+    protected function handleStockError($message)
+    {
+        return $this->handleError('stock', $message);
     }
 }

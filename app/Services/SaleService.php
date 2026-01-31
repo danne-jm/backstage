@@ -25,6 +25,7 @@ class SaleService
             $method = $data['method'] ?? 'card';
             $amount = $data['amount'] ?? 0;
             $ticketType = $data['ticket_type'] ?? null;
+            $resolvedVariant = null;
 
             $details = $data['details'] ?? [];
 

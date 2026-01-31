@@ -10,10 +10,12 @@ class ProductObserver
 {
     public function updated(Product $product): void
     {
-        // Build the fields we want to propagate to sales snapshots (exclude price)
+        // Build the fields we want to propagate to sales snapshots
+        // NOTE: We intentionally do NOT propagate 'description' because that field
+        // in the snapshot represents a sale-specific description (custom note for manual entries),
+        // not the product's description. Price is also preserved separately below.
         $fields = [
             'name' => $product->name,
-            'description' => $product->description,
             'type' => $product->type ?? null,
         ];
 

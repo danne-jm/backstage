@@ -146,6 +146,12 @@ export default function Office() {
     const [submitting, setSubmitting] = React.useState(false);
     const [message, setMessage] = React.useState('');
 
+    // Variant Mode
+    const [isVariantModalOpen, setIsVariantModalOpen] = React.useState(false);
+    const [selectedVariantProduct, setSelectedVariantProduct] = React.useState<any | null>(null);
+    const [pendingVariantAction, setPendingVariantAction] = React.useState<'cash' | 'card' | null>(null);
+    const [pendingVariantContext, setPendingVariantContext] = React.useState<any | null>(null);
+
     React.useEffect(() => {
         if (activeShift) {
             setSales(activeShift.sales || []);
@@ -585,14 +591,79 @@ export default function Office() {
         return grouped.map((g) => `${g.name} ${g.count}`).join(' | ');
     };
 
-    const addCustomCardSale = () => {
+    const handleVariantConfirm = (options: any) => {
+        const type = pendingVariantAction;
+        const context = pendingVariantContext;
+
+        setIsVariantModalOpen(false);
+        setPendingVariantAction(null);
+        setPendingVariantContext(null);
+        setSelectedVariantProduct(null);
+
+        if (!type) return;
+
+        if (type === 'cash') {
+            // Add options to context
+            const ctx = { ...context, options };
+            openCustomCashModal(ctx);
+        } else {
+            // Card - custom sale flow
+            addCustomCardSale(options);
+        }
+    };
+
+    const handleSaleAction = (
+        type: 'cash' | 'card',
+        context: any = null,
+    ) => {
+        let productId = context?.productId;
+        let isFromCustomSaleSection = false;
+
+        // Custom Sale Section logic inference
+        if (!context && customSaleItemId !== 'custom') {
+            productId = customSaleItemId;
+            isFromCustomSaleSection = true;
+        }
+
+        const product = sellables.find(
+            (s: any) => String(s.actual_id) === String(productId),
+        );
+
+        // Build context for Custom sale section with a selected product/event
+        let effectiveContext = context;
+        if (isFromCustomSaleSection && product) {
+            effectiveContext = {
+                productId: product.actual_id,
+                itemType: product.type,
+                isCustomSale: true, // Flag to indicate this is from Custom sale section
+            };
+        }
+
+        // If variant based, interrupt flow
+        if (product && product.is_variant_based) {
+            setPendingVariantAction(type);
+            setPendingVariantContext(effectiveContext);
+            setSelectedVariantProduct(product);
+            setIsVariantModalOpen(true);
+            return;
+        }
+
+        // Normal flow
+        if (type === 'cash') {
+            openCustomCashModal(effectiveContext);
+        } else {
+            addCustomCardSale();
+        }
+    };
+
+    const addCustomCardSale = (variantOptions: any = null) => {
         if (!activeShift || !customAmount || !customDescription) return;
         const isCustom = customSaleItemId === 'custom';
         const selectedItem = isCustom
             ? null
             : filteredSellables.find(
-                  (i: any) => String(i.actual_id) === String(customSaleItemId),
-              );
+                (i: any) => String(i.actual_id) === String(customSaleItemId),
+            );
         const amountToUse = String(customAmount);
         const descToUse = String(customDescription || '');
         const itemName = selectedItem ? selectedItem.name : 'Custom Sale';
@@ -620,8 +691,10 @@ export default function Office() {
                         : null,
                 method: 'card',
                 amount: amountToUse,
+                name: itemName,
                 description: descToUse,
                 is_manual_entry: true, // Flag to indicate this was manually entered
+                details: variantOptions ? { options: variantOptions } : null,
             })
             .then(() => {
                 setMessage('Custom sale recorded (Card)');
@@ -699,7 +772,7 @@ export default function Office() {
                                                         !activeShift ||
                                                         submitting ||
                                                         activeShift?.status ===
-                                                            'closed'
+                                                        'closed'
                                                     }
                                                     onClick={() => {
                                                         if (!activeShift)
@@ -770,7 +843,7 @@ export default function Office() {
                                                         disabled={
                                                             submitting ||
                                                             activeShift?.status ===
-                                                                'closed'
+                                                            'closed'
                                                         }
                                                         onClick={() => {
                                                             if (!activeShift)
@@ -814,15 +887,15 @@ export default function Office() {
                                                                                 (
                                                                                     prev,
                                                                                 ) => [
-                                                                                    {
-                                                                                        id: member.id,
-                                                                                        name: member.name,
-                                                                                        role: member.role,
-                                                                                        email: member.email,
-                                                                                    },
-                                                                                    ...(prev ||
-                                                                                        []),
-                                                                                ],
+                                                                                        {
+                                                                                            id: member.id,
+                                                                                            name: member.name,
+                                                                                            role: member.role,
+                                                                                            email: member.email,
+                                                                                        },
+                                                                                        ...(prev ||
+                                                                                            []),
+                                                                                    ],
                                                                             );
                                                                             setMessage(
                                                                                 'Failed to remove worker',
@@ -909,7 +982,7 @@ export default function Office() {
                                                                                         .key
                                                                                 ] ||
                                                                                     0) -
-                                                                                    1,
+                                                                                1,
                                                                             ),
                                                                     }),
                                                                 )
@@ -922,7 +995,7 @@ export default function Office() {
                                                             min={0}
                                                             value={String(
                                                                 customCashBreakdown[
-                                                                    d.key
+                                                                d.key
                                                                 ] ?? 0,
                                                             )}
                                                             onChange={(e) =>
@@ -937,7 +1010,7 @@ export default function Office() {
                                                                                         e
                                                                                             .target
                                                                                             .value ||
-                                                                                            0,
+                                                                                        0,
                                                                                     ),
                                                                                 ),
                                                                             ),
@@ -996,10 +1069,12 @@ export default function Office() {
                                                                 customCashBreakdown,
                                                             ).toFixed(2),
                                                         );
+                                                        // isQuick = true only if we have a context from Quick add sale section
+                                                        // If context has isCustomSale flag, it's from Custom sale section
                                                         const isQuick =
                                                             Boolean(
                                                                 quickSaleContext,
-                                                            );
+                                                            ) && !quickSaleContext?.isCustomSale;
                                                         let amountToUse = 0;
                                                         let selectedItem = null;
                                                         let itemName =
@@ -1010,13 +1085,42 @@ export default function Office() {
                                                             'custom';
                                                         let descToUse = String(
                                                             customDescription ||
-                                                                '',
+                                                            '',
                                                         );
                                                         let ticketTypeToSend =
                                                             undefined;
                                                         let ticketLabelToSend =
                                                             undefined;
-                                                        if (isQuick) {
+                                                        let optionsToSend =
+                                                            undefined;
+
+                                                        // For Custom sale section with a selected product/event (including variants)
+                                                        if (quickSaleContext?.isCustomSale) {
+                                                            selectedItem =
+                                                                filteredSellables.find(
+                                                                    (i: any) =>
+                                                                        String(i.actual_id) ===
+                                                                        String(quickSaleContext.productId),
+                                                                );
+                                                            productIdToSend =
+                                                                quickSaleContext.productId;
+                                                            itemTypeToSend =
+                                                                quickSaleContext.itemType || (selectedItem ? selectedItem.type : 'custom');
+                                                            optionsToSend =
+                                                                quickSaleContext.options;
+                                                            amountToUse =
+                                                                computed > 0
+                                                                    ? computed
+                                                                    : Number(
+                                                                        customAmount ||
+                                                                        0,
+                                                                    );
+                                                            itemName =
+                                                                selectedItem
+                                                                    ? selectedItem.name
+                                                                    : 'Custom Sale';
+                                                            // Keep descToUse from customDescription (already set above)
+                                                        } else if (isQuick) {
                                                             selectedItem =
                                                                 filteredSellables.find(
                                                                     (i: any) =>
@@ -1031,6 +1135,8 @@ export default function Office() {
                                                                 quickSaleContext.ticketType;
                                                             ticketLabelToSend =
                                                                 quickSaleContext.ticketLabel;
+                                                            optionsToSend =
+                                                                quickSaleContext.options;
                                                             if (computed > 0)
                                                                 amountToUse =
                                                                     computed;
@@ -1044,7 +1150,7 @@ export default function Office() {
                                                                     amountToUse =
                                                                         Number(
                                                                             selectedItem.price ||
-                                                                                0,
+                                                                            0,
                                                                         );
                                                                 else
                                                                     amountToUse =
@@ -1065,9 +1171,9 @@ export default function Office() {
                                                                 computed > 0
                                                                     ? computed
                                                                     : Number(
-                                                                          customAmount ||
-                                                                              0,
-                                                                      );
+                                                                        customAmount ||
+                                                                        0,
+                                                                    );
                                                             const isCustom =
                                                                 customSaleItemId ===
                                                                 'custom';
@@ -1075,16 +1181,16 @@ export default function Office() {
                                                                 isCustom
                                                                     ? null
                                                                     : filteredSellables.find(
-                                                                          (
-                                                                              i: any,
-                                                                          ) =>
-                                                                              String(
-                                                                                  i.actual_id,
-                                                                              ) ===
-                                                                              String(
-                                                                                  customSaleItemId,
-                                                                              ),
-                                                                      );
+                                                                        (
+                                                                            i: any,
+                                                                        ) =>
+                                                                            String(
+                                                                                i.actual_id,
+                                                                            ) ===
+                                                                            String(
+                                                                                customSaleItemId,
+                                                                            ),
+                                                                    );
                                                             productIdToSend =
                                                                 selectedItem
                                                                     ? selectedItem.actual_id
@@ -1128,6 +1234,7 @@ export default function Office() {
                                                                     ticketTypeToSend,
                                                                 ticket_label:
                                                                     ticketLabelToSend,
+                                                                options: optionsToSend,
                                                                 breakdown:
                                                                     customCashBreakdown,
                                                                 is_manual_entry:
@@ -1184,11 +1291,11 @@ export default function Office() {
                                                                                 stockErr,
                                                                             )
                                                                                 ? stockErr.join(
-                                                                                      ' | ',
-                                                                                  )
+                                                                                    ' | ',
+                                                                                )
                                                                                 : String(
-                                                                                      stockErr,
-                                                                                  );
+                                                                                    stockErr,
+                                                                                );
                                                                         setSoldOutText(
                                                                             text,
                                                                         );
@@ -1232,7 +1339,7 @@ export default function Office() {
                                                             className="w-32"
                                                             value={String(
                                                                 pendingStart?.cash ??
-                                                                    startTotals.cash,
+                                                                startTotals.cash,
                                                             )}
                                                             onChange={(e) =>
                                                                 setPendingStart(
@@ -1243,7 +1350,7 @@ export default function Office() {
                                                                             e
                                                                                 .target
                                                                                 .value ||
-                                                                                0,
+                                                                            0,
                                                                         ),
                                                                     }),
                                                                 )
@@ -1257,9 +1364,9 @@ export default function Office() {
                                                                 )
                                                                     return;
                                                                 const originalTotals =
-                                                                    {
-                                                                        ...startTotals,
-                                                                    };
+                                                                {
+                                                                    ...startTotals,
+                                                                };
                                                                 const newCash =
                                                                     pendingStart?.cash ??
                                                                     startTotals.cash;
@@ -1371,7 +1478,7 @@ export default function Office() {
                                                             className="w-32"
                                                             value={String(
                                                                 pendingStart?.card ??
-                                                                    startTotals.card,
+                                                                startTotals.card,
                                                             )}
                                                             onChange={(e) =>
                                                                 setPendingStart(
@@ -1382,7 +1489,7 @@ export default function Office() {
                                                                             e
                                                                                 .target
                                                                                 .value ||
-                                                                                0,
+                                                                            0,
                                                                         ),
                                                                     }),
                                                                 )
@@ -1396,9 +1503,9 @@ export default function Office() {
                                                                 )
                                                                     return;
                                                                 const originalTotals =
-                                                                    {
-                                                                        ...startTotals,
-                                                                    };
+                                                                {
+                                                                    ...startTotals,
+                                                                };
                                                                 const newCard =
                                                                     pendingStart?.card ??
                                                                     startTotals.card;
@@ -1554,7 +1661,7 @@ export default function Office() {
                                                                                                     .key
                                                                                             ] ||
                                                                                                 0) -
-                                                                                                1,
+                                                                                            1,
                                                                                         ),
                                                                                 }),
                                                                             )
@@ -1567,10 +1674,10 @@ export default function Office() {
                                                                         min={0}
                                                                         value={String(
                                                                             cashBreakdown[
-                                                                                d
-                                                                                    .key
+                                                                            d
+                                                                                .key
                                                                             ] ??
-                                                                                0,
+                                                                            0,
                                                                         )}
                                                                         onChange={(
                                                                             e,
@@ -1588,7 +1695,7 @@ export default function Office() {
                                                                                                     e
                                                                                                         .target
                                                                                                         .value ||
-                                                                                                        0,
+                                                                                                    0,
                                                                                                 ),
                                                                                             ),
                                                                                         ),
@@ -1646,9 +1753,9 @@ export default function Office() {
                                                                 )
                                                                     return;
                                                                 const originalTotals =
-                                                                    {
-                                                                        ...startTotals,
-                                                                    };
+                                                                {
+                                                                    ...startTotals,
+                                                                };
                                                                 const newCash =
                                                                     Number(
                                                                         computeBreakdownTotal(
@@ -1963,7 +2070,7 @@ export default function Office() {
                                                 disabled={
                                                     !activeShift ||
                                                     activeShift?.status !==
-                                                        'closed'
+                                                    'closed'
                                                 }
                                             >
                                                 Reopen shift
@@ -1985,7 +2092,7 @@ export default function Office() {
                                                         disabled={
                                                             !activeShift ||
                                                             activeShift?.status !==
-                                                                'closed'
+                                                            'closed'
                                                         }
                                                         onClick={() =>
                                                             router.post(
@@ -2067,7 +2174,7 @@ export default function Office() {
                                                 <option
                                                     key={String(
                                                         item.id ??
-                                                            item.actual_id,
+                                                        item.actual_id,
                                                     )}
                                                     value={item.actual_id}
                                                 >
@@ -2156,15 +2263,15 @@ export default function Office() {
                                                         saleProductId,
                                                 );
                                             if (!selectedItem) return;
-                                            openCustomCashModal({
+                                            handleSaleAction('cash', {
                                                 productId: saleProductId,
                                                 itemType: selectedItem.type,
                                                 ticketType: saleTicketType,
                                                 ticketLabel:
                                                     selectedItem.type ===
-                                                    'event'
+                                                        'event'
                                                         ? saleTicketType ===
-                                                          'with_card'
+                                                            'with_card'
                                                             ? 'With ESNcard'
                                                             : 'Without ESNcard'
                                                         : undefined,
@@ -2211,7 +2318,7 @@ export default function Office() {
                                                 <option
                                                     key={String(
                                                         item.id ??
-                                                            item.actual_id,
+                                                        item.actual_id,
                                                     )}
                                                     value={item.actual_id}
                                                 >
@@ -2265,7 +2372,7 @@ export default function Office() {
                                                 !customDescription
                                             )
                                                 return;
-                                            openCustomCashModal(null);
+                                            handleSaleAction('cash', null);
                                         }}
                                     >
                                         Add Cash
@@ -2278,7 +2385,7 @@ export default function Office() {
                                             activeShift?.status !== 'open' ||
                                             submitting
                                         }
-                                        onClick={addCustomCardSale}
+                                        onClick={() => handleSaleAction('card', null)}
                                     >
                                         Add Card
                                     </Button>
@@ -2364,27 +2471,27 @@ export default function Office() {
                                                         s.method,
                                                     ).toLowerCase() ===
                                                         'cash' && (
-                                                        <>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() =>
-                                                                    activeShift?.status ===
+                                                            <>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() =>
+                                                                        activeShift?.status ===
                                                                         'open' &&
-                                                                    openSaleEditModal(
-                                                                        s,
-                                                                    )
-                                                                }
-                                                                aria-label="Edit cash sale"
-                                                                disabled={
-                                                                    activeShift?.status !==
-                                                                    'open'
-                                                                }
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
-                                                        </>
-                                                    )}
+                                                                        openSaleEditModal(
+                                                                            s,
+                                                                        )
+                                                                    }
+                                                                    aria-label="Edit cash sale"
+                                                                    disabled={
+                                                                        activeShift?.status !==
+                                                                        'open'
+                                                                    }
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                            </>
+                                                        )}
                                                 </div>
                                             </td>
                                             <td className="overflow-hidden px-1 py-3">
@@ -2416,12 +2523,12 @@ export default function Office() {
                                                     className="w-full truncate"
                                                     title={formatDateTime(
                                                         s.sold_at ??
-                                                            s.created_at,
+                                                        s.created_at,
                                                     )}
                                                 >
                                                     {formatDateTime(
                                                         s.sold_at ??
-                                                            s.created_at,
+                                                        s.created_at,
                                                     )}
                                                 </div>
                                             </td>
@@ -2432,7 +2539,7 @@ export default function Office() {
                                                     disabled={
                                                         submitting ||
                                                         activeShift?.status !==
-                                                            'open' ||
+                                                        'open' ||
                                                         (String(
                                                             s.method,
                                                         ).toLowerCase() ===
@@ -2471,10 +2578,10 @@ export default function Office() {
                                                                         (
                                                                             prev,
                                                                         ) => [
-                                                                            s,
-                                                                            ...(prev ||
-                                                                                []),
-                                                                        ],
+                                                                                s,
+                                                                                ...(prev ||
+                                                                                    []),
+                                                                            ],
                                                                     );
                                                                     setMessage(
                                                                         'Failed to remove sale',
@@ -2598,7 +2705,7 @@ export default function Office() {
                                                 min={0}
                                                 value={String(
                                                     saleEditBreakdown[d.key] ??
-                                                        0,
+                                                    0,
                                                 )}
                                                 onChange={(e) =>
                                                     setSaleEditBreakdown(
@@ -2610,7 +2717,7 @@ export default function Office() {
                                                                     Number(
                                                                         e.target
                                                                             .value ||
-                                                                            0,
+                                                                        0,
                                                                     ),
                                                                 ),
                                                             ),
@@ -2668,16 +2775,16 @@ export default function Office() {
                                                 computed > 0
                                                     ? computed
                                                     : Number(
-                                                          editingSale.amount ||
-                                                              0,
-                                                      );
+                                                        editingSale.amount ||
+                                                        0,
+                                                    );
                                             setSales((prev) =>
                                                 (prev || []).map((x: any) =>
                                                     x.id === editingSale.id
                                                         ? {
-                                                              ...x,
-                                                              amount: amountToUse,
-                                                          }
+                                                            ...x,
+                                                            amount: amountToUse,
+                                                        }
                                                         : x,
                                                 ),
                                             );
@@ -2773,7 +2880,7 @@ export default function Office() {
                                     <div className="text-sm font-medium">
                                         {Number(
                                             (activeShift?.cash_breakdown || {})[
-                                                d.key
+                                            d.key
                                             ] ?? 0,
                                         )}
                                     </div>
@@ -2822,7 +2929,7 @@ export default function Office() {
                                     <div className="text-sm font-medium">
                                         {Number(
                                             (totalCashBreakdown || {})[d.key] ??
-                                                0,
+                                            0,
                                         )}
                                     </div>
                                 </div>
@@ -2844,6 +2951,32 @@ export default function Office() {
                                 <Button variant="secondary">Close</Button>
                             </DialogClose>
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+                <Dialog
+                    open={isVariantModalOpen}
+                    onOpenChange={(v) => {
+                        if (!v) {
+                            setIsVariantModalOpen(false);
+                            setPendingVariantAction(null);
+                            setPendingVariantContext(null);
+                            setSelectedVariantProduct(null);
+                        }
+                    }}
+                >
+                    <DialogContent>
+                        <DialogTitle>Select Variant</DialogTitle>
+                        <DialogDescription>
+                            Please select the options for{' '}
+                            {selectedVariantProduct?.name}.
+                        </DialogDescription>
+                        {selectedVariantProduct && (
+                            <VariantSelector
+                                product={selectedVariantProduct}
+                                onConfirm={handleVariantConfirm}
+                                onCancel={() => setIsVariantModalOpen(false)}
+                            />
+                        )}
                     </DialogContent>
                 </Dialog>
                 {/* Sold-out modal shown when server rejects sale due to stock */}
@@ -2868,3 +3001,100 @@ export default function Office() {
         </AppLayout>
     );
 }
+
+const VariantSelector = ({ product, onConfirm, onCancel }: any) => {
+    const [selections, setSelections] = React.useState<Record<string, string>>(
+        {},
+    );
+
+    // Compute available attributes
+    const attributes = React.useMemo(() => {
+        const attrs: Record<string, Set<string>> = {};
+        product.variants?.forEach((v: any) => {
+            Object.entries(v.options || {}).forEach(([key, val]: any) => {
+                if (!attrs[key]) attrs[key] = new Set();
+                attrs[key].add(val);
+            });
+        });
+        return Object.entries(attrs).map(([key, values]) => ({
+            key,
+            values: Array.from(values).sort(),
+        }));
+    }, [product]);
+
+    const isComplete = attributes.every((a) => selections[a.key]);
+
+    // Find matching variant
+    const matchingVariant = React.useMemo(() => {
+        if (!isComplete) return null;
+        return product.variants?.find((v: any) => {
+            return Object.entries(selections).every(
+                ([k, val]) => v.options[k] === val,
+            );
+        });
+    }, [product, selections, isComplete]);
+
+    const handleConfirm = () => {
+        if (isComplete) {
+            onConfirm(selections);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            {attributes.map((attr) => (
+                <div key={attr.key}>
+                    <div className="mb-2 text-sm font-medium">{attr.key}</div>
+                    <div className="flex flex-wrap gap-2">
+                        {attr.values.map((val: any) => {
+                            const isSelected = selections[attr.key] === val;
+                            return (
+                                <Button
+                                    key={val}
+                                    variant={isSelected ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() =>
+                                        setSelections((prev) => ({
+                                            ...prev,
+                                            [attr.key]: val,
+                                        }))
+                                    }
+                                >
+                                    {val}
+                                </Button>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
+
+            {isComplete && !matchingVariant && (
+                <div className="text-sm text-red-500">
+                    This combination is not available.
+                </div>
+            )}
+
+            {matchingVariant && (
+                <div className="text-sm text-green-600">
+                    {matchingVariant.remaining !== null
+                        ? `${matchingVariant.remaining} remaining`
+                        : 'Available'}
+                    {' - '} €
+                    {Number(matchingVariant.price || product.price).toFixed(2)}
+                </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-4">
+                <Button variant="ghost" onClick={onCancel}>
+                    Cancel
+                </Button>
+                <Button
+                    disabled={!isComplete || !matchingVariant}
+                    onClick={handleConfirm}
+                >
+                    Confirm
+                </Button>
+            </div>
+        </div>
+    );
+};
