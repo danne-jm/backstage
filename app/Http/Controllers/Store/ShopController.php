@@ -102,11 +102,12 @@ class ShopController extends Controller
             $remaining = null;
         }
 
-        // Only include variants if variants_config is not null/empty
-        $hasVariants = ! empty($event->variants_config);
+        // Only include variants if variants_config is not null/empty AND is_variant_based is true
+        $hasVariants = $event->is_variant_based && ! empty($event->variants_config);
 
         return [
             'id' => $event->id,
+            'is_variant_based' => $event->is_variant_based,
             'type' => 'event',
             'name' => $event->name,
             'description' => $event->description,
@@ -139,11 +140,12 @@ class ShopController extends Controller
             $remaining = null;
         }
 
-        // Only include variants if variants_config is not null/empty
-        $hasVariants = ! empty($product->variants_config);
+        // Only include variants if variants_config is not null/empty AND is_variant_based is true
+        $hasVariants = $product->is_variant_based && ! empty($product->variants_config);
 
         return [
             'id' => $product->id,
+            'is_variant_based' => $product->is_variant_based,
             'type' => 'product',
             'name' => $product->name,
             'description' => $product->description,

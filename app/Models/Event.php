@@ -44,6 +44,7 @@ class Event extends Model
         'is_online_sellable',
         'attendee_filter_config',
         'instagram_link',
+        'is_variant_based',
     ];
 
     protected $appends = ['remaining', 'remaining_with_card', 'remaining_without_card', 'image', 'images_list'];
@@ -62,6 +63,7 @@ class Event extends Model
             'unlimited_quantity_without_card' => 'boolean',
             'attendee_filter_config' => 'array',
             'variants_config' => 'array',
+            'is_variant_based' => 'boolean',
         ];
     }
 

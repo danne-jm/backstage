@@ -22,7 +22,7 @@ class Product extends Model
             ->dontSubmitEmptyLogs();
     }
 
-    protected $fillable = ['name', 'description', 'variants_config', 'price', 'member_price', 'type', 'quantity', 'unlimited_quantity', 'variable_amount', 'quantity_with_card', 'unlimited_quantity_with_card', 'quantity_without_card', 'unlimited_quantity_without_card', 'is_online_sellable', 'instagram_link'];
+    protected $fillable = ['name', 'description', 'variants_config', 'price', 'member_price', 'type', 'quantity', 'unlimited_quantity', 'variable_amount', 'quantity_with_card', 'unlimited_quantity_with_card', 'quantity_without_card', 'unlimited_quantity_without_card', 'is_online_sellable', 'instagram_link', 'is_variant_based'];
 
     protected $appends = ['remaining', 'image', 'images_list'];
 
@@ -35,6 +35,7 @@ class Product extends Model
             'price' => 'decimal:2',
             'variable_amount' => 'boolean',
             'variants_config' => 'array',
+            'is_variant_based' => 'boolean',
         ];
     }
 

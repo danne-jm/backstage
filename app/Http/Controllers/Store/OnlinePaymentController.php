@@ -423,16 +423,15 @@ class OnlinePaymentController extends Controller
         $options = $demand['options'] ?? null;
 
         // Security Check: Zombie Sale Prevention
-        // If the entity now requires variants (variants_config is set) but no options were provided, block it.
-        // This stops users who have "simple" products in cart that were later switched to "variant" products.
-        if (! empty($entity->variants_config) && empty($options)) {
+        // Use is_variant_based flag. If true, options are REQUIRED.
+        if ($entity->is_variant_based && empty($options)) {
             throw ValidationException::withMessages([
                 'items' => "{$entity->name} requires you to select an option (e.g. size/color).",
             ]);
         }
 
-        // Check variant stock first if options exist
-        if ($options) {
+        // Check variant stock ONLY if entity is variant based and options exist
+        if ($entity->is_variant_based && $options) {
             $variant = $entity->variants->first(function ($v) use ($options) {
                 // simple array comparison (keys must match)
                 $vOpts = $v->options;

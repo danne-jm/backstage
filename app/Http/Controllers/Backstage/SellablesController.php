@@ -107,6 +107,7 @@ class SellablesController extends Controller
 
         return [
             'id' => $event->id,
+            'is_variant_based' => $event->is_variant_based,
             'name' => $event->name,
             'description' => $event->description,
             'event_date' => $event->event_date,
@@ -202,6 +203,7 @@ class SellablesController extends Controller
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'is_online_sellable' => ['sometimes', 'boolean'],
+            'is_variant_based' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
             // SECURITY FIX: Block SVG uploads to prevent Stored XSS attacks.
             // SVG files can contain malicious JavaScript that executes when viewed.
@@ -222,8 +224,9 @@ class SellablesController extends Controller
 
         $product = Product::create($normalized);
 
-        // Sync Variants (only if variants_config is not null/empty)
-        if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
+        // Sync Variants Only if variant based and config exists
+        $isVariantBased = $request->input('is_variant_based', false);
+        if ($isVariantBased && $request->has('variants_stock') && ! empty($normalized['variants_config'])) {
             $this->syncVariants($product, $request->input('variants_stock'));
         }
 
@@ -258,6 +261,7 @@ class SellablesController extends Controller
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'is_online_sellable' => ['sometimes', 'boolean'],
+            'is_variant_based' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
             // SECURITY FIX: Block SVG uploads to prevent Stored XSS attacks.
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
@@ -275,15 +279,28 @@ class SellablesController extends Controller
 
         $normalized = $this->inventoryService->normalizeInput($validated);
 
+        // Soft Toggle: If is_variant_based is explicitly false, do NOT update variants_config (preserve it)
+        $isVariantBased = $request->input('is_variant_based', false);
+        if ($isVariantBased === false && array_key_exists('variants_config', $normalized)) {
+            unset($normalized['variants_config']);
+        }
+
         $product->update($normalized);
 
         // Sync or Clear Variants
-        if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
-            // Sync variants if we have both stock data and config
-            $this->syncVariants($product, $request->input('variants_stock'));
-        } else {
-            // Delete all variants if variants_config is null/empty or no stock data provided
-            $product->variants()->delete();
+        // Logic Update: We only sync if is_variant_based is TRUE.
+        // If is_variant_based is FALSE, we DO NOT DELETE data. We just ignore it, acting as "soft toggle".
+        $isVariantBased = $request->input('is_variant_based', false);
+
+        if ($isVariantBased) {
+             if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
+                $this->syncVariants($product, $request->input('variants_stock'));
+            } else {
+                // If variant based but missing config/stock, then we assume user wants to wipe them? 
+                // Creating a safety net here, only delete if explicitly intended or empty. 
+                // But for now, if is_variant_based is true, we expect valid variants.
+                $product->variants()->delete();
+            }
         }
 
         // Handle Image Uploads (Append)
@@ -358,7 +375,8 @@ class SellablesController extends Controller
         $event = Event::create($normalized);
 
         // Sync Variants (only if variants_config is not null/empty)
-        if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
+        $isVariantBased = $request->input('is_variant_based', false);
+        if ($isVariantBased && $request->has('variants_stock') && ! empty($normalized['variants_config'])) {
             $this->syncVariants($event, $request->input('variants_stock'));
         }
 
@@ -400,6 +418,7 @@ class SellablesController extends Controller
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
             'is_online_sellable' => ['sometimes', 'boolean'],
+            'is_variant_based' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
             // SECURITY FIX: Block SVG uploads to prevent Stored XSS attacks.
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
@@ -427,15 +446,23 @@ class SellablesController extends Controller
             }
         }
 
+        // Soft Toggle: If is_variant_based is explicitly false, do NOT update variants_config (preserve it)
+        $isVariantBased = $request->input('is_variant_based', false);
+        if ($isVariantBased === false && array_key_exists('variants_config', $normalized)) {
+            unset($normalized['variants_config']);
+        }
+
         $event->update($normalized);
 
         // Sync or Clear Variants
-        if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
-            // Sync variants if we have both stock data and config
-            $this->syncVariants($event, $request->input('variants_stock'));
-        } else {
-            // Delete all variants if variants_config is null/empty or no stock data provided
-            $event->variants()->delete();
+        $isVariantBased = $request->input('is_variant_based', false);
+
+        if ($isVariantBased) {
+            if ($request->has('variants_stock') && ! empty($normalized['variants_config'])) {
+                $this->syncVariants($event, $request->input('variants_stock'));
+            } else {
+                $event->variants()->delete();
+            }
         }
 
         // Handle Image Uploads (Append)

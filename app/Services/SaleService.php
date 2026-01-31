@@ -39,6 +39,21 @@ class SaleService
                 if ($product) {
                     $methodIsCard = strtolower($method) === 'card';
 
+                    // Variant Check
+                    if ($product->is_variant_based) {
+                        $options = $details['options'] ?? null;
+                        if (empty($options)) {
+                            throw ValidationException::withMessages(['items' => "{$product->name} requires you to select an option."]);
+                        }
+                        $resolvedVariant = $this->resolveVariant($product, $options);
+                        if (! $resolvedVariant) {
+                            throw ValidationException::withMessages(['stock' => "Variant not available for {$product->name}."]);
+                        }
+                         if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
+                            throw ValidationException::withMessages(['stock' => "Selected variant for {$product->name} is sold out."]);
+                        }
+                    }
+
                     // Choose preferred quantity field based on payment method when available
                     $quantityField = null;
                     $unlimitedField = null;
@@ -76,6 +91,21 @@ class SaleService
                 $event = Event::find($eventId);
                 if ($event) {
                     $ticketTypeKey = $ticketType ? strtolower($ticketType) : null;
+
+                    // Variant Check
+                    if ($event->is_variant_based) {
+                        $options = $details['options'] ?? null;
+                        if (empty($options)) {
+                             throw ValidationException::withMessages(['items' => "{$event->name} requires you to select an option."]);
+                        }
+                        $resolvedVariant = $this->resolveVariant($event, $options);
+                        if (! $resolvedVariant) {
+                             throw ValidationException::withMessages(['stock' => "Variant not available for {$event->name}."]);
+                        }
+                        if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
+                            throw ValidationException::withMessages(['stock' => "Selected variant for {$event->name} is sold out."]);
+                        }
+                    }
 
                     // variable_amount means per-ticket quantities may exist
                     if ($ticketTypeKey && $event->variable_amount) {
@@ -141,6 +171,11 @@ class SaleService
                 Event::where('id', $eventId)->increment($fieldToIncrement);
             }
 
+            // Increment Variant Sold Count
+            if ($resolvedVariant) {
+                $resolvedVariant->increment('sold_count');
+            }
+
             // If office_shift_id present, also create an OfficeShiftSale so the sale appears in the shift log
             if (! empty($data['office_shift_id'])) {
                 $office = OfficeShift::find($data['office_shift_id']);
@@ -202,6 +237,26 @@ class SaleService
             }
 
             return $sale;
+        });
+    }
+
+    protected function resolveVariant($entity, $options)
+    {
+        if (! $options || ! is_array($options)) {
+            return null;
+        }
+
+        return $entity->variants->first(function ($v) use ($options) {
+            $vOpts = $v->options;
+            // Compare arrays (assuming normalized keys/values or just loose comparison)
+            // Stricter comparison:
+            if (count($vOpts) != count($options)) return false;
+            foreach ($options as $key => $val) {
+                if (! isset($vOpts[$key]) || $vOpts[$key] != $val) {
+                    return false;
+                }
+            }
+            return true;
         });
     }
 }
