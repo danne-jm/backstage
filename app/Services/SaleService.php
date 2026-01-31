@@ -49,9 +49,12 @@ class SaleService
                         if (! $resolvedVariant) {
                             throw ValidationException::withMessages(['stock' => "Variant not available for {$product->name}."]);
                         }
-                         if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
+                        if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
                             throw ValidationException::withMessages(['stock' => "Selected variant for {$product->name} is sold out."]);
                         }
+                    } elseif (! empty($details['options'])) {
+                        // Stale Cart Check: Options present but product is not variant based
+                        throw ValidationException::withMessages(['items' => "The configuration for {$product->name} has changed. Please re-select the item."]);
                     }
 
                     // Choose preferred quantity field based on payment method when available
@@ -96,15 +99,18 @@ class SaleService
                     if ($event->is_variant_based) {
                         $options = $details['options'] ?? null;
                         if (empty($options)) {
-                             throw ValidationException::withMessages(['items' => "{$event->name} requires you to select an option."]);
+                            throw ValidationException::withMessages(['items' => "{$event->name} requires you to select an option."]);
                         }
                         $resolvedVariant = $this->resolveVariant($event, $options);
                         if (! $resolvedVariant) {
-                             throw ValidationException::withMessages(['stock' => "Variant not available for {$event->name}."]);
+                            throw ValidationException::withMessages(['stock' => "Variant not available for {$event->name}."]);
                         }
                         if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
                             throw ValidationException::withMessages(['stock' => "Selected variant for {$event->name} is sold out."]);
                         }
+                    } elseif (! empty($details['options'])) {
+                        // Stale Cart Check
+                        throw ValidationException::withMessages(['items' => "The configuration for {$event->name} has changed. Please re-select the item."]);
                     }
 
                     // variable_amount means per-ticket quantities may exist
@@ -151,29 +157,44 @@ class SaleService
                 'sold_at' => $data['sold_at'] ?? now(),
             ]);
 
-            // Increment sold counts instead of decrementing quantity
+            // Increment sold counts ATOMICALLY
             if ($productId) {
-                // Products -> increment 'sold_count'
-                // We do NOT check logic here because we just updated stock; this is the 'Act' part.
-                // However, since we are inside a transaction, we accept the small race risk here for POS
-                // or we could use the same safe update logic as OnlinePaymentController?
-                // For POS, we'll keep it simple: just increment.
-                Product::where('id', $productId)->increment('sold_count');
+                // Products -> increment 'sold_count' but only if not sold out
+                $updated = Product::where('id', $productId)
+                    ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count + 1 <= quantity)')
+                    ->increment('sold_count');
+
+                if (! $updated) {
+                    throw ValidationException::withMessages(['stock' => 'Product sold out during processing.']);
+                }
             }
 
             if ($eventId) {
                 // Events -> increment appropriate sold_count column
-                $fieldToIncrement = 'sold_count_without_card';
-                if ($ticketType && $ticketType === 'with_card') {
-                    $fieldToIncrement = 'sold_count_with_card';
+                if ($ticketType && strtolower($ticketType) === 'with_card') {
+                    $updated = Event::where('id', $eventId)
+                        ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card + 1 <= quantity_with_card)')
+                        ->increment('sold_count_with_card');
+                } else {
+                    $updated = Event::where('id', $eventId)
+                        ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card + 1 <= quantity_without_card)')
+                        ->increment('sold_count_without_card');
                 }
-                
-                Event::where('id', $eventId)->increment($fieldToIncrement);
+
+                if (! $updated) {
+                    throw ValidationException::withMessages(['stock' => 'Event tickets sold out during processing.']);
+                }
             }
 
-            // Increment Variant Sold Count
+            // Increment Variant Sold Count ATOMICALLY
             if ($resolvedVariant) {
-                $resolvedVariant->increment('sold_count');
+                $updated = $resolvedVariant->where('id', $resolvedVariant->id)
+                    ->whereRaw('(quantity IS NULL OR sold_count + 1 <= quantity)')
+                    ->increment('sold_count');
+
+                if (! $updated) {
+                    throw ValidationException::withMessages(['stock' => 'Variant selection sold out during processing.']);
+                }
             }
 
             // If office_shift_id present, also create an OfficeShiftSale so the sale appears in the shift log
@@ -250,12 +271,15 @@ class SaleService
             $vOpts = $v->options;
             // Compare arrays (assuming normalized keys/values or just loose comparison)
             // Stricter comparison:
-            if (count($vOpts) != count($options)) return false;
+            if (count($vOpts) != count($options)) {
+                return false;
+            }
             foreach ($options as $key => $val) {
                 if (! isset($vOpts[$key]) || $vOpts[$key] != $val) {
                     return false;
                 }
             }
+
             return true;
         });
     }

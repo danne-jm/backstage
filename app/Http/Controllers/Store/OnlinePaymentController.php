@@ -9,12 +9,12 @@ use App\Models\Event;
 use App\Models\OnlineSale;
 use App\Models\OnlineTransaction;
 use App\Models\Product;
+use App\Models\SellableVariant;
 use App\Services\DiscountAllocator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Models\SellableVariant;
 use Inertia\Inertia;
 
 class OnlinePaymentController extends Controller
@@ -396,7 +396,7 @@ class OnlinePaymentController extends Controller
         foreach ($salesToCreate as &$sale) {
             $type = $sale['product_id'] ? 'product' : 'event';
             $id = $sale['product_id'] ?? $sale['event_id'];
-            
+
             $key = $type.'-'.$id;
             if ($type === 'event') {
                 $key .= '-'.$sale['ticket_type'];
@@ -423,10 +423,18 @@ class OnlinePaymentController extends Controller
         $options = $demand['options'] ?? null;
 
         // Security Check: Zombie Sale Prevention
-        // Use is_variant_based flag. If true, options are REQUIRED.
+        // 1. If is_variant_based flag is true, options are REQUIRED.
         if ($entity->is_variant_based && empty($options)) {
             throw ValidationException::withMessages([
                 'items' => "{$entity->name} requires you to select an option (e.g. size/color).",
+            ]);
+        }
+
+        // 2. If options are present but is_variant_based is FALSE, this is a stale cart.
+        // The user thinks they are buying a specific variant, but the product is now simple.
+        if (! $entity->is_variant_based && ! empty($options)) {
+            throw ValidationException::withMessages([
+                'items' => "The configuration for {$entity->name} has changed. Please remove it and add it again.",
             ]);
         }
 
@@ -516,7 +524,7 @@ class OnlinePaymentController extends Controller
 
                 if (! $updated) {
                     $type = $saleData['product_id'] ? 'product' : 'event';
-                    throw new \Exception("One or more items became sold out during processing.");
+                    throw new \Exception('One or more items became sold out during processing.');
                 }
             }
 
@@ -533,7 +541,7 @@ class OnlinePaymentController extends Controller
                 }
 
                 if (! $eventUpdated) {
-                    throw new \Exception("Event tickets sold out during processing.");
+                    throw new \Exception('Event tickets sold out during processing.');
                 }
 
                 $event = Event::find($saleData['event_id']);
@@ -546,7 +554,7 @@ class OnlinePaymentController extends Controller
                     ->increment('sold_count');
 
                 if (! $productUpdated) {
-                    throw new \Exception("Product sold out during processing.");
+                    throw new \Exception('Product sold out during processing.');
                 }
 
                 $product = Product::find($saleData['product_id']);
