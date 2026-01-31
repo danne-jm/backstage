@@ -226,7 +226,7 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
         ]);
 
         // Find the transaction by reference
-        return DB::transaction(function () use ($checkoutReference, $checkoutId, $status) {
+        return DB::transaction(function () use ($checkoutReference, $checkoutId) {
             $transaction = OnlineTransaction::where('reference_id', $checkoutReference)
                 ->lockForUpdate()
                 ->first();
@@ -277,12 +277,14 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
                     'checkout_id' => $checkoutId,
                     'result_status' => $verificationResult->status,
                 ]);
+
                 return $verificationResult;
             } else {
-                 Log::warning('SumUp Payment Gateway: API Call Back verification failed/pending', [
+                Log::warning('SumUp Payment Gateway: API Call Back verification failed/pending', [
                     'checkout_id' => $checkoutId,
                     'result' => $verificationResult,
                 ]);
+
                 return $verificationResult;
             }
         });
@@ -295,9 +297,9 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
      */
     protected function verifySignature(array $payload, array $headers): bool
     {
-       // Check for X-SumUp-Signature if you want, but do not return false strictly.
-       // Current Strategy: "Trust but Verify via API"
-       return true; 
+        // Check for X-SumUp-Signature if you want, but do not return false strictly.
+        // Current Strategy: "Trust but Verify via API"
+        return true;
     }
 
     /**

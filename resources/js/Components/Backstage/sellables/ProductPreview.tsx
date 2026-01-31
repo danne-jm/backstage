@@ -107,9 +107,7 @@ export function ProductPreview({
                                 </span>
                                 {/* Variants Matrix or List */}
                                 <div className="mt-2">
-                                    {variant ===
-                                    'store-manager' ? // Store Manager: Hide details, just show "Variants: Size, Color" (already shown above)
-                                    null : (
+                                    {variant === 'store-manager' ? null : ( // Store Manager: Hide details, just show "Variants: Size, Color" (already shown above)
                                         // Sellables: Show Matrix or List
                                         <VariantsMatrix product={product} />
                                     )}
