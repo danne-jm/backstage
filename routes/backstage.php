@@ -147,17 +147,17 @@ Route::group(['middleware' => config('fortify.middleware', ['web'])], function (
 });
 
 Route::get('/', function () {
-    return Inertia::render('Shared/welcome', [
+    return Inertia::render('Backstage/welcome', [
         'canRegister' => Features::enabled(Features::registration()),
     ]);
 })->name('home');
 
 Route::get('/terms-conditions', function () {
-    return Inertia::render('Shared/terms-conditions');
+    return Inertia::render('Backstage/terms-conditions');
 })->name('terms-conditions');
 
 Route::get('/privacy-policy', function () {
-    return Inertia::render('Shared/privacy-policy');
+    return Inertia::render('Backstage/privacy-policy');
 })->name('privacy-policy');
 
 // Gmail OAuth redirect/callback (used for both connect and sign-in flows)

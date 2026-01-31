@@ -2459,7 +2459,7 @@ export default function Office() {
                                             <td className="overflow-hidden px-1 py-3">
                                                 <div className="flex items-center gap-1.5">
                                                     <div
-                                                        className="w-full truncate"
+                                                        className="truncate"
                                                         title={`€${Number(s.amount ?? 0).toFixed(2)}`}
                                                     >
                                                         €

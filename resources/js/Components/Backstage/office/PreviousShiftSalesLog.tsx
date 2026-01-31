@@ -116,13 +116,13 @@ export function PreviousShiftSalesLog({
                                                     <td className="py-3">
                                                         <div className="flex items-center gap-2">
                                                             <span
-                                                                className="block w-full truncate"
+                                                                className="block truncate"
                                                                 title={`€${Number(sale.amount ?? 0).toFixed(2)}`}
                                                             >
                                                                 €
                                                                 {Number(
                                                                     sale.amount ??
-                                                                        0,
+                                                                    0,
                                                                 ).toFixed(2)}
                                                             </span>
                                                             {String(
@@ -182,11 +182,11 @@ export function PreviousShiftSalesLog({
                                                             }
                                                         >
                                                             {(sale.sold_at ??
-                                                            sale.created_at)
+                                                                sale.created_at)
                                                                 ? new Date(
-                                                                      sale.sold_at ??
-                                                                          sale.created_at,
-                                                                  ).toLocaleString()
+                                                                    sale.sold_at ??
+                                                                    sale.created_at,
+                                                                ).toLocaleString()
                                                                 : 'N/A'}
                                                         </span>
                                                     </td>
