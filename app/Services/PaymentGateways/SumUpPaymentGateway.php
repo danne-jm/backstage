@@ -210,8 +210,8 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
         $status = $payload['status'] ?? null;
         $checkoutReference = $payload['checkout_reference'] ?? null;
 
-        if (! $checkoutId || ! $status) {
-            Log::warning('SumUp Payment Gateway: Invalid webhook payload', $payload);
+        if (! $checkoutId) {
+            Log::warning('SumUp Payment Gateway: Invalid webhook payload (missing ID)', $payload);
 
             return PaymentResult::failed(
                 message: 'Invalid webhook payload',
@@ -226,42 +226,36 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
         ]);
 
         // Find the transaction by reference
-        // Use lockForUpdate to prevent race conditions if multiple webhooks arrive simultaneously
-        return DB::transaction(function () use ($checkoutReference, $checkoutId, $status, $payload, $headers) {
+        return DB::transaction(function () use ($checkoutReference, $checkoutId, $status) {
             $transaction = OnlineTransaction::where('reference_id', $checkoutReference)
                 ->lockForUpdate()
                 ->first();
 
             if (! $transaction) {
-                Log::error('SumUp Payment Gateway: Transaction not found for webhook', [
-                    'reference' => $checkoutReference,
-                ]);
+                // If reference is missing in payload, try finding by external ID
+                if (! $checkoutReference) {
+                    $transaction = OnlineTransaction::where('external_payment_id', $checkoutId)
+                        ->lockForUpdate()
+                        ->first();
+                }
 
-                return PaymentResult::failed(
-                    message: 'Transaction not found',
-                    errorCode: 'TRANSACTION_NOT_FOUND'
-                );
+                if (! $transaction) {
+                    Log::error('SumUp Payment Gateway: Transaction not found for webhook', [
+                        'checkout_id' => $checkoutId,
+                        'reference' => $checkoutReference,
+                    ]);
+
+                    return PaymentResult::failed(
+                        message: 'Transaction not found',
+                        errorCode: 'TRANSACTION_NOT_FOUND'
+                    );
+                }
             }
 
-            // 1. Signature Verification
-            // Note: We check signature INSIDE transaction to be safe, though checking outside is also possible.
-            // But we need the headers passed in.
-            if (! $this->verifySignature($payload, $headers)) {
-                Log::warning('SumUp Payment Gateway: Invalid signature', [
-                    'payload' => $payload,
-                    'reference' => $checkoutReference,
-                ]);
-
-                return PaymentResult::failed(
-                    message: 'Invalid signature',
-                    errorCode: 'INVALID_SIGNATURE'
-                );
-            }
-
-            // 2. Idempotency Check (Re-check after lock)
+            // Idempotency Check (Fast Path)
             if ($transaction->isCompleted()) {
-                Log::info('SumUp Payment Gateway: Webhook ignored (Idempotency - Locked)', [
-                    'reference' => $checkoutReference,
+                Log::info('SumUp Payment Gateway: Webhook ignored (Idempotency - Already Completed)', [
+                    'reference' => $transaction->reference_id,
                     'status' => 'ALREADY_COMPLETED',
                 ]);
 
@@ -272,56 +266,38 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
                 );
             }
 
-            return $this->mapSumUpStatus($status, $checkoutId, $transaction, $payload);
+            // SECURITY CRITICAL: Verification via Call Back
+            // Instead of trusting the webhook payload or signature (which might be missing),
+            // we ALWAYS fetch the meaningful state directly from SumUp's API.
+            // This prevents payload spoofing.
+            $verificationResult = $this->verifyPayment($checkoutId, $transaction);
+
+            if ($verificationResult->isSuccessful()) {
+                Log::info('SumUp Payment Gateway: Setup verified via API Call Back', [
+                    'checkout_id' => $checkoutId,
+                    'result_status' => $verificationResult->status,
+                ]);
+                return $verificationResult;
+            } else {
+                 Log::warning('SumUp Payment Gateway: API Call Back verification failed/pending', [
+                    'checkout_id' => $checkoutId,
+                    'result' => $verificationResult,
+                ]);
+                return $verificationResult;
+            }
         });
     }
 
     /**
      * Verify the webhook signature from SumUp.
-     *
-     * @see https://developer.sumup.com/docs/online-payments/features/webhooks/
+     * DEPRECATED/OPTIONAL: We now rely on "Call Back" verification (verifyPayment) as the primary security control.
+     * Keeping this stub if we want to enable it later or debug headers.
      */
     protected function verifySignature(array $payload, array $headers): bool
     {
-        // Usually X-SumUp-Signature or similar.
-        // Since SumUp docs might vary, we check the standard implementation.
-        // If no signature logic provided in user prompt details, we implement a standard HMAC check using client secret.
-        // However, SumUp Online Payments webhooks often use a specific public key or secret validation.
-        // Assuming 'services.sumup.client_secret' or 'merchant_code' is used as secret or we should accept all for now if secret missing?
-        // User Prompt explicitly asked: "You must verify the X-SumUp-Signature header against your checkout ID and body content using your secret key."
-
-        // NOTE: Standard SumUp implementation usually involves HMAC SHA256 of the body with a secret.
-        // Since I don't have the exact secret config key for "webhook secret" in services.php, I will assume 'services.sumup.client_secret' or similar exists, or use a placeholder that the user must fill.
-        // Checking services.php... it only has api_key and merchant_code.
-        // I will add a TO-DO or try to find where the "secret key" mentioned by user comes from.
-        // User said: "using your secret key".
-
-        // Let's assume there is a SUMUP_WEBHOOK_SECRET env var.
-        $secret = config('services.sumup.webhook_secret');
-
-        if (! $secret) {
-            // START-UP SAFETY: If no secret configured, we cannot verify, so we might have to fail or log warning.
-            // User said this is CRITICAL. So we must fail if we can't verify.
-            // But to avoid breaking dev, maybe log error.
-            // "Critical Security Vulnerability ... lacks signature verification".
-            Log::error('SumUp Payment Gateway: Missing webhook_secret configuration');
-
-            return false;
-        }
-
-        $signature = $headers['x-sumup-signature'][0] ?? null;
-
-        if (! $signature) {
-            return false;
-        }
-
-        // Reconstruct payload string if needed, or use raw body.
-        // In Laravel, request()->getContent() gives raw body.
-        $content = request()->getContent();
-
-        $expected = hash_hmac('sha256', $content, $secret);
-
-        return hash_equals($expected, $signature);
+       // Check for X-SumUp-Signature if you want, but do not return false strictly.
+       // Current Strategy: "Trust but Verify via API"
+       return true; 
     }
 
     /**

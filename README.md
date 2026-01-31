@@ -137,8 +137,7 @@ Point your web server root to the `/public` directory.
 ```nginx
 server {
     listen 80;
-    server_name example.com;
-    root /var/www/backstage/public;
+    server_name backstage.domain.com store.domain.com;
  
     index index.php;
  
@@ -151,12 +150,6 @@ server {
 ```
 
 ---
-
-## 🔍 Verification
-1. **Visit URL**: Load the site in your browser.
-2. **Login**: Use admin credentials.
-3. **Test Websockets**: Open `/warehouse` in two separate tabs/windows. Create an item in one; it should appear instantly in the other without refreshing.
-4. **Test Queue**: Request a password reset. behavior checking `storage/logs/worker.log` ensures the email job was processed.
 
 ## Live Demo
 https://laravel.danieljm.dpdns.org
