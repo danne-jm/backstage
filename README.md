@@ -5,49 +5,49 @@
 ![React](https://img.shields.io/badge/React-18-61DAFB)
 ![Inertia](https://img.shields.io/badge/Inertia.js-purple)
 
-**Backstage** is a specialized Enterprise Resource Planning (ERP) and E-commerce platform designed for Student Organizations. It replaces the fragmented stack of "Eventbrite + Shopify + Mailchimp + Excel" with a single, unified ecosystem that saves thousands in transaction fees and streamlines volunteer operations.
+**Backstage** is a unified Enterprise Resource Planning (ERP) and E-commerce platform designed to consolidate operations. It replaces the fragmented stack of separate e-commerce, ticketing, mailing, and spreadsheet tools with a single, ecosystem.
+
+By moving to a unified system, organizations save significant resources in both the short term and long run by eliminating redundant subscription fees, reducing manual data entry errors, and streamlining operations. No more scattered data sheets—everything is managed from one place.
 
 ---
 
 ## 🚀 Key Highlights
 
-### 📧 Advanced Communication Engine
-Unlike standard e-commerce platforms, Backstage features a **native, fully customizable email distribution system**:
-- **Targeted Segmentation:** Send emails to specific groups (e.g., "All Gala Attendees," "Members Only," or "Volunteers").
-- **Rich Text & HTML Support:** Compose beautiful newsletters or announcements directly in the admin panel.
-- **Dynamic Variable Injection:** Personalize emails with placeholders like `{{ name }}` or `{{ ticket_qr }}`.
-- **Transaction Receipts:** Automated, professional HTML order confirmations sent immediately upon payment success.
+### �️ Dual Shop System
+Backstage offers a seamless commerce experience across two distinct fronts:
+- **Online Store:** A polished, public-facing e-commerce site for customers to purchase tickets and merchandise.
+- **Physical Office POS:** A dedicated Point of Sale interface for volunteers or staff to process walk-in transactions, handle cash/card payments, and manage shifts.
+Both fronts share the **same inventory**, ensuring real-time stock synchronization.
 
-### 🛡️ Granular RBAC & Guest Access
-Security is built into the core with a strict **Role-Based Access Control (RBAC)** system:
-- **Role Hierarchy:** Define distinct permissions for *Presidium*, *Board Members*, *Active Members*, and *Volunteers*.
-- **Guest Access:** safely invite external auditors or temporary staff with restricted "Guest" roles (e.g., view-only access to specific event stats without seeing financial ledgers or member data).
-- **Two-Factor Authentication (2FA):** Mandatory 2FA support for high-privilege accounts to protect member data.
+### 📦 Unified Inventory Management
+- **Centralized Control:** Manage all sellables (products, tickets, memberships) from a single dashboard.
+- **Rich Data:** Store detailed product information, pricing, and high-resolution images.
+- **Variant Support:** Full support for product variants (e.g., Sizes, Colors) with independent stock tracking.
+- **Store Manager:** A high-level view of all revenue streams, combining online and physical sales data for total financial visibility.
+
+### 🎫 Professional Ticketing & Scanner
+- **Ticket Distributor:** Integrated system using **Google OAuth** for secure and verified ticket distribution.
+- **Built-in Scanner:** No need for expensive dedicated hardware. The platform includes a native **Ticket Scanner** accessible via web/mobile that utilizes the device's camera.
+- **Secure Entry:** Rapid, secure QR code scanning for event entry management.
+
+### 📧 Advanced Communication Engine
+- **Hybrid Mailing:** Capable of sending both standard newsletters and transactional QR code emails.
+- **Email Preview:** Visualize your email designs with a dedicated preview feature before sending to ensure perfection.
+- **Transactional Consistency:** Automated order confirmations via Web, Email (SMTP), and downloadable PDF receipts.
 
 ---
 
 ## ✨ Core Features
 
-### 🛒 The Store (Public Frontend)
-- **Hybrid Cart:** Students can buy a **Digital Event Ticket** and a **Physical Hoodie** in the same transaction.
-- **Smart Pricing:** The system automatically detects ESN Card holders (or members) and applies "Member Price" discounts instantly.
-- **Split-Domain Architecture:** The Store (`store.domain.com`) allows for high-traffic public access, while the Admin Panel (`backstage.domain.com`) remains isolated and secure.
-- **Direct Payments:** Integrated with **SumUp** to minimize transaction fees (saving ~3-5% compared to Eventbrite).
+### 🔐 Security & Access Control (RBAC)
+- **Granular Permissions:** Invite team members with specific roles.
+- **Guest Access:** Invite external guests (e.g., auditors, temporary event staff) with strictly limited access, such as "Scanning Only" permissions.
+- **Optional 2FA:** Two-Factor Authentication is supported and optional for all users to enhance account security.
 
-### 🎫 Professional Ticketing
-- **Secure QR Codes:** Every ticket generates a cryptographically unique QR code.
-- **Built-in PWA Scanner:** No need for expensive scanning hardware. The admin panel includes a mobile-optimized **Ticket Scanner** that uses the phone's camera for rapid entry management.
-- **Real-Time Capacity:** Live tracking of check-ins vs. sold tickets to prevent overcrowding.
-
-### 🏢 Office & POS Mode
-Designed for the physical "Office Shifts" run by volunteers:
-- **Shift Accountability:** Volunteers must "Clock In" and count the cash drawer.
-- **Reconciliation:** The system tracks cash vs. card sales per shift, forcing a "End of Shift" count to ensure the treasury balances perfectly.
-- **Quick-Sale Interface:** A streamlined POS screen for selling merch and tickets to walk-ins.
-
-### 📦 Inventory & Warehouse
-- **Centralized Stock:** Online sales and physical Office sales deduct from the same inventory pool in real-time.
-- **Variant Management:** Handle sizes (S, M, L) and colors easily.
+### � Modern User Experience
+- **PWA Support:** Installable as a Progressive Web App (PWA) on mobile devices for an app-like experience.
+- **Discount Codes:** comprehensive discount tracking system that works across all sellables.
+- **Payments:** Native integration with **SumUp** for reliable and low-fee transaction processing.
 
 ---
 
@@ -59,96 +59,106 @@ Designed for the physical "Office Shifts" run by volunteers:
 - **Database:** MySQL
 - **Real-Time:** Laravel Reverb (WebSockets)
 - **Queue/Cache:** Redis
-- **Mail:** SMTP (Hostinger/Gmail)
 
 ---
 
-## 📦 Installation
+## 📦 Installation & Production Setup
 
-### Prerequisites
-- **OS**: Linux (Ubuntu/Debian recommended) or macOS
-- **PHP**: 8.2+ (with extensions: bcmath, curl, mbstring, xml, zip, gd)
-- **Composer**: Latest version
-- **Node.js**: 18+ & NPM
-- **Database**: MySQL 8.0+ or MariaDB
-- **Cache/Queue**: Redis
+### 1. Prerequisites
+Ensure your server meets these requirements before starting:
+- **OS**: Ubuntu 22.04 LTS / Debian 11+
+- **PHP**: 8.2 or 8.3
+  - Extensions: `bcmath`, `ctype`, `curl`, `dom`, `fileinfo`, `gd`, `intl`, `mbstring`, `mysql`, `openssl`, `pcntl`, `pdo`, `redis`, `xml`, `zip`
+- **Database**: MySQL 8.0+ or MariaDB 10.6+
+- **Cache/Queue**: Redis Server (`sudo apt install redis-server`)
 - **Process Manager**: Supervisor (`sudo apt install supervisor`)
+- **Node.js**: v18+ & NPM
 
-### Step-by-Step Setup
+### 2. Deployment
+Clone the repo and install dependencies:
+```bash
+# 1. Clone
+git clone https://github.com/danne-jm/backstage.git
+cd backstage
 
-1. **Clone the repository**
+# 2. Install Backend Deps
+composer install --optimize-autoloader --no-dev
+
+# 3. Install Frontend Deps & Build
+npm install
+npm run build
+```
+
+### 3. Configuration
+Set up your environment variables:
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+**Critical `.env` Settings:**
+- `APP_URL`: Your full domain (e.g., `https://backstage.example.com`)
+- `DB_*`: Database credentials (ensure DB exists)
+- `REDIS_*`: Redis connection (default is usually sufficient)
+- `SUMUP_*`: (Optional) SumUp API keys for payments
+- `REVERB_*`: WebSockets (Ensure `REVERB_HOST` matches your domain or IP)
+
+Run migrations:
+```bash
+php artisan migrate --seed
+```
+
+### 4. Background Services (Crucial)
+This application relies on background workers for emails, tickets, and real-time sockets. We use a unified Supervisor setup.
+
+1. **Configure Paths**:
+   - Open `backstage.service` and `backstage_supervisor.conf` in the project root.
+   - **ACTION REQUIRED**: Replace `/home/{username}/...` with **your actual project path**.
+   - **ACTION REQUIRED**: Replace `user={username}` with **your actual system user**.
+
+2. **Install Service**:
    ```bash
-   git clone https://github.com/danne-jm/backstage.git
-   cd backstage
-   ```
-
-2. **Install Dependencies**
-   ```bash
-   composer install --optimize-autoloader --no-dev
-   npm install && npm run build
-   ```
-
-3. **Environment Configuration**
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
-   Edit `.env` and configure:
-   - `DB_*`: Database credentials
-   - `REDIS_*`: Redis connection
-   - `SUMUP_*`: Payment credentials (see below)
-
-4. **SumUp Configuration**
-   To accept payments, you need a SumUp Developer account. Add these to `.env`:
-   ```env
-   SUMUP_API_KEY=sup_sk_...
-   SUMUP_MERCHANT_CODE=M...
-   SUMUP_WEBHOOK_SECRET=your_secret_signing_key
-   ```
-
-5. **Database Setup**
-   ```bash
-   php artisan migrate --seed
-   ```
-
-### 🚀 System Service Setup (Production)
-
-This project uses a custom "Backstage" system service that manages the Queue Worker, Reverb (Websockets), and Task Scheduler automatically.
-
-1. **Install the Service**
-   Run the following as root (`sudo`):
-   ```bash
-   # Copy the service file
+   # Copy systemd unit
    sudo cp backstage.service /etc/systemd/system/
-   
-   # Reload systemd
+
+   # Reload and start
    sudo systemctl daemon-reload
-   
-   # Enable and Start
    sudo systemctl enable backstage
    sudo systemctl start backstage
    ```
 
-2. **Verify Status**
+3. **Verify Health**:
    ```bash
    sudo systemctl status backstage
    ```
-   You should see `Active: active (running)`.
+   You should see `Active: active (running)`. This service limits itself to your project folder and handles the Queue Worker, Scheduler, and WebSocket server automatically.
 
-3. **Logs**
-   Logs for the background processes are stored in `storage/logs/`:
-   - `supervisord.log`: Main process manager logs
-   - `worker.log`: Job queue output
-   - `scheduler.log`: Cron task output
-   - `reverb.log`: WebSocket server output
-
-## ✅ Verification
-- Visit `https://your-domain.com`.
-- Login with the admin credentials (default: `admin@example.com` / `password`).
-- Check the System Status page or logs to ensure queues are processing.
+### 5. Web Server (Nginx)
+Point your web server root to the `/public` directory.
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+    root /var/www/backstage/public;
+ 
+    index index.php;
+ 
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+ 
+    # ... PHP-FPM configuration ...
+}
+```
 
 ---
 
-Live at: 
-- https://laravel.danieljm.dpdns.org
-- https://store.danieljm.dpdns.org
+## 🔍 Verification
+1. **Visit URL**: Load the site in your browser.
+2. **Login**: Use admin credentials.
+3. **Test Websockets**: Open `/warehouse` in two separate tabs/windows. Create an item in one; it should appear instantly in the other without refreshing.
+4. **Test Queue**: Request a password reset. behavior checking `storage/logs/worker.log` ensures the email job was processed.
+
+## Live Demo
+https://laravel.danieljm.dpdns.org
+
+https://store.danieljm.dpdns.org
