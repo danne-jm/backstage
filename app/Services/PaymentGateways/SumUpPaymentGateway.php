@@ -5,6 +5,7 @@ namespace App\Services\PaymentGateways;
 use App\Contracts\PaymentGatewayInterface;
 use App\Contracts\PaymentResult;
 use App\Models\OnlineTransaction;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -225,51 +226,54 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
         ]);
 
         // Find the transaction by reference
-        $transaction = OnlineTransaction::where('reference_id', $checkoutReference)->first();
+        // Use lockForUpdate to prevent race conditions if multiple webhooks arrive simultaneously
+        return DB::transaction(function () use ($checkoutReference, $checkoutId, $status, $payload, $headers) {
+            $transaction = OnlineTransaction::where('reference_id', $checkoutReference)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $transaction) {
-            Log::error('SumUp Payment Gateway: Transaction not found for webhook', [
-                'reference' => $checkoutReference,
-            ]);
+            if (! $transaction) {
+                Log::error('SumUp Payment Gateway: Transaction not found for webhook', [
+                    'reference' => $checkoutReference,
+                ]);
 
-            return PaymentResult::failed(
-                message: 'Transaction not found',
-                errorCode: 'TRANSACTION_NOT_FOUND'
-            );
-        }
+                return PaymentResult::failed(
+                    message: 'Transaction not found',
+                    errorCode: 'TRANSACTION_NOT_FOUND'
+                );
+            }
 
-        $headers = request()->header();
+            // 1. Signature Verification
+            // Note: We check signature INSIDE transaction to be safe, though checking outside is also possible.
+            // But we need the headers passed in.
+            if (! $this->verifySignature($payload, $headers)) {
+                Log::warning('SumUp Payment Gateway: Invalid signature', [
+                    'payload' => $payload,
+                    'reference' => $checkoutReference,
+                ]);
 
-        // 1. Signature Verification
-        if (! $this->verifySignature($payload, $headers)) {
-            Log::warning('SumUp Payment Gateway: Invalid signature', [
-                'payload' => $payload,
-                'headers' => $headers,
-            ]);
+                return PaymentResult::failed(
+                    message: 'Invalid signature',
+                    errorCode: 'INVALID_SIGNATURE'
+                );
+            }
 
-            return PaymentResult::failed(
-                message: 'Invalid signature',
-                errorCode: 'INVALID_SIGNATURE'
-            );
-        }
+            // 2. Idempotency Check (Re-check after lock)
+            if ($transaction->isCompleted()) {
+                Log::info('SumUp Payment Gateway: Webhook ignored (Idempotency - Locked)', [
+                    'reference' => $checkoutReference,
+                    'status' => 'ALREADY_COMPLETED',
+                ]);
 
-        // 2. Idempotency Check
-        // If the transaction is already in a final state, do not process again.
-        $existingTransaction = OnlineTransaction::where('reference_id', $checkoutReference)->first();
-        if ($existingTransaction && $existingTransaction->isCompleted()) {
-            Log::info('SumUp Payment Gateway: Webhook ignored (Idempotency)', [
-                'reference' => $checkoutReference,
-                'status' => 'ALREADY_COMPLETED',
-            ]);
+                return PaymentResult::success(
+                    paymentId: $checkoutId,
+                    message: 'Transaction already processed',
+                    metadata: ['idempotent' => true]
+                );
+            }
 
-            return PaymentResult::success(
-                paymentId: $checkoutId,
-                message: 'Transaction already processed',
-                metadata: ['idempotent' => true]
-            );
-        }
-
-        return $this->mapSumUpStatus($status, $checkoutId, $transaction, $payload);
+            return $this->mapSumUpStatus($status, $checkoutId, $transaction, $payload);
+        });
     }
 
     /**
