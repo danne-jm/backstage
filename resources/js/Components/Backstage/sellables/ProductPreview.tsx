@@ -45,9 +45,9 @@ export function ProductPreview({
                         className={cn(
                             'font-medium',
                             variant === 'store-manager' &&
-                                isOnline &&
-                                product.name.length >= 26 &&
-                                'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                            isOnline &&
+                            product.name.length >= 26 &&
+                            'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
                         )}
                     >
                         {product.name}
@@ -95,68 +95,26 @@ export function ProductPreview({
                 <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         {product.variants_config &&
-                        product.variants_config.length > 0 ? (
+                            product.variants_config.length > 0 ? (
                             <>
                                 <span className="text-muted-foreground">
-                                    Variants:
+                                    Configurable by:
                                 </span>{' '}
                                 <span className="text-foreground">
                                     {product.variants_config
                                         .map((vc) => vc.name)
                                         .join(', ')}
                                 </span>
-                                {product.variants &&
-                                    product.variants.length > 0 && (
-                                        <div className="mt-1 space-y-0.5">
-                                            {product.variants.map(
-                                                (variant, idx) => {
-                                                    const remaining =
-                                                        variant.quantity !==
-                                                            null &&
-                                                        variant.sold_count !==
-                                                            undefined
-                                                            ? variant.quantity -
-                                                              variant.sold_count
-                                                            : null;
-                                                    return (
-                                                        <div
-                                                            key={
-                                                                variant.id ||
-                                                                idx
-                                                            }
-                                                            className="text-xs text-muted-foreground"
-                                                        >
-                                                            •{' '}
-                                                            {Object.entries(
-                                                                variant.options,
-                                                            )
-                                                                .map(
-                                                                    ([k, v]) =>
-                                                                        `${k}: ${v}`,
-                                                                )
-                                                                .join(', ')}
-                                                            {' - '}
-                                                            {variant.quantity ===
-                                                            null
-                                                                ? 'Unlimited'
-                                                                : `${variant.quantity} total`}
-                                                            {remaining !==
-                                                                null && (
-                                                                <span className="text-gray-500">
-                                                                    {' '}
-                                                                    |{' '}
-                                                                    {
-                                                                        remaining
-                                                                    }{' '}
-                                                                    remain
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                },
-                                            )}
-                                        </div>
+                                {/* Variants Matrix or List */}
+                                <div className="mt-2">
+                                    {variant === 'store-manager' ? (
+                                        // Store Manager: Hide details, just show "Variants: Size, Color" (already shown above)
+                                        null
+                                    ) : (
+                                        // Sellables: Show Matrix or List
+                                        <VariantsMatrix product={product} />
                                     )}
+                                </div>
                             </>
                         ) : product.variable_amount ? (
                             <>
@@ -164,46 +122,46 @@ export function ProductPreview({
                                     Qty w/ ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_with_card ||
-                                product.quantity_with_card == null
+                                    product.quantity_with_card == null
                                     ? 'Unlimited'
                                     : product.quantity_with_card}
                                 {product.unlimited_quantity_with_card ||
-                                product.quantity_with_card == null
+                                    product.quantity_with_card == null
                                     ? false
                                     : product.remaining_with_card !==
-                                          undefined &&
-                                      product.remaining_with_card !== null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {
-                                                  product.remaining_with_card
-                                              }{' '}
-                                              remain
-                                          </span>
-                                      )}{' '}
+                                    undefined &&
+                                    product.remaining_with_card !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {
+                                                product.remaining_with_card
+                                            }{' '}
+                                            remain
+                                        </span>
+                                    )}{' '}
                                 |{' '}
                                 <span className="text-muted-foreground">
                                     w/o ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_without_card ||
-                                product.quantity_without_card == null
+                                    product.quantity_without_card == null
                                     ? 'Unlimited'
                                     : product.quantity_without_card}
                                 {product.unlimited_quantity_without_card ||
-                                product.quantity_without_card == null
+                                    product.quantity_without_card == null
                                     ? false
                                     : product.remaining_without_card !==
-                                          undefined &&
-                                      product.remaining_without_card !==
-                                          null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {
-                                                  product.remaining_without_card
-                                              }{' '}
-                                              remain
-                                          </span>
-                                      )}
+                                    undefined &&
+                                    product.remaining_without_card !==
+                                    null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {
+                                                product.remaining_without_card
+                                            }{' '}
+                                            remain
+                                        </span>
+                                    )}
                             </>
                         ) : (
                             <>
@@ -211,19 +169,19 @@ export function ProductPreview({
                                     Quantity:
                                 </span>{' '}
                                 {product.unlimited_quantity ||
-                                product.quantity == null
+                                    product.quantity == null
                                     ? 'Unlimited'
                                     : product.quantity}
                                 {product.unlimited_quantity ||
-                                product.quantity == null
+                                    product.quantity == null
                                     ? false
                                     : product.remaining !== undefined &&
-                                      product.remaining !== null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {product.remaining} remain
-                                          </span>
-                                      )}
+                                    product.remaining !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {product.remaining} remain
+                                        </span>
+                                    )}
                             </>
                         )}
                     </div>
@@ -279,6 +237,148 @@ export function ProductPreview({
             )}
 
             {/* Sell Online is rendered inline next to the quantity line above when in store-manager variant */}
+        </div>
+    );
+}
+
+function VariantsMatrix({ product }: { product: Product }) {
+    if (!product.variants || product.variants.length === 0) return null;
+
+    // Helper to format quantity
+    const formatVariantQuantity = (v: any) => {
+        if (v.quantity === null) return 'Unl.';
+        const sold = v.sold_count || 0;
+        const remaining = v.quantity - sold;
+        return `${remaining} / ${v.quantity}`;
+    };
+
+    if (!product.variants_config || product.variants_config.length === 0) {
+        // Fallback for "variants" mode but no config? Just list them.
+        return (
+            <div className="space-y-1">
+                {product.variants.map((v, i) => (
+                    <div key={v.id || i} className="text-xs text-muted-foreground">
+                        • {Object.entries(v.options)
+                            .map(([k, val]) => `${k}: ${val}`)
+                            .join(', ')}
+                        {' - '}
+                        {v.quantity === null ? 'Unlimited' : formatVariantQuantity(v)}
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    const configs = product.variants_config;
+
+    // Helper to find variant by options
+    const getVariant = (options: Record<string, string>) => {
+        return product.variants?.find((v) => {
+            for (const [key, val] of Object.entries(options)) {
+                if (v.options[key] !== val) return false;
+            }
+            return true;
+        });
+    };
+
+    // Case 1: Single Dimension (e.g. Size)
+    if (configs.length === 1) {
+        const config = configs[0];
+        return (
+            <div className="mt-2 overflow-hidden rounded-md border text-xs">
+                <table className="w-full text-left">
+                    <thead className="bg-muted/50">
+                        <tr>
+                            <th className="p-2 font-medium">{config.name}</th>
+                            <th className="p-2 font-medium">Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                        {config.options.map((opt) => {
+                            const v = getVariant({ [config.name]: opt });
+                            return (
+                                <tr key={opt}>
+                                    <td className="p-2">{opt}</td>
+                                    <td className="p-2 text-muted-foreground">
+                                        {v ? (v.quantity === null ? 'Unlimited' : formatVariantQuantity(v)) : '-'}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        );
+    }
+
+    // Case 2: Two Dimensions (e.g. Size, Color)
+    if (configs.length === 2) {
+        const [rowConfig, colConfig] = configs; // e.g. Row=Size, Col=Color
+        return (
+            <div className="mt-2 overflow-x-auto rounded-md border text-xs">
+                <table className="w-full text-left">
+                    <thead className="bg-muted/50">
+                        <tr>
+                            <th className="p-2 font-medium">{rowConfig.name} \ {colConfig.name}</th>
+                            {colConfig.options.map((colOpt) => (
+                                <th key={colOpt} className="whitespace-nowrap p-2 font-medium">
+                                    {colOpt}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                        {rowConfig.options.map((rowOpt) => (
+                            <tr key={rowOpt}>
+                                <td className="whitespace-nowrap p-2 font-medium bg-muted/20">{rowOpt}</td>
+                                {colConfig.options.map((colOpt) => {
+                                    const v = getVariant({
+                                        [rowConfig.name]: rowOpt,
+                                        [colConfig.name]: colOpt,
+                                    });
+                                    return (
+                                        <td key={`${rowOpt}-${colOpt}`} className="whitespace-nowrap p-2 text-muted-foreground">
+                                            {v ? (v.quantity === null ? 'Unlimited' : formatVariantQuantity(v)) : '-'}
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    }
+
+    // Case 3: > 2 Dimensions -> Simple Table
+    return (
+        <div className="mt-2 overflow-x-auto rounded-md border text-xs">
+            <table className="w-full text-left">
+                <thead className="bg-muted/50">
+                    <tr>
+                        {configs.map((c) => (
+                            <th key={c.name} className="p-2 font-medium">
+                                {c.name}
+                            </th>
+                        ))}
+                        <th className="p-2 font-medium">Stock</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y">
+                    {product.variants.map((v, idx) => (
+                        <tr key={v.id || idx}>
+                            {configs.map((c) => (
+                                <td key={c.name} className="p-2">
+                                    {v.options[c.name]}
+                                </td>
+                            ))}
+                            <td className="p-2 text-muted-foreground">
+                                {v.quantity === null ? 'Unlimited' : formatVariantQuantity(v)}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }
