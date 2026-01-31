@@ -45,9 +45,9 @@ export function ProductPreview({
                         className={cn(
                             'font-medium',
                             variant === 'store-manager' &&
-                            isOnline &&
-                            product.name.length >= 26 &&
-                            'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                                isOnline &&
+                                product.name.length >= 26 &&
+                                'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
                         )}
                     >
                         {product.name}
@@ -95,7 +95,7 @@ export function ProductPreview({
                 <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         {product.variants_config &&
-                            product.variants_config.length > 0 ? (
+                        product.variants_config.length > 0 ? (
                             <>
                                 <span className="text-muted-foreground">
                                     Configurable by:
@@ -107,10 +107,9 @@ export function ProductPreview({
                                 </span>
                                 {/* Variants Matrix or List */}
                                 <div className="mt-2">
-                                    {variant === 'store-manager' ? (
-                                        // Store Manager: Hide details, just show "Variants: Size, Color" (already shown above)
-                                        null
-                                    ) : (
+                                    {variant ===
+                                    'store-manager' ? // Store Manager: Hide details, just show "Variants: Size, Color" (already shown above)
+                                    null : (
                                         // Sellables: Show Matrix or List
                                         <VariantsMatrix product={product} />
                                     )}
@@ -122,46 +121,46 @@ export function ProductPreview({
                                     Qty w/ ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_with_card ||
-                                    product.quantity_with_card == null
+                                product.quantity_with_card == null
                                     ? 'Unlimited'
                                     : product.quantity_with_card}
                                 {product.unlimited_quantity_with_card ||
-                                    product.quantity_with_card == null
+                                product.quantity_with_card == null
                                     ? false
                                     : product.remaining_with_card !==
-                                    undefined &&
-                                    product.remaining_with_card !== null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {
-                                                product.remaining_with_card
-                                            }{' '}
-                                            remain
-                                        </span>
-                                    )}{' '}
+                                          undefined &&
+                                      product.remaining_with_card !== null && (
+                                          <span className="text-gray-500">
+                                              {' '}
+                                              | {
+                                                  product.remaining_with_card
+                                              }{' '}
+                                              remain
+                                          </span>
+                                      )}{' '}
                                 |{' '}
                                 <span className="text-muted-foreground">
                                     w/o ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_without_card ||
-                                    product.quantity_without_card == null
+                                product.quantity_without_card == null
                                     ? 'Unlimited'
                                     : product.quantity_without_card}
                                 {product.unlimited_quantity_without_card ||
-                                    product.quantity_without_card == null
+                                product.quantity_without_card == null
                                     ? false
                                     : product.remaining_without_card !==
-                                    undefined &&
-                                    product.remaining_without_card !==
-                                    null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {
-                                                product.remaining_without_card
-                                            }{' '}
-                                            remain
-                                        </span>
-                                    )}
+                                          undefined &&
+                                      product.remaining_without_card !==
+                                          null && (
+                                          <span className="text-gray-500">
+                                              {' '}
+                                              | {
+                                                  product.remaining_without_card
+                                              }{' '}
+                                              remain
+                                          </span>
+                                      )}
                             </>
                         ) : (
                             <>
@@ -169,19 +168,19 @@ export function ProductPreview({
                                     Quantity:
                                 </span>{' '}
                                 {product.unlimited_quantity ||
-                                    product.quantity == null
+                                product.quantity == null
                                     ? 'Unlimited'
                                     : product.quantity}
                                 {product.unlimited_quantity ||
-                                    product.quantity == null
+                                product.quantity == null
                                     ? false
                                     : product.remaining !== undefined &&
-                                    product.remaining !== null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {product.remaining} remain
-                                        </span>
-                                    )}
+                                      product.remaining !== null && (
+                                          <span className="text-gray-500">
+                                              {' '}
+                                              | {product.remaining} remain
+                                          </span>
+                                      )}
                             </>
                         )}
                     </div>
@@ -257,12 +256,18 @@ function VariantsMatrix({ product }: { product: Product }) {
         return (
             <div className="space-y-1">
                 {product.variants.map((v, i) => (
-                    <div key={v.id || i} className="text-xs text-muted-foreground">
-                        • {Object.entries(v.options)
+                    <div
+                        key={v.id || i}
+                        className="text-xs text-muted-foreground"
+                    >
+                        •{' '}
+                        {Object.entries(v.options)
                             .map(([k, val]) => `${k}: ${val}`)
                             .join(', ')}
                         {' - '}
-                        {v.quantity === null ? 'Unlimited' : formatVariantQuantity(v)}
+                        {v.quantity === null
+                            ? 'Unlimited'
+                            : formatVariantQuantity(v)}
                     </div>
                 ))}
             </div>
@@ -300,7 +305,11 @@ function VariantsMatrix({ product }: { product: Product }) {
                                 <tr key={opt}>
                                     <td className="p-2">{opt}</td>
                                     <td className="p-2 text-muted-foreground">
-                                        {v ? (v.quantity === null ? 'Unlimited' : formatVariantQuantity(v)) : '-'}
+                                        {v
+                                            ? v.quantity === null
+                                                ? 'Unlimited'
+                                                : formatVariantQuantity(v)
+                                            : '-'}
                                     </td>
                                 </tr>
                             );
@@ -319,9 +328,14 @@ function VariantsMatrix({ product }: { product: Product }) {
                 <table className="w-full text-left">
                     <thead className="bg-muted/50">
                         <tr>
-                            <th className="p-2 font-medium">{rowConfig.name} \ {colConfig.name}</th>
+                            <th className="p-2 font-medium">
+                                {rowConfig.name} \ {colConfig.name}
+                            </th>
                             {colConfig.options.map((colOpt) => (
-                                <th key={colOpt} className="whitespace-nowrap p-2 font-medium">
+                                <th
+                                    key={colOpt}
+                                    className="p-2 font-medium whitespace-nowrap"
+                                >
                                     {colOpt}
                                 </th>
                             ))}
@@ -330,15 +344,24 @@ function VariantsMatrix({ product }: { product: Product }) {
                     <tbody className="divide-y">
                         {rowConfig.options.map((rowOpt) => (
                             <tr key={rowOpt}>
-                                <td className="whitespace-nowrap p-2 font-medium bg-muted/20">{rowOpt}</td>
+                                <td className="bg-muted/20 p-2 font-medium whitespace-nowrap">
+                                    {rowOpt}
+                                </td>
                                 {colConfig.options.map((colOpt) => {
                                     const v = getVariant({
                                         [rowConfig.name]: rowOpt,
                                         [colConfig.name]: colOpt,
                                     });
                                     return (
-                                        <td key={`${rowOpt}-${colOpt}`} className="whitespace-nowrap p-2 text-muted-foreground">
-                                            {v ? (v.quantity === null ? 'Unlimited' : formatVariantQuantity(v)) : '-'}
+                                        <td
+                                            key={`${rowOpt}-${colOpt}`}
+                                            className="p-2 whitespace-nowrap text-muted-foreground"
+                                        >
+                                            {v
+                                                ? v.quantity === null
+                                                    ? 'Unlimited'
+                                                    : formatVariantQuantity(v)
+                                                : '-'}
                                         </td>
                                     );
                                 })}
@@ -373,7 +396,9 @@ function VariantsMatrix({ product }: { product: Product }) {
                                 </td>
                             ))}
                             <td className="p-2 text-muted-foreground">
-                                {v.quantity === null ? 'Unlimited' : formatVariantQuantity(v)}
+                                {v.quantity === null
+                                    ? 'Unlimited'
+                                    : formatVariantQuantity(v)}
                             </td>
                         </tr>
                     ))}

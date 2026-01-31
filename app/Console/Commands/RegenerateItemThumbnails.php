@@ -107,9 +107,9 @@ class RegenerateItemThumbnails extends Command
 
     protected function createCompressedThumbnailFromFile(string $filePath): ?string
     {
-        $maxWidth = 128;
-        $maxHeight = 128;
-        $quality = 100; // Reduced from 100% to 100% for smaller file size
+        $maxWidth = 600;
+        $maxHeight = 600;
+        $quality = 85; // 85% is a good balance between quality and file size
 
         // Detect mime type
         $imageInfo = @getimagesize($filePath);
@@ -132,14 +132,32 @@ class RegenerateItemThumbnails extends Command
             return null;
         }
 
+        // Handle EXIF rotation for JPEGs
+        if ((str_contains($mime, 'jpeg') || str_contains($mime, 'jpg')) && function_exists('exif_read_data')) {
+            $exif = @exif_read_data($filePath);
+            if (! empty($exif['Orientation'])) {
+                switch ($exif['Orientation']) {
+                    case 3:
+                        $sourceImage = imagerotate($sourceImage, 180, 0);
+                        break;
+                    case 6:
+                        $sourceImage = imagerotate($sourceImage, -90, 0);
+                        break;
+                    case 8:
+                        $sourceImage = imagerotate($sourceImage, 90, 0);
+                        break;
+                }
+            }
+        }
+
         return $this->resizeAndEncode($sourceImage, $maxWidth, $maxHeight, $quality);
     }
 
     protected function recompressDataUri(string $dataUri): ?string
     {
-        $maxWidth = 128;
-        $maxHeight = 128;
-        $quality = 100;
+        $maxWidth = 600;
+        $maxHeight = 600;
+        $quality = 85;
 
         // Extract base64 data from data URI
         if (! preg_match('/^data:image\/\w+;base64,(.+)$/', $dataUri, $matches)) {

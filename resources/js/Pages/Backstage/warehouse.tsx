@@ -95,15 +95,28 @@ export default function Warehouse() {
     const [realtimeUpdates, setRealtimeUpdates] = useState<
         Record<number, number>
     >({});
+    const [createdItems, setCreatedItems] = useState<Item[]>([]);
+    const [deletedIds, setDeletedIds] = useState<number[]>([]);
 
     // Derive localItems from props and apply realtime updates
     const localItems = React.useMemo(() => {
         const baseItems = paginatedItems?.data || [];
-        return baseItems.map((item: Item) => ({
-            ...item,
-            quantity: realtimeUpdates[item.id] ?? item.quantity,
-        }));
-    }, [paginatedItems, realtimeUpdates]);
+        // Merge base items with created items
+        const allItems = [...baseItems, ...createdItems];
+
+        // We use a Map to ensure ID uniqueness if an item is created then paginated to
+        // Deduplicate by ID
+        const uniqueItems = Array.from(
+            new Map(allItems.map((item) => [item.id, item])).values(),
+        );
+
+        return uniqueItems
+            .filter((item: Item) => !deletedIds.includes(item.id))
+            .map((item: Item) => ({
+                ...item,
+                quantity: realtimeUpdates[item.id] ?? item.quantity,
+            }));
+    }, [paginatedItems, realtimeUpdates, createdItems, deletedIds]);
 
     // Realtime updates via Reverb
     useEffect(() => {
@@ -115,6 +128,17 @@ export default function Warehouse() {
                     ...prev,
                     [e.sellableId]: e.remaining,
                 }));
+            } else if (e.type === 'item_created' && e.payload) {
+                setCreatedItems((prev) => {
+                    // check if we already have it in state
+                    if (prev.find((p) => p.id === e.payload.id)) return prev;
+                    return [e.payload, ...prev];
+                });
+            } else if (e.type === 'item_deleted') {
+                setDeletedIds((prev) => {
+                    if (prev.includes(e.sellableId)) return prev;
+                    return [...prev, e.sellableId];
+                });
             }
         });
         return () => {
@@ -201,20 +225,24 @@ export default function Warehouse() {
     };
 
     const itemsList = (localItems || [])
-        .filter((item) => {
+        .filter((item: Item) => {
             if (!search) return true;
             const s = search.toLowerCase();
             return (
                 item.name.toLowerCase().includes(s) ||
-                (item.category || []).some((cat) =>
+                (item.category || []).some((cat: string) =>
                     cat.toLowerCase().includes(s),
                 ) ||
                 (item.changed_by || '').toLowerCase().includes(s) ||
                 String(item.quantity).includes(s)
             );
         })
-        .sort((a, b) => {
-            if (!sort.column) return 0;
+        .sort((a: Item, b: Item) => {
+            // Default sort: ID desc (newest first) or last_modified desc
+            if (!sort.column) {
+                // use ID as proxy for creation time if last_modified is null or equal
+                return b.id - a.id;
+            }
             const valA = a[sort.column];
             const valB = b[sort.column];
 
@@ -287,8 +315,8 @@ export default function Warehouse() {
                         {/* ... thead ... */}
                         <thead className="bg-gray-50 dark:bg-transparent">
                             <tr>
-                                {/* ... headers ... */}
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                                {/* Name */}
+                                <th className="px-2 py-3 text-left text-xs font-medium uppercase sm:px-6">
                                     <button
                                         className="flex items-center gap-2"
                                         onClick={() =>
@@ -317,7 +345,8 @@ export default function Warehouse() {
                                         )}
                                     </button>
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                                {/* Quantity */}
+                                <th className="px-2 py-3 text-left text-xs font-medium uppercase sm:px-6">
                                     <button
                                         className="flex items-center gap-2"
                                         onClick={() =>
@@ -331,7 +360,7 @@ export default function Warehouse() {
                                             }))
                                         }
                                     >
-                                        <span>Quantity</span>
+                                        <span>Qty</span>
                                         {sort.column === 'quantity' ? (
                                             sort.dir === 'asc' ? (
                                                 <ChevronUpIcon size={14} />
@@ -346,7 +375,8 @@ export default function Warehouse() {
                                         )}
                                     </button>
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                                {/* Image */}
+                                <th className="px-2 py-3 text-left text-xs font-medium uppercase sm:px-6">
                                     <button
                                         className="flex items-center gap-2"
                                         onClick={() =>
@@ -360,15 +390,15 @@ export default function Warehouse() {
                                             }))
                                         }
                                     >
-                                        <span>Image</span>
-                                        {/* image column is not sortable but keep icon for visual parity */}
+                                        <span>Img</span>
                                         <ChevronUpIcon
                                             size={14}
                                             className="opacity-30"
                                         />
                                     </button>
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                                {/* Category - Hidden on mobile */}
+                                <th className="hidden px-6 py-3 text-left text-xs font-medium uppercase sm:table-cell">
                                     <button
                                         className="flex items-center gap-2"
                                         onClick={() =>
@@ -397,7 +427,8 @@ export default function Warehouse() {
                                         )}
                                     </button>
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                                {/* Last Modified - Hidden on mobile */}
+                                <th className="hidden px-6 py-3 text-left text-xs font-medium uppercase sm:table-cell">
                                     <button
                                         className="flex items-center gap-2"
                                         onClick={() =>
@@ -427,7 +458,8 @@ export default function Warehouse() {
                                         )}
                                     </button>
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                                {/* Changed By - Hidden on mobile */}
+                                <th className="hidden px-6 py-3 text-left text-xs font-medium uppercase sm:table-cell">
                                     <button
                                         className="flex items-center gap-2"
                                         onClick={() =>
@@ -465,30 +497,31 @@ export default function Warehouse() {
                         <tbody className="divide-y divide-gray-200 bg-white dark:divide-neutral-700 dark:bg-transparent">
                             {itemsList.map((item: Item) => (
                                 <tr key={item.id}>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="truncate">
+                                    <td className="max-w-[8rem] px-2 py-4 sm:max-w-none sm:px-6">
+                                        <div className="flex items-center justify-between gap-1 sm:gap-2">
+                                            <div className="truncate text-xs sm:text-sm">
                                                 {item.name}
                                             </div>
                                             {canUpdate && (
                                                 <button
                                                     type="button"
-                                                    className="ml-2 text-muted-foreground hover:text-foreground sm:hidden"
+                                                    className="ml-1 shrink-0 text-muted-foreground hover:text-foreground sm:hidden"
                                                     aria-label={`Edit ${item.name}`}
                                                     onClick={() =>
                                                         openEditFor(item)
                                                     }
                                                 >
-                                                    <Pencil size={14} />
+                                                    <Pencil size={12} />
                                                 </button>
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
+                                    <td className="px-2 py-4 sm:px-6">
+                                        <div className="flex items-center gap-1 sm:gap-2">
                                             <Button
                                                 size="sm"
                                                 variant="outline"
+                                                className="h-7 w-7 p-0 sm:h-9 sm:w-auto sm:px-3"
                                                 onClick={() =>
                                                     changeQuantity(item, -1)
                                                 }
@@ -506,13 +539,20 @@ export default function Warehouse() {
                                                 {processingIds.includes(
                                                     item.id,
                                                 ) ? (
-                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
+                                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4" />
                                                 ) : (
-                                                    <Minus size={14} />
+                                                    <Minus
+                                                        size={12}
+                                                        className="sm:hidden"
+                                                    />
                                                 )}
+                                                <Minus
+                                                    size={14}
+                                                    className="hidden sm:block"
+                                                />
                                             </Button>
 
-                                            <span className="w-12 text-center">
+                                            <span className="w-8 text-center text-xs sm:w-12 sm:text-sm">
                                                 {optimisticQuantities[
                                                     item.id
                                                 ] ?? item.quantity}
@@ -521,6 +561,7 @@ export default function Warehouse() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
+                                                className="h-7 w-7 p-0 sm:h-9 sm:w-auto sm:px-3"
                                                 onClick={() =>
                                                     changeQuantity(item, 1)
                                                 }
@@ -535,35 +576,42 @@ export default function Warehouse() {
                                                 {processingIds.includes(
                                                     item.id,
                                                 ) ? (
-                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
+                                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4" />
                                                 ) : (
-                                                    <Plus size={14} />
+                                                    <Plus
+                                                        size={12}
+                                                        className="sm:hidden"
+                                                    />
                                                 )}
+                                                <Plus
+                                                    size={14}
+                                                    className="hidden sm:block"
+                                                />
                                             </Button>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-2 py-4 sm:px-6">
                                         {(item as any).image_url ? (
                                             <LazyImage
                                                 src={(item as any).image_url}
                                                 alt={item.name}
-                                                className="h-16 w-16 rounded object-cover"
+                                                className="h-10 w-10 rounded object-cover sm:h-16 sm:w-16"
                                             />
                                         ) : null}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="hidden px-6 py-4 sm:table-cell">
                                         <div>
                                             {(item.category || []).join(', ')}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="hidden px-6 py-4 sm:table-cell">
                                         {item.last_modified
                                             ? new Date(
                                                   item.last_modified,
                                               ).toLocaleString()
                                             : '-'}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="hidden px-6 py-4 sm:table-cell">
                                         {item.changed_by ?? '-'}
                                     </td>
                                     <td className="hidden px-6 py-4 sm:table-cell">

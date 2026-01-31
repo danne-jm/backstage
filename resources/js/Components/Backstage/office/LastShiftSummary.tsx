@@ -1,10 +1,8 @@
 import { Button } from '@/Components/Shared/ui/button';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogTitle,
 } from '@/Components/Shared/ui/dialog';
 import { Link } from '@inertiajs/react';
@@ -74,10 +72,10 @@ export const LastShiftSummary = forwardRef<
                         </div>
                         <div className="text-sm">
                             {Array.isArray(lastShift.workers) &&
-                                lastShift.workers.length > 0
+                            lastShift.workers.length > 0
                                 ? lastShift.workers
-                                    .map((w: any) => w.name)
-                                    .join(', ')
+                                      .map((w: any) => w.name)
+                                      .join(', ')
                                 : 'None'}
                         </div>
                     </div>
@@ -187,7 +185,7 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.start_cash_breakdown ||
-                                            {},
+                                                {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>
@@ -237,7 +235,7 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.end_of_shift_cash_breakdown ||
-                                            {},
+                                                {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>

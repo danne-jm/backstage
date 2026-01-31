@@ -97,7 +97,7 @@ class ItemController extends Controller
 
         $item = Item::create($data);
 
-        \App\Events\InventoryUpdated::dispatch($item->id, 'item', $item->quantity);
+        \App\Events\InventoryUpdated::dispatch($item->id, 'item_created', $item->quantity, null, null, $item->toArray());
 
         return redirect()->route('warehouse')->with('success', 'Item created');
     }
@@ -154,6 +154,8 @@ class ItemController extends Controller
         }
         $item->delete();
 
+        \App\Events\InventoryUpdated::dispatch($item->id, 'item_deleted', 0);
+
         return redirect()->route('warehouse')->with('success', 'Item deleted');
     }
 
@@ -162,9 +164,9 @@ class ItemController extends Controller
      */
     protected function createCompressedThumbnail($file, array &$data): void
     {
-        $maxWidth = 128;
-        $maxHeight = 128;
-        $quality = 100; // Reduced from 100% to 100% for smaller file size
+        $maxWidth = 600;
+        $maxHeight = 600;
+        $quality = 85; // 85% is a good balance between quality and file size
 
         $mime = $file->getClientMimeType() ?? 'image/jpeg';
         $filePath = $file->getRealPath();
@@ -182,6 +184,24 @@ class ItemController extends Controller
             $data['image_data'] = null;
 
             return;
+        }
+
+        // Handle EXIF rotation for JPEGs
+        if ((str_contains($mime, 'jpeg') || str_contains($mime, 'jpg')) && function_exists('exif_read_data')) {
+            $exif = @exif_read_data($filePath);
+            if (! empty($exif['Orientation'])) {
+                switch ($exif['Orientation']) {
+                    case 3:
+                        $sourceImage = imagerotate($sourceImage, 180, 0);
+                        break;
+                    case 6:
+                        $sourceImage = imagerotate($sourceImage, -90, 0);
+                        break;
+                    case 8:
+                        $sourceImage = imagerotate($sourceImage, 90, 0);
+                        break;
+                }
+            }
         }
 
         $width = imagesx($sourceImage);

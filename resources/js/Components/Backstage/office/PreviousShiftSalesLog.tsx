@@ -2,10 +2,8 @@ import { Badge } from '@/Components/Shared/ui/badge';
 import { Button } from '@/Components/Shared/ui/button';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogTitle,
 } from '@/Components/Shared/ui/dialog';
 import { Eye } from 'lucide-react';
@@ -122,7 +120,7 @@ export function PreviousShiftSalesLog({
                                                                 €
                                                                 {Number(
                                                                     sale.amount ??
-                                                                    0,
+                                                                        0,
                                                                 ).toFixed(2)}
                                                             </span>
                                                             {String(
@@ -182,11 +180,11 @@ export function PreviousShiftSalesLog({
                                                             }
                                                         >
                                                             {(sale.sold_at ??
-                                                                sale.created_at)
+                                                            sale.created_at)
                                                                 ? new Date(
-                                                                    sale.sold_at ??
-                                                                    sale.created_at,
-                                                                ).toLocaleString()
+                                                                      sale.sold_at ??
+                                                                          sale.created_at,
+                                                                  ).toLocaleString()
                                                                 : 'N/A'}
                                                         </span>
                                                     </td>
@@ -277,7 +275,6 @@ export function PreviousShiftSalesLog({
                                         </div>
                                     </div>
                                 </div>
-
                             </DialogContent>
                         </Dialog>
 
@@ -322,7 +319,6 @@ export function PreviousShiftSalesLog({
                                         </div>
                                     </div>
                                 </div>
-
                             </DialogContent>
                         </Dialog>
                     </>

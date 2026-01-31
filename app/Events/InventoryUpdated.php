@@ -22,16 +22,19 @@ class InventoryUpdated implements ShouldBroadcast
 
     public $remainingWithoutCard;
 
+    public $payload;
+
     /**
      * Create a new event instance.
      */
-    public function __construct($sellableId, $type, $remaining, $remainingWithCard = null, $remainingWithoutCard = null)
+    public function __construct($sellableId, $type, $remaining, $remainingWithCard = null, $remainingWithoutCard = null, $payload = null)
     {
         $this->sellableId = $sellableId;
         $this->type = $type;
         $this->remaining = $remaining;
         $this->remainingWithCard = $remainingWithCard;
         $this->remainingWithoutCard = $remainingWithoutCard;
+        $this->payload = $payload;
     }
 
     /**

@@ -158,7 +158,6 @@ export default function EditItemDialog({
                             type="file"
                             className="hidden"
                             accept="image/*"
-                            capture="environment"
                             onChange={(e) => {
                                 const f = e.target.files?.[0] ?? null;
                                 if (imagePreview) {
