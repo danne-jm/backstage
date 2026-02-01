@@ -195,33 +195,57 @@ export default function Warehouse() {
         setOptimisticQuantities((prev) => ({ ...prev, [item.id]: newQty }));
         setProcessingIds((prev) => [...prev, item.id]);
 
-        router.put(
-            `/warehouse/items/${item.id}`,
-            {
-                ...item,
-                quantity: newQty,
-            },
-            {
-                preserveScroll: true,
-                onError: () => {
-                    setOptimisticQuantities((prev) => {
-                        const next = { ...prev };
-                        delete next[item.id];
-                        return next;
-                    });
+        if (delta > 0) {
+            router.post(
+                `/warehouse/items/${item.id}/increment`,
+                {},
+                {
+                    preserveScroll: true,
+                    onError: () => {
+                        setOptimisticQuantities((prev) => {
+                            const next = { ...prev };
+                            delete next[item.id];
+                            return next;
+                        });
+                    },
+                    onFinish: () => {
+                        setProcessingIds((prev) =>
+                            prev.filter((id) => id !== item.id),
+                        );
+                        setOptimisticQuantities((prev) => {
+                            const next = { ...prev };
+                            delete next[item.id];
+                            return next;
+                        });
+                    },
                 },
-                onFinish: () => {
-                    setProcessingIds((prev) =>
-                        prev.filter((id) => id !== item.id),
-                    );
-                    setOptimisticQuantities((prev) => {
-                        const next = { ...prev };
-                        delete next[item.id];
-                        return next;
-                    });
+            );
+        } else {
+            router.post(
+                `/warehouse/items/${item.id}/decrement`,
+                {},
+                {
+                    preserveScroll: true,
+                    onError: () => {
+                        setOptimisticQuantities((prev) => {
+                            const next = { ...prev };
+                            delete next[item.id];
+                            return next;
+                        });
+                    },
+                    onFinish: () => {
+                        setProcessingIds((prev) =>
+                            prev.filter((id) => id !== item.id),
+                        );
+                        setOptimisticQuantities((prev) => {
+                            const next = { ...prev };
+                            delete next[item.id];
+                            return next;
+                        });
+                    },
                 },
-            },
-        );
+            );
+        }
     };
 
     const itemsList = (localItems || [])
@@ -324,7 +348,7 @@ export default function Warehouse() {
                                                 column: 'name',
                                                 dir:
                                                     s.column === 'name' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -354,7 +378,7 @@ export default function Warehouse() {
                                                 column: 'quantity',
                                                 dir:
                                                     s.column === 'quantity' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -384,7 +408,7 @@ export default function Warehouse() {
                                                 column: 'category',
                                                 dir:
                                                     s.column === 'category' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -406,7 +430,7 @@ export default function Warehouse() {
                                                 column: 'category',
                                                 dir:
                                                     s.column === 'category' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -437,7 +461,7 @@ export default function Warehouse() {
                                                 dir:
                                                     s.column ===
                                                         'last_modified' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -467,7 +491,7 @@ export default function Warehouse() {
                                                 column: 'changed_by',
                                                 dir:
                                                     s.column === 'changed_by' &&
-                                                    s.dir === 'asc'
+                                                        s.dir === 'asc'
                                                         ? 'desc'
                                                         : 'asc',
                                             }))
@@ -607,8 +631,8 @@ export default function Warehouse() {
                                     <td className="hidden px-6 py-4 sm:table-cell">
                                         {item.last_modified
                                             ? new Date(
-                                                  item.last_modified,
-                                              ).toLocaleString()
+                                                item.last_modified,
+                                            ).toLocaleString()
                                             : '-'}
                                     </td>
                                     <td className="hidden px-6 py-4 sm:table-cell">

@@ -257,6 +257,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('permission:create_item');
         Route::put('warehouse/items/{item}', [App\Http\Controllers\Backstage\Warehouse\ItemController::class, 'update'])->name('warehouse.items.update')
             ->middleware('permission:update_item');
+        Route::post('warehouse/items/{item}/increment', [App\Http\Controllers\Backstage\Warehouse\ItemController::class, 'increment'])->name('warehouse.items.increment')
+            ->middleware('permission:update_item');
+        Route::post('warehouse/items/{item}/decrement', [App\Http\Controllers\Backstage\Warehouse\ItemController::class, 'decrement'])->name('warehouse.items.decrement')
+            ->middleware('permission:update_item');
         Route::delete('warehouse/items/{item}', [App\Http\Controllers\Backstage\Warehouse\ItemController::class, 'destroy'])->name('warehouse.items.destroy')
             ->middleware('permission:delete_item');
     });

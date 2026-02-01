@@ -171,7 +171,7 @@ class UserManagementController extends Controller implements HasMiddleware
         if (! empty($privilegedUpdates)) {
             $target->forceFill($privilegedUpdates);
         }
-        
+
         if ($target->isDirty()) {
             $target->save();
         }

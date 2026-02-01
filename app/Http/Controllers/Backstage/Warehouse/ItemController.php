@@ -146,6 +146,41 @@ class ItemController extends Controller
         return redirect()->route('warehouse')->with('success', 'Item updated');
     }
 
+    public function increment(Request $request, Item $item): RedirectResponse
+    {
+        $item->increment('quantity');
+        $item->refresh(); // get updated quantity
+
+        // Update tracking info
+        $item->update([
+            'last_modified' => now(),
+            'changed_by' => optional($request->user())->email,
+        ]);
+
+        \App\Events\InventoryUpdated::dispatch($item->id, 'item', $item->quantity);
+
+        return redirect()->route('warehouse')->with('success', 'Item quantity increased');
+    }
+
+    public function decrement(Request $request, Item $item): RedirectResponse
+    {
+        // Prevent negative quantity
+        if ($item->quantity > 0) {
+            $item->decrement('quantity');
+            $item->refresh();
+        }
+
+        // Update tracking info
+        $item->update([
+            'last_modified' => now(),
+            'changed_by' => optional($request->user())->email,
+        ]);
+
+        \App\Events\InventoryUpdated::dispatch($item->id, 'item', $item->quantity);
+
+        return redirect()->route('warehouse')->with('success', 'Item quantity decreased');
+    }
+
     public function destroy(Request $request, Item $item): RedirectResponse
     {
         // delete stored file if present
