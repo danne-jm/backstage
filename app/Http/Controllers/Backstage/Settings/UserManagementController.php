@@ -120,6 +120,7 @@ class UserManagementController extends Controller implements HasMiddleware
         $user->forceFill([
             'permissions' => $permissions,
             'role' => $role,
+            'password_hash' => $data['password_hash'], // Ensure password is persisted
         ])->save();
 
         return back();
@@ -156,16 +157,23 @@ class UserManagementController extends Controller implements HasMiddleware
         // Update safe fields via mass assignment
         $target->update($data);
 
-        // Update privileged fields via forceFill (if provided)
         $privilegedUpdates = [];
-        if ($permissions !== null) {
-            $privilegedUpdates['permissions'] = $permissions;
-        }
         if ($role !== null) {
             $privilegedUpdates['role'] = $role;
         }
+        if (isset($data['password_hash'])) {
+            $privilegedUpdates['password_hash'] = $data['password_hash'];
+        }
+        if ($permissions !== null) {
+            $privilegedUpdates['permissions'] = $permissions;
+        }
+
         if (! empty($privilegedUpdates)) {
-            $target->forceFill($privilegedUpdates)->save();
+            $target->forceFill($privilegedUpdates);
+        }
+        
+        if ($target->isDirty()) {
+            $target->save();
         }
 
         return back();

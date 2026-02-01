@@ -32,8 +32,9 @@ class PasswordController extends Controller
 
         // Store into the `password_hash` column. Use forceFill to bypass
         // mass-assignment restrictions since the model uses `password_hash`.
+        // We use 'password' here to leverage the setPasswordAttribute mutator on the User model
         $request->user()->forceFill([
-            'password_hash' => Hash::make($validated['password']),
+            'password' => $validated['password'],
         ])->save();
 
         return back();

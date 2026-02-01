@@ -34,6 +34,10 @@ export default function Users() {
 
     // Permission Template State ('Administrator' | 'Board' | 'Guest')
     const [permissionLevel, setPermissionLevel] = useState<string>('Guest');
+    // Store guest permissions to restore them when switching back from Admin/Board
+    const [savedGuestPermissions, setSavedGuestPermissions] = useState<string[]>(
+        [],
+    );
 
     const [form, setForm] = useState({
         first_name: '',
@@ -56,10 +60,29 @@ export default function Users() {
 
     // --- Logic: Handle Permission Level Toggle ---
     const handleLevelChange = (level: string) => {
+        // If we are currently in Guest mode and switching away, save the current configuration
+        if (permissionLevel === 'Guest' && level !== 'Guest') {
+            setSavedGuestPermissions(form.permissions);
+        }
+
         setPermissionLevel(level);
-        const preset = rolePresets[level] || [];
-        // Apply the preset permissions immediately
-        setForm((prev) => ({ ...prev, permissions: preset }));
+
+        if (level === 'Guest') {
+            // Restore saved guest permissions (or default if none saved yet)
+            // But if we are switching TO Guest and we just came from Guest (unlikely unless click same button),
+            // it doesn't matter.
+            // If we are switching from Admin -> Guest.
+            // We should use savedGuestPermissions if it has something, otherwise Guest preset.
+            // However, savedGuestPermissions might be empty if the user cleared all permissions.
+            // We can check if it was initialized.
+            // Simpler: assume savedGuestPermissions is the source of truth for Guest state.
+            // But we need to make sure it's seeded correctly on open.
+            setForm((prev) => ({ ...prev, permissions: savedGuestPermissions }));
+        } else {
+            const preset = rolePresets[level] || [];
+            // Apply the preset permissions immediately
+            setForm((prev) => ({ ...prev, permissions: preset }));
+        }
     };
 
     // Toggle individual permissions (Only for Guest)
@@ -94,13 +117,15 @@ export default function Users() {
     const openAddModal = () => {
         setSelectedUser(null);
         setPermissionLevel('Guest');
+        const defaultGuest = rolePresets['Guest'] || [];
+        setSavedGuestPermissions(defaultGuest);
         setForm({
             first_name: '',
             last_name: '',
             email: '',
             role: 'Anonymous',
             password: '',
-            permissions: rolePresets['Guest'] || [],
+            permissions: defaultGuest,
         });
         setAddModalOpen(true);
     };
@@ -109,13 +134,23 @@ export default function Users() {
         setSelectedUser(user);
         const level = determineLevel(user.permissions || []);
         setPermissionLevel(level);
+
+        // If the user is currently a Guest (custom permissions), save those as the "Guest" state.
+        // If they are Admin/Board, initialize Guest state with the default Guest preset.
+        const currentPerms = user.permissions || [];
+        if (level === 'Guest') {
+            setSavedGuestPermissions(currentPerms);
+        } else {
+            setSavedGuestPermissions(rolePresets['Guest'] || []);
+        }
+
         setForm({
             first_name: user.first_name || '',
             last_name: user.last_name || '',
             email: user.email || '',
             role: user.role || '',
             password: '',
-            permissions: user.permissions || [],
+            permissions: currentPerms,
         });
         setEditModalOpen(true);
     };
@@ -158,7 +193,7 @@ export default function Users() {
     };
 
     const renderUserForm = () => (
-        <div className="space-y-4 py-4">
+        <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="first-name">First Name</Label>
@@ -253,7 +288,7 @@ export default function Users() {
 
             {/* Granular Permissions - Only show if Guest is selected */}
             {permissionLevel === 'Guest' && (
-                <div className="max-h-[350px] animate-in space-y-4 overflow-y-auto rounded-md border bg-muted/20 p-3 duration-200 zoom-in-95 fade-in">
+                <div className="space-y-4 rounded-md border bg-muted/20 p-3 animate-in fade-in zoom-in-95 duration-200">
                     <Label className="text-xs text-muted-foreground uppercase">
                         Additional Permissions
                     </Label>
@@ -457,8 +492,9 @@ export default function Users() {
                                                 <Badge
                                                     variant="outline"
                                                     className={cn(
-                                                        'border-primary/30 bg-primary/10 font-normal',
+                                                        'border-primary/30 bg-primary/10 font-normal max-w-[400px] truncate block',
                                                     )}
+                                                    title={u.permission_display}
                                                 >
                                                     {u.permission_display}
                                                 </Badge>

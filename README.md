@@ -153,5 +153,8 @@ server {
 
 ## Live Demo
 https://laravel.danieljm.dpdns.org
+RBAC limited account:
+finance@esnleuven.be
+11111111
 
 https://store.danieljm.dpdns.org
