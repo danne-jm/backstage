@@ -1,16 +1,12 @@
 <?php
 
 use App\Models\Item;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 it('can increment item quantity', function () {
-    $user = User::factory()->create([
-        'email' => 'tester@example.com',
-        'permissions' => ['update_item', 'view_inventory'],
-    ]);
+    $user = $this->createUserWithPermissions(['update_item', 'view_inventory'], ['email' => 'tester@example.com']);
 
     $item = Item::create([
         'name' => 'Test Item',
@@ -31,10 +27,7 @@ it('can increment item quantity', function () {
 });
 
 it('can decrement item quantity', function () {
-    $user = User::factory()->create([
-        'email' => 'tester@example.com',
-        'permissions' => ['update_item', 'view_inventory'],
-    ]);
+    $user = $this->createUserWithPermissions(['update_item', 'view_inventory'], ['email' => 'tester@example.com']);
 
     $item = Item::create([
         'name' => 'Test Item',
@@ -55,10 +48,7 @@ it('can decrement item quantity', function () {
 });
 
 it('cannot decrement below zero', function () {
-    $user = User::factory()->create([
-        'email' => 'tester@example.com',
-        'permissions' => ['update_item', 'view_inventory'],
-    ]);
+    $user = $this->createUserWithPermissions(['update_item', 'view_inventory'], ['email' => 'tester@example.com']);
 
     $item = Item::create([
         'name' => 'Empty Item',

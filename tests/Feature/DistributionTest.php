@@ -4,7 +4,7 @@ use App\Models\User;
 
 it('returns json from distribution endpoint', function () {
     // create a user instance and act as them
-    $user = User::factory()->create(['permissions' => ['send_tickets']]);
+    $user = $this->createUserWithPermissions(['send_tickets']);
     $this->actingAs($user);
 
     $recipients = [

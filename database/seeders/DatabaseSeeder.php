@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\UserPermission;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -14,9 +13,38 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $allPermissions = [
+            'view_dashboard',
+            'view_office', 'create_office', 'update_office', 'delete_office',
+            'view_sellables', 'create_product', 'update_product', 'delete_product',
+            'create_event', 'update_event', 'delete_event',
+            'view_event_attendees', 'update_event_attendee',
+            'view_inventory', 'create_item', 'update_item', 'delete_item',
+            'view_store_manager',
+            'view_ticket_distributor', 'view_ticket_scanner', 'import_ticket', 'scan_tickets', 'send_tickets',
+            'view_mail_distributor',
+            'view_settings_profile', 'update_settings_profile', 'delete_account',
+            'view_settings_password', 'update_settings_password',
+            'view_settings_appearance',
+            'view_settings_google', 'update_settings_google',
+            'view_settings_2fa',
+            'view_settings_footer', 'update_settings_footer',
+            'view_settings_users', 'create_user', 'update_user', 'delete_user',
+            'manage_users'
+        ];
+
+        // Define Presets
+        $presets = [
+            'Administrator' => $allPermissions,
+            'Board' => array_diff($allPermissions, [
+                'delete_office', 'delete_product', 'delete_event', 'delete_item', 'delete_user',
+                'view_settings_users', 'create_user', 'update_user', 'delete_account'
+            ]),
+        ];
+
         // Get permissions from role presets (as arrays for Eloquent cast)
-        $adminPermissionsArray = UserPermission::rolePresets()['Administrator'];
-        $boardPermissionsArray = UserPermission::rolePresets()['Board'];
+        $adminPermissionsArray = array_values($presets['Administrator']);
+        $boardPermissionsArray = array_values($presets['Board']);
 
         // JSON encoded versions for raw upsert
         $adminPermissions = json_encode($adminPermissionsArray);

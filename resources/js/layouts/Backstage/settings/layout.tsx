@@ -37,7 +37,8 @@ function getSidebarNavItems(auth: any) {
     // Check if user has 'admin' in permissions array
     const permissions = auth?.user?.permissions || [];
     const hasAdminPermission =
-        Array.isArray(permissions) && permissions.includes('admin');
+        Array.isArray(permissions) &&
+        (permissions.includes('admin') || permissions.includes('manage_users'));
     if (hasAdminPermission) {
         items.push({
             title: 'Users',

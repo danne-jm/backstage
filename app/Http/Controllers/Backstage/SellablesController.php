@@ -4,9 +4,7 @@ namespace App\Http\Controllers\Backstage;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
-use App\Models\EventImage;
 use App\Models\Product;
-use App\Models\ProductImage;
 use App\Models\User;
 use App\Services\InventoryManagementService;
 use Illuminate\Http\Request;
@@ -76,7 +74,11 @@ class SellablesController extends Controller
 
         // Combine live/upcoming (all) then the first page of expired events
         $events = $liveEvents->concat($expiredEvents)->values();
-        $boardUsers = User::where('permissions', 'like', '%board%')->orderBy('first_name')->get(['id', 'first_name', 'last_name', 'email']);
+        try {
+            $boardUsers = User::role('Board')->orderBy('first_name')->get(['id', 'first_name', 'last_name', 'email']);
+        } catch (\Spatie\Permission\Exceptions\RoleDoesNotExist $e) {
+            $boardUsers = collect();
+        }
 
         return Inertia::render('Backstage/sellables', [
             'products' => $products,
@@ -134,6 +136,7 @@ class SellablesController extends Controller
             'remaining_with_card' => $event->remaining_with_card,
             'remaining_without_card' => $event->remaining_without_card,
             'is_online_sellable' => $event->is_online_sellable,
+            'image' => $event->image,
             'images_list' => $event->images_list,
             'instagram_link' => $event->instagram_link,
             'variants_config' => $hasVariants ? $event->variants_config : null,
@@ -233,12 +236,7 @@ class SellablesController extends Controller
         // Handle Image Uploads
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
-                $content = file_get_contents($file->getRealPath());
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_data' => $content,
-                    'mime_type' => $file->getMimeType(),
-                ]);
+                $product->addMedia($file)->toMediaCollection('images');
             }
         }
 
@@ -306,12 +304,7 @@ class SellablesController extends Controller
         // Handle Image Uploads (Append)
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
-                $content = file_get_contents($file->getRealPath());
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_data' => $content,
-                    'mime_type' => $file->getMimeType(),
-                ]);
+                $product->addMedia($file)->toMediaCollection('images');
             }
         }
 
@@ -319,7 +312,8 @@ class SellablesController extends Controller
         if ($request->has('deleted_images')) {
             $deletedIds = $request->input('deleted_images');
             if (is_array($deletedIds)) {
-                ProductImage::whereIn('id', $deletedIds)->where('product_id', $product->id)->delete();
+                // Use Spatie Media model to delete so files are removed from disk
+                \Spatie\MediaLibrary\MediaCollections\Models\Media::whereIn('id', $deletedIds)->get()->each->delete();
             }
         }
 
@@ -383,12 +377,7 @@ class SellablesController extends Controller
         // Handle Image Uploads
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
-                $content = file_get_contents($file->getRealPath());
-                EventImage::create([
-                    'event_id' => $event->id,
-                    'image_data' => $content,
-                    'mime_type' => $file->getMimeType(),
-                ]);
+                $event->addMedia($file)->toMediaCollection('images');
             }
         }
 
@@ -468,12 +457,7 @@ class SellablesController extends Controller
         // Handle Image Uploads (Append)
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
-                $content = file_get_contents($file->getRealPath());
-                EventImage::create([
-                    'event_id' => $event->id,
-                    'image_data' => $content,
-                    'mime_type' => $file->getMimeType(),
-                ]);
+                $event->addMedia($file)->toMediaCollection('images');
             }
         }
 
@@ -481,7 +465,8 @@ class SellablesController extends Controller
         if ($request->has('deleted_images')) {
             $deletedIds = $request->input('deleted_images');
             if (is_array($deletedIds)) {
-                EventImage::whereIn('id', $deletedIds)->where('event_id', $event->id)->delete();
+                // Use Spatie Media model to delete so files are removed from disk
+                \Spatie\MediaLibrary\MediaCollections\Models\Media::whereIn('id', $deletedIds)->get()->each->delete();
             }
         }
 
@@ -489,14 +474,14 @@ class SellablesController extends Controller
         \App\Events\SellableUpdated::dispatch($event);
     }
 
-    public function destroyImage(EventImage $image)
+    public function destroyImage(\Spatie\MediaLibrary\MediaCollections\Models\Media $image)
     {
         $image->delete();
 
         return back();
     }
 
-    public function destroyProductImage(ProductImage $image)
+    public function destroyProductImage(\Spatie\MediaLibrary\MediaCollections\Models\Media $image)
     {
         $image->delete();
 

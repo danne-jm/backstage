@@ -5,13 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Event extends Model
+class Event extends Model implements HasMedia
 {
-    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, LogsActivity;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, InteractsWithMedia, LogsActivity;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -77,6 +78,11 @@ class Event extends Model
         return $this->hasMany(Ticket::class);
     }
 
+    public function variants()
+    {
+        return $this->morphMany(SellableVariant::class, 'sellable');
+    }
+
     public function sales()
     {
         return $this->hasMany(OfficeShiftSale::class);
@@ -85,16 +91,6 @@ class Event extends Model
     public function onlineSales()
     {
         return $this->hasMany(OnlineSale::class);
-    }
-
-    public function images(): HasMany
-    {
-        return $this->hasMany(EventImage::class);
-    }
-
-    public function variants()
-    {
-        return $this->morphMany(SellableVariant::class, 'sellable');
     }
 
     /**
@@ -188,19 +184,15 @@ class Event extends Model
 
     public function getImageAttribute(): ?string
     {
-        // Only select id to avoid loading binary data
-        $firstImage = $this->images()->select('id', 'event_id')->first();
-
-        return $firstImage ? "/events/images/{$firstImage->id}" : null;
+        return $this->getFirstMediaUrl('images');
     }
 
     public function getImagesListAttribute(): array
     {
-        // Only select id to avoid loading binary data
-        return $this->images()->select('id', 'event_id')->get()->map(function ($img) {
+        return $this->getMedia('images')->map(function ($media) {
             return [
-                'id' => $img->id,
-                'url' => "/events/images/{$img->id}",
+                'id' => $media->id,
+                'url' => $media->getUrl(),
             ];
         })->toArray();
     }

@@ -1,17 +1,13 @@
 <?php
 
-use App\Enums\UserPermission;
 use App\Models\OfficeShift;
 use App\Models\Product;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
-    $this->user->permissions = [UserPermission::VIEW_OFFICE->value, UserPermission::UPDATE_OFFICE->value];
-    $this->user->save();
+    $this->user = $this->createUserWithPermissions(['view_office', 'update_office']);
     $this->actingAs($this->user);
 });
 

@@ -41,6 +41,7 @@ class StoreManagerController extends Controller
                 'remaining_without_card' => $p->remaining_without_card,
                 'is_online_sellable' => $p->is_online_sellable,
                 // New fields for Sellables UI
+                'image' => $p->image,
                 'images_list' => $p->images_list,
                 'variants_config' => $p->variants_config,
                 'instagram_link' => $p->instagram_link,
@@ -83,6 +84,7 @@ class StoreManagerController extends Controller
                     'is_online_sellable' => $e->is_online_sellable,
                     'responsible_user_id' => $e->responsible_user_id,
                     // New fields for Sellables UI
+                    'image' => $e->image,
                     'images_list' => $e->images_list,
                     'variants_config' => $e->variants_config,
                     'instagram_link' => $e->instagram_link,
@@ -124,9 +126,6 @@ class StoreManagerController extends Controller
         $pageSize = max(1, min(1000, (int) $request->query('pageSize', 100)));
 
         $baseQuery = OnlineSale::with(['product', 'event'])
-            ->whereHas('transaction', function ($q) {
-                $q->where('payment_status', 'completed');
-            })
             ->where('sold_at', '>=', $from);
 
         $onlineSalesTotal = (int) $baseQuery->count();
@@ -151,14 +150,18 @@ class StoreManagerController extends Controller
             })
             ->count();
 
-        $boardUsers = User::where('permissions', 'like', '%board%')
-            ->orderBy('first_name')
-            ->get(['id', 'first_name', 'last_name', 'email'])
-            ->map(fn ($u) => [
-                'id' => $u->id,
-                'name' => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
-                'email' => $u->email,
-            ]);
+        try {
+            $boardUsers = User::role('Board')
+                ->orderBy('first_name')
+                ->get(['id', 'first_name', 'last_name', 'email'])
+                ->map(fn ($u) => [
+                    'id' => $u->id,
+                    'name' => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
+                    'email' => $u->email,
+                ]);
+        } catch (\Spatie\Permission\Exceptions\RoleDoesNotExist $e) {
+            $boardUsers = [];
+        }
 
         return [
             'products' => $products,

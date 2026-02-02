@@ -17,7 +17,10 @@ class TicketingController extends Controller
     {
         $events = [];
         try {
-            $events = Event::query()->orderBy('start_sell_date')->get();
+            $events = \Spatie\QueryBuilder\QueryBuilder::for(Event::class)
+                ->allowedSorts(['name', 'event_date', 'start_sell_date'])
+                ->defaultSort('start_sell_date')
+                ->get();
         } catch (\Throwable $e) {
             // If the Event model/table isn't available yet (during some dev workflows),
             // fall back to an empty array to keep the page rendering.

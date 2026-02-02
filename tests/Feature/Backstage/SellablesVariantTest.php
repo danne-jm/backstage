@@ -3,7 +3,6 @@
 namespace Tests\Feature\Backstage;
 
 use App\Models\Product;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,7 +18,7 @@ class SellablesVariantTest extends TestCase
 
     public function test_switching_from_variants_to_simple_cap_preserves_variants()
     {
-        $user = User::factory()->create(['permissions' => ['create_product', 'update_product', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['create_product', 'update_product', 'view_sellables']);
 
         // 1. Create product with variants
         $variantsConfig = [
@@ -73,7 +72,7 @@ class SellablesVariantTest extends TestCase
 
     public function test_switching_from_variants_to_variable_amount_preserves_variants()
     {
-        $user = User::factory()->create(['permissions' => ['create_product', 'update_product', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['create_product', 'update_product', 'view_sellables']);
 
         // 1. Create product with variants
         $this->actingAs($user)
@@ -118,7 +117,7 @@ class SellablesVariantTest extends TestCase
 
     public function test_switching_from_simple_cap_to_variants_creates_variants()
     {
-        $user = User::factory()->create(['permissions' => ['create_product', 'update_product', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['create_product', 'update_product', 'view_sellables']);
 
         // 1. Create product with simple cap
         $this->actingAs($user)
@@ -168,7 +167,7 @@ class SellablesVariantTest extends TestCase
 
     public function test_online_store_does_not_display_variants_when_switched_to_simple_cap()
     {
-        $user = User::factory()->create(['permissions' => ['create_product', 'update_product', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['create_product', 'update_product', 'view_sellables']);
 
         // 1. Create product with variants and make it online sellable
         $this->actingAs($user)

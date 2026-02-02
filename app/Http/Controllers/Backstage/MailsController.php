@@ -21,25 +21,18 @@ class MailsController extends Controller
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
-        $query = Mail::with(['user', 'event'])->orderBy('created_at', 'desc');
-
-        if ($request->filled('event_id')) {
-            $query->where('event_id', $request->event_id);
-        }
-
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        if ($request->filled('start_date')) {
-            $query->where('created_at', '>=', $request->start_date);
-        }
-
-        if ($request->filled('end_date')) {
-            $query->where('created_at', '<=', $request->end_date);
-        }
-
-        $mails = $query->paginate(110)->withQueryString();
+        $mails = \Spatie\QueryBuilder\QueryBuilder::for(Mail::class)
+            ->with(['user', 'event'])
+            ->allowedFilters([
+                'event_id',
+                'user_id',
+                \Spatie\QueryBuilder\AllowedFilter::callback('start_date', fn ($query, $value) => $query->where('created_at', '>=', $value)),
+                \Spatie\QueryBuilder\AllowedFilter::callback('end_date', fn ($query, $value) => $query->where('created_at', '<=', $value)),
+            ])
+            ->defaultSort('-created_at')
+            ->allowedSorts(['created_at', 'subject'])
+            ->paginate(110)
+            ->withQueryString();
 
         return Inertia::render('Backstage/mails', [
             'mails' => $mails,

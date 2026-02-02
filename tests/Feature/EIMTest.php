@@ -12,39 +12,6 @@ class EIMTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_permission_expansion()
-    {
-        $user = User::factory()->create([
-            'permissions' => ['board'],
-        ]);
-
-        $expanded = $user->getExpandedPermissions();
-
-        // Check if granular permissions are present
-        $this->assertContains('view_dashboard', $expanded);
-        $this->assertContains('create_event', $expanded);
-        $this->assertContains('board', $expanded);
-    }
-
-    public function test_administrator_permissions()
-    {
-        $user = User::factory()->create([
-            'permissions' => ['administrator'],
-            'email_verified_at' => now(),
-        ]);
-
-        $expanded = $user->getExpandedPermissions();
-
-        // Administrator should have all permissions explicitly
-        $this->assertContains('view_dashboard', $expanded);
-        $this->assertContains('create_user', $expanded);
-        $this->assertContains('delete_office', $expanded);
-
-        // Verify access to a protected route
-        $response = $this->actingAs($user)->get('/dashboard');
-        $response->assertStatus(200);
-    }
-
     public function test_activity_logging_on_user_update()
     {
         $user = User::factory()->create();
@@ -74,8 +41,10 @@ class EIMTest extends TestCase
         // Note: RefreshDatabase might clear logs, so we check after login.
 
         // Disable 2FA so we don't get redirected to challenge
-        $user = User::factory()->withoutTwoFactor()->create([
-            'permissions' => ['guest'],
+        $user = $this->createUserWithPermissions(['guest'], [
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
             'password' => 'password',
         ]);
 

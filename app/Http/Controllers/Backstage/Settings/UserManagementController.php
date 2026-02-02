@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Backstage\Settings;
 
-use App\Enums\UserPermission;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -11,6 +10,7 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class UserManagementController extends Controller implements HasMiddleware
 {
@@ -30,43 +30,38 @@ class UserManagementController extends Controller implements HasMiddleware
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $permissions = $user ? $user->permissions : [];
 
-        // Check for 'admin' OR 'manage_users'
-        if (! $user || (! in_array('admin', $permissions) && ! in_array('manage_users', $permissions))) {
+        // Authorization
+        if (! $user || (! $user->can('manage_users') && ! $user->hasRole('Administrator'))) {
             abort(403, 'Unauthorized');
         }
 
-        $presets = UserPermission::rolePresets();
+        // Get Permissions
+        $allPermissions = \Spatie\Permission\Models\Permission::all();
+        $availablePermissions = $allPermissions->map(function ($p) {
+            return ['value' => $p->name, 'label' => ucwords(str_replace('_', ' ', $p->name))];
+        })->values()->toArray();
 
-        $users = User::all()->map(function ($u) use ($presets) {
-            // Determine permission display label
-            $currentPerms = $u->permissions ?? [];
-            sort($currentPerms);
+        // Get Presets from Roles
+        $roles = \Spatie\Permission\Models\Role::with('permissions')->get();
+        $presets = [];
+        foreach ($roles as $role) {
+            $presets[$role->name] = $role->permissions->pluck('name')->toArray();
+        }
 
-            $permissionDisplay = null;
+        $users = User::with('roles', 'permissions')->get()->map(function ($u) {
+            $roles = $u->getRoleNames();
 
-            // Check against Admin/Board exact matches
-            foreach (['Administrator', 'Board'] as $presetName) {
-                $presetPerms = $presets[$presetName] ?? [];
-                sort($presetPerms);
-                if ($currentPerms == $presetPerms) {
-                    $permissionDisplay = $presetName;
-                    break;
-                }
-            }
-
-            // If no match (or Guest), build the custom string
-            if (! $permissionDisplay) {
-                // Filter out the 'guest' and 'view_dashboard' tags to just show the "extra" stuff
-                $extras = array_filter($currentPerms, fn ($p) => ! in_array($p, ['guest', 'view_dashboard']));
-
-                // Human readable labels for extras
-                $extraLabels = array_map(function ($val) {
-                    return UserPermission::tryFrom($val)?->label() ?? $val;
-                }, $extras);
-
-                $permissionDisplay = '[Guest] '.(empty($extraLabels) ? '' : implode(', ', $extraLabels));
+            if ($roles->isNotEmpty()) {
+                $display = $roles->join(', ');
+            } else {
+                // Guests: show list of direct permissions
+                // Use the simplified permission names (e.g. 'view_dashboard' -> 'View Dashboard')? 
+                // The prompt says "showcase all individual selected permissions". 
+                // Let's keep raw names or formatted. Raw names are clearer for debugging, but user might prefer formatted. 
+                // Existing code used raw names joined. Let's stick to that but cleaner.
+                $direct = $u->getDirectPermissions()->pluck('name');
+                $display = $direct->isEmpty() ? 'No permissions' : $direct->join(', ');
             }
 
             return [
@@ -74,15 +69,15 @@ class UserManagementController extends Controller implements HasMiddleware
                 'first_name' => $u->first_name ?? '',
                 'last_name' => $u->last_name ?? '',
                 'email' => $u->email ?? '',
-                'role' => $u->role ?? '', // Use as Job Title/Description
-                'permissions' => $u->permissions ?? [],
-                'permission_display' => $permissionDisplay,
+                'role' => $u->role ?? '',
+                'permissions' => $u->getAllPermissions()->pluck('name')->toArray(),
+                'permission_display' => $display,
             ];
         });
 
         return Inertia::render('Backstage/settings/users', [
             'users' => $users,
-            'availablePermissions' => UserPermission::allWithLabels(),
+            'availablePermissions' => $availablePermissions,
             'rolePresets' => $presets,
         ]);
     }
@@ -107,7 +102,7 @@ class UserManagementController extends Controller implements HasMiddleware
         $data['password_hash'] = Hash::make($data['password']);
         unset($data['password']);
 
-        // Extract privileged fields before mass assignment
+        // Extract permissions
         $permissions = $data['permissions'] ?? [];
         $role = isset($data['role']) ? trim((string) $data['role']) : '';
         if ($role === '') {
@@ -115,13 +110,13 @@ class UserManagementController extends Controller implements HasMiddleware
         }
         unset($data['permissions'], $data['role']);
 
-        // Create user with safe fields only, then forceFill privileged fields
         $user = User::create($data);
         $user->forceFill([
-            'permissions' => $permissions,
             'role' => $role,
-            'password_hash' => $data['password_hash'], // Ensure password is persisted
+            'password_hash' => $data['password_hash'],
         ])->save();
+
+        $user->syncPermissions($permissions);
 
         return back();
     }
@@ -142,6 +137,7 @@ class UserManagementController extends Controller implements HasMiddleware
             'password' => 'nullable|string|min:8',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string',
+            'permission_level' => 'nullable|string|in:Administrator,Board,Guest',
         ]);
 
         if (! empty($data['password'])) {
@@ -149,12 +145,11 @@ class UserManagementController extends Controller implements HasMiddleware
         }
         unset($data['password']);
 
-        // Extract privileged fields before mass assignment
         $permissions = $data['permissions'] ?? null;
         $role = $data['role'] ?? null;
-        unset($data['permissions'], $data['role']);
+        $permissionLevel = $data['permission_level'] ?? null;
+        unset($data['permissions'], $data['role'], $data['permission_level']);
 
-        // Update safe fields via mass assignment
         $target->update($data);
 
         $privilegedUpdates = [];
@@ -164,9 +159,6 @@ class UserManagementController extends Controller implements HasMiddleware
         if (isset($data['password_hash'])) {
             $privilegedUpdates['password_hash'] = $data['password_hash'];
         }
-        if ($permissions !== null) {
-            $privilegedUpdates['permissions'] = $permissions;
-        }
 
         if (! empty($privilegedUpdates)) {
             $target->forceFill($privilegedUpdates);
@@ -174,6 +166,22 @@ class UserManagementController extends Controller implements HasMiddleware
 
         if ($target->isDirty()) {
             $target->save();
+        }
+
+        // Sync Spatie roles based on permission_level
+        if ($permissionLevel !== null) {
+            if ($permissionLevel === 'Administrator') {
+                $target->syncRoles(['Administrator']);
+            } elseif ($permissionLevel === 'Board') {
+                $target->syncRoles(['Board']);
+            } else {
+                // Guest - remove all roles
+                $target->syncRoles([]);
+            }
+        }
+
+        if ($permissions !== null) {
+            $target->syncPermissions($permissions);
         }
 
         return back();
@@ -194,8 +202,7 @@ class UserManagementController extends Controller implements HasMiddleware
     private function authorizeAdmin($request)
     {
         $user = $request->user();
-        $permissions = $user ? $user->permissions : [];
-        if (! $user || (! in_array('admin', $permissions) && ! in_array('manage_users', $permissions))) {
+        if (! $user || (! $user->can('manage_users') && ! $user->hasRole('Administrator'))) {
             abort(403, 'Unauthorized');
         }
     }

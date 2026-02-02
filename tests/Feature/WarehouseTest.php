@@ -1,13 +1,9 @@
 <?php
 
 use App\Models\Item;
-use App\Models\User;
 
 it('creates an item and sets last_modified and changed_by', function () {
-    $user = User::factory()->create([
-        'email' => 'tester@example.com',
-        'permissions' => ['create_item', 'view_inventory'],
-    ]);
+    $user = $this->createUserWithPermissions(['create_item', 'view_inventory'], ['email' => 'tester@example.com']);
 
     $this->actingAs($user)
         ->post(route('warehouse.items.store'), [
@@ -29,10 +25,7 @@ it('creates an item and sets last_modified and changed_by', function () {
 });
 
 it('can update an item', function () {
-    $user = User::factory()->create([
-        'email' => 'editor@example.com',
-        'permissions' => ['update_item', 'view_inventory'],
-    ]);
+    $user = $this->createUserWithPermissions(['update_item', 'view_inventory'], ['email' => 'editor@example.com']);
 
     $item = Item::create([
         'name' => 'Original Name',
@@ -59,10 +52,7 @@ it('can update an item', function () {
 });
 
 it('can delete an item', function () {
-    $user = User::factory()->create([
-        'email' => 'deleter@example.com',
-        'permissions' => ['delete_item', 'view_inventory'],
-    ]);
+    $user = $this->createUserWithPermissions(['delete_item', 'view_inventory'], ['email' => 'deleter@example.com']);
 
     $item = Item::create([
         'name' => 'To Delete',

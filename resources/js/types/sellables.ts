@@ -14,6 +14,7 @@ export interface Product {
     id: number;
     type: 'product';
     name: string;
+    image: string | null;
     description: string | null;
     price: number;
     quantity?: number | null;
@@ -37,6 +38,7 @@ export interface Event {
     id: number;
     type: 'event';
     name: string;
+    image: string | null;
     description: string | null;
     event_date: string;
     start_sell_date: string;

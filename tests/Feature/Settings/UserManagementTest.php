@@ -19,7 +19,7 @@ class UserManagementTest extends TestCase
 
     public function test_admin_can_view_user_list()
     {
-        $admin = User::factory()->create(['permissions' => ['view_settings_users', 'manage_users']]);
+        $admin = $this->createUserWithPermissions(['view_settings_users', 'manage_users']);
 
         $this->actingAs($admin)
             ->withSession(['auth.password_confirmed_at' => time()])
@@ -32,7 +32,8 @@ class UserManagementTest extends TestCase
 
     public function test_admin_can_create_user()
     {
-        $admin = User::factory()->create(['permissions' => ['create_user', 'view_settings_users', 'manage_users']]);
+        $admin = $this->createUserWithPermissions(['create_user', 'view_settings_users', 'manage_users']);
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'view_office']);
 
         $this->actingAs($admin)
             ->post('http://localhost/settings/users', [
@@ -50,13 +51,15 @@ class UserManagementTest extends TestCase
         ]);
 
         $newUser = User::where('email', 'new@example.com')->first();
-        $this->assertTrue(in_array('view_office', $newUser->permissions));
+        $this->assertTrue($newUser->hasPermissionTo('view_office'));
     }
 
     public function test_admin_can_update_user_permissions()
     {
-        $admin = User::factory()->create(['permissions' => ['update_user', 'view_settings_users', 'manage_users']]);
-        $targetUser = User::factory()->create(['permissions' => []]);
+        $admin = $this->createUserWithPermissions(['update_user', 'view_settings_users', 'manage_users']);
+        $targetUser = $this->createUserWithPermissions([]);
+
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'view_office']);
 
         $this->actingAs($admin)
             ->patch("http://localhost/settings/users/{$targetUser->id}", [
@@ -68,13 +71,13 @@ class UserManagementTest extends TestCase
             ->assertRedirect();
 
         $targetUser->refresh();
-        $this->assertTrue(in_array('view_office', $targetUser->permissions));
+        $this->assertTrue($targetUser->hasPermissionTo('view_office'));
         $this->assertEquals('Updated', $targetUser->first_name);
     }
 
     public function test_non_admin_cannot_access_user_management()
     {
-        $user = User::factory()->create(['permissions' => []]); // No permissions
+        $user = $this->createUserWithPermissions([]); // No permissions
 
         $this->actingAs($user)
             ->get('http://localhost/settings/users')

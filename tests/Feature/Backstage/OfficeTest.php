@@ -3,7 +3,6 @@
 namespace Tests\Feature\Backstage;
 
 use App\Models\OfficeShift;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -21,7 +20,7 @@ class OfficeTest extends TestCase
 
     public function test_office_dashboard_can_be_rendered()
     {
-        $user = User::factory()->create(['permissions' => ['view_office']]);
+        $user = $this->createUserWithPermissions(['view_office']);
 
         $this->actingAs($user)
             ->get('http://localhost/office')
@@ -33,7 +32,7 @@ class OfficeTest extends TestCase
 
     public function test_user_can_start_a_shift()
     {
-        $user = User::factory()->create(['permissions' => ['view_office', 'create_office']]);
+        $user = $this->createUserWithPermissions(['view_office', 'create_office']);
 
         $response = $this->actingAs($user)
             ->post('http://localhost/office/start', ['initial_cash' => 100.00]);
@@ -52,7 +51,7 @@ class OfficeTest extends TestCase
 
     public function test_user_can_end_a_shift()
     {
-        $user = User::factory()->create(['permissions' => ['view_office', 'create_office', 'update_office']]);
+        $user = $this->createUserWithPermissions(['view_office', 'create_office', 'update_office']);
         $shift = OfficeShift::create([
             'started_by' => $user->id,
             'started_at' => now(),

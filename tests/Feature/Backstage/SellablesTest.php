@@ -23,7 +23,7 @@ class SellablesTest extends TestCase
 
     public function test_can_view_sellables_page()
     {
-        $user = User::factory()->create(['permissions' => ['view_sellables']]);
+        $user = $this->createUserWithPermissions(['view_sellables']);
 
         $this->actingAs($user)
             ->get(route('sellables'))
@@ -35,7 +35,7 @@ class SellablesTest extends TestCase
 
     public function test_can_create_product()
     {
-        $user = User::factory()->create(['permissions' => ['create_product', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['create_product', 'view_sellables']);
 
         $this->actingAs($user)
             ->post(route('sellables.products.store'), [
@@ -54,7 +54,7 @@ class SellablesTest extends TestCase
 
     public function test_can_update_product()
     {
-        $user = User::factory()->create(['permissions' => ['update_product', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['update_product', 'view_sellables']);
         $product = Product::factory()->create([
             'name' => 'Old Name',
             'price' => 5.00,
@@ -88,7 +88,7 @@ class SellablesTest extends TestCase
 
     public function test_can_delete_product()
     {
-        $user = User::factory()->create(['permissions' => ['delete_product', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['delete_product', 'view_sellables']);
         $product = Product::factory()->create();
 
         $this->actingAs($user)
@@ -102,7 +102,7 @@ class SellablesTest extends TestCase
 
     public function test_can_create_event()
     {
-        $user = User::factory()->create(['permissions' => ['create_event', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['create_event', 'view_sellables']);
         $responsible = User::factory()->create();
 
         $this->actingAs($user)
@@ -127,7 +127,7 @@ class SellablesTest extends TestCase
 
     public function test_can_update_event()
     {
-        $user = User::factory()->create(['permissions' => ['update_event', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['update_event', 'view_sellables']);
         $event = Event::factory()->create();
         $responsible = User::factory()->create();
 
@@ -154,7 +154,7 @@ class SellablesTest extends TestCase
 
     public function test_can_delete_event()
     {
-        $user = User::factory()->create(['permissions' => ['delete_event', 'view_sellables']]);
+        $user = $this->createUserWithPermissions(['delete_event', 'view_sellables']);
         $event = Event::factory()->create();
 
         $this->actingAs($user)

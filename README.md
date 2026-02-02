@@ -151,10 +151,15 @@ server {
 
 ---
 
-## Live Demo
+## Live Demos
+### Backstage
 https://laravel.danieljm.dpdns.org
+
 RBAC limited account:
+
 finance@esnleuven.be
+
 11111111
 
+### Store
 https://store.danieljm.dpdns.org

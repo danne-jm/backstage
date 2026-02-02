@@ -163,7 +163,10 @@ export default function Users() {
     const handleSubmit = (e: any) => {
         e.preventDefault();
         const isEdit = !!selectedUser;
-        const payload = { ...form };
+        const payload = {
+            ...form,
+            permission_level: permissionLevel, // Send the selected permission level to backend
+        };
 
         if (isEdit) {
             router.patch(`/settings/users/${selectedUser.id}`, payload, {
@@ -496,7 +499,13 @@ export default function Users() {
                                                     )}
                                                     title={u.permission_display}
                                                 >
-                                                    {u.permission_display}
+                                                    {(() => {
+                                                        const level = determineLevel(u.permissions || []);
+                                                        if (level === 'Guest') {
+                                                            return `Guest: ${u.permission_display}`;
+                                                        }
+                                                        return level;
+                                                    })()}
                                                 </Badge>
                                             </td>
                                             <td className="p-3">

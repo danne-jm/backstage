@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Backstage\Settings;
 
-use App\Enums\UserPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -11,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class ProfileController extends Controller
 {
@@ -20,35 +21,34 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
-        $presets = UserPermission::rolePresets();
 
-        $currentPerms = $user->permissions ?? [];
-        sort($currentPerms);
+        // Get Permissions
+        $allPermissions = Permission::all();
+        $availablePermissions = $allPermissions->map(function ($p) {
+            return ['value' => $p->name, 'label' => ucwords(str_replace('_', ' ', $p->name))];
+        })->values()->toArray();
 
-        $permissionDisplay = null;
-        foreach (['Administrator', 'Board'] as $presetName) {
-            $presetPerms = $presets[$presetName] ?? [];
-            sort($presetPerms);
-            if ($currentPerms == $presetPerms) {
-                $permissionDisplay = $presetName;
-                break;
-            }
+        // Get Presets from Roles
+        $roles = Role::with('permissions')->get();
+        $presets = [];
+        foreach ($roles as $role) {
+            $presets[$role->name] = $role->permissions->pluck('name')->toArray();
         }
 
-        if (! $permissionDisplay) {
-            $extras = array_filter($currentPerms, fn ($p) => ! in_array($p, ['guest', 'view_dashboard']));
-            $extraLabels = array_map(function ($val) {
-                return UserPermission::tryFrom($val)?->label() ?? $val;
-            }, $extras);
-
-            $permissionDisplay = '[Guest] '.(empty($extraLabels) ? '' : implode(', ', $extraLabels));
+        $userRoles = $user->getRoleNames();
+        
+        if ($userRoles->isNotEmpty()) {
+            $permissionDisplay = $userRoles->join(', ');
+        } else {
+            $direct = $user->getDirectPermissions()->pluck('name');
+            $permissionDisplay = $direct->isEmpty() ? 'No permissions' : $direct->join(', ');
         }
 
         return Inertia::render('Backstage/settings/profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             // Pass available permissions and presets so the frontend can render the same preview string
-            'availablePermissions' => UserPermission::allWithLabels(),
+            'availablePermissions' => $availablePermissions,
             'rolePresets' => $presets,
             'permission_display' => $permissionDisplay,
         ]);

@@ -4,14 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Product extends Model
+class Product extends Model implements HasMedia
 {
     use HasFactory;
     use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids;
+    use InteractsWithMedia;
     use LogsActivity;
 
     public function getActivitylogOptions(): LogOptions
@@ -39,6 +41,11 @@ class Product extends Model
         ];
     }
 
+    public function variants()
+    {
+        return $this->morphMany(SellableVariant::class, 'sellable');
+    }
+
     public function sales()
     {
         return $this->hasMany(OfficeShiftSale::class);
@@ -49,31 +56,17 @@ class Product extends Model
         return $this->hasMany(OnlineSale::class);
     }
 
-    public function images(): HasMany
-    {
-        return $this->hasMany(ProductImage::class);
-    }
-
-    public function variants()
-    {
-        return $this->morphMany(SellableVariant::class, 'sellable');
-    }
-
     public function getImageAttribute(): ?string
     {
-        // Only select id to avoid loading binary data
-        $firstImage = $this->images()->select('id', 'product_id')->first();
-
-        return $firstImage ? "/products/images/{$firstImage->id}" : null;
+        return $this->getFirstMediaUrl('images');
     }
 
     public function getImagesListAttribute(): array
     {
-        // Only select id to avoid loading binary data
-        return $this->images()->select('id', 'product_id')->get()->map(function ($img) {
+        return $this->getMedia('images')->map(function ($media) {
             return [
-                'id' => $img->id,
-                'url' => "/products/images/{$img->id}",
+                'id' => $media->id,
+                'url' => $media->getUrl(),
             ];
         })->toArray();
     }

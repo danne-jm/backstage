@@ -8,7 +8,6 @@ use App\Http\Requests\UpdateItemRequest;
 use App\Models\Item;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -78,24 +77,17 @@ class ItemController extends Controller
         $data['last_modified'] = now();
         $data['changed_by'] = optional($request->user())->email;
 
-        // handle optional image upload
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $path = $file->store('items', 'public');
-            $data['image'] = $path;
-
-            // Compress and store a thumbnail as data URI for faster page loads
-            try {
-                $this->createCompressedThumbnail($file, $data);
-                $data['compressed'] = true;
-            } catch (\Throwable $e) {
-                // if encoding to DB fails, continue without image_data
-                $data['image_data'] = null;
-                $data['compressed'] = false;
-            }
-        }
+        // Reset legacy image fields
+        $data['image'] = null;
+        $data['image_data'] = null;
+        $data['compressed'] = false;
 
         $item = Item::create($data);
+
+        // handle optional image upload via Media Library
+        if ($request->hasFile('image')) {
+            $item->addMedia($request->file('image'))->toMediaCollection('images');
+        }
 
         \App\Events\InventoryUpdated::dispatch($item->id, 'item_created', $item->quantity, null, null, $item->toArray());
 
@@ -110,9 +102,7 @@ class ItemController extends Controller
 
         // handle explicit remove image request
         if ($request->boolean('remove_image')) {
-            if ($item->image) {
-                Storage::disk('public')->delete($item->image);
-            }
+            $item->clearMediaCollection('images');
             $data['image'] = null;
             $data['image_data'] = null;
             $data['compressed'] = false;
@@ -120,23 +110,19 @@ class ItemController extends Controller
 
         // handle optional image upload; replace existing image if provided
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $path = $file->store('items', 'public');
-            // delete old image if present
-            if ($item->image) {
-                Storage::disk('public')->delete($item->image);
-            }
-            $data['image'] = $path;
-            // Compress and store a thumbnail as data URI for faster page loads
-            try {
-                $this->createCompressedThumbnail($file, $data);
-                $data['compressed'] = true;
-            } catch (\Throwable $e) {
-                $data['image_data'] = null;
-                $data['compressed'] = false;
-            }
-            // ensure remove flag is reset
+            $item->clearMediaCollection('images');
+            $item->addMedia($request->file('image'))->toMediaCollection('images');
+
+            $data['image'] = null; // Ensure we don't save file object to DB
+            $data['image_data'] = null;
+            $data['compressed'] = false;
             $data['remove_image'] = false;
+        } else {
+            // If no new image, validation might still pass 'image' as null?
+            // Just ensuring we don't mess up legacy columns if we are keeping them for now
+            if (isset($data['image'])) {
+                unset($data['image']);
+            }
         }
 
         $item->update($data);
@@ -183,10 +169,6 @@ class ItemController extends Controller
 
     public function destroy(Request $request, Item $item): RedirectResponse
     {
-        // delete stored file if present
-        if ($item->image) {
-            Storage::disk('public')->delete($item->image);
-        }
         $item->delete();
 
         \App\Events\InventoryUpdated::dispatch($item->id, 'item_deleted', 0);

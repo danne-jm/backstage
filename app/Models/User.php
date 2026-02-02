@@ -9,11 +9,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, \Illuminate\Database\Eloquent\Concerns\HasUlids, Notifiable, TwoFactorAuthenticatable;
 
     use \Spatie\Activitylog\Traits\LogsActivity;
 
@@ -22,7 +23,7 @@ class User extends Authenticatable
         return \Spatie\Activitylog\LogOptions::defaults()
             ->logOnly([
                 'role',
-                'permissions',
+                'legacy_permissions',
                 'email',
                 'first_name',
                 'last_name',
@@ -46,7 +47,7 @@ class User extends Authenticatable
         'last_name',
         'email',
         // SECURITY: 'password_hash', 'gmail_refresh_token', 'gmail_provider_id', 'gmail_provider_email'
-        // and 'permissions'/'role' are intentionally NOT fillable to prevent Mass Assignment vulnerability.
+        // and 'legacy_permissions'/'role' are intentionally NOT fillable to prevent Mass Assignment vulnerability.
         // Use forceFill() in controllers to set these fields.
         'pinned',
         'last_seen_at',
@@ -69,7 +70,7 @@ class User extends Authenticatable
             {"title":"Linktree","href":"https://linktr.ee/esnleuven","icon":"TreeDeciduous"}
         ]',
         // Default permissions assigned to newly created users. Stored as JSON array and cast to array.
-        'permissions' => '["guest"]',
+        'legacy_permissions' => '["guest"]',
         // Default role for new users when none is provided
         'role' => 'Anonymous',
     ];
@@ -97,7 +98,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
-            'permissions' => 'array',
+            'legacy_permissions' => 'array',
             'role' => 'string',
             'pinned' => 'array',
             'last_seen_at' => 'datetime',
@@ -136,37 +137,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all permissions for the user, expanding any "Permission Levels"
-     * (e.g. 'administrator', 'board') into their granular permissions.
-     *
-     * @return array<string>
+     * @deprecated Use $this->can() or $this->hasPermissionTo() instead.
      */
-    public function getExpandedPermissions(): array
+    public function hasPermission($permission): bool
     {
-        $permissions = $this->permissions ?? [];
-        $expanded = [];
-        $levels = config('permissions.levels', []);
-
-        foreach ($permissions as $permission) {
-            // If the permission is a "Level" (group), add all its sub-permissions
-            if (isset($levels[$permission])) {
-                $expanded = array_merge($expanded, $levels[$permission]);
-            }
-
-            // Always add the permission itself (e.g. 'view_dashboard' or 'board')
-            // This ensures we keep the original tag too.
-            $expanded[] = $permission;
-        }
-
-        return array_unique($expanded);
-    }
-
-    /**
-     * Check if the user has a specific permission.
-     */
-    public function hasPermission(string $permission): bool
-    {
-        return in_array($permission, $this->getExpandedPermissions());
+        return $this->can($permission instanceof \App\Enums\UserPermission ? $permission->value : $permission);
     }
 
     /**

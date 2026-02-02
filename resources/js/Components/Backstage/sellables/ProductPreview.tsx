@@ -27,6 +27,8 @@ interface ProductPreviewProps {
     ) => void;
 }
 
+import { ImageIcon } from 'lucide-react';
+
 export function ProductPreview({
     product,
     onEdit,
@@ -38,16 +40,31 @@ export function ProductPreview({
     onSetOnline,
 }: ProductPreviewProps) {
     return (
-        <div className="relative rounded-lg border p-4">
-            <div>
+        <div className="relative flex gap-4 rounded-lg border p-4">
+            {/* Image Thumbnail - Hidden on mobile/small screens */}
+            <div className="hidden h-20 w-20 shrink-0 overflow-hidden rounded-md border bg-muted/50 sm:block">
+                {product.image ? (
+                    <img
+                        src={product.image}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                    />
+                ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground/50">
+                        <ImageIcon className="h-8 w-8" />
+                    </div>
+                )}
+            </div>
+
+            <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between">
                     <h3
                         className={cn(
                             'font-medium',
                             variant === 'store-manager' &&
-                                isOnline &&
-                                product.name.length >= 26 &&
-                                'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                            isOnline &&
+                            product.name.length >= 26 &&
+                            'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
                         )}
                     >
                         {product.name}
@@ -95,7 +112,7 @@ export function ProductPreview({
                 <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         {product.variants_config &&
-                        product.variants_config.length > 0 ? (
+                            product.variants_config.length > 0 ? (
                             <>
                                 <span className="text-muted-foreground">
                                     Configurable by:
@@ -105,8 +122,8 @@ export function ProductPreview({
                                         .map((vc) => vc.name)
                                         .join(', ')}
                                 </span>
-                                {/* Variants Matrix or List */}
-                                <div className="mt-2">
+                                {/* Variants Matrix - Hidden on mobile/small screens */}
+                                <div className="mt-2 hidden md:block">
                                     {variant === 'store-manager' ? null : ( // Store Manager: Hide details, just show "Variants: Size, Color" (already shown above)
                                         // Sellables: Show Matrix or List
                                         <VariantsMatrix product={product} />
@@ -119,46 +136,46 @@ export function ProductPreview({
                                     Qty w/ ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_with_card ||
-                                product.quantity_with_card == null
+                                    product.quantity_with_card == null
                                     ? 'Unlimited'
                                     : product.quantity_with_card}
                                 {product.unlimited_quantity_with_card ||
-                                product.quantity_with_card == null
+                                    product.quantity_with_card == null
                                     ? false
                                     : product.remaining_with_card !==
-                                          undefined &&
-                                      product.remaining_with_card !== null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {
-                                                  product.remaining_with_card
-                                              }{' '}
-                                              remain
-                                          </span>
-                                      )}{' '}
+                                    undefined &&
+                                    product.remaining_with_card !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {
+                                                product.remaining_with_card
+                                            }{' '}
+                                            remain
+                                        </span>
+                                    )}{' '}
                                 |{' '}
                                 <span className="text-muted-foreground">
                                     w/o ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_without_card ||
-                                product.quantity_without_card == null
+                                    product.quantity_without_card == null
                                     ? 'Unlimited'
                                     : product.quantity_without_card}
                                 {product.unlimited_quantity_without_card ||
-                                product.quantity_without_card == null
+                                    product.quantity_without_card == null
                                     ? false
                                     : product.remaining_without_card !==
-                                          undefined &&
-                                      product.remaining_without_card !==
-                                          null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {
-                                                  product.remaining_without_card
-                                              }{' '}
-                                              remain
-                                          </span>
-                                      )}
+                                    undefined &&
+                                    product.remaining_without_card !==
+                                    null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {
+                                                product.remaining_without_card
+                                            }{' '}
+                                            remain
+                                        </span>
+                                    )}
                             </>
                         ) : (
                             <>
@@ -166,19 +183,19 @@ export function ProductPreview({
                                     Quantity:
                                 </span>{' '}
                                 {product.unlimited_quantity ||
-                                product.quantity == null
+                                    product.quantity == null
                                     ? 'Unlimited'
                                     : product.quantity}
                                 {product.unlimited_quantity ||
-                                product.quantity == null
+                                    product.quantity == null
                                     ? false
                                     : product.remaining !== undefined &&
-                                      product.remaining !== null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {product.remaining} remain
-                                          </span>
-                                      )}
+                                    product.remaining !== null && (
+                                        <span className="text-gray-500">
+                                            {' '}
+                                            | {product.remaining} remain
+                                        </span>
+                                    )}
                             </>
                         )}
                     </div>
@@ -205,35 +222,35 @@ export function ProductPreview({
                         </div>
                     )}
                 </div>
-            </div>
-            {/* Delete dialog (kept out of flow) */}
-            {variant === 'sellables' && onDelete && setProductToDelete && (
-                <Dialog
-                    open={productToDelete === product.id}
-                    onOpenChange={(open) => !open && setProductToDelete(null)}
-                >
-                    <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
-                        <DialogTitle>Delete Product</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete "{product.name}"?
-                            This action cannot be undone.
-                        </DialogDescription>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="ghost">Cancel</Button>
-                            </DialogClose>
-                            <Button
-                                variant="destructive"
-                                onClick={() => onDelete(product.id)}
-                            >
-                                Delete
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            )}
+                {/* Delete dialog (kept out of flow) */}
+                {variant === 'sellables' && onDelete && setProductToDelete && (
+                    <Dialog
+                        open={productToDelete === product.id}
+                        onOpenChange={(open) => !open && setProductToDelete(null)}
+                    >
+                        <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                            <DialogTitle>Delete Product</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete "{product.name}"?
+                                This action cannot be undone.
+                            </DialogDescription>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="ghost">Cancel</Button>
+                                </DialogClose>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => onDelete(product.id)}
+                                >
+                                    Delete
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
 
-            {/* Sell Online is rendered inline next to the quantity line above when in store-manager variant */}
+                {/* Sell Online is rendered inline next to the quantity line above when in store-manager variant */}
+            </div>
         </div>
     );
 }

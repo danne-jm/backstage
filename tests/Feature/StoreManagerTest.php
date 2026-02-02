@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Event;
 use App\Models\Product;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,7 +13,7 @@ class StoreManagerTest extends TestCase
 
     public function test_it_counts_online_sellables_correctly()
     {
-        $admin = User::factory()->create(['permissions' => ['admin', 'view_store_manager']]);
+        $admin = $this->createUserWithPermissions(['admin', 'view_store_manager']);
 
         // 1. Valid Product (Online)
         Product::create([

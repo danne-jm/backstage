@@ -10,13 +10,7 @@ class SellableVariant extends Model
 {
     use HasFactory, HasUlids;
 
-    protected $fillable = [
-        'sellable_id',
-        'sellable_type',
-        'options',
-        'quantity',
-        'sold_count',
-    ];
+    protected $guarded = []; // Allow mass assignment for now as it handles complex logic
 
     protected $casts = [
         'options' => 'array',
@@ -24,19 +18,8 @@ class SellableVariant extends Model
         'sold_count' => 'integer',
     ];
 
-    protected $appends = ['remaining'];
-
     public function sellable()
     {
         return $this->morphTo();
-    }
-
-    public function getRemainingAttribute()
-    {
-        if (is_null($this->quantity)) {
-            return null;
-        }
-
-        return max(0, $this->quantity - $this->sold_count);
     }
 }

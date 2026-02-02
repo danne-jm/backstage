@@ -100,18 +100,24 @@ export default function Profile({
                                         tabIndex={-1}
                                     >
                                         <span className="truncate">
-                                            {permission_display ??
-                                                (Array.isArray(
-                                                    auth.user.permissions,
-                                                )
-                                                    ? auth.user.permissions.join(
-                                                          ', ',
-                                                      )
-                                                    : typeof auth.user
-                                                            .permissions ===
-                                                        'string'
-                                                      ? auth.user.permissions
-                                                      : '')}
+                                            {(() => {
+                                                const permissions = Array.isArray(auth.user.permissions)
+                                                    ? auth.user.permissions
+                                                    : [];
+
+                                                // Quick preset check logic
+                                                const adminSet = (usePage().props as any).rolePresets?.['Administrator'] || [];
+                                                const boardSet = (usePage().props as any).rolePresets?.['Board'] || [];
+
+                                                const sortAndStr = (arr: string[]) => [...arr].sort().join(',');
+                                                const userStr = sortAndStr(permissions);
+
+                                                if (userStr === sortAndStr(adminSet)) return 'Administrator';
+                                                if (userStr === sortAndStr(boardSet)) return 'Board';
+
+                                                const display = permission_display ?? permissions.join(', ');
+                                                return `Guest: ${display}`;
+                                            })()}
                                         </span>
 
                                         <Lock
@@ -173,12 +179,12 @@ export default function Profile({
 
                                             {status ===
                                                 'verification-link-sent' && (
-                                                <div className="mt-2 text-sm font-medium text-green-600">
-                                                    A new verification link has
-                                                    been sent to your email
-                                                    address.
-                                                </div>
-                                            )}
+                                                    <div className="mt-2 text-sm font-medium text-green-600">
+                                                        A new verification link has
+                                                        been sent to your email
+                                                        address.
+                                                    </div>
+                                                )}
                                         </div>
                                     )}
 
