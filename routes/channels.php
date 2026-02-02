@@ -27,5 +27,5 @@ Broadcast::channel('store-stats', function ($user) {
 });
 
 Broadcast::channel('office.{officeId}', function ($user, $officeId) {
-    return $user->hasPermission('sell_tickets') || $user->hasPermission('admin');
+    return $user->hasPermission('view_office') || $user->hasPermission('sell_tickets') || $user->hasPermission('admin');
 });

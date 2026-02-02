@@ -95,7 +95,7 @@ export function EventPreview({
                 )}
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
                 <div className="flex items-start">
                     <div className="flex-1">
                         <div className="flex items-start justify-between">
@@ -103,9 +103,9 @@ export function EventPreview({
                                 className={cn(
                                     'font-medium',
                                     variant === 'store-manager' &&
-                                    isOnline &&
-                                    event.name.length >= 26 &&
-                                    'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                                        isOnline &&
+                                        event.name.length >= 26 &&
+                                        'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
                                 )}
                             >
                                 {event.name}
@@ -183,7 +183,7 @@ export function EventPreview({
                                 €{event.price_without_card}
                             </p>
                             {event.variants_config &&
-                                event.variants_config.length > 0 ? (
+                            event.variants_config.length > 0 ? (
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                     <div className="min-w-0">
                                         <span className="text-muted-foreground">
@@ -202,10 +202,10 @@ export function EventPreview({
                                                             const remaining =
                                                                 variant.quantity !==
                                                                     null &&
-                                                                    variant.sold_count !==
+                                                                variant.sold_count !==
                                                                     undefined
                                                                     ? variant.quantity -
-                                                                    variant.sold_count
+                                                                      variant.sold_count
                                                                     : null;
                                                             return (
                                                                 <div
@@ -226,23 +226,25 @@ export function EventPreview({
                                                                             ]) =>
                                                                                 `${k}: ${v}`,
                                                                         )
-                                                                        .join(', ')}
+                                                                        .join(
+                                                                            ', ',
+                                                                        )}
                                                                     {' - '}
                                                                     {variant.quantity ===
-                                                                        null
+                                                                    null
                                                                         ? 'Unlimited'
                                                                         : `${variant.quantity} total`}
                                                                     {remaining !==
                                                                         null && (
-                                                                            <span className="text-gray-500">
-                                                                                {' '}
-                                                                                |{' '}
-                                                                                {
-                                                                                    remaining
-                                                                                }{' '}
-                                                                                remain
-                                                                            </span>
-                                                                        )}
+                                                                        <span className="text-gray-500">
+                                                                            {' '}
+                                                                            |{' '}
+                                                                            {
+                                                                                remaining
+                                                                            }{' '}
+                                                                            remain
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         },
@@ -251,27 +253,30 @@ export function EventPreview({
                                             )}
                                     </div>
 
-                                    {variant === 'store-manager' && onSetOnline && (
-                                        <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
-                                            <Checkbox
-                                                id={`online-${event.id}`}
-                                                checked={!!isOnline}
-                                                onCheckedChange={(checked) =>
-                                                    onSetOnline(
-                                                        event.id,
-                                                        checked === true,
-                                                        'event',
-                                                    )
-                                                }
-                                            />
-                                            <label
-                                                htmlFor={`online-${event.id}`}
-                                                className="text-sm leading-none font-medium whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                            >
-                                                Sell Online
-                                            </label>
-                                        </div>
-                                    )}
+                                    {variant === 'store-manager' &&
+                                        onSetOnline && (
+                                            <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
+                                                <Checkbox
+                                                    id={`online-${event.id}`}
+                                                    checked={!!isOnline}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        onSetOnline(
+                                                            event.id,
+                                                            checked === true,
+                                                            'event',
+                                                        )
+                                                    }
+                                                />
+                                                <label
+                                                    htmlFor={`online-${event.id}`}
+                                                    className="text-sm leading-none font-medium whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                >
+                                                    Sell Online
+                                                </label>
+                                            </div>
+                                        )}
                                 </div>
                             ) : event.variable_amount ? (
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -280,71 +285,75 @@ export function EventPreview({
                                             Qty w/ ESNcard:
                                         </span>{' '}
                                         {event.unlimited_quantity_with_card ||
-                                            event.quantity_with_card == null
+                                        event.quantity_with_card == null
                                             ? 'Unlimited'
                                             : event.quantity_with_card}
                                         {event.unlimited_quantity_with_card ||
-                                            event.quantity_with_card == null
+                                        event.quantity_with_card == null
                                             ? false
                                             : event.remaining_with_card !==
-                                            undefined &&
-                                            event.remaining_with_card !==
-                                            null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    | {
-                                                        event.remaining_with_card
-                                                    }{' '}
-                                                    remain
-                                                </span>
-                                            )}{' '}
+                                                  undefined &&
+                                              event.remaining_with_card !==
+                                                  null && (
+                                                  <span className="text-gray-500">
+                                                      {' '}
+                                                      |{' '}
+                                                      {
+                                                          event.remaining_with_card
+                                                      }{' '}
+                                                      remain
+                                                  </span>
+                                              )}{' '}
                                         |{' '}
                                         <span className="text-muted-foreground">
                                             w/o ESNcard:
                                         </span>{' '}
                                         {event.unlimited_quantity_without_card ||
-                                            event.quantity_without_card == null
+                                        event.quantity_without_card == null
                                             ? 'Unlimited'
                                             : event.quantity_without_card}
                                         {event.unlimited_quantity_without_card ||
-                                            event.quantity_without_card == null
+                                        event.quantity_without_card == null
                                             ? false
                                             : event.remaining_without_card !==
-                                            undefined &&
-                                            event.remaining_without_card !==
-                                            null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    |{' '}
-                                                    {
-                                                        event.remaining_without_card
-                                                    }{' '}
-                                                    remain
-                                                </span>
-                                            )}
+                                                  undefined &&
+                                              event.remaining_without_card !==
+                                                  null && (
+                                                  <span className="text-gray-500">
+                                                      {' '}
+                                                      |{' '}
+                                                      {
+                                                          event.remaining_without_card
+                                                      }{' '}
+                                                      remain
+                                                  </span>
+                                              )}
                                     </div>
 
-                                    {variant === 'store-manager' && onSetOnline && (
-                                        <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
-                                            <Checkbox
-                                                id={`online-${event.id}`}
-                                                checked={!!isOnline}
-                                                onCheckedChange={(checked) =>
-                                                    onSetOnline(
-                                                        event.id,
-                                                        checked === true,
-                                                        'event',
-                                                    )
-                                                }
-                                            />
-                                            <label
-                                                htmlFor={`online-${event.id}`}
-                                                className="text-sm leading-none font-medium whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                            >
-                                                Sell Online
-                                            </label>
-                                        </div>
-                                    )}
+                                    {variant === 'store-manager' &&
+                                        onSetOnline && (
+                                            <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
+                                                <Checkbox
+                                                    id={`online-${event.id}`}
+                                                    checked={!!isOnline}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        onSetOnline(
+                                                            event.id,
+                                                            checked === true,
+                                                            'event',
+                                                        )
+                                                    }
+                                                />
+                                                <label
+                                                    htmlFor={`online-${event.id}`}
+                                                    className="text-sm leading-none font-medium whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                >
+                                                    Sell Online
+                                                </label>
+                                            </div>
+                                        )}
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -353,42 +362,45 @@ export function EventPreview({
                                             Quantity:
                                         </span>{' '}
                                         {event.unlimited_quantity ||
-                                            event.quantity == null
+                                        event.quantity == null
                                             ? 'Unlimited'
                                             : event.quantity}
                                         {event.unlimited_quantity ||
-                                            event.quantity == null
+                                        event.quantity == null
                                             ? false
                                             : event.remaining !== undefined &&
-                                            event.remaining !== null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    | {event.remaining} remain
-                                                </span>
-                                            )}
+                                              event.remaining !== null && (
+                                                  <span className="text-gray-500">
+                                                      {' '}
+                                                      | {event.remaining} remain
+                                                  </span>
+                                              )}
                                     </div>
 
-                                    {variant === 'store-manager' && onSetOnline && (
-                                        <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
-                                            <Checkbox
-                                                id={`online-${event.id}`}
-                                                checked={!!isOnline}
-                                                onCheckedChange={(checked) =>
-                                                    onSetOnline(
-                                                        event.id,
-                                                        checked === true,
-                                                        'event',
-                                                    )
-                                                }
-                                            />
-                                            <label
-                                                htmlFor={`online-${event.id}`}
-                                                className="text-sm leading-none font-medium whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                            >
-                                                Sell Online
-                                            </label>
-                                        </div>
-                                    )}
+                                    {variant === 'store-manager' &&
+                                        onSetOnline && (
+                                            <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
+                                                <Checkbox
+                                                    id={`online-${event.id}`}
+                                                    checked={!!isOnline}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        onSetOnline(
+                                                            event.id,
+                                                            checked === true,
+                                                            'event',
+                                                        )
+                                                    }
+                                                />
+                                                <label
+                                                    htmlFor={`online-${event.id}`}
+                                                    className="text-sm leading-none font-medium whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                >
+                                                    Sell Online
+                                                </label>
+                                            </div>
+                                        )}
                                 </div>
                             )}
                             {variant === 'sellables' && (
@@ -413,36 +425,45 @@ export function EventPreview({
                     </div>
 
                     {/* Delete dialog kept separate from layout */}
-                    {variant === 'sellables' && onDelete && setEventToDelete && (
-                        <Dialog
-                            open={eventToDelete === event.id}
-                            onOpenChange={(open) => !open && setEventToDelete(null)}
-                        >
-                            <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
-                                <DialogTitle>Delete Event</DialogTitle>
-                                <DialogDescription>
-                                    Are you sure you want to delete "{event.name}"?
-                                    This action cannot be undone.
-                                </DialogDescription>
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button variant="ghost">Cancel</Button>
-                                    </DialogClose>
-                                    <Button
-                                        variant="destructive"
-                                        onClick={() => onDelete(event.id)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    )}
+                    {variant === 'sellables' &&
+                        onDelete &&
+                        setEventToDelete && (
+                            <Dialog
+                                open={eventToDelete === event.id}
+                                onOpenChange={(open) =>
+                                    !open && setEventToDelete(null)
+                                }
+                            >
+                                <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                                    <DialogTitle>Delete Event</DialogTitle>
+                                    <DialogDescription>
+                                        Are you sure you want to delete "
+                                        {event.name}"? This action cannot be
+                                        undone.
+                                    </DialogDescription>
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button variant="ghost">
+                                                Cancel
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            variant="destructive"
+                                            onClick={() => onDelete(event.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        )}
                 </div>
                 {variant === 'sellables' && (
                     <div className="mt-4 sm:absolute sm:right-4 sm:bottom-4 sm:mt-0">
                         <Button asChild variant="secondary" size="sm">
-                            <Link href={`/sellables/events/${event.id}/attendees`}>
+                            <Link
+                                href={`/sellables/events/${event.id}/attendees`}
+                            >
                                 Manage Attendees{' '}
                                 <ExternalLink className="ml-2 h-3 w-3" />
                             </Link>

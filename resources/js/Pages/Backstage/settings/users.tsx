@@ -35,9 +35,9 @@ export default function Users() {
     // Permission Template State ('Administrator' | 'Board' | 'Guest')
     const [permissionLevel, setPermissionLevel] = useState<string>('Guest');
     // Store guest permissions to restore them when switching back from Admin/Board
-    const [savedGuestPermissions, setSavedGuestPermissions] = useState<string[]>(
-        [],
-    );
+    const [savedGuestPermissions, setSavedGuestPermissions] = useState<
+        string[]
+    >([]);
 
     const [form, setForm] = useState({
         first_name: '',
@@ -77,7 +77,10 @@ export default function Users() {
             // We can check if it was initialized.
             // Simpler: assume savedGuestPermissions is the source of truth for Guest state.
             // But we need to make sure it's seeded correctly on open.
-            setForm((prev) => ({ ...prev, permissions: savedGuestPermissions }));
+            setForm((prev) => ({
+                ...prev,
+                permissions: savedGuestPermissions,
+            }));
         } else {
             const preset = rolePresets[level] || [];
             // Apply the preset permissions immediately
@@ -291,7 +294,7 @@ export default function Users() {
 
             {/* Granular Permissions - Only show if Guest is selected */}
             {permissionLevel === 'Guest' && (
-                <div className="space-y-4 rounded-md border bg-muted/20 p-3 animate-in fade-in zoom-in-95 duration-200">
+                <div className="animate-in space-y-4 rounded-md border bg-muted/20 p-3 duration-200 zoom-in-95 fade-in">
                     <Label className="text-xs text-muted-foreground uppercase">
                         Additional Permissions
                     </Label>
@@ -495,12 +498,16 @@ export default function Users() {
                                                 <Badge
                                                     variant="outline"
                                                     className={cn(
-                                                        'border-primary/30 bg-primary/10 font-normal max-w-[400px] truncate block',
+                                                        'block max-w-[400px] truncate border-primary/30 bg-primary/10 font-normal',
                                                     )}
                                                     title={u.permission_display}
                                                 >
                                                     {(() => {
-                                                        const level = determineLevel(u.permissions || []);
+                                                        const level =
+                                                            determineLevel(
+                                                                u.permissions ||
+                                                                    [],
+                                                            );
                                                         if (level === 'Guest') {
                                                             return `Guest: ${u.permission_display}`;
                                                         }

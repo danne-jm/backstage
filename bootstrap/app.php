@@ -10,7 +10,6 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
         using: function () {
             $isTesting = app()->runningUnitTests();
@@ -22,7 +21,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
             Route::middleware('web')
                 ->domain($backstageDomain)
-                ->group(base_path('routes/backstage.php'));
+                ->group(function () {
+                    // Backstage routes
+                    include base_path('routes/backstage.php');
+
+                    // Broadcasting auth routes MUST be inside the domain group to ensure
+                    // the session cookie (scoped to the domain) is properly sent and processed.
+                    \Illuminate\Support\Facades\Broadcast::routes();
+                });
+
+            // Ensure channels.php is loaded so channel authorization logic is registered.
+            // This was previously handled by withRouting(channels: ...), but now we do it here.
+            require base_path('routes/channels.php');
 
             Route::middleware('web')
                 ->domain($storeDomain)

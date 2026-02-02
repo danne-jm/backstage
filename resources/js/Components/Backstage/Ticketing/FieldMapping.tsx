@@ -12,7 +12,9 @@ interface FieldMappingProps {
     mailMode: 'normal' | 'qr';
     setMailMode: (value: 'normal' | 'qr') => void;
     nullableFields: Record<string, boolean>;
-    setNullableFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+    setNullableFields: React.Dispatch<
+        React.SetStateAction<Record<string, boolean>>
+    >;
 }
 
 export function FieldMapping({
@@ -31,22 +33,16 @@ export function FieldMapping({
     return (
         <aside className="">
             <div>
-                <h4 className="text-sm font-semibold">
-                    Field Mapping
-                </h4>
+                <h4 className="text-sm font-semibold">Field Mapping</h4>
                 <div className="mt-2 space-y-2">
                     <div>
                         <Label>First name source</Label>
                         <select
                             value={firstNameField}
-                            onChange={(e) =>
-                                setFirstNameField(e.target.value)
-                            }
+                            onChange={(e) => setFirstNameField(e.target.value)}
                             className="w-full rounded-md border p-2"
                         >
-                            <option value="">
-                                — No mapping available —
-                            </option>
+                            <option value="">— No mapping available —</option>
                             {fields.map((f) => (
                                 <option key={f} value={f}>
                                     {f}
@@ -59,14 +55,10 @@ export function FieldMapping({
                         <Label>Last name source</Label>
                         <select
                             value={lastNameField}
-                            onChange={(e) =>
-                                setLastNameField(e.target.value)
-                            }
+                            onChange={(e) => setLastNameField(e.target.value)}
                             className="w-full rounded-md border p-2"
                         >
-                            <option value="">
-                                — No mapping available —
-                            </option>
+                            <option value="">— No mapping available —</option>
                             {fields.map((f) => (
                                 <option key={f} value={f}>
                                     {f}
@@ -79,14 +71,10 @@ export function FieldMapping({
                         <Label>Email source</Label>
                         <select
                             value={emailField}
-                            onChange={(e) =>
-                                setEmailField(e.target.value)
-                            }
+                            onChange={(e) => setEmailField(e.target.value)}
                             className="w-full rounded-md border p-2"
                         >
-                            <option value="">
-                                — No mapping available —
-                            </option>
+                            <option value="">— No mapping available —</option>
                             {fields.map((f) => (
                                 <option key={f} value={f}>
                                     {f}
@@ -98,9 +86,7 @@ export function FieldMapping({
 
                 {/* Mail information section: choose normal | qr embedding. If QR selected show event name/date inputs and per-column nullable radios */}
                 <div className="mt-10">
-                    <h4 className="text-sm font-semibold">
-                        Mail information
-                    </h4>
+                    <h4 className="text-sm font-semibold">Mail information</h4>
                     <div className="mt-2 space-y-3">
                         <div>
                             <Label>Mail type</Label>
@@ -110,16 +96,10 @@ export function FieldMapping({
                                         type="radio"
                                         name="mailMode"
                                         value="normal"
-                                        checked={
-                                            mailMode === 'normal'
-                                        }
-                                        onChange={() =>
-                                            setMailMode('normal')
-                                        }
+                                        checked={mailMode === 'normal'}
+                                        onChange={() => setMailMode('normal')}
                                     />
-                                    <span className="ml-1">
-                                        Normal mail
-                                    </span>
+                                    <span className="ml-1">Normal mail</span>
                                 </label>
 
                                 <label className="inline-flex items-center gap-2">
@@ -128,9 +108,7 @@ export function FieldMapping({
                                         name="mailMode"
                                         value="qr"
                                         checked={mailMode === 'qr'}
-                                        onChange={() =>
-                                            setMailMode('qr')
-                                        }
+                                        onChange={() => setMailMode('qr')}
                                     />
                                     <span className="ml-1">
                                         Mail with QR embedding
@@ -143,15 +121,13 @@ export function FieldMapping({
                         {mailMode === 'qr' && (
                             <div className="space-y-2 text-xs text-muted-foreground">
                                 <div>
-                                    Event name and date will be
-                                    taken directly from the selected
-                                    event. No need to enter them
-                                    here.
+                                    Event name and date will be taken directly
+                                    from the selected event. No need to enter
+                                    them here.
                                 </div>
                                 <div>
-                                    Use <code>{'{{qr}}'}</code> in
-                                    your message where you want the
-                                    QR image to appear.
+                                    Use <code>{'{{qr}}'}</code> in your message
+                                    where you want the QR image to appear.
                                 </div>
                             </div>
                         )}
@@ -159,8 +135,8 @@ export function FieldMapping({
                         {/* Column nullable controls — visible regardless of mail mode */}
                         <div>
                             <Label>
-                                Skippable columns: can undefined
-                                user values be gracefully skipped?
+                                Skippable columns: can undefined user values be
+                                gracefully skipped?
                             </Label>
                             <div className="mt-2 space-y-2 text-sm">
                                 {fields.map((f) => (
@@ -173,11 +149,7 @@ export function FieldMapping({
                                             <input
                                                 type="radio"
                                                 name={`nullable-${f}`}
-                                                checked={
-                                                    !nullableFields[
-                                                        f
-                                                    ]
-                                                }
+                                                checked={!nullableFields[f]}
                                                 onChange={() =>
                                                     setNullableFields(
                                                         (prev) => ({
@@ -188,8 +160,7 @@ export function FieldMapping({
                                                 }
                                             />
                                             <span className="ml-1">
-                                                Required [appear as
-                                                "undefined"]
+                                                Required [appear as "undefined"]
                                             </span>
                                         </label>
 
@@ -198,9 +169,7 @@ export function FieldMapping({
                                                 type="radio"
                                                 name={`nullable-${f}`}
                                                 checked={Boolean(
-                                                    nullableFields[
-                                                        f
-                                                    ],
+                                                    nullableFields[f],
                                                 )}
                                                 onChange={() =>
                                                     setNullableFields(

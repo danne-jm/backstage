@@ -1,78 +1,40 @@
 import { Button } from '@/Components/Shared/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogTitle,
-} from '@/Components/Shared/ui/dialog';
 import { Input } from '@/Components/Shared/ui/input';
 import { OfficeShift } from '@/types';
 import { router } from '@inertiajs/react';
 import { Eye, Pencil } from 'lucide-react';
 import * as React from 'react';
 
-const denominationConfig = [
-    { key: '50e', label: '€50' },
-    { key: '20e', label: '€20' },
-    { key: '10e', label: '€10' },
-    { key: '5e', label: '€5' },
-    { key: '2e', label: '€2' },
-    { key: '1e', label: '€1' },
-    { key: '50c', label: '50¢' },
-    { key: '20c', label: '20¢' },
-    { key: '10c', label: '10¢' },
-    { key: '5c', label: '5¢' },
-    { key: '2c', label: '2¢' },
-    { key: '1c', label: '1¢' },
-    { key: 'token', label: 'Pink Token' },
-];
 
-const computeBreakdownTotal = (b: Record<string, number> | null) => {
-    if (!b) return 0;
-    const values: Record<string, number> = {
-        '50e': 50,
-        '20e': 20,
-        '10e': 10,
-        '5e': 5,
-        '2e': 2,
-        '1e': 1,
-        '50c': 0.5,
-        '20c': 0.2,
-        '10c': 0.1,
-        '5c': 0.05,
-        '2c': 0.02,
-        '1c': 0.01,
-        token: 0,
-    };
-    let t = 0;
-    for (const k of Object.keys(values)) {
-        t += (Number(b[k] ?? 0) || 0) * values[k];
-    }
-    return t;
-};
 
 interface RevenueSummaryProps {
     activeShift: OfficeShift | null | undefined;
     revenueRef: React.RefObject<HTMLDivElement>;
     startTotals: { cash: number; card: number };
-    setStartTotals: React.Dispatch<React.SetStateAction<{ cash: number; card: number }>>;
+    setStartTotals: React.Dispatch<
+        React.SetStateAction<{ cash: number; card: number }>
+    >;
     cashTotal: number;
     cardTotal: number;
     combinedTotal: number;
     editingStart: { cash: boolean; card: boolean };
-    setEditingStart: React.Dispatch<React.SetStateAction<{ cash: boolean; card: boolean }>>;
+    setEditingStart: React.Dispatch<
+        React.SetStateAction<{ cash: boolean; card: boolean }>
+    >;
     pendingStart: { cash: number; card: number } | null;
-    setPendingStart: React.Dispatch<React.SetStateAction<{ cash: number; card: number } | null>>;
-    submitting: boolean;
+    setPendingStart: React.Dispatch<
+        React.SetStateAction<{ cash: number; card: number } | null>
+    >;
     setSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
     setMessage: React.Dispatch<React.SetStateAction<string>>;
     mutate: any;
     openCashModalForStart: () => void;
-    isViewingLiveCashBreakdown: boolean;
-    setIsViewingLiveCashBreakdown: React.Dispatch<React.SetStateAction<boolean>>;
-    isViewingTotalCashBreakdown: boolean;
-    setIsViewingTotalCashBreakdown: React.Dispatch<React.SetStateAction<boolean>>;
+    setIsViewingLiveCashBreakdown: React.Dispatch<
+        React.SetStateAction<boolean>
+    >;
+    setIsViewingTotalCashBreakdown: React.Dispatch<
+        React.SetStateAction<boolean>
+    >;
     totalCash: number;
     totalCard: number;
     totalCombined: number;
@@ -90,21 +52,19 @@ export function RevenueSummary({
     setEditingStart,
     pendingStart,
     setPendingStart,
-    submitting,
     setSubmitting,
     setMessage,
     mutate,
     openCashModalForStart,
-    isViewingLiveCashBreakdown,
     setIsViewingLiveCashBreakdown,
-    isViewingTotalCashBreakdown,
     setIsViewingTotalCashBreakdown,
     totalCash,
     totalCard,
     totalCombined,
 }: RevenueSummaryProps) {
     const [startCollapsed, setStartCollapsed] = React.useState<boolean>(false);
-    const [activeCollapsed, setActiveCollapsed] = React.useState<boolean>(false);
+    const [activeCollapsed, setActiveCollapsed] =
+        React.useState<boolean>(false);
     const [totalCollapsed, setTotalCollapsed] = React.useState<boolean>(false);
 
     return (
@@ -122,9 +82,7 @@ export function RevenueSummary({
                         <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
-                                setStartCollapsed((s) => !s)
-                            }
+                            onClick={() => setStartCollapsed((s) => !s)}
                         >
                             {startCollapsed ? 'Show' : 'Hide'}
                         </Button>
@@ -145,55 +103,38 @@ export function RevenueSummary({
                                                 className="w-32"
                                                 value={String(
                                                     pendingStart?.cash ??
-                                                        startTotals.cash,
+                                                    startTotals.cash,
                                                 )}
                                                 onChange={(e) =>
-                                                    setPendingStart(
-                                                        (prev) => ({
-                                                            ...(prev ??
-                                                                startTotals),
-                                                            cash: Number(
-                                                                e
-                                                                    .target
-                                                                    .value ||
-                                                                    0,
-                                                            ),
-                                                        }),
-                                                    )
+                                                    setPendingStart((prev) => ({
+                                                        ...(prev ??
+                                                            startTotals),
+                                                        cash: Number(
+                                                            e.target.value || 0,
+                                                        ),
+                                                    }))
                                                 }
                                             />
                                             <Button
                                                 size="sm"
                                                 onClick={() => {
-                                                    if (
-                                                        !activeShift
-                                                    )
-                                                        return;
-                                                    const originalTotals =
-                                                        {
-                                                            ...startTotals,
-                                                        };
+                                                    if (!activeShift) return;
+                                                    const originalTotals = {
+                                                        ...startTotals,
+                                                    };
                                                     const newCash =
                                                         pendingStart?.cash ??
                                                         startTotals.cash;
-                                                    setSubmitting(
-                                                        true,
-                                                    );
-                                                    setStartTotals(
-                                                        (s) => ({
-                                                            ...s,
-                                                            cash: newCash,
-                                                        }),
-                                                    );
-                                                    setEditingStart(
-                                                        (e) => ({
-                                                            ...e,
-                                                            cash: false,
-                                                        }),
-                                                    );
-                                                    setPendingStart(
-                                                        null,
-                                                    );
+                                                    setSubmitting(true);
+                                                    setStartTotals((s) => ({
+                                                        ...s,
+                                                        cash: newCash,
+                                                    }));
+                                                    setEditingStart((e) => ({
+                                                        ...e,
+                                                        cash: false,
+                                                    }));
+                                                    setPendingStart(null);
                                                     router.post(
                                                         `/office/${activeShift.id}/update-start-totals`,
                                                         {
@@ -201,27 +142,24 @@ export function RevenueSummary({
                                                             card: startTotals.card,
                                                         },
                                                         {
-                                                            onSuccess:
-                                                                () => {
-                                                                    setMessage(
-                                                                        'Start cash updated',
-                                                                    );
-                                                                    mutate();
-                                                                },
-                                                            onError:
-                                                                () => {
-                                                                    setMessage(
-                                                                        'Failed to update start cash',
-                                                                    );
-                                                                    setStartTotals(
-                                                                        originalTotals,
-                                                                    );
-                                                                },
-                                                            onFinish:
-                                                                () =>
-                                                                    setSubmitting(
-                                                                        false,
-                                                                    ),
+                                                            onSuccess: () => {
+                                                                setMessage(
+                                                                    'Start cash updated',
+                                                                );
+                                                                mutate();
+                                                            },
+                                                            onError: () => {
+                                                                setMessage(
+                                                                    'Failed to update start cash',
+                                                                );
+                                                                setStartTotals(
+                                                                    originalTotals,
+                                                                );
+                                                            },
+                                                            onFinish: () =>
+                                                                setSubmitting(
+                                                                    false,
+                                                                ),
                                                         },
                                                     );
                                                 }}
@@ -232,15 +170,11 @@ export function RevenueSummary({
                                                 size="sm"
                                                 variant="ghost"
                                                 onClick={() => {
-                                                    setEditingStart(
-                                                        (e) => ({
-                                                            ...e,
-                                                            cash: false,
-                                                        }),
-                                                    );
-                                                    setPendingStart(
-                                                        null,
-                                                    );
+                                                    setEditingStart((e) => ({
+                                                        ...e,
+                                                        cash: false,
+                                                    }));
+                                                    setPendingStart(null);
                                                 }}
                                             >
                                                 Cancel
@@ -284,55 +218,38 @@ export function RevenueSummary({
                                                 className="w-32"
                                                 value={String(
                                                     pendingStart?.card ??
-                                                        startTotals.card,
+                                                    startTotals.card,
                                                 )}
                                                 onChange={(e) =>
-                                                    setPendingStart(
-                                                        (prev) => ({
-                                                            ...(prev ??
-                                                                startTotals),
-                                                            card: Number(
-                                                                e
-                                                                    .target
-                                                                    .value ||
-                                                                    0,
-                                                            ),
-                                                        }),
-                                                    )
+                                                    setPendingStart((prev) => ({
+                                                        ...(prev ??
+                                                            startTotals),
+                                                        card: Number(
+                                                            e.target.value || 0,
+                                                        ),
+                                                    }))
                                                 }
                                             />
                                             <Button
                                                 size="sm"
                                                 onClick={() => {
-                                                    if (
-                                                        !activeShift
-                                                    )
-                                                        return;
-                                                    const originalTotals =
-                                                        {
-                                                            ...startTotals,
-                                                        };
+                                                    if (!activeShift) return;
+                                                    const originalTotals = {
+                                                        ...startTotals,
+                                                    };
                                                     const newCard =
                                                         pendingStart?.card ??
                                                         startTotals.card;
-                                                    setSubmitting(
-                                                        true,
-                                                    );
-                                                    setStartTotals(
-                                                        (s) => ({
-                                                            ...s,
-                                                            card: newCard,
-                                                        }),
-                                                    );
-                                                    setEditingStart(
-                                                        (e) => ({
-                                                            ...e,
-                                                            card: false,
-                                                        }),
-                                                    );
-                                                    setPendingStart(
-                                                        null,
-                                                    );
+                                                    setSubmitting(true);
+                                                    setStartTotals((s) => ({
+                                                        ...s,
+                                                        card: newCard,
+                                                    }));
+                                                    setEditingStart((e) => ({
+                                                        ...e,
+                                                        card: false,
+                                                    }));
+                                                    setPendingStart(null);
                                                     router.post(
                                                         `/office/${activeShift.id}/update-start-totals`,
                                                         {
@@ -340,27 +257,24 @@ export function RevenueSummary({
                                                             card: newCard,
                                                         },
                                                         {
-                                                            onSuccess:
-                                                                () => {
-                                                                    setMessage(
-                                                                        'Start card updated',
-                                                                    );
-                                                                    mutate();
-                                                                },
-                                                            onError:
-                                                                () => {
-                                                                    setMessage(
-                                                                        'Failed to update start card',
-                                                                    );
-                                                                    setStartTotals(
-                                                                        originalTotals,
-                                                                    );
-                                                                },
-                                                            onFinish:
-                                                                () =>
-                                                                    setSubmitting(
-                                                                        false,
-                                                                    ),
+                                                            onSuccess: () => {
+                                                                setMessage(
+                                                                    'Start card updated',
+                                                                );
+                                                                mutate();
+                                                            },
+                                                            onError: () => {
+                                                                setMessage(
+                                                                    'Failed to update start card',
+                                                                );
+                                                                setStartTotals(
+                                                                    originalTotals,
+                                                                );
+                                                            },
+                                                            onFinish: () =>
+                                                                setSubmitting(
+                                                                    false,
+                                                                ),
                                                         },
                                                     );
                                                 }}
@@ -371,15 +285,11 @@ export function RevenueSummary({
                                                 size="sm"
                                                 variant="ghost"
                                                 onClick={() => {
-                                                    setEditingStart(
-                                                        (e) => ({
-                                                            ...e,
-                                                            card: false,
-                                                        }),
-                                                    );
-                                                    setPendingStart(
-                                                        null,
-                                                    );
+                                                    setEditingStart((e) => ({
+                                                        ...e,
+                                                        card: false,
+                                                    }));
+                                                    setPendingStart(null);
                                                 }}
                                             >
                                                 Cancel
@@ -401,12 +311,10 @@ export function RevenueSummary({
                                                     'closed'
                                                 }
                                                 onClick={() =>
-                                                    setEditingStart(
-                                                        (e) => ({
-                                                            ...e,
-                                                            card: true,
-                                                        }),
-                                                    )
+                                                    setEditingStart((e) => ({
+                                                        ...e,
+                                                        card: true,
+                                                    }))
                                                 }
                                             >
                                                 <Pencil className="h-4 w-4" />
@@ -438,9 +346,7 @@ export function RevenueSummary({
                         <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
-                                setActiveCollapsed((s) => !s)
-                            }
+                            onClick={() => setActiveCollapsed((s) => !s)}
                         >
                             {activeCollapsed ? 'Show' : 'Hide'}
                         </Button>
@@ -455,9 +361,7 @@ export function RevenueSummary({
                                         variant="ghost"
                                         className="h-5 w-5"
                                         onClick={() =>
-                                            setIsViewingLiveCashBreakdown(
-                                                true,
-                                            )
+                                            setIsViewingLiveCashBreakdown(true)
                                         }
                                     >
                                         <Eye className="h-4 w-4" />
@@ -494,9 +398,7 @@ export function RevenueSummary({
                         <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
-                                setTotalCollapsed((s) => !s)
-                            }
+                            onClick={() => setTotalCollapsed((s) => !s)}
                         >
                             {totalCollapsed ? 'Show' : 'Hide'}
                         </Button>
@@ -511,9 +413,7 @@ export function RevenueSummary({
                                         variant="ghost"
                                         className="h-5 w-5"
                                         onClick={() =>
-                                            setIsViewingTotalCashBreakdown(
-                                                true,
-                                            )
+                                            setIsViewingTotalCashBreakdown(true)
                                         }
                                     >
                                         <Eye className="h-4 w-4" />

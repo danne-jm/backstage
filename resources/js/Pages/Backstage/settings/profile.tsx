@@ -26,7 +26,7 @@ export default function Profile({
         },
     ];
 
-    const { auth, permission_display } = usePage<SharedData>().props as any;
+    const { auth, permission_display, rolePresets } = usePage<SharedData>().props as any;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -101,21 +101,40 @@ export default function Profile({
                                     >
                                         <span className="truncate">
                                             {(() => {
-                                                const permissions = Array.isArray(auth.user.permissions)
-                                                    ? auth.user.permissions
-                                                    : [];
+                                                const permissions =
+                                                    Array.isArray(
+                                                        auth.user.permissions,
+                                                    )
+                                                        ? auth.user.permissions
+                                                        : [];
 
                                                 // Quick preset check logic
-                                                const adminSet = (usePage().props as any).rolePresets?.['Administrator'] || [];
-                                                const boardSet = (usePage().props as any).rolePresets?.['Board'] || [];
+                                                const adminSet =
+                                                    rolePresets?.['Administrator'] ||
+                                                    [];
+                                                const boardSet =
+                                                    rolePresets?.['Board'] || [];
 
-                                                const sortAndStr = (arr: string[]) => [...arr].sort().join(',');
-                                                const userStr = sortAndStr(permissions);
+                                                const sortAndStr = (
+                                                    arr: string[],
+                                                ) => [...arr].sort().join(',');
+                                                const userStr =
+                                                    sortAndStr(permissions);
 
-                                                if (userStr === sortAndStr(adminSet)) return 'Administrator';
-                                                if (userStr === sortAndStr(boardSet)) return 'Board';
+                                                if (
+                                                    userStr ===
+                                                    sortAndStr(adminSet)
+                                                )
+                                                    return 'Administrator';
+                                                if (
+                                                    userStr ===
+                                                    sortAndStr(boardSet)
+                                                )
+                                                    return 'Board';
 
-                                                const display = permission_display ?? permissions.join(', ');
+                                                const display =
+                                                    permission_display ??
+                                                    permissions.join(', ');
                                                 return `Guest: ${display}`;
                                             })()}
                                         </span>

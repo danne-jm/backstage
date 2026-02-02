@@ -1,16 +1,20 @@
 import { CartItem } from '@/hooks/useCart';
-import { Head, Link } from '@inertiajs/react';
-import {
-    Minus,
-    Plus,
-    Trash2,
-} from 'lucide-react';
-import * as React from 'react';
+import { Link } from '@inertiajs/react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
 
 interface CartItemsListProps {
     sortedCart: CartItem[];
-    updateQuantity: (id: number, type: 'product' | 'event', quantity: number, options?: Record<string, string> | undefined) => void;
-    removeFromCart: (id: number, type: 'product' | 'event', options?: Record<string, string> | undefined) => void;
+    updateQuantity: (
+        id: number,
+        type: 'product' | 'event',
+        quantity: number,
+        options?: Record<string, string> | undefined,
+    ) => void;
+    removeFromCart: (
+        id: number,
+        type: 'product' | 'event',
+        options?: Record<string, string> | undefined,
+    ) => void;
 }
 
 export function CartItemsList({
@@ -19,10 +23,7 @@ export function CartItemsList({
     removeFromCart,
 }: CartItemsListProps) {
     return (
-        <section
-            aria-labelledby="cart-heading"
-            className="lg:col-span-7"
-        >
+        <section aria-labelledby="cart-heading" className="lg:col-span-7">
             <h2 id="cart-heading" className="sr-only">
                 Items in your shopping cart
             </h2>
@@ -38,10 +39,7 @@ export function CartItemsList({
                     >
                         <div className="flex-shrink-0">
                             <img
-                                src={
-                                    item.image ||
-                                    '/images/product.png'
-                                }
+                                src={item.image || '/images/product.png'}
                                 alt={item.name}
                                 className="h-20 w-20 rounded-md object-contain object-center sm:h-32 sm:w-32 lg:h-48 lg:w-48"
                             />
@@ -62,39 +60,28 @@ export function CartItemsList({
                                     </div>
                                     {item.options && (
                                         <div className="mt-1 text-xs text-gray-500 sm:text-sm">
-                                            {Object.entries(
-                                                item.options,
-                                            )
+                                            {Object.entries(item.options)
                                                 .map(
-                                                    ([
-                                                        key,
-                                                        val,
-                                                    ]) =>
+                                                    ([key, val]) =>
                                                         `${key}: ${val}`,
                                                 )
                                                 .join(', ')}
                                         </div>
                                     )}
                                     <p className="mt-1 text-sm font-medium text-gray-900">
-                                        €
-                                        {Number(
-                                            item.price,
-                                        ).toFixed(2)}
+                                        €{Number(item.price).toFixed(2)}
                                     </p>
                                     {item.description && (
                                         <div
                                             className="mt-1 hidden text-sm text-gray-500 sm:block"
                                             dangerouslySetInnerHTML={{
                                                 __html:
-                                                    item
-                                                        .description
-                                                        .length >
+                                                    item.description.length >
                                                     230
                                                         ? item.description.substring(
                                                               0,
                                                               230,
-                                                          ) +
-                                                          '...'
+                                                          ) + '...'
                                                         : item.description,
                                             }}
                                         />
@@ -108,8 +95,7 @@ export function CartItemsList({
                                                 updateQuantity(
                                                     item.id,
                                                     item.type,
-                                                    item.quantity -
-                                                        1,
+                                                    item.quantity - 1,
                                                     item.options,
                                                 )
                                             }
@@ -125,8 +111,7 @@ export function CartItemsList({
                                                 updateQuantity(
                                                     item.id,
                                                     item.type,
-                                                    item.quantity +
-                                                        1,
+                                                    item.quantity + 1,
                                                     item.options,
                                                 )
                                             }

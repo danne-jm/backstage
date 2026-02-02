@@ -56,15 +56,15 @@ export function ProductPreview({
                 )}
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between">
                     <h3
                         className={cn(
                             'font-medium',
                             variant === 'store-manager' &&
-                            isOnline &&
-                            product.name.length >= 26 &&
-                            'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                                isOnline &&
+                                product.name.length >= 26 &&
+                                'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
                         )}
                     >
                         {product.name}
@@ -112,7 +112,7 @@ export function ProductPreview({
                 <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         {product.variants_config &&
-                            product.variants_config.length > 0 ? (
+                        product.variants_config.length > 0 ? (
                             <>
                                 <span className="text-muted-foreground">
                                     Configurable by:
@@ -136,46 +136,46 @@ export function ProductPreview({
                                     Qty w/ ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_with_card ||
-                                    product.quantity_with_card == null
+                                product.quantity_with_card == null
                                     ? 'Unlimited'
                                     : product.quantity_with_card}
                                 {product.unlimited_quantity_with_card ||
-                                    product.quantity_with_card == null
+                                product.quantity_with_card == null
                                     ? false
                                     : product.remaining_with_card !==
-                                    undefined &&
-                                    product.remaining_with_card !== null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {
-                                                product.remaining_with_card
-                                            }{' '}
-                                            remain
-                                        </span>
-                                    )}{' '}
+                                          undefined &&
+                                      product.remaining_with_card !== null && (
+                                          <span className="text-gray-500">
+                                              {' '}
+                                              | {
+                                                  product.remaining_with_card
+                                              }{' '}
+                                              remain
+                                          </span>
+                                      )}{' '}
                                 |{' '}
                                 <span className="text-muted-foreground">
                                     w/o ESNcard:
                                 </span>{' '}
                                 {product.unlimited_quantity_without_card ||
-                                    product.quantity_without_card == null
+                                product.quantity_without_card == null
                                     ? 'Unlimited'
                                     : product.quantity_without_card}
                                 {product.unlimited_quantity_without_card ||
-                                    product.quantity_without_card == null
+                                product.quantity_without_card == null
                                     ? false
                                     : product.remaining_without_card !==
-                                    undefined &&
-                                    product.remaining_without_card !==
-                                    null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {
-                                                product.remaining_without_card
-                                            }{' '}
-                                            remain
-                                        </span>
-                                    )}
+                                          undefined &&
+                                      product.remaining_without_card !==
+                                          null && (
+                                          <span className="text-gray-500">
+                                              {' '}
+                                              | {
+                                                  product.remaining_without_card
+                                              }{' '}
+                                              remain
+                                          </span>
+                                      )}
                             </>
                         ) : (
                             <>
@@ -183,19 +183,19 @@ export function ProductPreview({
                                     Quantity:
                                 </span>{' '}
                                 {product.unlimited_quantity ||
-                                    product.quantity == null
+                                product.quantity == null
                                     ? 'Unlimited'
                                     : product.quantity}
                                 {product.unlimited_quantity ||
-                                    product.quantity == null
+                                product.quantity == null
                                     ? false
                                     : product.remaining !== undefined &&
-                                    product.remaining !== null && (
-                                        <span className="text-gray-500">
-                                            {' '}
-                                            | {product.remaining} remain
-                                        </span>
-                                    )}
+                                      product.remaining !== null && (
+                                          <span className="text-gray-500">
+                                              {' '}
+                                              | {product.remaining} remain
+                                          </span>
+                                      )}
                             </>
                         )}
                     </div>
@@ -226,13 +226,15 @@ export function ProductPreview({
                 {variant === 'sellables' && onDelete && setProductToDelete && (
                     <Dialog
                         open={productToDelete === product.id}
-                        onOpenChange={(open) => !open && setProductToDelete(null)}
+                        onOpenChange={(open) =>
+                            !open && setProductToDelete(null)
+                        }
                     >
                         <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
                             <DialogTitle>Delete Product</DialogTitle>
                             <DialogDescription>
-                                Are you sure you want to delete "{product.name}"?
-                                This action cannot be undone.
+                                Are you sure you want to delete "{product.name}
+                                "? This action cannot be undone.
                             </DialogDescription>
                             <DialogFooter>
                                 <DialogClose asChild>
