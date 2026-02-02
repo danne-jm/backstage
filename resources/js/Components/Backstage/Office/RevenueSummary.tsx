@@ -5,8 +5,6 @@ import { router } from '@inertiajs/react';
 import { Eye, Pencil } from 'lucide-react';
 import * as React from 'react';
 
-
-
 interface RevenueSummaryProps {
     activeShift: OfficeShift | null | undefined;
     revenueRef: React.RefObject<HTMLDivElement>;
@@ -103,7 +101,7 @@ export function RevenueSummary({
                                                 className="w-32"
                                                 value={String(
                                                     pendingStart?.cash ??
-                                                    startTotals.cash,
+                                                        startTotals.cash,
                                                 )}
                                                 onChange={(e) =>
                                                     setPendingStart((prev) => ({
@@ -218,7 +216,7 @@ export function RevenueSummary({
                                                 className="w-32"
                                                 value={String(
                                                     pendingStart?.card ??
-                                                    startTotals.card,
+                                                        startTotals.card,
                                                 )}
                                                 onChange={(e) =>
                                                     setPendingStart((prev) => ({

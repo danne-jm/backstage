@@ -191,7 +191,7 @@ class SaleService
 
         // Increment Variant Sold Count ATOMICALLY
         if ($resolvedVariant) {
-            $updated = $resolvedVariant->where('id', $resolvedVariant->id)
+            $updated = SellableVariant::where('id', $resolvedVariant->id)
                 ->whereRaw('(quantity IS NULL OR sold_count + 1 <= quantity)')
                 ->increment('sold_count');
 

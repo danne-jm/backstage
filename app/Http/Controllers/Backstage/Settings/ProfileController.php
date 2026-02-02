@@ -36,7 +36,7 @@ class ProfileController extends Controller
         }
 
         $userRoles = $user->getRoleNames();
-        
+
         if ($userRoles->isNotEmpty()) {
             $permissionDisplay = $userRoles->join(', ');
         } else {

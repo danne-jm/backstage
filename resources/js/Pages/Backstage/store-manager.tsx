@@ -105,12 +105,12 @@ export default function StoreManager() {
                         period === 'month'
                             ? 30
                             : period === '7days'
-                                ? 7
-                                : period === '24hours'
-                                    ? 1
-                                    : period === 'lastShift'
-                                        ? 0
-                                        : 14;
+                              ? 7
+                              : period === '24hours'
+                                ? 1
+                                : period === 'lastShift'
+                                  ? 0
+                                  : 14;
 
                     const hourly = period === '24hours';
                     let summaryUrl = `/sales/summary?days=${days}${hourly ? '&hourly=true' : ''}`;
@@ -208,7 +208,7 @@ export default function StoreManager() {
 
         router.put(url, data, {
             preserveState: true,
-            onSuccess: () => { },
+            onSuccess: () => {},
         });
     };
 
@@ -499,7 +499,7 @@ export default function StoreManager() {
                 open={productDialogOpen}
                 onOpenChange={setProductDialogOpen}
                 editingProduct={editingProduct}
-                onSuccess={() => { }}
+                onSuccess={() => {}}
             />
 
             <EventDialog
@@ -507,7 +507,7 @@ export default function StoreManager() {
                 onOpenChange={setEventDialogOpen}
                 editingEvent={editingEvent}
                 boardUsers={boardUsers}
-                onSuccess={() => { }}
+                onSuccess={() => {}}
             />
         </>
     );

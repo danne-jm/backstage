@@ -44,9 +44,9 @@ export function ProductPreview({
             className={cn(
                 'relative flex gap-4 rounded-lg border p-4',
                 // Keep store-manager as block, sellables as flex (row)
-                variant === 'store-manager' ? "block" : "flex",
+                variant === 'store-manager' ? 'block' : 'flex',
                 // Remove extra padding bottom from sellables
-                variant === 'sellables' ? "pb-4" : "pb-4"
+                variant === 'sellables' ? 'pb-4' : 'pb-4',
             )}
         >
             {/* Image Thumbnail - Rendered differently based on variant */}
@@ -67,10 +67,10 @@ export function ProductPreview({
                 </div>
             )}
 
-            <div className="min-w-0 flex-1 block">
+            <div className="block min-w-0 flex-1">
                 {/* Store Manager: Image Floated Left */}
                 {variant === 'store-manager' && (
-                    <div className="float-left mr-4 mb-1 h-20 w-20 shrink-0 overflow-hidden rounded-md border bg-muted/50 hidden sm:block">
+                    <div className="float-left mr-4 mb-1 hidden h-20 w-20 shrink-0 overflow-hidden rounded-md border bg-muted/50 sm:block">
                         {product.image ? (
                             <img
                                 src={product.image}
@@ -87,7 +87,7 @@ export function ProductPreview({
 
                 {/* Desktop Store Manager Actions: Floated Right */}
                 {variant === 'store-manager' && onEdit && (
-                    <div className="hidden md:block float-right ml-4 mb-2">
+                    <div className="float-right mb-2 ml-4 hidden md:block">
                         <Button
                             size="sm"
                             variant="ghost"
@@ -99,7 +99,13 @@ export function ProductPreview({
                     </div>
                 )}
 
-                <div className={variant === 'sellables' ? 'flex flex-col md:flex-row gap-4' : 'block'}>
+                <div
+                    className={
+                        variant === 'sellables'
+                            ? 'flex flex-col gap-4 md:flex-row'
+                            : 'block'
+                    }
+                >
                     <div className="min-w-0 flex-1">
                         {/* Title and Mobile Actions Row */}
                         <div className="flex items-start justify-between">
@@ -107,9 +113,9 @@ export function ProductPreview({
                                 className={cn(
                                     'font-medium',
                                     variant === 'store-manager' &&
-                                    isOnline &&
-                                    product.name.length >= 26 &&
-                                    'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                                        isOnline &&
+                                        product.name.length >= 26 &&
+                                        'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
                                 )}
                             >
                                 {product.name}
@@ -146,22 +152,28 @@ export function ProductPreview({
 
                         {/* Description */}
                         {product.description && (
-                            <p className={cn(
-                                "mt-1 text-sm text-muted-foreground",
-                            )}>
+                            <p
+                                className={cn(
+                                    'mt-1 text-sm text-muted-foreground',
+                                )}
+                            >
                                 {product.description}
                             </p>
                         )}
 
                         {/* Price: label muted, value prominent */}
                         <div className="mt-1 text-sm">
-                            <span className="text-muted-foreground">Price:</span>{' '}
-                            <span className="text-foreground">€{product.price}</span>
+                            <span className="text-muted-foreground">
+                                Price:
+                            </span>{' '}
+                            <span className="text-foreground">
+                                €{product.price}
+                            </span>
                         </div>
                         <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0 flex-1">
                                 {product.variants_config &&
-                                    product.variants_config.length > 0 ? (
+                                product.variants_config.length > 0 ? (
                                     <>
                                         <span className="text-muted-foreground">
                                             Quantity by:
@@ -172,9 +184,19 @@ export function ProductPreview({
                                                 .join(', ')}
                                         </span>
                                         {/* Variants Matrix - Store Manager Only here (hidden on mobile for sellables) */}
-                                        <div className={cn("mt-2", variant === 'sellables' ? "hidden" : "hidden md:block")}>
-                                            {variant === 'store-manager' ? null : (
-                                                <VariantsMatrix product={product} />
+                                        <div
+                                            className={cn(
+                                                'mt-2',
+                                                variant === 'sellables'
+                                                    ? 'hidden'
+                                                    : 'hidden md:block',
+                                            )}
+                                        >
+                                            {variant ===
+                                            'store-manager' ? null : (
+                                                <VariantsMatrix
+                                                    product={product}
+                                                />
                                             )}
                                         </div>
                                     </>
@@ -184,46 +206,49 @@ export function ProductPreview({
                                             Qty w/ ESNcard:
                                         </span>{' '}
                                         {product.unlimited_quantity_with_card ||
-                                            product.quantity_with_card == null
+                                        product.quantity_with_card == null
                                             ? 'Unlimited'
                                             : product.quantity_with_card}
                                         {product.unlimited_quantity_with_card ||
-                                            product.quantity_with_card == null
+                                        product.quantity_with_card == null
                                             ? false
                                             : product.remaining_with_card !==
-                                            undefined &&
-                                            product.remaining_with_card !== null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    | {
-                                                        product.remaining_with_card
-                                                    }{' '}
-                                                    remain
-                                                </span>
-                                            )}{' '}
+                                                  undefined &&
+                                              product.remaining_with_card !==
+                                                  null && (
+                                                  <span className="text-gray-500">
+                                                      {' '}
+                                                      |{' '}
+                                                      {
+                                                          product.remaining_with_card
+                                                      }{' '}
+                                                      remain
+                                                  </span>
+                                              )}{' '}
                                         |{' '}
                                         <span className="text-muted-foreground">
                                             w/o ESNcard:
                                         </span>{' '}
                                         {product.unlimited_quantity_without_card ||
-                                            product.quantity_without_card == null
+                                        product.quantity_without_card == null
                                             ? 'Unlimited'
                                             : product.quantity_without_card}
                                         {product.unlimited_quantity_without_card ||
-                                            product.quantity_without_card == null
+                                        product.quantity_without_card == null
                                             ? false
                                             : product.remaining_without_card !==
-                                            undefined &&
-                                            product.remaining_without_card !==
-                                            null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    | {
-                                                        product.remaining_without_card
-                                                    }{' '}
-                                                    remain
-                                                </span>
-                                            )}
+                                                  undefined &&
+                                              product.remaining_without_card !==
+                                                  null && (
+                                                  <span className="text-gray-500">
+                                                      {' '}
+                                                      |{' '}
+                                                      {
+                                                          product.remaining_without_card
+                                                      }{' '}
+                                                      remain
+                                                  </span>
+                                              )}
                                     </>
                                 ) : (
                                     <>
@@ -231,19 +256,20 @@ export function ProductPreview({
                                             Quantity:
                                         </span>{' '}
                                         {product.unlimited_quantity ||
-                                            product.quantity == null
+                                        product.quantity == null
                                             ? 'Unlimited'
                                             : product.quantity}
                                         {product.unlimited_quantity ||
-                                            product.quantity == null
+                                        product.quantity == null
                                             ? false
                                             : product.remaining !== undefined &&
-                                            product.remaining !== null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    | {product.remaining} remain
-                                                </span>
-                                            )}
+                                              product.remaining !== null && (
+                                                  <span className="text-gray-500">
+                                                      {' '}
+                                                      | {product.remaining}{' '}
+                                                      remain
+                                                  </span>
+                                              )}
                                     </>
                                 )}
 
@@ -263,7 +289,7 @@ export function ProductPreview({
                                         />
                                         <label
                                             htmlFor={`online-${product.id}`}
-                                            className="text-xs font-medium text-muted-foreground cursor-pointer"
+                                            className="cursor-pointer text-xs font-medium text-muted-foreground"
                                         >
                                             Sell Online
                                         </label>
@@ -274,15 +300,17 @@ export function ProductPreview({
                     </div>
 
                     {/* Center Column: Variant Matrix (Sellables only, Desktop only) */}
-                    {variant === 'sellables' && product.variants_config && product.variants_config.length > 0 && (
-                        <div className="hidden md:block flex-shrink-0 w-[400px]">
-                            <VariantsMatrix product={product} />
-                        </div>
-                    )}
+                    {variant === 'sellables' &&
+                        product.variants_config &&
+                        product.variants_config.length > 0 && (
+                            <div className="hidden w-[400px] flex-shrink-0 md:block">
+                                <VariantsMatrix product={product} />
+                            </div>
+                        )}
 
                     {/* Right Column: Actions (Desktop) - ONLY for Sellables now. Store Manager uses floated button. */}
                     {variant === 'sellables' && (onEdit || onDelete) && (
-                        <div className="hidden md:flex flex-row gap-2 items-start flex-shrink-0">
+                        <div className="hidden flex-shrink-0 flex-row items-start gap-2 md:flex">
                             {onEdit && (
                                 <Button
                                     size="sm"
@@ -293,19 +321,18 @@ export function ProductPreview({
                                     Edit
                                 </Button>
                             )}
-                            {onDelete &&
-                                setProductToDelete && (
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 px-2 text-muted-foreground hover:bg-muted/30"
-                                        onClick={() =>
-                                            setProductToDelete(product.id)
-                                        }
-                                    >
-                                        Remove
-                                    </Button>
-                                )}
+                            {onDelete && setProductToDelete && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 px-2 text-muted-foreground hover:bg-muted/30"
+                                    onClick={() =>
+                                        setProductToDelete(product.id)
+                                    }
+                                >
+                                    Remove
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -315,9 +342,7 @@ export function ProductPreview({
             {variant === 'sellables' && onDelete && setProductToDelete && (
                 <Dialog
                     open={productToDelete === product.id}
-                    onOpenChange={(open) =>
-                        !open && setProductToDelete(null)
-                    }
+                    onOpenChange={(open) => !open && setProductToDelete(null)}
                 >
                     <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
                         <DialogTitle>Delete Product</DialogTitle>

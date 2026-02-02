@@ -2,6 +2,11 @@ import { ImageManager } from '@/Components/Backstage/sellables/ImageManager';
 import { Button } from '@/Components/Shared/ui/button';
 import { Checkbox } from '@/Components/Shared/ui/checkbox';
 import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/Components/Shared/ui/collapsible';
+import {
     Dialog,
     DialogClose,
     DialogContent,
@@ -9,11 +14,6 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/Components/Shared/ui/dialog';
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/Components/Shared/ui/collapsible';
 import { Input } from '@/Components/Shared/ui/input';
 import { Label } from '@/Components/Shared/ui/label';
 import {
@@ -135,8 +135,10 @@ export function EventDialog({
             // Default Open States
             setIsOnlineSectionOpen(true);
 
-            const isSimpleStock = !editingEvent.variants_config || editingEvent.variants_config.length === 0;
-            const isMobile = window.matchMedia("(max-width: 640px)").matches;
+            const isSimpleStock =
+                !editingEvent.variants_config ||
+                editingEvent.variants_config.length === 0;
+            const isMobile = window.matchMedia('(max-width: 640px)').matches;
 
             if (isMobile || isSimpleStock) {
                 setIsStockSectionOpen(true);
@@ -321,7 +323,7 @@ export function EventDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] w-full sm:max-w-[70vw] overflow-y-auto p-4 sm:p-6">
+            <DialogContent className="max-h-[85vh] w-full overflow-y-auto p-4 sm:max-w-[70vw] sm:p-6">
                 <DialogTitle>
                     {editingEvent ? 'Edit Event' : 'Add Event'}
                 </DialogTitle>
@@ -339,7 +341,9 @@ export function EventDialog({
                                 <Input
                                     id="event-name"
                                     value={eventName}
-                                    onChange={(e) => setEventName(e.target.value)}
+                                    onChange={(e) =>
+                                        setEventName(e.target.value)
+                                    }
                                     className="mt-1"
                                 />
                             </div>
@@ -362,13 +366,18 @@ export function EventDialog({
                                     id="event-date"
                                     type="date"
                                     value={eventDate}
-                                    onChange={(e) => setEventDate(e.target.value)}
-                                    className="mt-1 w-full block"
+                                    onChange={(e) =>
+                                        setEventDate(e.target.value)
+                                    }
+                                    className="mt-1 block w-full"
                                 />
                             </div>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="min-w-0">
-                                    <Label htmlFor="start-sell-date" className="text-sm">
+                                    <Label
+                                        htmlFor="start-sell-date"
+                                        className="text-sm"
+                                    >
                                         Start Sell
                                     </Label>
                                     <Input
@@ -378,23 +387,33 @@ export function EventDialog({
                                         onChange={(e) =>
                                             setStartSellDate(e.target.value)
                                         }
-                                        className="mt-1 w-full block"
+                                        className="mt-1 block w-full"
                                     />
                                 </div>
                                 <div className="min-w-0">
-                                    <Label htmlFor="end-sell-date" className="text-sm">End Sell</Label>
+                                    <Label
+                                        htmlFor="end-sell-date"
+                                        className="text-sm"
+                                    >
+                                        End Sell
+                                    </Label>
                                     <Input
                                         id="end-sell-date"
                                         type="date"
                                         value={endSellDate}
-                                        onChange={(e) => setEndSellDate(e.target.value)}
-                                        className="mt-1 w-full block"
+                                        onChange={(e) =>
+                                            setEndSellDate(e.target.value)
+                                        }
+                                        className="mt-1 block w-full"
                                     />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
-                                    <Label htmlFor="price-with-card" className="text-sm">
+                                    <Label
+                                        htmlFor="price-with-card"
+                                        className="text-sm"
+                                    >
                                         Price w/ Card
                                     </Label>
                                     <Input
@@ -409,7 +428,10 @@ export function EventDialog({
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="price-without-card" className="text-sm">
+                                    <Label
+                                        htmlFor="price-without-card"
+                                        className="text-sm"
+                                    >
                                         Price w/o Card
                                     </Label>
                                     <Input
@@ -432,7 +454,10 @@ export function EventDialog({
                                     value={responsibleUserId}
                                     onValueChange={setResponsibleUserId}
                                 >
-                                    <SelectTrigger id="responsible-user" className="mt-1">
+                                    <SelectTrigger
+                                        id="responsible-user"
+                                        className="mt-1"
+                                    >
                                         <SelectValue placeholder="Select board member" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -441,7 +466,7 @@ export function EventDialog({
                                                 key={user.id}
                                                 value={user.id.toString()}
                                             >
-                                                <span className="truncate block max-w-[200px] sm:max-w-full">
+                                                <span className="block max-w-[200px] truncate sm:max-w-full">
                                                     {user.name} ({user.email})
                                                 </span>
                                             </SelectItem>
@@ -450,7 +475,9 @@ export function EventDialog({
                                 </Select>
                             </div>
                             <div>
-                                <Label htmlFor="notes" className="text-sm">Notes (optional)</Label>
+                                <Label htmlFor="notes" className="text-sm">
+                                    Notes (optional)
+                                </Label>
                                 <Textarea
                                     id="notes"
                                     value={notes}
@@ -460,11 +487,15 @@ export function EventDialog({
                             </div>
                             {!editingEvent && (
                                 <div>
-                                    <Label className="text-sm">Spreadsheet ID</Label>
+                                    <Label className="text-sm">
+                                        Spreadsheet ID
+                                    </Label>
                                     <Input
                                         value={googleSpreadsheetId}
                                         onChange={(e) =>
-                                            setGoogleSpreadsheetId(e.target.value)
+                                            setGoogleSpreadsheetId(
+                                                e.target.value,
+                                            )
                                         }
                                         placeholder="Google Sheet ID"
                                         className="mt-1"
@@ -486,7 +517,11 @@ export function EventDialog({
                                         Stock Management
                                     </Label>
                                     <CollapsibleTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                        >
                                             {isStockSectionOpen ? (
                                                 <ChevronUp className="h-4 w-4" />
                                             ) : (
@@ -496,8 +531,10 @@ export function EventDialog({
                                     </CollapsibleTrigger>
                                 </div>
                                 <CollapsibleContent className="mt-4 space-y-4">
-                                    <div className="flex items-center justify-between border-b pb-3 mb-3">
-                                        <span className="text-sm text-muted-foreground">Type</span>
+                                    <div className="mb-3 flex items-center justify-between border-b pb-3">
+                                        <span className="text-sm text-muted-foreground">
+                                            Type
+                                        </span>
                                         <div
                                             role="tablist"
                                             aria-orientation="horizontal"
@@ -506,8 +543,12 @@ export function EventDialog({
                                             <button
                                                 type="button"
                                                 role="tab"
-                                                aria-selected={stockMode === 'simple'}
-                                                onClick={() => setStockMode('simple')}
+                                                aria-selected={
+                                                    stockMode === 'simple'
+                                                }
+                                                onClick={() =>
+                                                    setStockMode('simple')
+                                                }
                                                 className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'simple' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
                                             >
                                                 Simple
@@ -515,8 +556,12 @@ export function EventDialog({
                                             <button
                                                 type="button"
                                                 role="tab"
-                                                aria-selected={stockMode === 'variants'}
-                                                onClick={() => setStockMode('variants')}
+                                                aria-selected={
+                                                    stockMode === 'variants'
+                                                }
+                                                onClick={() =>
+                                                    setStockMode('variants')
+                                                }
                                                 className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'variants' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
                                             >
                                                 Variants
@@ -530,8 +575,12 @@ export function EventDialog({
                                                 <Checkbox
                                                     id="variable-amount"
                                                     checked={!!variableAmount}
-                                                    onCheckedChange={(checked) =>
-                                                        setVariableAmount(checked === true)
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        setVariableAmount(
+                                                            checked === true,
+                                                        )
                                                     }
                                                 />
                                                 <Label
@@ -544,32 +593,44 @@ export function EventDialog({
                                             {variableAmount ? (
                                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                     <div>
-                                                        <Label htmlFor="quantity-with-card" className="text-sm">
+                                                        <Label
+                                                            htmlFor="quantity-with-card"
+                                                            className="text-sm"
+                                                        >
                                                             With Card
                                                         </Label>
                                                         <Input
                                                             id="quantity-with-card"
                                                             type="number"
-                                                            value={quantityWithCard}
+                                                            value={
+                                                                quantityWithCard
+                                                            }
                                                             onChange={(e) =>
                                                                 setQuantityWithCard(
-                                                                    e.target.value,
+                                                                    e.target
+                                                                        .value,
                                                                 )
                                                             }
                                                             className="mt-1"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <Label htmlFor="quantity-without-card" className="text-sm">
+                                                        <Label
+                                                            htmlFor="quantity-without-card"
+                                                            className="text-sm"
+                                                        >
                                                             Without Card
                                                         </Label>
                                                         <Input
                                                             id="quantity-without-card"
                                                             type="number"
-                                                            value={quantityWithoutCard}
+                                                            value={
+                                                                quantityWithoutCard
+                                                            }
                                                             onChange={(e) =>
                                                                 setQuantityWithoutCard(
-                                                                    e.target.value,
+                                                                    e.target
+                                                                        .value,
                                                                 )
                                                             }
                                                             className="mt-1"
@@ -578,7 +639,10 @@ export function EventDialog({
                                                 </div>
                                             ) : (
                                                 <div>
-                                                    <Label htmlFor="quantity" className="text-sm">
+                                                    <Label
+                                                        htmlFor="quantity"
+                                                        className="text-sm"
+                                                    >
                                                         Quantity Total
                                                     </Label>
                                                     <Input
@@ -586,7 +650,9 @@ export function EventDialog({
                                                         type="number"
                                                         value={quantity}
                                                         onChange={(e) =>
-                                                            setQuantity(e.target.value)
+                                                            setQuantity(
+                                                                e.target.value,
+                                                            )
                                                         }
                                                         className="mt-1"
                                                         placeholder="Leave empty = unlimited"
@@ -601,8 +667,13 @@ export function EventDialog({
                                             <VariantManager
                                                 initialConfig={variantsConfig}
                                                 initialVariants={variants}
-                                                onChange={(newConfig, newVariants) => {
-                                                    setVariantsConfig(newConfig);
+                                                onChange={(
+                                                    newConfig,
+                                                    newVariants,
+                                                ) => {
+                                                    setVariantsConfig(
+                                                        newConfig,
+                                                    );
                                                     setVariants(newVariants);
                                                 }}
                                             />
@@ -618,11 +689,15 @@ export function EventDialog({
                                 className="rounded-lg border px-4 py-3"
                             >
                                 <div className="flex items-center justify-between">
-                                    <Label className="text-base font-bold block">
+                                    <Label className="block text-base font-bold">
                                         Online Store
                                     </Label>
                                     <CollapsibleTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                        >
                                             {isOnlineSectionOpen ? (
                                                 <ChevronUp className="h-4 w-4" />
                                             ) : (
@@ -665,7 +740,10 @@ export function EventDialog({
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="instagram-link" className="text-sm">
+                                        <Label
+                                            htmlFor="instagram-link"
+                                            className="text-sm"
+                                        >
                                             Instagram Link (optional)
                                         </Label>
                                         <Input
@@ -693,7 +771,8 @@ export function EventDialog({
                                 <Link
                                     href={`/sellables/events/${editingEvent.id}/attendees`}
                                 >
-                                    Open Attendees List <ExternalLink className="ml-2 h-3 w-3" />
+                                    Open Attendees List{' '}
+                                    <ExternalLink className="ml-2 h-3 w-3" />
                                 </Link>
                             </Button>
                         </div>

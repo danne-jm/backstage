@@ -465,12 +465,12 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item
                                                                         .description
                                                                         .length >
-                                                                        230
+                                                                    230
                                                                         ? item.description.substring(
-                                                                            0,
-                                                                            230,
-                                                                        ) +
-                                                                        '...'
+                                                                              0,
+                                                                              230,
+                                                                          ) +
+                                                                          '...'
                                                                         : item.description,
                                                             }}
                                                         />
@@ -485,7 +485,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.id,
                                                                     item.type,
                                                                     item.quantity -
-                                                                    1,
+                                                                        1,
                                                                     item.options,
                                                                 )
                                                             }
@@ -502,7 +502,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     item.id,
                                                                     item.type,
                                                                     item.quantity +
-                                                                    1,
+                                                                        1,
                                                                     item.options,
                                                                 )
                                                             }
@@ -576,9 +576,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                     serverBreakdown?.find(
                                                                         (s) =>
                                                                             s.id ===
-                                                                            item.id &&
+                                                                                item.id &&
                                                                             s.type ===
-                                                                            item.type,
+                                                                                item.type,
                                                                     );
 
                                                                 // Determine if THIS unit is discounted (greedy allocation: first N units)
@@ -591,7 +591,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                 const codeUsed =
                                                                     sItem
                                                                         ?.codes_applied?.[
-                                                                    i
+                                                                        i
                                                                     ] ||
                                                                     (isUnitDiscounted
                                                                         ? 'Discount'
@@ -605,7 +605,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                                 const unitMemberPrice =
                                                                     Number(
                                                                         item.member_price ??
-                                                                        item.price,
+                                                                            item.price,
                                                                     );
                                                                 // If finding member price fails locally, rely on server total?
                                                                 // Better to use available data. If server says discounted, we assume member price is active.
@@ -680,49 +680,49 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                                 {/* Applied Discounts Badges */}
                                                 {appliedDiscounts.length >
                                                     0 && (
-                                                        <div className="mb-2 flex flex-wrap gap-1.5 sm:mb-3 sm:gap-2">
-                                                            {appliedDiscounts.map(
-                                                                (code) => (
-                                                                    <span
-                                                                        key={code}
-                                                                        className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 sm:px-2.5 sm:text-sm"
+                                                    <div className="mb-2 flex flex-wrap gap-1.5 sm:mb-3 sm:gap-2">
+                                                        {appliedDiscounts.map(
+                                                            (code) => (
+                                                                <span
+                                                                    key={code}
+                                                                    className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 sm:px-2.5 sm:text-sm"
+                                                                >
+                                                                    {code}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            removeDiscount(
+                                                                                code,
+                                                                            )
+                                                                        }
+                                                                        className="ml-1 inline-flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none sm:ml-1.5 sm:h-4 sm:w-4"
                                                                     >
-                                                                        {code}
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                removeDiscount(
-                                                                                    code,
-                                                                                )
+                                                                        <span className="sr-only">
+                                                                            Remove
+                                                                            discount
+                                                                            code{' '}
+                                                                            {
+                                                                                code
                                                                             }
-                                                                            className="ml-1 inline-flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:bg-gray-500 focus:text-white focus:outline-none sm:ml-1.5 sm:h-4 sm:w-4"
+                                                                        </span>
+                                                                        <svg
+                                                                            className="h-2 w-2"
+                                                                            stroke="currentColor"
+                                                                            fill="none"
+                                                                            viewBox="0 0 8 8"
                                                                         >
-                                                                            <span className="sr-only">
-                                                                                Remove
-                                                                                discount
-                                                                                code{' '}
-                                                                                {
-                                                                                    code
-                                                                                }
-                                                                            </span>
-                                                                            <svg
-                                                                                className="h-2 w-2"
-                                                                                stroke="currentColor"
-                                                                                fill="none"
-                                                                                viewBox="0 0 8 8"
-                                                                            >
-                                                                                <path
-                                                                                    strokeLinecap="round"
-                                                                                    strokeWidth="1.5"
-                                                                                    d="M1 1l6 6m0-6L1 7"
-                                                                                />
-                                                                            </svg>
-                                                                        </button>
-                                                                    </span>
-                                                                ),
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                                            <path
+                                                                                strokeLinecap="round"
+                                                                                strokeWidth="1.5"
+                                                                                d="M1 1l6 6m0-6L1 7"
+                                                                            />
+                                                                        </svg>
+                                                                    </button>
+                                                                </span>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 <div className="flex gap-2">
                                                     <input

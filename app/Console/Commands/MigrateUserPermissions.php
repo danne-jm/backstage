@@ -35,16 +35,16 @@ class MigrateUserPermissions extends Command
             'view_settings_2fa',
             'view_settings_footer', 'update_settings_footer',
             'view_settings_users', 'create_user', 'update_user', 'delete_user',
-            'manage_users'
+            'manage_users',
         ];
 
         $presets = [
             'Administrator' => $allPermissions,
             'Board' => array_diff($allPermissions, [
                 'delete_office', 'delete_product', 'delete_event', 'delete_item', 'delete_user',
-                'view_settings_users', 'create_user', 'update_user', 'delete_account'
+                'view_settings_users', 'create_user', 'update_user', 'delete_account',
             ]),
-            'Guest' => []
+            'Guest' => [],
         ];
 
         // Create Permissions

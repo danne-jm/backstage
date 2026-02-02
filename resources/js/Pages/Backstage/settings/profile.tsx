@@ -26,7 +26,8 @@ export default function Profile({
         },
     ];
 
-    const { auth, permission_display, rolePresets } = usePage<SharedData>().props as any;
+    const { auth, permission_display, rolePresets } = usePage<SharedData>()
+        .props as any;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -110,10 +111,12 @@ export default function Profile({
 
                                                 // Quick preset check logic
                                                 const adminSet =
-                                                    rolePresets?.['Administrator'] ||
-                                                    [];
+                                                    rolePresets?.[
+                                                        'Administrator'
+                                                    ] || [];
                                                 const boardSet =
-                                                    rolePresets?.['Board'] || [];
+                                                    rolePresets?.['Board'] ||
+                                                    [];
 
                                                 const sortAndStr = (
                                                     arr: string[],
@@ -198,12 +201,12 @@ export default function Profile({
 
                                             {status ===
                                                 'verification-link-sent' && (
-                                                    <div className="mt-2 text-sm font-medium text-green-600">
-                                                        A new verification link has
-                                                        been sent to your email
-                                                        address.
-                                                    </div>
-                                                )}
+                                                <div className="mt-2 text-sm font-medium text-green-600">
+                                                    A new verification link has
+                                                    been sent to your email
+                                                    address.
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 

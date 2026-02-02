@@ -1,6 +1,6 @@
+import axios from 'axios';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
-import axios from 'axios';
 
 declare global {
     interface Window {
@@ -17,9 +17,12 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 const token = document.head.querySelector('meta[name="csrf-token"]');
 
 if (token) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.getAttribute('content');
+    window.axios.defaults.headers.common['X-CSRF-TOKEN'] =
+        token.getAttribute('content');
 } else {
-    console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
+    console.error(
+        'CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token',
+    );
 }
 
 // Only initialize Echo on the backstage domain, not on store subdomain

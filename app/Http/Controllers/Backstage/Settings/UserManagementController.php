@@ -10,7 +10,6 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Role;
 
 class UserManagementController extends Controller implements HasMiddleware
 {
@@ -56,9 +55,9 @@ class UserManagementController extends Controller implements HasMiddleware
                 $display = $roles->join(', ');
             } else {
                 // Guests: show list of direct permissions
-                // Use the simplified permission names (e.g. 'view_dashboard' -> 'View Dashboard')? 
-                // The prompt says "showcase all individual selected permissions". 
-                // Let's keep raw names or formatted. Raw names are clearer for debugging, but user might prefer formatted. 
+                // Use the simplified permission names (e.g. 'view_dashboard' -> 'View Dashboard')?
+                // The prompt says "showcase all individual selected permissions".
+                // Let's keep raw names or formatted. Raw names are clearer for debugging, but user might prefer formatted.
                 // Existing code used raw names joined. Let's stick to that but cleaner.
                 $direct = $u->getDirectPermissions()->pluck('name');
                 $display = $direct->isEmpty() ? 'No permissions' : $direct->join(', ');

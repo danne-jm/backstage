@@ -3,6 +3,11 @@ import { VariantManager } from '@/Components/Backstage/sellables/VariantManager'
 import { Button } from '@/Components/Shared/ui/button';
 import { Checkbox } from '@/Components/Shared/ui/checkbox';
 import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/Components/Shared/ui/collapsible';
+import {
     Dialog,
     DialogClose,
     DialogContent,
@@ -10,11 +15,6 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/Components/Shared/ui/dialog';
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/Components/Shared/ui/collapsible';
 import { Input } from '@/Components/Shared/ui/input';
 import { Label } from '@/Components/Shared/ui/label';
 import { Textarea } from '@/Components/Shared/ui/textarea';
@@ -109,8 +109,10 @@ export function ProductDialog({
             // Default Open States
             setIsOnlineSectionOpen(true);
 
-            const isSimpleStock = !editingProduct.variants_config || editingProduct.variants_config.length === 0;
-            const isMobile = window.matchMedia("(max-width: 640px)").matches;
+            const isSimpleStock =
+                !editingProduct.variants_config ||
+                editingProduct.variants_config.length === 0;
+            const isMobile = window.matchMedia('(max-width: 640px)').matches;
 
             if (isMobile || isSimpleStock) {
                 setIsStockSectionOpen(true);
@@ -282,7 +284,7 @@ export function ProductDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] w-full sm:max-w-[70vw] overflow-y-auto p-4 sm:p-6">
+            <DialogContent className="max-h-[85vh] w-full overflow-y-auto p-4 sm:max-w-[70vw] sm:p-6">
                 <DialogTitle>
                     {editingProduct ? 'Edit Product' : 'Add Product'}
                 </DialogTitle>
@@ -300,7 +302,9 @@ export function ProductDialog({
                                 <Input
                                     id="product-name"
                                     value={productName}
-                                    onChange={(e) => setProductName(e.target.value)}
+                                    onChange={(e) =>
+                                        setProductName(e.target.value)
+                                    }
                                     className="mt-1"
                                 />
                             </div>
@@ -324,7 +328,9 @@ export function ProductDialog({
                                     type="number"
                                     step="0.01"
                                     value={productPrice}
-                                    onChange={(e) => setProductPrice(e.target.value)}
+                                    onChange={(e) =>
+                                        setProductPrice(e.target.value)
+                                    }
                                     className="mt-1"
                                 />
                             </div>
@@ -343,7 +349,11 @@ export function ProductDialog({
                                         Stock Management
                                     </Label>
                                     <CollapsibleTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                        >
                                             {isStockSectionOpen ? (
                                                 <ChevronUp className="h-4 w-4" />
                                             ) : (
@@ -354,8 +364,10 @@ export function ProductDialog({
                                 </div>
 
                                 <CollapsibleContent className="mt-4 space-y-4">
-                                    <div className="flex items-center justify-between border-b pb-3 mb-3">
-                                        <span className="text-sm text-muted-foreground">Type</span>
+                                    <div className="mb-3 flex items-center justify-between border-b pb-3">
+                                        <span className="text-sm text-muted-foreground">
+                                            Type
+                                        </span>
                                         <div
                                             role="tablist"
                                             aria-orientation="horizontal"
@@ -364,8 +376,12 @@ export function ProductDialog({
                                             <button
                                                 type="button"
                                                 role="tab"
-                                                aria-selected={stockMode === 'simple'}
-                                                onClick={() => setStockMode('simple')}
+                                                aria-selected={
+                                                    stockMode === 'simple'
+                                                }
+                                                onClick={() =>
+                                                    setStockMode('simple')
+                                                }
                                                 className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'simple' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
                                             >
                                                 Simple
@@ -373,8 +389,12 @@ export function ProductDialog({
                                             <button
                                                 type="button"
                                                 role="tab"
-                                                aria-selected={stockMode === 'variants'}
-                                                onClick={() => setStockMode('variants')}
+                                                aria-selected={
+                                                    stockMode === 'variants'
+                                                }
+                                                onClick={() =>
+                                                    setStockMode('variants')
+                                                }
                                                 className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'variants' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
                                             >
                                                 Variants
@@ -387,8 +407,12 @@ export function ProductDialog({
                                             <div className="flex items-center space-x-2">
                                                 <Checkbox
                                                     id="product-variable-amount"
-                                                    checked={!!productVariableAmount}
-                                                    onCheckedChange={(checked) =>
+                                                    checked={
+                                                        !!productVariableAmount
+                                                    }
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
                                                         setProductVariableAmount(
                                                             checked === true,
                                                         )
@@ -405,23 +429,32 @@ export function ProductDialog({
                                             {productVariableAmount ? (
                                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                     <div>
-                                                        <Label htmlFor="product-quantity-with-card" className="text-sm">
+                                                        <Label
+                                                            htmlFor="product-quantity-with-card"
+                                                            className="text-sm"
+                                                        >
                                                             With Card
                                                         </Label>
                                                         <Input
                                                             id="product-quantity-with-card"
                                                             type="number"
-                                                            value={productQuantityWithCard}
+                                                            value={
+                                                                productQuantityWithCard
+                                                            }
                                                             onChange={(e) =>
                                                                 setProductQuantityWithCard(
-                                                                    e.target.value,
+                                                                    e.target
+                                                                        .value,
                                                                 )
                                                             }
                                                             className="mt-1"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <Label htmlFor="product-quantity-without-card" className="text-sm">
+                                                        <Label
+                                                            htmlFor="product-quantity-without-card"
+                                                            className="text-sm"
+                                                        >
                                                             Without Card
                                                         </Label>
                                                         <Input
@@ -432,7 +465,8 @@ export function ProductDialog({
                                                             }
                                                             onChange={(e) =>
                                                                 setProductQuantityWithoutCard(
-                                                                    e.target.value,
+                                                                    e.target
+                                                                        .value,
                                                                 )
                                                             }
                                                             className="mt-1"
@@ -441,7 +475,10 @@ export function ProductDialog({
                                                 </div>
                                             ) : (
                                                 <div>
-                                                    <Label htmlFor="product-quantity" className="text-sm">
+                                                    <Label
+                                                        htmlFor="product-quantity"
+                                                        className="text-sm"
+                                                    >
                                                         Quantity Total
                                                     </Label>
                                                     <Input
@@ -466,8 +503,13 @@ export function ProductDialog({
                                             <VariantManager
                                                 initialConfig={variantsConfig}
                                                 initialVariants={variants}
-                                                onChange={(newConfig, newVariants) => {
-                                                    setVariantsConfig(newConfig);
+                                                onChange={(
+                                                    newConfig,
+                                                    newVariants,
+                                                ) => {
+                                                    setVariantsConfig(
+                                                        newConfig,
+                                                    );
                                                     setVariants(newVariants);
                                                 }}
                                             />
@@ -483,11 +525,15 @@ export function ProductDialog({
                                 className="rounded-lg border px-4 py-3"
                             >
                                 <div className="flex items-center justify-between">
-                                    <Label className="text-base font-bold block">
+                                    <Label className="block text-base font-bold">
                                         Online Store
                                     </Label>
                                     <CollapsibleTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                        >
                                             {isOnlineSectionOpen ? (
                                                 <ChevronUp className="h-4 w-4" />
                                             ) : (
@@ -531,7 +577,10 @@ export function ProductDialog({
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="product-instagram-link" className="text-sm">
+                                        <Label
+                                            htmlFor="product-instagram-link"
+                                            className="text-sm"
+                                        >
                                             Instagram Link (optional)
                                         </Label>
                                         <Input

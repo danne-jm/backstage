@@ -657,8 +657,12 @@ export default function Office() {
 
         // Check stock for simple items
         if (product && !product.is_variant_based) {
-            const isUnlimited = product.unlimited_quantity || product.unlimited_quantity_with_card || product.unlimited_quantity_without_card;
-            const remaining = typeof product.remaining === 'number' ? product.remaining : 0;
+            const isUnlimited =
+                product.unlimited_quantity ||
+                product.unlimited_quantity_with_card ||
+                product.unlimited_quantity_without_card;
+            const remaining =
+                typeof product.remaining === 'number' ? product.remaining : 0;
 
             if (!isUnlimited && remaining <= 0) {
                 setSoldOutText(`${product.name} is out of stock.`);
@@ -3051,11 +3055,7 @@ const VariantSelector = ({ product, onConfirm, onCancel }: any) => {
         });
     }, [product, selections, isComplete]);
 
-    const handleConfirm = () => {
-        if (isComplete) {
-            onConfirm(selections);
-        }
-    };
+
 
     return (
         <div className="space-y-4">
@@ -3093,7 +3093,7 @@ const VariantSelector = ({ product, onConfirm, onCancel }: any) => {
 
             {matchingVariant && (
                 <div
-                    className={`text-sm ${matchingVariant.remaining === 0 ? 'text-red-500 font-bold' : 'text-green-600'}`}
+                    className={`text-sm ${matchingVariant.remaining === 0 ? 'font-bold text-red-500' : 'text-green-600'}`}
                 >
                     {matchingVariant.remaining !== null
                         ? matchingVariant.remaining === 0
