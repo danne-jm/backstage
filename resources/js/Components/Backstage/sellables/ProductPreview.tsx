@@ -40,219 +40,305 @@ export function ProductPreview({
     onSetOnline,
 }: ProductPreviewProps) {
     return (
-        <div className="relative flex gap-4 rounded-lg border p-4">
-            {/* Image Thumbnail - Hidden on mobile/small screens */}
-            <div className="hidden h-20 w-20 shrink-0 overflow-hidden rounded-md border bg-muted/50 sm:block">
-                {product.image ? (
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="h-full w-full object-cover"
-                    />
-                ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground/50">
-                        <ImageIcon className="h-8 w-8" />
+        <div
+            className={cn(
+                'relative flex gap-4 rounded-lg border p-4',
+                // Keep store-manager as block, sellables as flex (row)
+                variant === 'store-manager' ? "block" : "flex",
+                // Remove extra padding bottom from sellables
+                variant === 'sellables' ? "pb-4" : "pb-4"
+            )}
+        >
+            {/* Image Thumbnail - Rendered differently based on variant */}
+            {/* For Sellables (Flex Layout), keep it here. For Store Manager (Float Layout), render inside main block */}
+            {variant === 'sellables' && (
+                <div className="hidden h-20 w-20 shrink-0 overflow-hidden rounded-md border bg-muted/50 sm:block">
+                    {product.image ? (
+                        <img
+                            src={product.image}
+                            alt={product.name}
+                            className="h-full w-full object-cover"
+                        />
+                    ) : (
+                        <div className="flex h-full items-center justify-center text-muted-foreground/50">
+                            <ImageIcon className="h-8 w-8" />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div className="min-w-0 flex-1 block">
+                {/* Store Manager: Image Floated Left */}
+                {variant === 'store-manager' && (
+                    <div className="float-left mr-4 mb-1 h-20 w-20 shrink-0 overflow-hidden rounded-md border bg-muted/50 hidden sm:block">
+                        {product.image ? (
+                            <img
+                                src={product.image}
+                                alt={product.name}
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <div className="flex h-full items-center justify-center text-muted-foreground/50">
+                                <ImageIcon className="h-8 w-8" />
+                            </div>
+                        )}
                     </div>
                 )}
-            </div>
 
-            <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between">
-                    <h3
-                        className={cn(
-                            'font-medium',
-                            variant === 'store-manager' &&
-                                isOnline &&
-                                product.name.length >= 26 &&
-                                'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
-                        )}
-                    >
-                        {product.name}
-                    </h3>
+                {/* Desktop Store Manager Actions: Floated Right */}
+                {variant === 'store-manager' && onEdit && (
+                    <div className="hidden md:block float-right ml-4 mb-2">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onEdit(product)}
+                            className="h-8 px-2"
+                        >
+                            Edit
+                        </Button>
+                    </div>
+                )}
 
-                    <div className="flex items-center gap-2">
-                        {onEdit && (
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onEdit(product)}
+                <div className={variant === 'sellables' ? 'flex flex-col md:flex-row gap-4' : 'block'}>
+                    <div className="min-w-0 flex-1">
+                        {/* Title and Mobile Actions Row */}
+                        <div className="flex items-start justify-between">
+                            <h3
+                                className={cn(
+                                    'font-medium',
+                                    variant === 'store-manager' &&
+                                    isOnline &&
+                                    product.name.length >= 26 &&
+                                    'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                                )}
                             >
-                                Edit
-                            </Button>
-                        )}
-                        {variant === 'sellables' &&
-                            onDelete &&
-                            setProductToDelete && (
-                                <>
+                                {product.name}
+                            </h3>
+
+                            {/* Mobile Actions Only */}
+                            <div className="flex items-center gap-1 md:hidden">
+                                {onEdit && (
                                     <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="text-muted-foreground hover:bg-muted/30"
+                                        onClick={() => onEdit(product)}
+                                        className="h-8 px-2"
+                                    >
+                                        Edit
+                                    </Button>
+                                )}
+                                {variant === 'sellables' &&
+                                    onDelete &&
+                                    setProductToDelete && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 px-2 text-muted-foreground hover:bg-muted/30"
+                                            onClick={() =>
+                                                setProductToDelete(product.id)
+                                            }
+                                        >
+                                            Remove
+                                        </Button>
+                                    )}
+                            </div>
+                        </div>
+
+                        {/* Description */}
+                        {product.description && (
+                            <p className={cn(
+                                "mt-1 text-sm text-muted-foreground",
+                            )}>
+                                {product.description}
+                            </p>
+                        )}
+
+                        {/* Price: label muted, value prominent */}
+                        <div className="mt-1 text-sm">
+                            <span className="text-muted-foreground">Price:</span>{' '}
+                            <span className="text-foreground">€{product.price}</span>
+                        </div>
+                        <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0 flex-1">
+                                {product.variants_config &&
+                                    product.variants_config.length > 0 ? (
+                                    <>
+                                        <span className="text-muted-foreground">
+                                            Quantity by:
+                                        </span>{' '}
+                                        <span className="text-foreground">
+                                            {product.variants_config
+                                                .map((vc) => vc.name)
+                                                .join(', ')}
+                                        </span>
+                                        {/* Variants Matrix - Store Manager Only here (hidden on mobile for sellables) */}
+                                        <div className={cn("mt-2", variant === 'sellables' ? "hidden" : "hidden md:block")}>
+                                            {variant === 'store-manager' ? null : (
+                                                <VariantsMatrix product={product} />
+                                            )}
+                                        </div>
+                                    </>
+                                ) : product.variable_amount ? (
+                                    <>
+                                        <span className="text-muted-foreground">
+                                            Qty w/ ESNcard:
+                                        </span>{' '}
+                                        {product.unlimited_quantity_with_card ||
+                                            product.quantity_with_card == null
+                                            ? 'Unlimited'
+                                            : product.quantity_with_card}
+                                        {product.unlimited_quantity_with_card ||
+                                            product.quantity_with_card == null
+                                            ? false
+                                            : product.remaining_with_card !==
+                                            undefined &&
+                                            product.remaining_with_card !== null && (
+                                                <span className="text-gray-500">
+                                                    {' '}
+                                                    | {
+                                                        product.remaining_with_card
+                                                    }{' '}
+                                                    remain
+                                                </span>
+                                            )}{' '}
+                                        |{' '}
+                                        <span className="text-muted-foreground">
+                                            w/o ESNcard:
+                                        </span>{' '}
+                                        {product.unlimited_quantity_without_card ||
+                                            product.quantity_without_card == null
+                                            ? 'Unlimited'
+                                            : product.quantity_without_card}
+                                        {product.unlimited_quantity_without_card ||
+                                            product.quantity_without_card == null
+                                            ? false
+                                            : product.remaining_without_card !==
+                                            undefined &&
+                                            product.remaining_without_card !==
+                                            null && (
+                                                <span className="text-gray-500">
+                                                    {' '}
+                                                    | {
+                                                        product.remaining_without_card
+                                                    }{' '}
+                                                    remain
+                                                </span>
+                                            )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-muted-foreground">
+                                            Quantity:
+                                        </span>{' '}
+                                        {product.unlimited_quantity ||
+                                            product.quantity == null
+                                            ? 'Unlimited'
+                                            : product.quantity}
+                                        {product.unlimited_quantity ||
+                                            product.quantity == null
+                                            ? false
+                                            : product.remaining !== undefined &&
+                                            product.remaining !== null && (
+                                                <span className="text-gray-500">
+                                                    {' '}
+                                                    | {product.remaining} remain
+                                                </span>
+                                            )}
+                                    </>
+                                )}
+
+                                {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
+                                {variant === 'store-manager' && onSetOnline && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <Checkbox
+                                            id={`online-${product.id}`}
+                                            checked={!!isOnline}
+                                            onCheckedChange={(checked) =>
+                                                onSetOnline(
+                                                    product.id,
+                                                    checked === true,
+                                                    'product',
+                                                )
+                                            }
+                                        />
+                                        <label
+                                            htmlFor={`online-${product.id}`}
+                                            className="text-xs font-medium text-muted-foreground cursor-pointer"
+                                        >
+                                            Sell Online
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Center Column: Variant Matrix (Sellables only, Desktop only) */}
+                    {variant === 'sellables' && product.variants_config && product.variants_config.length > 0 && (
+                        <div className="hidden md:block flex-shrink-0 w-[400px]">
+                            <VariantsMatrix product={product} />
+                        </div>
+                    )}
+
+                    {/* Right Column: Actions (Desktop) - ONLY for Sellables now. Store Manager uses floated button. */}
+                    {variant === 'sellables' && (onEdit || onDelete) && (
+                        <div className="hidden md:flex flex-row gap-2 items-start flex-shrink-0">
+                            {onEdit && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => onEdit(product)}
+                                    className="h-8 px-2"
+                                >
+                                    Edit
+                                </Button>
+                            )}
+                            {onDelete &&
+                                setProductToDelete && (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 px-2 text-muted-foreground hover:bg-muted/30"
                                         onClick={() =>
                                             setProductToDelete(product.id)
                                         }
                                     >
                                         Remove
                                     </Button>
-                                </>
-                            )}
-                    </div>
-                </div>
-
-                {product.description && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        {product.description}
-                    </p>
-                )}
-                {/* Price: label muted, value prominent */}
-                <div className="mt-1 text-sm">
-                    <span className="text-muted-foreground">Price:</span>{' '}
-                    <span className="text-foreground">€{product.price}</span>
-                </div>
-                <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                        {product.variants_config &&
-                        product.variants_config.length > 0 ? (
-                            <>
-                                <span className="text-muted-foreground">
-                                    Configurable by:
-                                </span>{' '}
-                                <span className="text-foreground">
-                                    {product.variants_config
-                                        .map((vc) => vc.name)
-                                        .join(', ')}
-                                </span>
-                                {/* Variants Matrix - Hidden on mobile/small screens */}
-                                <div className="mt-2 hidden md:block">
-                                    {variant === 'store-manager' ? null : ( // Store Manager: Hide details, just show "Variants: Size, Color" (already shown above)
-                                        // Sellables: Show Matrix or List
-                                        <VariantsMatrix product={product} />
-                                    )}
-                                </div>
-                            </>
-                        ) : product.variable_amount ? (
-                            <>
-                                <span className="text-muted-foreground">
-                                    Qty w/ ESNcard:
-                                </span>{' '}
-                                {product.unlimited_quantity_with_card ||
-                                product.quantity_with_card == null
-                                    ? 'Unlimited'
-                                    : product.quantity_with_card}
-                                {product.unlimited_quantity_with_card ||
-                                product.quantity_with_card == null
-                                    ? false
-                                    : product.remaining_with_card !==
-                                          undefined &&
-                                      product.remaining_with_card !== null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {
-                                                  product.remaining_with_card
-                                              }{' '}
-                                              remain
-                                          </span>
-                                      )}{' '}
-                                |{' '}
-                                <span className="text-muted-foreground">
-                                    w/o ESNcard:
-                                </span>{' '}
-                                {product.unlimited_quantity_without_card ||
-                                product.quantity_without_card == null
-                                    ? 'Unlimited'
-                                    : product.quantity_without_card}
-                                {product.unlimited_quantity_without_card ||
-                                product.quantity_without_card == null
-                                    ? false
-                                    : product.remaining_without_card !==
-                                          undefined &&
-                                      product.remaining_without_card !==
-                                          null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {
-                                                  product.remaining_without_card
-                                              }{' '}
-                                              remain
-                                          </span>
-                                      )}
-                            </>
-                        ) : (
-                            <>
-                                <span className="text-muted-foreground">
-                                    Quantity:
-                                </span>{' '}
-                                {product.unlimited_quantity ||
-                                product.quantity == null
-                                    ? 'Unlimited'
-                                    : product.quantity}
-                                {product.unlimited_quantity ||
-                                product.quantity == null
-                                    ? false
-                                    : product.remaining !== undefined &&
-                                      product.remaining !== null && (
-                                          <span className="text-gray-500">
-                                              {' '}
-                                              | {product.remaining} remain
-                                          </span>
-                                      )}
-                            </>
-                        )}
-                    </div>
-
-                    {variant === 'store-manager' && onSetOnline && (
-                        <div className="flex shrink-0 items-center space-x-2 sm:ml-4">
-                            <Checkbox
-                                id={`online-${product.id}`}
-                                checked={!!isOnline}
-                                onCheckedChange={(checked) =>
-                                    onSetOnline(
-                                        product.id,
-                                        checked === true,
-                                        'product',
-                                    )
-                                }
-                            />
-                            <label
-                                htmlFor={`online-${product.id}`}
-                                className="text-sm leading-none font-medium whitespace-nowrap peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                                Sell Online
-                            </label>
+                                )}
                         </div>
                     )}
                 </div>
-                {/* Delete dialog (kept out of flow) */}
-                {variant === 'sellables' && onDelete && setProductToDelete && (
-                    <Dialog
-                        open={productToDelete === product.id}
-                        onOpenChange={(open) =>
-                            !open && setProductToDelete(null)
-                        }
-                    >
-                        <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
-                            <DialogTitle>Delete Product</DialogTitle>
-                            <DialogDescription>
-                                Are you sure you want to delete "{product.name}
-                                "? This action cannot be undone.
-                            </DialogDescription>
-                            <DialogFooter>
-                                <DialogClose asChild>
-                                    <Button variant="ghost">Cancel</Button>
-                                </DialogClose>
-                                <Button
-                                    variant="destructive"
-                                    onClick={() => onDelete(product.id)}
-                                >
-                                    Delete
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                )}
-
-                {/* Sell Online is rendered inline next to the quantity line above when in store-manager variant */}
             </div>
+
+            {/* Delete dialog (kept out of flow) */}
+            {variant === 'sellables' && onDelete && setProductToDelete && (
+                <Dialog
+                    open={productToDelete === product.id}
+                    onOpenChange={(open) =>
+                        !open && setProductToDelete(null)
+                    }
+                >
+                    <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                        <DialogTitle>Delete Product</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete "{product.name}
+                            "? This action cannot be undone.
+                        </DialogDescription>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="ghost">Cancel</Button>
+                            </DialogClose>
+                            <Button
+                                variant="destructive"
+                                onClick={() => onDelete(product.id)}
+                            >
+                                Delete
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     );
 }
@@ -283,7 +369,7 @@ function VariantsMatrix({ product }: { product: Product }) {
                             .join(', ')}
                         {' - '}
                         {v.quantity === null
-                            ? 'Unlimited'
+                            ? 'Unl.'
                             : formatVariantQuantity(v)}
                     </div>
                 ))}
@@ -311,8 +397,8 @@ function VariantsMatrix({ product }: { product: Product }) {
                 <table className="w-full text-left">
                     <thead className="bg-muted/50">
                         <tr>
-                            <th className="p-2 font-medium">{config.name}</th>
-                            <th className="p-2 font-medium">Stock</th>
+                            <th className="p-1.5 font-medium">{config.name}</th>
+                            <th className="p-1.5 font-medium">Stock</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -320,11 +406,11 @@ function VariantsMatrix({ product }: { product: Product }) {
                             const v = getVariant({ [config.name]: opt });
                             return (
                                 <tr key={opt}>
-                                    <td className="p-2">{opt}</td>
-                                    <td className="p-2 text-muted-foreground">
+                                    <td className="p-1.5">{opt}</td>
+                                    <td className="p-1.5 text-muted-foreground">
                                         {v
                                             ? v.quantity === null
-                                                ? 'Unlimited'
+                                                ? 'Unl.'
                                                 : formatVariantQuantity(v)
                                             : '-'}
                                     </td>
@@ -345,13 +431,13 @@ function VariantsMatrix({ product }: { product: Product }) {
                 <table className="w-full text-left">
                     <thead className="bg-muted/50">
                         <tr>
-                            <th className="p-2 font-medium">
+                            <th className="p-1.5 font-medium">
                                 {rowConfig.name} \ {colConfig.name}
                             </th>
                             {colConfig.options.map((colOpt) => (
                                 <th
                                     key={colOpt}
-                                    className="p-2 font-medium whitespace-nowrap"
+                                    className="p-1.5 font-medium whitespace-nowrap"
                                 >
                                     {colOpt}
                                 </th>
@@ -361,7 +447,7 @@ function VariantsMatrix({ product }: { product: Product }) {
                     <tbody className="divide-y">
                         {rowConfig.options.map((rowOpt) => (
                             <tr key={rowOpt}>
-                                <td className="bg-muted/20 p-2 font-medium whitespace-nowrap">
+                                <td className="bg-muted/20 p-1.5 font-medium whitespace-nowrap">
                                     {rowOpt}
                                 </td>
                                 {colConfig.options.map((colOpt) => {
@@ -372,11 +458,11 @@ function VariantsMatrix({ product }: { product: Product }) {
                                     return (
                                         <td
                                             key={`${rowOpt}-${colOpt}`}
-                                            className="p-2 whitespace-nowrap text-muted-foreground"
+                                            className="p-1.5 whitespace-nowrap text-muted-foreground"
                                         >
                                             {v
                                                 ? v.quantity === null
-                                                    ? 'Unlimited'
+                                                    ? 'Unl.'
                                                     : formatVariantQuantity(v)
                                                 : '-'}
                                         </td>
@@ -397,24 +483,24 @@ function VariantsMatrix({ product }: { product: Product }) {
                 <thead className="bg-muted/50">
                     <tr>
                         {configs.map((c) => (
-                            <th key={c.name} className="p-2 font-medium">
+                            <th key={c.name} className="p-1.5 font-medium">
                                 {c.name}
                             </th>
                         ))}
-                        <th className="p-2 font-medium">Stock</th>
+                        <th className="p-1.5 font-medium">Stock</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y">
                     {product.variants.map((v, idx) => (
                         <tr key={v.id || idx}>
                             {configs.map((c) => (
-                                <td key={c.name} className="p-2">
+                                <td key={c.name} className="p-1.5">
                                     {v.options[c.name]}
                                 </td>
                             ))}
-                            <td className="p-2 text-muted-foreground">
+                            <td className="p-1.5 text-muted-foreground">
                                 {v.quantity === null
-                                    ? 'Unlimited'
+                                    ? 'Unl.'
                                     : formatVariantQuantity(v)}
                             </td>
                         </tr>

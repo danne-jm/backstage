@@ -74,11 +74,7 @@ class SellablesController extends Controller
 
         // Combine live/upcoming (all) then the first page of expired events
         $events = $liveEvents->concat($expiredEvents)->values();
-        try {
-            $boardUsers = User::role('Board')->orderBy('first_name')->get(['id', 'first_name', 'last_name', 'email']);
-        } catch (\Spatie\Permission\Exceptions\RoleDoesNotExist $e) {
-            $boardUsers = collect();
-        }
+        $boardUsers = User::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'email']);
 
         return Inertia::render('Backstage/sellables', [
             'products' => $products,

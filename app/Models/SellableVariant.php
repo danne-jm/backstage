@@ -22,4 +22,17 @@ class SellableVariant extends Model
     {
         return $this->morphTo();
     }
+
+    /**
+     * Get remaining stock for this variant.
+     * Returns null if unlimited (quantity is null).
+     */
+    public function getRemainingAttribute(): ?int
+    {
+        if ($this->quantity === null) {
+            return null;
+        }
+
+        return max(0, $this->quantity - ($this->sold_count ?? 0));
+    }
 }

@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             'create_event', 'update_event', 'delete_event',
             'view_event_attendees', 'update_event_attendee',
             'view_inventory', 'create_item', 'update_item', 'delete_item',
-            'view_store_manager',
+            'view_store_manager', 'update_store_settings',
             'view_ticket_distributor', 'view_ticket_scanner', 'import_ticket', 'scan_tickets', 'send_tickets',
             'view_mail_distributor',
             'view_settings_profile', 'update_settings_profile', 'delete_account',
@@ -137,12 +137,18 @@ class DatabaseSeeder extends Seeder
             ],
         ];
 
+        // Create Permissions in DB
+        foreach ($allPermissions as $perm) {
+            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $perm]);
+        }
+
         foreach ($users as $userData) {
             $user = User::create($userData);
-            // Permissions need to be set explicitly as the model attribute is cast to array
-            $user->permissions = $userData['email'] === 'it@esnleuven.be' || $userData['email'] === 'president@esnleuven.be'
+            // Assign Spatie permissions
+            $permsToSync = $userData['email'] === 'it@esnleuven.be' || $userData['email'] === 'president@esnleuven.be'
                 ? $adminPermissionsArray
                 : $boardPermissionsArray;
+            $user->syncPermissions($permsToSync);
             $user->save();
         }
 

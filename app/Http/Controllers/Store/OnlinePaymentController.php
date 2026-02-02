@@ -41,6 +41,73 @@ class OnlinePaymentController extends Controller
 
         $allocation = $this->allocator->allocate($validated['items'], $validated['codes'] ?? []);
 
+        // Check stock availability
+        $warnings = [];
+        $stockDemands = [];
+
+        // Load all entities upfront for efficiency
+        $productIds = [];
+        $eventIds = [];
+        foreach ($allocation['units'] as $unit) {
+            if ($unit['type'] === 'product') {
+                $productIds[] = $unit['id'];
+            } else {
+                $eventIds[] = $unit['id'];
+            }
+        }
+        $products = Product::with('variants')->whereIn('id', array_unique($productIds))->get()->keyBy('id');
+        $events = Event::whereIn('id', array_unique($eventIds))->get()->keyBy('id');
+
+        foreach ($allocation['units'] as $unit) {
+            $entity = $unit['type'] === 'product'
+                ? ($products[$unit['id']] ?? null)
+                : ($events[$unit['id']] ?? null);
+
+            if (! $entity) {
+                $warnings[] = "Item not found: {$unit['name']}";
+
+                continue;
+            }
+
+            $ticketType = $unit['ticket_type'] ?? null;
+            $options = $unit['options'] ?? null;
+
+            $key = $unit['type'].'_'.$unit['id'];
+            if ($unit['type'] === 'event' && $ticketType) {
+                $key .= '_'.$ticketType;
+            }
+            if (! empty($options)) {
+                $opts = $options;
+                ksort($opts);
+                $key .= '_'.serialize($opts);
+            }
+
+            if (! isset($stockDemands[$key])) {
+                $stockDemands[$key] = [
+                    'count' => 0,
+                    'entity' => $entity,
+                    'type' => $unit['type'],
+                    'ticket_type' => $ticketType,
+                    'options' => $options,
+                ];
+            }
+            $stockDemands[$key]['count']++;
+        }
+
+        foreach ($stockDemands as $demand) {
+            try {
+                $this->validateStockDemand($demand);
+            } catch (ValidationException $e) {
+                foreach ($e->errors() as $messages) {
+                    foreach ($messages as $message) {
+                        $warnings[] = $message;
+                    }
+                }
+            }
+        }
+
+        $allocation['warnings'] = array_values(array_unique($warnings));
+
         return response()->json($allocation);
     }
 
@@ -464,7 +531,7 @@ class OnlinePaymentController extends Controller
 
             if ($variant->quantity !== null && ($variant->quantity - $variant->sold_count) < $count) {
                 throw ValidationException::withMessages([
-                    'stock' => "Selected variant for {$entity->name} is sold out.",
+                    'stock' => "Insufficient stock for variant for {$entity->name}.",
                 ]);
             }
 
@@ -480,7 +547,7 @@ class OnlinePaymentController extends Controller
 
             if ($remaining !== null && $remaining < $count) {
                 throw ValidationException::withMessages([
-                    'stock' => "{$entity->name} is sold out or insufficient stock.",
+                    'stock' => "Insufficient stock for {$entity->name}.",
                 ]);
             }
         } else {
@@ -491,7 +558,7 @@ class OnlinePaymentController extends Controller
 
                 if (! $isUnlimited && (! is_null($remaining) && $remaining < $count)) {
                     throw ValidationException::withMessages([
-                        'stock' => "{$entity->name} (Member Price) is sold out.",
+                        'stock' => "Insufficient stock for {$entity->name} (Member Price).",
                     ]);
                 }
             } else {
@@ -500,7 +567,7 @@ class OnlinePaymentController extends Controller
 
                 if (! $isUnlimited && (! is_null($remaining) && $remaining < $count)) {
                     throw ValidationException::withMessages([
-                        'stock' => "{$entity->name} is sold out.",
+                        'stock' => "Insufficient stock for {$entity->name}.",
                     ]);
                 }
             }

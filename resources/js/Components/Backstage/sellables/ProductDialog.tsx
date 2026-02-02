@@ -10,6 +10,11 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/Components/Shared/ui/dialog';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/Components/Shared/ui/collapsible';
 import { Input } from '@/Components/Shared/ui/input';
 import { Label } from '@/Components/Shared/ui/label';
 import { Textarea } from '@/Components/Shared/ui/textarea';
@@ -50,6 +55,7 @@ export function ProductDialog({
     // Online Store & Images
     const [isOnlineSellable, setIsOnlineSellable] = React.useState(false);
     const [isOnlineSectionOpen, setIsOnlineSectionOpen] = React.useState(false);
+    const [isStockSectionOpen, setIsStockSectionOpen] = React.useState(true);
     const [imagesList, setImagesList] = React.useState<
         { id: number | string; url: string }[]
     >([]);
@@ -91,7 +97,6 @@ export function ProductDialog({
             setImagesList(editingProduct.images_list || []);
             setNewImages([]);
             setImagesToDelete([]);
-            setImagesToDelete([]);
             setInstagramLink(editingProduct.instagram_link || '');
             setVariantsConfig(editingProduct.variants_config || []);
             setVariants(editingProduct.variants || []);
@@ -100,7 +105,18 @@ export function ProductDialog({
                     ? 'variants'
                     : 'simple',
             );
-            setIsOnlineSectionOpen(false);
+
+            // Default Open States
+            setIsOnlineSectionOpen(true);
+
+            const isSimpleStock = !editingProduct.variants_config || editingProduct.variants_config.length === 0;
+            const isMobile = window.matchMedia("(max-width: 640px)").matches;
+
+            if (isMobile || isSimpleStock) {
+                setIsStockSectionOpen(true);
+            } else {
+                setIsStockSectionOpen(false);
+            }
         } else {
             setProductName('');
             setProductPrice('');
@@ -113,12 +129,12 @@ export function ProductDialog({
             setImagesList([]);
             setNewImages([]);
             setImagesToDelete([]);
-            setImagesToDelete([]);
             setInstagramLink('');
             setVariantsConfig([]);
             setVariants([]);
             setStockMode('simple');
-            setIsOnlineSectionOpen(false);
+            setIsOnlineSectionOpen(true);
+            setIsStockSectionOpen(true);
         }
     }, [editingProduct, open]);
 
@@ -266,7 +282,7 @@ export function ProductDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6">
+            <DialogContent className="max-h-[85vh] w-full sm:max-w-[70vw] overflow-y-auto p-4 sm:p-6">
                 <DialogTitle>
                     {editingProduct ? 'Edit Product' : 'Add Product'}
                 </DialogTitle>
@@ -275,239 +291,263 @@ export function ProductDialog({
                         ? 'Update the product details below.'
                         : 'Enter the details for the new product.'}
                 </DialogDescription>
-                <div className="space-y-4">
-                    <div>
-                        <Label htmlFor="product-name">Name</Label>
-                        <Input
-                            id="product-name"
-                            value={productName}
-                            onChange={(e) => setProductName(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <Label htmlFor="product-description">
-                            Description (optional)
-                        </Label>
-                        <Textarea
-                            id="product-description"
-                            value={productDescription}
-                            onChange={(e) =>
-                                setProductDescription(e.target.value)
-                            }
-                            className="min-h-[100px]"
-                        />
-                    </div>
-                    <div>
-                        <Label htmlFor="product-price">Price (€)</Label>
-                        <Input
-                            id="product-price"
-                            type="number"
-                            step="0.01"
-                            value={productPrice}
-                            onChange={(e) => setProductPrice(e.target.value)}
-                        />
-                    </div>
-                    {/* Stock Management Section */}
-                    <div className="space-y-4 rounded-lg border p-4">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <Label className="text-base font-semibold">
-                                Stock Management
-                            </Label>
-                            <div
-                                role="tablist"
-                                aria-orientation="horizontal"
-                                className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground"
-                            >
-                                <button
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={stockMode === 'simple'}
-                                    onClick={() => setStockMode('simple')}
-                                    className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 ${stockMode === 'simple' ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30' : 'text-foreground dark:text-muted-foreground'}`}
-                                >
-                                    Simple Cap
-                                </button>
-                                <button
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={stockMode === 'variants'}
-                                    onClick={() => setStockMode('variants')}
-                                    className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 ${stockMode === 'variants' ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30' : 'text-foreground dark:text-muted-foreground'}`}
-                                >
-                                    Variants
-                                </button>
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        {/* Column 1 (Span 1): Basic Info */}
+                        <div className="space-y-4 lg:col-span-1">
+                            <div>
+                                <Label htmlFor="product-name">Name</Label>
+                                <Input
+                                    id="product-name"
+                                    value={productName}
+                                    onChange={(e) => setProductName(e.target.value)}
+                                    className="mt-1"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="product-description">
+                                    Description (optional)
+                                </Label>
+                                <Textarea
+                                    id="product-description"
+                                    value={productDescription}
+                                    onChange={(e) =>
+                                        setProductDescription(e.target.value)
+                                    }
+                                    className="min-h-[120px]"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="product-price">Price (€)</Label>
+                                <Input
+                                    id="product-price"
+                                    type="number"
+                                    step="0.01"
+                                    value={productPrice}
+                                    onChange={(e) => setProductPrice(e.target.value)}
+                                    className="mt-1"
+                                />
                             </div>
                         </div>
 
-                        {stockMode === 'simple' && (
-                            <div className="space-y-4 pt-2">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="product-variable-amount"
-                                        checked={!!productVariableAmount}
-                                        onCheckedChange={(checked) =>
-                                            setProductVariableAmount(
-                                                checked === true,
-                                            )
-                                        }
-                                    />
-                                    <Label
-                                        htmlFor="product-variable-amount"
-                                        className="cursor-pointer"
-                                    >
-                                        Variable Amount (separate quantities for
-                                        with/without ESNcard)
+                        {/* Column 2 (Span 1): Sidebar Options */}
+                        <div className="space-y-4 lg:col-span-1">
+                            {/* Stock Management Collapsible */}
+                            <Collapsible
+                                open={isStockSectionOpen}
+                                onOpenChange={setIsStockSectionOpen}
+                                className="rounded-lg border bg-muted/5 px-4 py-3"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-base font-bold">
+                                        Stock Management
                                     </Label>
+                                    <CollapsibleTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                            {isStockSectionOpen ? (
+                                                <ChevronUp className="h-4 w-4" />
+                                            ) : (
+                                                <ChevronDown className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </CollapsibleTrigger>
                                 </div>
 
-                                {productVariableAmount ? (
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="product-quantity-with-card">
-                                                Quantity with ESNcard
-                                            </Label>
-                                            <Input
-                                                id="product-quantity-with-card"
-                                                type="number"
-                                                value={productQuantityWithCard}
-                                                onChange={(e) =>
-                                                    setProductQuantityWithCard(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="product-quantity-without-card">
-                                                Quantity without ESNcard
-                                            </Label>
-                                            <Input
-                                                id="product-quantity-without-card"
-                                                type="number"
-                                                value={
-                                                    productQuantityWithoutCard
-                                                }
-                                                onChange={(e) =>
-                                                    setProductQuantityWithoutCard(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
+                                <CollapsibleContent className="mt-4 space-y-4">
+                                    <div className="flex items-center justify-between border-b pb-3 mb-3">
+                                        <span className="text-sm text-muted-foreground">Type</span>
+                                        <div
+                                            role="tablist"
+                                            aria-orientation="horizontal"
+                                            className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground"
+                                        >
+                                            <button
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={stockMode === 'simple'}
+                                                onClick={() => setStockMode('simple')}
+                                                className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'simple' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                            >
+                                                Simple
+                                            </button>
+                                            <button
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={stockMode === 'variants'}
+                                                onClick={() => setStockMode('variants')}
+                                                className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'variants' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                            >
+                                                Variants
+                                            </button>
                                         </div>
                                     </div>
-                                ) : (
-                                    <div>
-                                        <Label htmlFor="product-quantity">
-                                            Quantity (optional)
-                                        </Label>
-                                        <p className="text-[0.8rem] text-muted-foreground">
-                                            Leave empty for unlimited stock.
-                                        </p>
-                                        <Input
-                                            id="product-quantity"
-                                            type="number"
-                                            value={productQuantity}
-                                            onChange={(e) =>
-                                                setProductQuantity(
-                                                    e.target.value,
+
+                                    {stockMode === 'simple' && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id="product-variable-amount"
+                                                    checked={!!productVariableAmount}
+                                                    onCheckedChange={(checked) =>
+                                                        setProductVariableAmount(
+                                                            checked === true,
+                                                        )
+                                                    }
+                                                />
+                                                <Label
+                                                    htmlFor="product-variable-amount"
+                                                    className="cursor-pointer text-sm"
+                                                >
+                                                    Split by ESNcard
+                                                </Label>
+                                            </div>
+
+                                            {productVariableAmount ? (
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <div>
+                                                        <Label htmlFor="product-quantity-with-card" className="text-sm">
+                                                            With Card
+                                                        </Label>
+                                                        <Input
+                                                            id="product-quantity-with-card"
+                                                            type="number"
+                                                            value={productQuantityWithCard}
+                                                            onChange={(e) =>
+                                                                setProductQuantityWithCard(
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            className="mt-1"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label htmlFor="product-quantity-without-card" className="text-sm">
+                                                            Without Card
+                                                        </Label>
+                                                        <Input
+                                                            id="product-quantity-without-card"
+                                                            type="number"
+                                                            value={
+                                                                productQuantityWithoutCard
+                                                            }
+                                                            onChange={(e) =>
+                                                                setProductQuantityWithoutCard(
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            className="mt-1"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <Label htmlFor="product-quantity" className="text-sm">
+                                                        Quantity Total
+                                                    </Label>
+                                                    <Input
+                                                        id="product-quantity"
+                                                        type="number"
+                                                        value={productQuantity}
+                                                        onChange={(e) =>
+                                                            setProductQuantity(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="mt-1"
+                                                        placeholder="Leave empty = unlimited"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {stockMode === 'variants' && (
+                                        <div className="pt-2">
+                                            <VariantManager
+                                                initialConfig={variantsConfig}
+                                                initialVariants={variants}
+                                                onChange={(newConfig, newVariants) => {
+                                                    setVariantsConfig(newConfig);
+                                                    setVariants(newVariants);
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </CollapsibleContent>
+                            </Collapsible>
+
+                            {/* Online Store Collapsible */}
+                            <Collapsible
+                                open={isOnlineSectionOpen}
+                                onOpenChange={setIsOnlineSectionOpen}
+                                className="rounded-lg border px-4 py-3"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-base font-bold block">
+                                        Online Store
+                                    </Label>
+                                    <CollapsibleTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                            {isOnlineSectionOpen ? (
+                                                <ChevronUp className="h-4 w-4" />
+                                            ) : (
+                                                <ChevronDown className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </CollapsibleTrigger>
+                                </div>
+
+                                <CollapsibleContent className="mt-4 space-y-4">
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="online-sellable"
+                                            checked={!!isOnlineSellable}
+                                            onCheckedChange={(checked) =>
+                                                setIsOnlineSellable(
+                                                    checked === true,
                                                 )
                                             }
+                                        />
+                                        <Label
+                                            htmlFor="online-sellable"
+                                            className="cursor-pointer font-medium"
+                                        >
+                                            Sellable Online
+                                        </Label>
+                                    </div>
+
+                                    <div>
+                                        <Label className="mb-2 block text-sm font-medium">
+                                            Product Images
+                                        </Label>
+                                        <ImageManager
+                                            images={allImagesForDisplay}
+                                            onRemoveImage={handleRemoveImage}
+                                            onAddImages={handleAddImages}
+                                        />
+                                        <p className="mt-2 text-xs text-muted-foreground">
+                                            First image = cover
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="product-instagram-link" className="text-sm">
+                                            Instagram Link (optional)
+                                        </Label>
+                                        <Input
+                                            id="product-instagram-link"
+                                            type="url"
+                                            value={instagramLink}
+                                            onChange={(e) =>
+                                                setInstagramLink(e.target.value)
+                                            }
+                                            placeholder="https://instagram.com/..."
                                             className="mt-1"
                                         />
                                     </div>
-                                )}
-                            </div>
-                        )}
-
-                        {stockMode === 'variants' && (
-                            <div className="pt-2">
-                                <p className="mb-4 text-sm text-gray-500">
-                                    Define attributes (e.g. Size, Color) and set
-                                    stock limits for each combination.
-                                </p>
-                                <VariantManager
-                                    initialConfig={variantsConfig}
-                                    initialVariants={variants}
-                                    onChange={(newConfig, newVariants) => {
-                                        setVariantsConfig(newConfig);
-                                        setVariants(newVariants);
-                                    }}
-                                />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Collapsible Online Store Section */}
-                    <div className="rounded-md border">
-                        <button
-                            type="button"
-                            className="flex w-full items-center justify-between bg-muted/20 p-3 transition-colors hover:bg-muted/40"
-                            onClick={() =>
-                                setIsOnlineSectionOpen(!isOnlineSectionOpen)
-                            }
-                        >
-                            <div className="text-sm font-semibold">
-                                Online Store Options
-                            </div>
-                            {isOnlineSectionOpen ? (
-                                <ChevronUp className="h-4 w-4" />
-                            ) : (
-                                <ChevronDown className="h-4 w-4" />
-                            )}
-                        </button>
-
-                        {isOnlineSectionOpen && (
-                            <div className="space-y-4 border-t p-3">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="online-sellable"
-                                        checked={!!isOnlineSellable}
-                                        onCheckedChange={(checked) =>
-                                            setIsOnlineSellable(
-                                                checked === true,
-                                            )
-                                        }
-                                    />
-                                    <Label
-                                        htmlFor="online-sellable"
-                                        className="cursor-pointer"
-                                    >
-                                        Sellable Online
-                                    </Label>
-                                </div>
-
-                                <div>
-                                    <Label className="mb-2 block">
-                                        Product Images
-                                    </Label>
-                                    <ImageManager
-                                        images={allImagesForDisplay}
-                                        onRemoveImage={handleRemoveImage}
-                                        onAddImages={handleAddImages}
-                                    />
-                                    <p className="mt-2 text-[0.8rem] text-muted-foreground">
-                                        First image will be the cover. Accepted
-                                        formats: JPG, PNG.
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="product-instagram-link">
-                                        Instagram Link (optional)
-                                    </Label>
-                                    <Input
-                                        id="product-instagram-link"
-                                        type="url"
-                                        value={instagramLink}
-                                        onChange={(e) =>
-                                            setInstagramLink(e.target.value)
-                                        }
-                                        placeholder="https://instagram.com/..."
-                                    />
-                                </div>
-                                <div className="border-t pt-4"></div>
-                            </div>
-                        )}
+                                </CollapsibleContent>
+                            </Collapsible>
+                        </div>
                     </div>
                 </div>
                 <DialogFooter>

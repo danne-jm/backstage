@@ -59,9 +59,9 @@ export default function Sellables() {
                     setProducts((prev) => {
                         const idx = prev.findIndex((p) => p.id === s.id);
                         if (idx >= 0) {
-                            // Update existing
+                            // Update existing (merge)
                             const newArr = [...prev];
-                            newArr[idx] = s as Product;
+                            newArr[idx] = { ...newArr[idx], ...s } as Product;
                             return newArr;
                         }
                         // Add new
@@ -73,9 +73,9 @@ export default function Sellables() {
                     setEvents((prev) => {
                         const idx = prev.findIndex((ev) => ev.id === s.id);
                         if (idx >= 0) {
-                            // Update existing
+                            // Update existing (merge)
                             const newArr = [...prev];
-                            newArr[idx] = s as Event;
+                            newArr[idx] = { ...newArr[idx], ...s } as Event;
                             return newArr;
                         }
                         // Add new
@@ -386,8 +386,8 @@ export default function Sellables() {
                                 const prevEvDate =
                                     idx > 0
                                         ? parseDate(
-                                              orderedEvents[idx - 1].event_date,
-                                          )
+                                            orderedEvents[idx - 1].event_date,
+                                        )
                                         : null;
                                 const prevIsPast = prevEvDate
                                     ? prevEvDate.getTime() < now.getTime()

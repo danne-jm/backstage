@@ -33,7 +33,7 @@ const periodLabels: Record<TimePeriod, string> = {
 export default function StoreManager() {
     const breadcrumbs: BreadcrumbItem[] = [
         {
-            title: 'Store Manager (SumUp?)',
+            title: 'Store Manager',
             href: route('store-manager'),
         },
     ];
@@ -105,12 +105,12 @@ export default function StoreManager() {
                         period === 'month'
                             ? 30
                             : period === '7days'
-                              ? 7
-                              : period === '24hours'
-                                ? 1
-                                : period === 'lastShift'
-                                  ? 0
-                                  : 14;
+                                ? 7
+                                : period === '24hours'
+                                    ? 1
+                                    : period === 'lastShift'
+                                        ? 0
+                                        : 14;
 
                     const hourly = period === '24hours';
                     let summaryUrl = `/sales/summary?days=${days}${hourly ? '&hourly=true' : ''}`;
@@ -208,7 +208,7 @@ export default function StoreManager() {
 
         router.put(url, data, {
             preserveState: true,
-            onSuccess: () => {},
+            onSuccess: () => { },
         });
     };
 
@@ -367,7 +367,7 @@ export default function StoreManager() {
                         const idx = prev.findIndex((p) => p.id === s.id);
                         if (idx >= 0) {
                             const newArr = [...prev];
-                            newArr[idx] = s as Product;
+                            newArr[idx] = { ...newArr[idx], ...s } as Product; // Merge to preserve missing fields like image if not sent
                             return newArr;
                         }
                         return [...prev, s as Product].sort((a, b) =>
@@ -379,7 +379,7 @@ export default function StoreManager() {
                         const idx = prev.findIndex((ev) => ev.id === s.id);
                         if (idx >= 0) {
                             const newArr = [...prev];
-                            newArr[idx] = s as Event;
+                            newArr[idx] = { ...newArr[idx], ...s } as Event; // Merge
                             return newArr;
                         }
                         return [...prev, s as Event].sort((a, b) =>
@@ -499,7 +499,7 @@ export default function StoreManager() {
                 open={productDialogOpen}
                 onOpenChange={setProductDialogOpen}
                 editingProduct={editingProduct}
-                onSuccess={() => {}}
+                onSuccess={() => { }}
             />
 
             <EventDialog
@@ -507,7 +507,7 @@ export default function StoreManager() {
                 onOpenChange={setEventDialogOpen}
                 editingEvent={editingEvent}
                 boardUsers={boardUsers}
-                onSuccess={() => {}}
+                onSuccess={() => { }}
             />
         </>
     );

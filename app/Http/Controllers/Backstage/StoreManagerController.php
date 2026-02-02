@@ -150,18 +150,13 @@ class StoreManagerController extends Controller
             })
             ->count();
 
-        try {
-            $boardUsers = User::role('Board')
-                ->orderBy('first_name')
-                ->get(['id', 'first_name', 'last_name', 'email'])
-                ->map(fn ($u) => [
-                    'id' => $u->id,
-                    'name' => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
-                    'email' => $u->email,
-                ]);
-        } catch (\Spatie\Permission\Exceptions\RoleDoesNotExist $e) {
-            $boardUsers = [];
-        }
+        $boardUsers = User::orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'email'])
+            ->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
+                'email' => $u->email,
+            ]);
 
         return [
             'products' => $products,

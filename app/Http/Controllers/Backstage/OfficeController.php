@@ -321,6 +321,12 @@ class OfficeController extends Controller
             'options' => ['nullable', 'array'],
         ]);
 
+        // FIX: Ensure product_id is moved to event_id if item_type is 'event'
+        if (($data['item_type'] ?? '') === 'event' && ! empty($data['product_id'])) {
+            $data['event_id'] = $data['product_id'];
+            $data['product_id'] = null;
+        }
+
         try {
             // Use SaleService to atomically record sale and update stock
             $sale = $this->saleService->recordOfficeSale($office, $data);
