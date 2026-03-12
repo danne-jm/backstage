@@ -57,7 +57,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 #Inventory
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('inventory', 'inventory')->name('inventory');
+    Route::get('inventory', [App\Http\Controllers\InventoryController::class, 'index'])->name('inventory');
+    Route::post('inventory/items', [App\Http\Controllers\InventoryController::class, 'store'])->name('inventory.items.store');
+    Route::post('inventory/items/{item}/increment', [App\Http\Controllers\InventoryController::class, 'increment'])->name('inventory.items.increment');
+    Route::post('inventory/items/{item}/decrement', [App\Http\Controllers\InventoryController::class, 'decrement'])->name('inventory.items.decrement');
+    Route::put('inventory/items/{item}', [App\Http\Controllers\InventoryController::class, 'update'])->name('inventory.items.update');
+    Route::delete('inventory/items/{item}', [App\Http\Controllers\InventoryController::class, 'destroy'])->name('inventory.items.destroy');
 });
 
 #Store Manager

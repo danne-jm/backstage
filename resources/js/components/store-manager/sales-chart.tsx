@@ -1,4 +1,3 @@
-import type { OfficeSale, OnlineSale, Sellable } from '@/types/sellables';
 import { useMemo, useState } from 'react';
 import {
     CartesianGrid,
@@ -10,6 +9,7 @@ import {
     YAxis,
 } from 'recharts';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import type { OfficeSale, OnlineSale, Sellable } from '@/types/sellables';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -33,9 +33,19 @@ export interface SalesChartProps {
     officeSales: OfficeSale[];
     onlineSellableTotals: Array<Sellable & { total: number; count: number }>;
     onlineSellableSeries: Array<
-        Sellable & { total: number; count: number; series: number[]; color: string }
+        Sellable & {
+            total: number;
+            count: number;
+            series: number[];
+            color: string;
+        }
     >;
-    sellableCounts: Array<{ id: string; type: 'product' | 'event'; name: string; count: number }>;
+    sellableCounts: Array<{
+        id: string;
+        type: 'product' | 'event';
+        name: string;
+        count: number;
+    }>;
     totalOffice: number;
     totalOnline: number;
     onlineSellablesCount: number;
@@ -78,7 +88,9 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
     return (
         <div className="pointer-events-none max-w-[200px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs">
-            <div className="mb-1 text-[10px] font-medium sm:text-xs">{label}</div>
+            <div className="mb-1 text-[10px] font-medium sm:text-xs">
+                {label}
+            </div>
             <div className="space-y-1">
                 {items.map((item) => (
                     <div
@@ -119,14 +131,17 @@ export function SalesChart({
 
     // Build a stable colour map so toggling filters doesn't reshuffle colours
     const sellableColorMap = useMemo(() => {
-        const allSellablesMap = new Map<string, { name: string; color: string }>();
+        const allSellablesMap = new Map<
+            string,
+            { name: string; color: string }
+        >();
 
         const registerSales = (salesList: (OnlineSale | OfficeSale)[]) => {
             salesList.forEach((sale) => {
                 const name =
                     sale.product?.name ||
                     sale.event?.name ||
-                    ((sale.product_id || sale.event_id)
+                    (sale.product_id || sale.event_id
                         ? `${sale.product_id ? 'product' : 'event'} ${sale.product_id || sale.event_id}`
                         : 'Unknown Item');
                 if (!allSellablesMap.has(name)) {
@@ -154,23 +169,37 @@ export function SalesChart({
 
     // Build chart data points and active sellable list
     const { chartData, activeSellables } = useMemo(() => {
-        const sellablesMap = new Map<string, { name: string; type: 'product' | 'event' }>();
+        const sellablesMap = new Map<
+            string,
+            { name: string; type: 'product' | 'event' }
+        >();
 
         onlineSellableSeries.forEach((s) => {
-            sellablesMap.set(`${s.type}-${s.id}`, { name: s.name, type: s.type });
+            sellablesMap.set(`${s.type}-${s.id}`, {
+                name: s.name,
+                type: s.type,
+            });
         });
 
-        const registerSalesSellables = (salesList: (OnlineSale | OfficeSale)[]) => {
+        const registerSalesSellables = (
+            salesList: (OnlineSale | OfficeSale)[],
+        ) => {
             salesList.forEach((sale) => {
                 const type = sale.product_id ? 'product' : 'event';
                 const id = sale.product_id || sale.event_id;
                 if (!id) {
-                    sellablesMap.set('unknown', { name: 'Unknown Item', type: 'product' });
+                    sellablesMap.set('unknown', {
+                        name: 'Unknown Item',
+                        type: 'product',
+                    });
                     return;
                 }
                 const key = `${type}-${id}`;
                 if (!sellablesMap.has(key)) {
-                    const name = sale.product?.name || sale.event?.name || `${type} ${id}`;
+                    const name =
+                        sale.product?.name ||
+                        sale.event?.name ||
+                        `${type} ${id}`;
                     sellablesMap.set(key, { name, type });
                 }
             });
@@ -178,10 +207,14 @@ export function SalesChart({
 
         if (showCard) {
             registerSalesSellables(onlineSales);
-            registerSalesSellables(officeSales.filter((os) => os.method === 'card'));
+            registerSalesSellables(
+                officeSales.filter((os) => os.method === 'card'),
+            );
         }
         if (showOffice) {
-            registerSalesSellables(officeSales.filter((os) => os.method !== 'card'));
+            registerSalesSellables(
+                officeSales.filter((os) => os.method !== 'card'),
+            );
         }
 
         const matchDate = (saleDate: string, dk: string) => {
@@ -201,7 +234,9 @@ export function SalesChart({
                 date: new Date(dk).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
-                    ...(isHourlyData ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}),
+                    ...(isHourlyData
+                        ? { hour: '2-digit', minute: '2-digit', hour12: false }
+                        : {}),
                 }),
                 fullDate: dk,
             };
@@ -215,18 +250,25 @@ export function SalesChart({
                         const saleType = os.product_id ? 'product' : 'event';
                         const saleId = os.product_id || os.event_id;
                         const matches =
-                            (key === 'unknown' && !os.product_id && !os.event_id) ||
+                            (key === 'unknown' &&
+                                !os.product_id &&
+                                !os.event_id) ||
                             `${saleType}-${saleId}` === key;
-                        if (matches) total += parseFloat(String(os.amount || 0)) || 0;
+                        if (matches)
+                            total += parseFloat(String(os.amount || 0)) || 0;
                     });
                 };
 
                 if (showCard) {
                     accumulate(onlineSales);
-                    accumulate(officeSales.filter((os) => os.method === 'card'));
+                    accumulate(
+                        officeSales.filter((os) => os.method === 'card'),
+                    );
                 }
                 if (showOffice) {
-                    accumulate(officeSales.filter((os) => os.method !== 'card'));
+                    accumulate(
+                        officeSales.filter((os) => os.method !== 'card'),
+                    );
                 }
 
                 point[meta.name] = total;
@@ -236,7 +278,10 @@ export function SalesChart({
         });
 
         // Count totals for legend
-        const totalsMap = new Map<string, { name: string; total: number; count: number }>();
+        const totalsMap = new Map<
+            string,
+            { name: string; total: number; count: number }
+        >();
 
         const countSale = (sale: OnlineSale | OfficeSale, name: string) => {
             const amount = parseFloat(String(sale.amount || 0)) || 0;
@@ -258,10 +303,14 @@ export function SalesChart({
 
         if (showCard) {
             onlineSales.forEach((os) => countSale(os, nameOf(os)));
-            officeSales.filter((os) => os.method === 'card').forEach((os) => countSale(os, nameOf(os)));
+            officeSales
+                .filter((os) => os.method === 'card')
+                .forEach((os) => countSale(os, nameOf(os)));
         }
         if (showOffice) {
-            officeSales.filter((os) => os.method !== 'card').forEach((os) => countSale(os, nameOf(os)));
+            officeSales
+                .filter((os) => os.method !== 'card')
+                .forEach((os) => countSale(os, nameOf(os)));
         }
 
         const sellables = Array.from(totalsMap.values())
@@ -284,7 +333,8 @@ export function SalesChart({
         sellableColorMap,
     ]);
 
-    const displayedTotal = (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
+    const displayedTotal =
+        (showOffice ? totalOffice : 0) + (showCard ? totalOnline : 0);
 
     return (
         <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
@@ -299,7 +349,9 @@ export function SalesChart({
                     >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
                         <span className="text-muted-foreground">Cash:</span>
-                        <span className="font-medium text-foreground">€{totalOffice.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">
+                            €{totalOffice.toFixed(2)}
+                        </span>
                     </button>
                     <button
                         onClick={() => setShowCard(!showCard)}
@@ -308,7 +360,9 @@ export function SalesChart({
                     >
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
                         <span className="text-muted-foreground">Card:</span>
-                        <span className="font-medium text-foreground">€{totalOnline.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">
+                            €{totalOnline.toFixed(2)}
+                        </span>
                     </button>
                     <div className="ml-0 text-sm font-semibold whitespace-nowrap sm:ml-1">
                         €{displayedTotal.toFixed(2)}
@@ -325,7 +379,12 @@ export function SalesChart({
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart
                                 data={chartData}
-                                margin={{ top: 5, right: 5, left: -12.5, bottom: 5 }}
+                                margin={{
+                                    top: 5,
+                                    right: 5,
+                                    left: -12.5,
+                                    bottom: 5,
+                                }}
                             >
                                 <CartesianGrid
                                     strokeDasharray="3 3"
@@ -334,23 +393,36 @@ export function SalesChart({
                                 />
                                 <XAxis
                                     dataKey="date"
-                                    tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.5 }}
+                                    tick={{
+                                        fontSize: 11,
+                                        fill: 'currentColor',
+                                        opacity: 0.5,
+                                    }}
                                     stroke="currentColor"
                                     strokeOpacity={0.2}
                                 />
                                 <YAxis
-                                    tick={{ fontSize: 11, fill: 'currentColor', opacity: 0.5 }}
+                                    tick={{
+                                        fontSize: 11,
+                                        fill: 'currentColor',
+                                        opacity: 0.5,
+                                    }}
                                     stroke="currentColor"
                                     strokeOpacity={0.2}
                                     domain={[0, 'auto']}
                                     tickFormatter={(v) =>
-                                        v >= 1000 ? `€${(v / 1000).toFixed(1)}k` : `€${v}`
+                                        v >= 1000
+                                            ? `€${(v / 1000).toFixed(1)}k`
+                                            : `€${v}`
                                     }
                                     width={50}
                                 />
                                 <Tooltip
                                     content={<CustomTooltip />}
-                                    cursor={{ stroke: 'currentColor', strokeOpacity: 0.2 }}
+                                    cursor={{
+                                        stroke: 'currentColor',
+                                        strokeOpacity: 0.2,
+                                    }}
                                 />
                                 {activeSellables.map((s) => (
                                     <Line
@@ -369,13 +441,21 @@ export function SalesChart({
 
                     {/* Legend */}
                     <div className="mt-2 shrink-0 text-xs">
-                        <div className="mb-1 text-muted-foreground">Active sellables</div>
+                        <div className="mb-1 text-muted-foreground">
+                            Active sellables
+                        </div>
                         <div className="space-y-1 pr-2">
                             {activeSellables.length > 0 ? (
                                 activeSellables.map((s) => {
                                     const overall =
-                                        activeSellables.reduce((a, it) => a + it.total, 0) || 0;
-                                    const pct = overall === 0 ? 0 : (s.total / overall) * 100;
+                                        activeSellables.reduce(
+                                            (a, it) => a + it.total,
+                                            0,
+                                        ) || 0;
+                                    const pct =
+                                        overall === 0
+                                            ? 0
+                                            : (s.total / overall) * 100;
 
                                     return (
                                         <div
@@ -385,10 +465,16 @@ export function SalesChart({
                                             <div className="flex min-w-0 flex-1 items-center gap-2">
                                                 <span
                                                     className="inline-block h-2 w-2 shrink-0 rounded-full"
-                                                    style={{ backgroundColor: s.color }}
+                                                    style={{
+                                                        backgroundColor:
+                                                            s.color,
+                                                    }}
                                                 />
                                                 <div className="flex min-w-0 flex-1 items-baseline gap-2">
-                                                    <span className="truncate" title={s.name}>
+                                                    <span
+                                                        className="truncate"
+                                                        title={s.name}
+                                                    >
                                                         {s.name}
                                                     </span>
                                                     <span className="shrink-0 text-muted-foreground">
@@ -408,7 +494,9 @@ export function SalesChart({
                                     );
                                 })
                             ) : (
-                                <div className="text-muted-foreground">No sales in this period</div>
+                                <div className="text-muted-foreground">
+                                    No sales in this period
+                                </div>
                             )}
                         </div>
                     </div>

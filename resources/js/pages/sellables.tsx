@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useSellables } from '@/hooks/use-sellables';
 import AppLayout from '@/layouts/app-layout';
 import { parseDate } from '@/lib/utils';
-import type { BreadcrumbItem, SharedData } from '@/types';
+import type { BreadcrumbItem } from '@/types';
 import type { BoardUser, Event, Product } from '@/types/sellables';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -21,7 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Sellables() {
-    const props = usePage<SharedData>().props;
+    const props = usePage().props;
     const {
         products: productsProp,
         events: eventsProp,

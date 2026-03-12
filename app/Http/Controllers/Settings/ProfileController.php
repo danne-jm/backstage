@@ -30,11 +30,9 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
+        $parts = explode(' ', trim($request->validated('name')), 2);
+        $request->user()->first_name = $parts[0];
+        $request->user()->last_name = $parts[1] ?? '';
 
         $request->user()->save();
 

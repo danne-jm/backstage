@@ -1,7 +1,7 @@
 import { Transition } from '@headlessui/react';
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
+import { Lock } from 'lucide-react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/profile';
-import { send } from '@/routes/verification';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -20,14 +19,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Profile({
-    mustVerifyEmail,
-    status,
-}: {
-    mustVerifyEmail: boolean;
-    status?: string;
-}) {
+export default function Profile() {
     const { auth } = usePage().props;
+
+    const permissions = auth.user.attributes
+        ? Object.values(auth.user.attributes).flat().join(', ')
+        : '—';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -53,91 +50,68 @@ export default function Profile({
                         {({ processing, recentlySuccessful, errors }) => (
                             <>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="first_name">
-                                        First Name
-                                    </Label>
+                                    <Label htmlFor="name">Name</Label>
 
                                     <Input
-                                        id="first_name"
+                                        id="name"
                                         className="mt-1 block w-full"
-                                        defaultValue={auth.user.first_name}
-                                        name="first_name"
+                                        defaultValue={`${auth.user.first_name} ${auth.user.last_name}`.trim()}
+                                        name="name"
                                         required
-                                        autoComplete="given-name"
-                                        placeholder="First name"
+                                        autoComplete="name"
+                                        placeholder="Full name"
                                     />
 
                                     <InputError
                                         className="mt-2"
-                                        message={errors.first_name}
+                                        message={errors.name}
                                     />
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="last_name">Last Name</Label>
+                                    <Label htmlFor="role">Role</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="role"
+                                            className="mt-1 block w-full pr-10 text-muted-foreground"
+                                            value={auth.user.role ?? '—'}
+                                            readOnly
+                                            tabIndex={-1}
+                                        />
+                                        <Lock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    </div>
+                                </div>
 
-                                    <Input
-                                        id="last_name"
-                                        className="mt-1 block w-full"
-                                        defaultValue={auth.user.last_name}
-                                        name="last_name"
-                                        required
-                                        autoComplete="family-name"
-                                        placeholder="Last name"
-                                    />
-
-                                    <InputError
-                                        className="mt-2"
-                                        message={errors.last_name}
-                                    />
+                                <div className="grid gap-2">
+                                    <Label htmlFor="permissions">
+                                        Permissions
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="permissions"
+                                            className="mt-1 block w-full pr-10 text-muted-foreground"
+                                            value={permissions}
+                                            readOnly
+                                            tabIndex={-1}
+                                        />
+                                        <Lock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    </div>
                                 </div>
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="email">Email address</Label>
-
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        className="mt-1 block w-full"
-                                        defaultValue={auth.user.email}
-                                        name="email"
-                                        required
-                                        autoComplete="username"
-                                        placeholder="Email address"
-                                    />
-
-                                    <InputError
-                                        className="mt-2"
-                                        message={errors.email}
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            className="mt-1 block w-full pr-10 text-muted-foreground"
+                                            value={auth.user.email}
+                                            readOnly
+                                            tabIndex={-1}
+                                        />
+                                        <Lock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    </div>
                                 </div>
-
-                                {mustVerifyEmail &&
-                                    auth.user.email_verified_at === null && (
-                                        <div>
-                                            <p className="-mt-4 text-sm text-muted-foreground">
-                                                Your email address is
-                                                unverified.{' '}
-                                                <Link
-                                                    href={send()}
-                                                    as="button"
-                                                    className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                                                >
-                                                    Click here to resend the
-                                                    verification email.
-                                                </Link>
-                                            </p>
-
-                                            {status ===
-                                                'verification-link-sent' && (
-                                                <div className="mt-2 text-sm font-medium text-green-600">
-                                                    A new verification link has
-                                                    been sent to your email
-                                                    address.
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
 
                                 <div className="flex items-center gap-4">
                                     <Button
@@ -163,9 +137,8 @@ export default function Profile({
                         )}
                     </Form>
                 </div>
-
-                <DeleteUser />
             </SettingsLayout>
         </AppLayout>
     );
 }
+

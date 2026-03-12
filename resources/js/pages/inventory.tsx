@@ -1,7 +1,16 @@
-import { Head } from '@inertiajs/react';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { Head, usePage } from '@inertiajs/react';
+import { Search } from 'lucide-react';
+import * as React from 'react';
+import { CreateItemDialog } from '@/components/inventory/create-item-dialog';
+import { DeleteItemDialog } from '@/components/inventory/delete-item-dialog';
+import { EditItemDialog } from '@/components/inventory/edit-item-dialog';
+import { InventoryTable } from '@/components/inventory/inventory-table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useInventory } from '@/hooks/use-inventory';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
+import type { InventoryItem } from '@/types/inventory';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -11,25 +20,111 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Inventory() {
+    const { items: paginatedItems, categories: categoriesProp } = usePage()
+        .props as unknown as {
+        items: { data: InventoryItem[] };
+        categories: string[];
+    };
+
+    const {
+        filteredItems,
+        search,
+        setSearch,
+        sort,
+        toggleSort,
+        clearFilters,
+        changeQuantity,
+        processingIds,
+    } = useInventory({ initialItems: paginatedItems?.data ?? [] });
+
+    // ── Dialog state ───────────────────────────────────────────────────────────
+    const [createOpen, setCreateOpen] = React.useState(false);
+    const [editOpen, setEditOpen] = React.useState(false);
+    const [deleteOpen, setDeleteOpen] = React.useState(false);
+    const [selectedItem, setSelectedItem] =
+        React.useState<InventoryItem | null>(null);
+
+    const openEdit = (item: InventoryItem) => {
+        setSelectedItem(item);
+        setEditOpen(true);
+    };
+
+    const openDelete = (item: InventoryItem) => {
+        setSelectedItem(item);
+        setDeleteOpen(true);
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Inventory" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+
+            <div className="flex h-full flex-1 flex-col p-4">
+                {/* Toolbar */}
+                <div className="mb-4 flex items-center justify-between gap-4">
+                    <div className="flex w-full max-w-md items-center gap-2">
+                        <div className="relative w-full">
+                            <Search
+                                size={16}
+                                className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                placeholder="Search by name, category, email or quantity"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={clearFilters}
+                        >
+                            Clear
+                        </Button>
                     </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
+
+                    <Button onClick={() => setCreateOpen(true)}>
+                        Create Item
+                    </Button>
                 </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+
+                {/* Table */}
+                <div className="flex-1 overflow-auto rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
+                    <InventoryTable
+                        items={filteredItems}
+                        processingIds={processingIds}
+                        sort={sort}
+                        onSort={toggleSort}
+                        onEdit={openEdit}
+                        onDelete={openDelete}
+                        onChangeQuantity={changeQuantity}
+                    />
                 </div>
             </div>
+
+            {/* Dialogs */}
+            <CreateItemDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                categories={categoriesProp ?? []}
+            />
+
+            <EditItemDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                item={selectedItem}
+                categories={categoriesProp ?? []}
+                onDeleteRequest={(item) => {
+                    setEditOpen(false);
+                    openDelete(item);
+                }}
+            />
+
+            <DeleteItemDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                item={selectedItem}
+            />
         </AppLayout>
     );
 }

@@ -1,8 +1,11 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import { EventDialog } from '@/components/sellables/event-dialog';
 import { ProductDialog } from '@/components/sellables/product-dialog';
-import { LatestCardSalesList, PERIOD_LABELS } from '@/components/store-manager/latest-card-sales-list';
+import {
+    LatestCardSalesList,
+    PERIOD_LABELS,
+} from '@/components/store-manager/latest-card-sales-list';
 import { SalesChart } from '@/components/store-manager/sales-chart';
 import { SellablesPanel } from '@/components/store-manager/sellables-panel';
 import { useStoreManager } from '@/hooks/use-store-manager';
@@ -19,11 +22,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function StoreManager() {
-    const { auth } = usePage<any>().props;
-    const permissions: string[] = auth?.user?.permissions ?? [];
-    const canUpdateStore =
-        permissions.includes('admin') || permissions.includes('update_store_settings');
-
     // ── Data ─────────────────────────────────────────────────────────────────
     const {
         loading,
@@ -49,9 +47,9 @@ export default function StoreManager() {
 
     // ── Dialog state ─────────────────────────────────────────────────────────
     const [productDialogOpen, setProductDialogOpen] = useState(false);
-    const [editingProduct, setEditingProduct]       = useState<Product | null>(null);
-    const [eventDialogOpen, setEventDialogOpen]     = useState(false);
-    const [editingEvent, setEditingEvent]           = useState<Event | null>(null);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [eventDialogOpen, setEventDialogOpen] = useState(false);
+    const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
     const openProductDialog = (product?: Product) => {
         setEditingProduct(product ?? null);
@@ -84,7 +82,9 @@ export default function StoreManager() {
                                 totalOffice={totalOffice}
                                 totalOnline={totalOnline}
                                 onlineSellablesCount={onlineSellablesCount}
-                                topSellerName={onlineSellableTotals[0]?.name ?? '—'}
+                                topSellerName={
+                                    onlineSellableTotals[0]?.name ?? '—'
+                                }
                             />
                         </div>
 
@@ -93,7 +93,6 @@ export default function StoreManager() {
                             sellables={sellables}
                             loading={loading}
                             onlineSellablesCount={onlineSellablesCount}
-                            canUpdateStore={canUpdateStore}
                             onEditProduct={openProductDialog}
                             onEditEvent={openEventDialog}
                             onSetOnline={handleSetOnline}

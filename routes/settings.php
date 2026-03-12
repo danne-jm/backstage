@@ -25,4 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
         ->name('two-factor.show');
+
+    Route::inertia('settings/users', 'settings/users')->name('settings.users');
+    Route::inertia('settings/google', 'settings/google')->name('settings.google');
+    Route::inertia('settings/footer', 'settings/footer')->name('settings.footer');
 });

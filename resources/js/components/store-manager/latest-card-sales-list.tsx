@@ -1,5 +1,5 @@
-import type { OnlineSale } from '@/types/sellables';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import type { OnlineSale } from '@/types/sellables';
 
 export type TimePeriod = '24hours' | '7days' | '14days' | 'month' | 'lastShift';
 
@@ -27,9 +27,9 @@ function formatDateTime(iso?: string | null): string {
     if (!iso) return 'N/A';
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return 'N/A';
-    const dd  = String(d.getDate()).padStart(2, '0');
-    const mm  = String(d.getMonth() + 1).padStart(2, '0');
-    const hh  = String(d.getHours()).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
     const min = String(d.getMinutes()).padStart(2, '0');
     return `${dd}/${mm}/${d.getFullYear()} ${hh}:${min}`;
 }
@@ -60,7 +60,15 @@ export function LatestCardSalesList({
 
                 {/* Period selector */}
                 <div className="flex overflow-x-auto overflow-y-hidden rounded-md border border-sidebar-border/70">
-                    {(['24hours', '7days', '14days', 'month', 'lastShift'] as TimePeriod[]).map((p) => (
+                    {(
+                        [
+                            '24hours',
+                            '7days',
+                            '14days',
+                            'month',
+                            'lastShift',
+                        ] as TimePeriod[]
+                    ).map((p) => (
                         <button
                             key={p}
                             onClick={() => setPeriod(p)}
@@ -86,7 +94,8 @@ export function LatestCardSalesList({
                             {visibleOnlineSales.map((sale) => {
                                 const hasVariants =
                                     sale.details?.options &&
-                                    Object.keys(sale.details.options).length > 0;
+                                    Object.keys(sale.details.options).length >
+                                        0;
                                 const hasEsnCardDiscount =
                                     sale.details?.code_used &&
                                     sale.ticket_type === 'with_card';
@@ -104,8 +113,13 @@ export function LatestCardSalesList({
                                             </h3>
                                             {hasVariants && (
                                                 <p className="mt-0.5 text-sm text-muted-foreground">
-                                                    {Object.entries(sale.details!.options!)
-                                                        .map(([k, v]) => `${k}: ${v}`)
+                                                    {Object.entries(
+                                                        sale.details!.options!,
+                                                    )
+                                                        .map(
+                                                            ([k, v]) =>
+                                                                `${k}: ${v}`,
+                                                        )
                                                         .join(', ')}
                                                 </p>
                                             )}
@@ -118,7 +132,9 @@ export function LatestCardSalesList({
                                                 {formatDateTime(sale.sold_at)}
                                             </p>
                                         </div>
-                                        <div className="text-lg font-medium">€{sale.amount}</div>
+                                        <div className="text-lg font-medium">
+                                            €{sale.amount}
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -134,17 +150,24 @@ export function LatestCardSalesList({
                                             className="rounded border bg-background/40 px-2 py-1 text-sm disabled:opacity-40"
                                             disabled={onlinePage <= 1}
                                             onClick={() =>
-                                                setOnlinePage((p) => Math.max(1, p - 1))
+                                                setOnlinePage((p) =>
+                                                    Math.max(1, p - 1),
+                                                )
                                             }
                                         >
                                             Prev
                                         </button>
                                         <button
                                             className="rounded border bg-background/40 px-2 py-1 text-sm disabled:opacity-40"
-                                            disabled={onlinePage >= totalOnlinePages}
+                                            disabled={
+                                                onlinePage >= totalOnlinePages
+                                            }
                                             onClick={() =>
                                                 setOnlinePage((p) =>
-                                                    Math.min(totalOnlinePages, p + 1),
+                                                    Math.min(
+                                                        totalOnlinePages,
+                                                        p + 1,
+                                                    ),
                                                 )
                                             }
                                         >
@@ -155,7 +178,9 @@ export function LatestCardSalesList({
                             )}
                         </div>
                     ) : (
-                        <div className="text-sm text-muted-foreground">No online sales yet.</div>
+                        <div className="text-sm text-muted-foreground">
+                            No online sales yet.
+                        </div>
                     )}
                 </div>
             )}

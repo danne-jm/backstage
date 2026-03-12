@@ -6,6 +6,8 @@ export type User = {
     avatar?: string;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
+    role: string;
+    attributes: Record<string, unknown> | null;
     created_at: string;
     updated_at: string;
     [key: string]: unknown;

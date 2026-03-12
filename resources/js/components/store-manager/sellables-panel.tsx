@@ -7,17 +7,19 @@ export interface SellablesPanelProps {
     sellables: Sellable[];
     loading: boolean;
     onlineSellablesCount: number;
-    canUpdateStore: boolean;
     onEditProduct: (product: Product) => void;
     onEditEvent: (event: Event) => void;
-    onSetOnline?: (id: number, isOnline: boolean, type?: 'product' | 'event') => void;
+    onSetOnline?: (
+        id: number,
+        isOnline: boolean,
+        type?: 'product' | 'event',
+    ) => void;
 }
 
 export function SellablesPanel({
     sellables,
     loading,
     onlineSellablesCount,
-    canUpdateStore,
     onEditProduct,
     onEditEvent,
     onSetOnline,
@@ -43,7 +45,7 @@ export function SellablesPanel({
                                 onEdit={onEditProduct}
                                 variant="store-manager"
                                 isOnline={s.is_online_sellable}
-                                onSetOnline={canUpdateStore ? onSetOnline : undefined}
+                                onSetOnline={onSetOnline}
                             />
                         ) : (
                             <EventPreview
@@ -52,12 +54,14 @@ export function SellablesPanel({
                                 onEdit={onEditEvent}
                                 variant="store-manager"
                                 isOnline={s.is_online_sellable}
-                                onSetOnline={canUpdateStore ? onSetOnline : undefined}
+                                onSetOnline={onSetOnline}
                             />
                         ),
                     )}
                     {sellables.length === 0 && (
-                        <div className="text-xs text-muted-foreground">No data yet</div>
+                        <div className="text-xs text-muted-foreground">
+                            No data yet
+                        </div>
                     )}
                 </div>
             )}

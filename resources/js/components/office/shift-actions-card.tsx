@@ -136,11 +136,16 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         if (item.type === 'event') {
             // Variable-amount events have separate with_card / without_card pools
             if (item.variable_amount) {
-                const withCard    = item.unlimited_quantity_with_card    ? null : (item.remaining_with_card    ?? null);
-                const withoutCard = item.unlimited_quantity_without_card ? null : (item.remaining_without_card ?? null);
-                if (withCard === null && withoutCard === null) return 'Unlimited';
+                const withCard = item.unlimited_quantity_with_card
+                    ? null
+                    : (item.remaining_with_card ?? null);
+                const withoutCard = item.unlimited_quantity_without_card
+                    ? null
+                    : (item.remaining_without_card ?? null);
+                if (withCard === null && withoutCard === null)
+                    return 'Unlimited';
                 const parts: string[] = [];
-                if (withCard    !== null) parts.push(`${withCard} w/card`);
+                if (withCard !== null) parts.push(`${withCard} w/card`);
                 if (withoutCard !== null) parts.push(`${withoutCard} w/o card`);
                 return parts.join(', ') || 'Unlimited';
             }
@@ -188,24 +193,32 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         if (item.type === 'event') {
             if (item.variable_amount) {
                 if (saleTicketType === 'with_card') {
-                    return !item.unlimited_quantity_with_card &&
+                    return (
+                        !item.unlimited_quantity_with_card &&
                         item.remaining_with_card !== null &&
-                        item.remaining_with_card <= 0;
+                        item.remaining_with_card <= 0
+                    );
                 }
-                return !item.unlimited_quantity_without_card &&
+                return (
+                    !item.unlimited_quantity_without_card &&
                     item.remaining_without_card !== null &&
-                    item.remaining_without_card <= 0;
+                    item.remaining_without_card <= 0
+                );
             }
             // Simple event
-            return !item.unlimited_quantity &&
+            return (
+                !item.unlimited_quantity &&
                 item.remaining !== null &&
-                item.remaining <= 0;
+                item.remaining <= 0
+            );
         }
 
         // Product
-        return !item.unlimited_quantity &&
+        return (
+            !item.unlimited_quantity &&
             item.remaining !== null &&
-            item.remaining <= 0;
+            item.remaining <= 0
+        );
     };
 
     const activeSellables = sellables?.filter(isSellableActive) || [];

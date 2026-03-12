@@ -32,6 +32,21 @@ const sidebarNavItems: NavItem[] = [
         href: editAppearance(),
         icon: null,
     },
+    {
+        title: 'Users',
+        href: '/settings/users',
+        icon: null,
+    },
+    {
+        title: 'Google',
+        href: '/settings/google',
+        icon: null,
+    },
+    {
+        title: 'Footer',
+        href: '/settings/footer',
+        icon: null,
+    },
 ];
 
 export default function SettingsLayout({ children }: PropsWithChildren) {

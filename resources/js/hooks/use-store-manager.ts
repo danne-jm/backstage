@@ -1,30 +1,43 @@
 import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { TimePeriod } from '@/components/store-manager/latest-card-sales-list';
-import type { BoardUser, Event, OfficeSale, OnlineSale, Product, Sellable } from '@/types/sellables';
+import type {
+    BoardUser,
+    Event,
+    OfficeSale,
+    OnlineSale,
+    Product,
+    Sellable,
+} from '@/types/sellables';
 
 const PAGE_SIZE = 100;
 
 // Vibrant palette for chart series (mirrored in SalesChart, used here for sellable series colours)
 const PALETTE = [
-    '#3B82F6', '#F97316', '#EF4444', '#6366F1',
-    '#06B6D4', '#A3E635', '#F59E0B', '#EC4899',
+    '#3B82F6',
+    '#F97316',
+    '#EF4444',
+    '#6366F1',
+    '#06B6D4',
+    '#A3E635',
+    '#F59E0B',
+    '#EC4899',
 ];
 
 export function useStoreManager() {
-    const [products, setProducts]         = useState<Product[]>([]);
-    const [events, setEvents]             = useState<Event[]>([]);
-    const [boardUsers, setBoardUsers]     = useState<BoardUser[]>([]);
-    const [loading, setLoading]           = useState(true);
-    const [sales, setSales]               = useState<
+    const [products, setProducts] = useState<Product[]>([]);
+    const [events, setEvents] = useState<Event[]>([]);
+    const [boardUsers, setBoardUsers] = useState<BoardUser[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [sales, setSales] = useState<
         Array<{ date: string; office_total: number; online_total: number }>
     >([]);
-    const [onlineSales, setOnlineSales]   = useState<OnlineSale[]>([]);
-    const [officeSales, setOfficeSales]   = useState<OfficeSale[]>([]);
-    const [onlineSalesTotal, setOnlineSalesTotal]         = useState(0);
+    const [onlineSales, setOnlineSales] = useState<OnlineSale[]>([]);
+    const [officeSales, setOfficeSales] = useState<OfficeSale[]>([]);
+    const [onlineSalesTotal, setOnlineSalesTotal] = useState(0);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
-    const [period, setPeriod]             = useState<TimePeriod>('7days');
-    const [onlinePage, setOnlinePage]     = useState(1);
+    const [period, setPeriod] = useState<TimePeriod>('7days');
+    const [onlinePage, setOnlinePage] = useState(1);
 
     // ── Load data from the server ────────────────────────────────────────────
 
@@ -41,22 +54,40 @@ export function useStoreManager() {
                 const json = await res.json();
 
                 if (Array.isArray(json.products))
-                    setProducts(json.products.map((p: any) => ({ ...p, type: 'product' as const })));
+                    setProducts(
+                        json.products.map((p: any) => ({
+                            ...p,
+                            type: 'product' as const,
+                        })),
+                    );
                 if (Array.isArray(json.events))
-                    setEvents(json.events.map((e: any) => ({ ...e, type: 'event' as const })));
-                if (Array.isArray(json.boardUsers))  setBoardUsers(json.boardUsers);
-                if (Array.isArray(json.onlineSales)) setOnlineSales(json.onlineSales);
-                if (Array.isArray(json.officeSales)) setOfficeSales(json.officeSales);
+                    setEvents(
+                        json.events.map((e: any) => ({
+                            ...e,
+                            type: 'event' as const,
+                        })),
+                    );
+                if (Array.isArray(json.boardUsers))
+                    setBoardUsers(json.boardUsers);
+                if (Array.isArray(json.onlineSales))
+                    setOnlineSales(json.onlineSales);
+                if (Array.isArray(json.officeSales))
+                    setOfficeSales(json.officeSales);
 
                 setOnlineSellablesCount(json.onlineSellablesCount || 0);
                 setOnlineSalesTotal(Number(json.onlineSalesTotal || 0));
 
                 // Fetch sales chart summary
                 const days =
-                    period === 'month'    ? 30 :
-                    period === '7days'    ? 7  :
-                    period === '24hours'  ? 1  :
-                    period === 'lastShift'? 0  : 14;
+                    period === 'month'
+                        ? 30
+                        : period === '7days'
+                          ? 7
+                          : period === '24hours'
+                            ? 1
+                            : period === 'lastShift'
+                              ? 0
+                              : 14;
 
                 const hourly = period === '24hours';
                 let summaryUrl = `/sales/summary?days=${days}${hourly ? '&hourly=true' : ''}`;
@@ -65,7 +96,9 @@ export function useStoreManager() {
                     summaryUrl = `/sales/summary?from=${encodeURIComponent(json.lastClosedShiftDate)}`;
                 }
 
-                const sres = await fetch(summaryUrl, { credentials: 'same-origin' });
+                const sres = await fetch(summaryUrl, {
+                    credentials: 'same-origin',
+                });
                 if (sres.ok) {
                     const sj = await sres.json();
                     setSales(sj.data || []);
@@ -81,7 +114,10 @@ export function useStoreManager() {
 
     // ── Computed values ──────────────────────────────────────────────────────
 
-    const sellables: Sellable[] = useMemo(() => [...products, ...events], [products, events]);
+    const sellables: Sellable[] = useMemo(
+        () => [...products, ...events],
+        [products, events],
+    );
 
     const totalOffice = useMemo(
         () =>
@@ -94,7 +130,10 @@ export function useStoreManager() {
 
     const totalOnline = useMemo(
         () =>
-            onlineSales.reduce((s, os) => s + (parseFloat(String(os.amount || 0)) || 0), 0) +
+            onlineSales.reduce(
+                (s, os) => s + (parseFloat(String(os.amount || 0)) || 0),
+                0,
+            ) +
             officeSales.reduce((acc, os) => {
                 if (os.method !== 'card') return acc;
                 return acc + (parseFloat(String(os.amount || 0)) || 0);
@@ -108,13 +147,17 @@ export function useStoreManager() {
             .map((s) => {
                 const total = onlineSales.reduce((acc, os) => {
                     const amount = parseFloat(String(os.amount || 0)) || 0;
-                    if (s.type === 'product' && os.product_id === s.id) return acc + amount;
-                    if (s.type === 'event'   && os.event_id   === s.id) return acc + amount;
+                    if (s.type === 'product' && os.product_id === s.id)
+                        return acc + amount;
+                    if (s.type === 'event' && os.event_id === s.id)
+                        return acc + amount;
                     return acc;
                 }, 0);
                 const count = onlineSales.reduce((acc, os) => {
-                    if (s.type === 'product' && os.product_id === s.id) return acc + 1;
-                    if (s.type === 'event'   && os.event_id   === s.id) return acc + 1;
+                    if (s.type === 'product' && os.product_id === s.id)
+                        return acc + 1;
+                    if (s.type === 'event' && os.event_id === s.id)
+                        return acc + 1;
                     return acc;
                 }, 0);
                 return { ...s, total, count };
@@ -135,10 +178,13 @@ export function useStoreManager() {
 
                         if (isHourlyData) {
                             const d = new Date(soldAt);
-                            const y  = d.getFullYear();
-                            const mo = String(d.getMonth() + 1).padStart(2, '0');
+                            const y = d.getFullYear();
+                            const mo = String(d.getMonth() + 1).padStart(
+                                2,
+                                '0',
+                            );
                             const dy = String(d.getDate()).padStart(2, '0');
-                            const h  = String(d.getHours()).padStart(2, '0');
+                            const h = String(d.getHours()).padStart(2, '0');
                             matchKey = `${y}-${mo}-${dy} ${h}:00:00`;
                         } else {
                             matchKey = soldAt.split('T')[0].split(' ')[0];
@@ -146,9 +192,13 @@ export function useStoreManager() {
 
                         if (matchKey !== dk) return acc;
                         if (s.type === 'product' && os.product_id === s.id)
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                            return (
+                                acc + (parseFloat(String(os.amount || 0)) || 0)
+                            );
                         if (s.type === 'event' && os.event_id === s.id)
-                            return acc + (parseFloat(String(os.amount || 0)) || 0);
+                            return (
+                                acc + (parseFloat(String(os.amount || 0)) || 0)
+                            );
                         return acc;
                     }, 0);
                 });
@@ -214,13 +264,13 @@ export function useStoreManager() {
 
             if (sellable.type === 'event') {
                 const ev = sellable as Event;
-                data.price_with_card    = ev.price_with_card;
+                data.price_with_card = ev.price_with_card;
                 data.price_without_card = ev.price_without_card;
-                data.event_date         = ev.event_date;
-                data.start_sell_date    = ev.start_sell_date;
-                data.end_sell_date      = ev.end_sell_date;
+                data.event_date = ev.event_date;
+                data.start_sell_date = ev.start_sell_date;
+                data.end_sell_date = ev.end_sell_date;
                 data.responsible_user_id = ev.responsible_user_id;
-                data.notes              = ev.notes;
+                data.notes = ev.notes;
                 data.google_spreadsheet_id = ev.google_spreadsheet_id;
             }
 
@@ -228,13 +278,17 @@ export function useStoreManager() {
             if (sellable.type === 'product') {
                 setProducts((prev) =>
                     prev.map((p) =>
-                        p.id === sellable.id ? { ...p, is_online_sellable: isOnline } : p,
+                        p.id === sellable.id
+                            ? { ...p, is_online_sellable: isOnline }
+                            : p,
                     ),
                 );
             } else {
                 setEvents((prev) =>
                     prev.map((e) =>
-                        e.id === sellable.id ? { ...e, is_online_sellable: isOnline } : e,
+                        e.id === sellable.id
+                            ? { ...e, is_online_sellable: isOnline }
+                            : e,
                     ),
                 );
             }
@@ -265,32 +319,39 @@ export function useStoreManager() {
             load(onlinePage, PAGE_SIZE);
         });
 
-        channel.listen('SellableUpdated', (e: { sellable: Product | Event }) => {
-            const s = e.sellable;
-            if (s.type === 'product') {
-                setProducts((prev) => {
-                    const idx = prev.findIndex((p) => p.id === s.id);
-                    if (idx >= 0) {
-                        const next = [...prev];
-                        next[idx] = { ...next[idx], ...s } as Product;
-                        return next;
-                    }
-                    return [...prev, s as Product].sort((a, b) => a.name.localeCompare(b.name));
-                });
-            } else if (s.type === 'event') {
-                setEvents((prev) => {
-                    const idx = prev.findIndex((ev) => ev.id === s.id);
-                    if (idx >= 0) {
-                        const next = [...prev];
-                        next[idx] = { ...next[idx], ...s } as Event;
-                        return next;
-                    }
-                    return [...prev, s as Event].sort((a, b) =>
-                        (a.event_date || '').localeCompare(b.event_date || ''),
-                    );
-                });
-            }
-        });
+        channel.listen(
+            'SellableUpdated',
+            (e: { sellable: Product | Event }) => {
+                const s = e.sellable;
+                if (s.type === 'product') {
+                    setProducts((prev) => {
+                        const idx = prev.findIndex((p) => p.id === s.id);
+                        if (idx >= 0) {
+                            const next = [...prev];
+                            next[idx] = { ...next[idx], ...s } as Product;
+                            return next;
+                        }
+                        return [...prev, s as Product].sort((a, b) =>
+                            a.name.localeCompare(b.name),
+                        );
+                    });
+                } else if (s.type === 'event') {
+                    setEvents((prev) => {
+                        const idx = prev.findIndex((ev) => ev.id === s.id);
+                        if (idx >= 0) {
+                            const next = [...prev];
+                            next[idx] = { ...next[idx], ...s } as Event;
+                            return next;
+                        }
+                        return [...prev, s as Event].sort((a, b) =>
+                            (a.event_date || '').localeCompare(
+                                b.event_date || '',
+                            ),
+                        );
+                    });
+                }
+            },
+        );
 
         return () => {
             w.Echo?.leave('store-stats');
