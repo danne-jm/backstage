@@ -78,7 +78,7 @@ export default function Profile() {
                                             readOnly
                                             tabIndex={-1}
                                         />
-                                        <Lock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                        <Lock className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                     </div>
                                 </div>
 
@@ -94,7 +94,7 @@ export default function Profile() {
                                             readOnly
                                             tabIndex={-1}
                                         />
-                                        <Lock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                        <Lock className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                     </div>
                                 </div>
 
@@ -109,7 +109,7 @@ export default function Profile() {
                                             readOnly
                                             tabIndex={-1}
                                         />
-                                        <Lock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                        <Lock className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                     </div>
                                 </div>
 
@@ -141,4 +141,3 @@ export default function Profile() {
         </AppLayout>
     );
 }
-

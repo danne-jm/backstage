@@ -30,6 +30,7 @@ class User extends Authenticatable
         'role',
         'last_seen_at',
         'attributes',
+        'footer_links',
     ];
 
     /**
@@ -59,6 +60,21 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    /**
+     * Default footer links shown in the app sidebar.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'footer_links' => '[
+            {"label":"Gmail","url":"https://mail.google.com/","icon":"Mail"},
+            {"label":"Google Drive","url":"https://drive.google.com/","icon":"Container"},
+            {"label":"ESN Leuven Website","url":"https://www.esnleuven.be/","icon":"Globe"},
+            {"label":"ESN Leuven Store","url":"https://esn-leuven.sumupstore.com/","icon":"ShoppingBag"},
+            {"label":"Linktree","url":"https://linktr.ee/esnleuven","icon":"TreeDeciduous"}
+        ]',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -68,6 +84,7 @@ class User extends Authenticatable
             'pinned' => 'array',
             'last_seen_at' => 'datetime',
             'attributes' => 'array',
+            'footer_links' => 'array',
         ];
     }
 }

@@ -1,3 +1,9 @@
+export type FooterLink = {
+    label: string;
+    url: string;
+    icon: string;
+};
+
 export type User = {
     id: number;
     first_name: string;
@@ -8,6 +14,7 @@ export type User = {
     two_factor_enabled?: boolean;
     role: string;
     attributes: Record<string, unknown> | null;
+    footer_links: FooterLink[] | null;
     created_at: string;
     updated_at: string;
     [key: string]: unknown;

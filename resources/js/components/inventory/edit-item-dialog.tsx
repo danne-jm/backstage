@@ -1,10 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import * as React from 'react';
-import {
-    ItemFormDialogBase
-    
-} from '@/components/inventory/item-form-dialog-base';
-import type {ItemFormState} from '@/components/inventory/item-form-dialog-base';
+import { ItemFormDialogBase } from '@/components/inventory/item-form-dialog-base';
+import type { ItemFormState } from '@/components/inventory/item-form-dialog-base';
 import { Button } from '@/components/ui/button';
 import type { InventoryItem } from '@/types/inventory';
 
@@ -51,7 +48,6 @@ export function EditItemDialog({
     const handleFieldChange = <K extends keyof ItemFormState>(
         key: K,
         value: ItemFormState[K],
-         
     ) => form.setData(key, value as any);
 
     const handleSubmit = (e: React.FormEvent) => {

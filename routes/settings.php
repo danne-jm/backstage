@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Settings\FooterController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
+use App\Http\Controllers\Settings\UsersController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -26,7 +28,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
         ->name('two-factor.show');
 
-    Route::inertia('settings/users', 'settings/users')->name('settings.users');
+    Route::get('settings/users', [UsersController::class, 'index'])
+        ->middleware('password.confirm')
+        ->name('settings.users');
     Route::inertia('settings/google', 'settings/google')->name('settings.google');
-    Route::inertia('settings/footer', 'settings/footer')->name('settings.footer');
+    Route::get('settings/footer', [FooterController::class, 'edit'])->name('settings.footer');
+    Route::patch('settings/footer', [FooterController::class, 'update'])->name('settings.footer.update');
 });

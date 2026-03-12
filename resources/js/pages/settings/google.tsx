@@ -1,5 +1,6 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import type { BreadcrumbItem } from '@/types';
@@ -12,16 +13,48 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Google() {
+    const { auth } = usePage().props;
+    const connectedEmail = auth.user.gmail_provider_email as string | null;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Google" />
 
             <SettingsLayout>
-                <Heading
-                    variant="small"
-                    title="Google"
-                    description="Manage Google integration settings"
-                />
+                <div className="space-y-6">
+                    <Heading
+                        variant="small"
+                        title="Google / Gmail"
+                        description="Connect your Google account to send emails from this app as you."
+                    />
+
+                    {connectedEmail ? (
+                        <div className="space-y-4">
+                            <p className="text-sm text-green-500">
+                                Connected as {connectedEmail}
+                            </p>
+                            <Button variant="destructive">
+                                Disconnect Google
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground">
+                                Not connected.
+                            </p>
+                            <div className="space-y-1">
+                                <Button variant="outline">
+                                    Connect with Google
+                                </Button>
+                                <p className="text-xs text-muted-foreground">
+                                    You will be asked to grant the app
+                                    permission to send email on your behalf
+                                    (offline access).
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </SettingsLayout>
         </AppLayout>
     );
