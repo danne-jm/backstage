@@ -16,6 +16,28 @@ class EventResource extends JsonResource
     {
         $hasVariants = !empty($this->variants_config);
 
+        $soldWithCard    = (int) ($this->sold_count_with_card ?? 0);
+        $soldWithoutCard = (int) ($this->sold_count_without_card ?? 0);
+
+        // Simple (non-variable) event: single quantity pool shared across ticket types
+        $qty         = $this->quantity ?? null;
+        $unlimited   = (bool) ($this->unlimited_quantity ?? false);
+        $totalSold   = $soldWithCard + $soldWithoutCard;
+        $remaining   = ($unlimited || $qty === null) ? null : max(0, $qty - $totalSold);
+
+        // Variable-amount event: separate with_card / without_card pools
+        $qtyWithCard           = $this->quantity_with_card ?? null;
+        $unlimitedWithCard     = (bool) ($this->unlimited_quantity_with_card ?? false);
+        $remainingWithCard     = ($unlimitedWithCard || $qtyWithCard === null)
+            ? null
+            : max(0, $qtyWithCard - $soldWithCard);
+
+        $qtyWithoutCard        = $this->quantity_without_card ?? null;
+        $unlimitedWithoutCard  = (bool) ($this->unlimited_quantity_without_card ?? false);
+        $remainingWithoutCard  = ($unlimitedWithoutCard || $qtyWithoutCard === null)
+            ? null
+            : max(0, $qtyWithoutCard - $soldWithoutCard);
+
         return [
             'id' => $this->id, // deprecated for frontend selection
             'actual_id' => $this->id,
@@ -28,24 +50,26 @@ class EventResource extends JsonResource
             'end_sell_date' => $this->end_sell_date,
             'price_with_card' => $this->price_with_card ?? 0,
             'price_without_card' => $this->price_without_card ?? 0,
-            'quantity' => $this->quantity,
-            'unlimited_quantity' => (bool) ($this->unlimited_quantity ?? false),
+            'quantity' => $qty,
+            'unlimited_quantity' => $unlimited,
+            'sold_count_with_card' => $soldWithCard,
+            'sold_count_without_card' => $soldWithoutCard,
             'responsible_user_id' => $this->responsible_user_id,
             'notes' => $this->notes,
             'variable_amount' => (bool) $this->variable_amount,
-            'quantity_with_card' => $this->quantity_with_card,
-            'unlimited_quantity_with_card' => (bool) ($this->unlimited_quantity_with_card ?? false),
-            'quantity_without_card' => $this->quantity_without_card,
-            'unlimited_quantity_without_card' => (bool) ($this->unlimited_quantity_without_card ?? false),
+            'quantity_with_card' => $qtyWithCard,
+            'unlimited_quantity_with_card' => $unlimitedWithCard,
+            'quantity_without_card' => $qtyWithoutCard,
+            'unlimited_quantity_without_card' => $unlimitedWithoutCard,
             'google_spreadsheet_id' => $this->google_spreadsheet_id,
             'responsibleUser' => $this->responsibleUser ? [
                 'id' => $this->responsibleUser->id,
                 'first_name' => $this->responsibleUser->first_name,
                 'last_name' => $this->responsibleUser->last_name,
             ] : null,
-            'remaining' => $this->remaining,
-            'remaining_with_card' => $this->remaining_with_card,
-            'remaining_without_card' => $this->remaining_without_card,
+            'remaining' => $remaining,
+            'remaining_with_card' => $remainingWithCard,
+            'remaining_without_card' => $remainingWithoutCard,
             'is_online_sellable' => (bool) $this->is_online_sellable,
             'image' => $this->image,
             'images_list' => $this->images_list,
@@ -56,11 +80,11 @@ class EventResource extends JsonResource
                 'options' => $v->options,
                 'quantity' => $v->quantity,
                 'sold_count' => $v->sold_count,
-                'remaining' => ($v->quantity !== null) ? ($v->quantity - $v->sold_count) : null,
+                'remaining' => ($v->quantity !== null) ? max(0, $v->quantity - $v->sold_count) : null,
             ]),
             'sales_count' => $this->sales_count,
             'online_sales_count' => $this->online_sales_count,
-            'type' => 'event', // Added for frontend consistency
+            'type' => 'event',
         ];
     }
 }

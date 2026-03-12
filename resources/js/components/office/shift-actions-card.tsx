@@ -132,12 +132,32 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
 
     const getQuantityLabel = (item: any) => {
         if (item.is_variant_based) return 'Variants';
+
+        if (item.type === 'event') {
+            // Variable-amount events have separate with_card / without_card pools
+            if (item.variable_amount) {
+                const withCard    = item.unlimited_quantity_with_card    ? null : (item.remaining_with_card    ?? null);
+                const withoutCard = item.unlimited_quantity_without_card ? null : (item.remaining_without_card ?? null);
+                if (withCard === null && withoutCard === null) return 'Unlimited';
+                const parts: string[] = [];
+                if (withCard    !== null) parts.push(`${withCard} w/card`);
+                if (withoutCard !== null) parts.push(`${withoutCard} w/o card`);
+                return parts.join(', ') || 'Unlimited';
+            }
+            // Simple event: single pool
+            if (item.unlimited_quantity) return 'Unlimited';
+            const rem = item.remaining ?? null;
+            if (rem === null) return 'Unlimited';
+            if (rem <= 0) return 'Sold out';
+            return `${rem} left`;
+        }
+
+        // Product
         if (item.unlimited_quantity) return 'Unlimited';
-        if (item.quantity === null || item.quantity === undefined)
-            return 'Unlimited';
-        const qty = Number(item.quantity);
-        if (qty === 0) return 'Sold out';
-        return `${qty} left`;
+        const rem = item.remaining ?? null;
+        if (rem === null) return 'Unlimited';
+        if (rem <= 0) return 'Sold out';
+        return `${rem} left`;
     };
 
     const isSellableActive = (item: any) => {
@@ -150,6 +170,42 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         if (start && now < start) return false;
         if (end && now > end) return false;
         return true;
+    };
+
+    /**
+     * Returns true when the currently selected Quick-add item is sold out
+     * for the chosen ticket type (or has no remaining stock at all).
+     */
+    const isQuickSaleItemSoldOut = (): boolean => {
+        if (!saleProductId) return false;
+        const item = sellables?.find(
+            (i: any) => String(i.unique_id) === String(saleProductId),
+        );
+        if (!item) return false;
+        // Variant-based: the modal handles per-variant stock; don't block here
+        if (item.is_variant_based) return false;
+
+        if (item.type === 'event') {
+            if (item.variable_amount) {
+                if (saleTicketType === 'with_card') {
+                    return !item.unlimited_quantity_with_card &&
+                        item.remaining_with_card !== null &&
+                        item.remaining_with_card <= 0;
+                }
+                return !item.unlimited_quantity_without_card &&
+                    item.remaining_without_card !== null &&
+                    item.remaining_without_card <= 0;
+            }
+            // Simple event
+            return !item.unlimited_quantity &&
+                item.remaining !== null &&
+                item.remaining <= 0;
+        }
+
+        // Product
+        return !item.unlimited_quantity &&
+            item.remaining !== null &&
+            item.remaining <= 0;
     };
 
     const activeSellables = sellables?.filter(isSellableActive) || [];
@@ -518,7 +574,8 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                             disabled={
                                 activeShift?.status !== 'open' ||
                                 submitting ||
-                                !saleProductId
+                                !saleProductId ||
+                                isQuickSaleItemSoldOut()
                             }
                             onClick={triggerQuickSaleCash}
                         >
@@ -529,7 +586,8 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                             disabled={
                                 activeShift?.status !== 'open' ||
                                 submitting ||
-                                !saleProductId
+                                !saleProductId ||
+                                isQuickSaleItemSoldOut()
                             }
                             onClick={() => handleQuickSaleCard()}
                         >
