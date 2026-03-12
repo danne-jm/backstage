@@ -3,12 +3,9 @@
 namespace App\Models\sellables;
 
 use App\Models\Sellable;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Event extends Sellable implements HasMedia
+class Event extends Sellable
 {
-    use InteractsWithMedia;
     protected $fillable = [
         'event_date',
         'start_sell_date',

@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
 import { OfficeCard } from './office-card';
 
 interface SellablesListProps {
@@ -56,11 +56,11 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
                 {sellables.length > 0 ? (
                     sellables.map((item: any) => (
                         <div
-                            key={item.id}
+                            key={item.unique_id}
                             className="flex items-center justify-between rounded-md bg-muted/40 p-2"
                         >
-                            <div className="flex-1">
-                                <div className="text-sm font-medium">
+                            <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-medium">
                                     {item.name}
                                 </div>
                                 {item.description && (
@@ -72,15 +72,15 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
                             <div className="ml-2 flex flex-col items-end text-sm">
                                 <div className="font-medium text-muted-foreground">
                                     {item.type === 'product'
-                                        ? `€${Number(item.price).toFixed(2)}`
-                                        : `€${Number(item.price_with_card).toFixed(2)} / €${Number(item.price_without_card).toFixed(2)}`}
+                                        ? `€${Number(item.price || 0).toFixed(2)}`
+                                        : `€${Number(item.price_with_card || item.price || 0).toFixed(2)} / €${Number(item.price_without_card || 0).toFixed(2)}`}
                                 </div>
                                 <div className="mt-1 text-xs text-muted-foreground">
                                     {item.type === 'event'
                                         ? sellPeriodMessage(
-                                            item.start_sell_date,
-                                            item.end_sell_date,
-                                        )
+                                              item.start_sell_date,
+                                              item.end_sell_date,
+                                          )
                                         : ''}
                                 </div>
                             </div>

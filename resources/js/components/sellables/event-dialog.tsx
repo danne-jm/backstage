@@ -1,4 +1,9 @@
+import { Link, router } from '@inertiajs/react';
+import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import * as React from 'react';
 import { ImageManager } from '@/components/sellables/image-manager';
+import { SellableDialogBase } from '@/components/sellables/sellable-dialog-base';
+import { VariantManager } from '@/components/sellables/variant-manager';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -6,15 +11,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { SellableDialogBase } from '@/components/sellables/sellable-dialog-base';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -25,11 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Link, router } from '@inertiajs/react';
-import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
-import * as React from 'react';
 
-import { VariantManager } from '@/components/sellables/variant-manager';
 import type {
     BoardUser,
     Event,
@@ -180,8 +173,11 @@ export function EventDialog({
     };
 
     const allImagesForDisplay = React.useMemo(() => {
-        const existing = imagesList.map((img) => ({ ...img, isNew: false }));
-        const incoming = newImages.map((file, idx) => ({
+        const existing = (imagesList || []).map((img) => ({
+            ...img,
+            isNew: false,
+        }));
+        const incoming = (newImages || []).map((file, idx) => ({
             id: -1 * (idx + 1), // temp id
             url: URL.createObjectURL(file),
             isNew: true,
@@ -272,9 +268,9 @@ export function EventDialog({
             formData.append('quantity_without_card', '');
             formData.append('unlimited_quantity_without_card', '0');
 
-            variantsConfig.forEach((config, idx) => {
+            (variantsConfig || []).forEach((config, idx) => {
                 formData.append(`variants_config[${idx}][name]`, config.name);
-                config.options.forEach((opt, optIdx) => {
+                (config.options || []).forEach((opt, optIdx) => {
                     formData.append(
                         `variants_config[${idx}][options][${optIdx}]`,
                         opt,
@@ -282,13 +278,15 @@ export function EventDialog({
                 });
             });
 
-            variants.forEach((variant, idx) => {
-                Object.entries(variant.options).forEach(([key, value]) => {
-                    formData.append(
-                        `variants_stock[${idx}][options][${key}]`,
-                        value,
-                    );
-                });
+            (variants || []).forEach((variant, idx) => {
+                Object.entries(variant.options || {}).forEach(
+                    ([key, value]) => {
+                        formData.append(
+                            `variants_stock[${idx}][options][${key}]`,
+                            value,
+                        );
+                    },
+                );
                 if (variant.quantity !== null) {
                     formData.append(
                         `variants_stock[${idx}][quantity]`,
@@ -336,7 +334,7 @@ export function EventDialog({
             submitLabel={editingEvent ? 'Update Event' : 'Create Event'}
             footerExtra={
                 editingEvent ? (
-                    <div className="flex-1 text-sm text-left text-muted-foreground mr-4">
+                    <div className="mr-4 flex-1 text-left text-sm text-muted-foreground">
                         Editing: {editingEvent.name}
                     </div>
                 ) : undefined
@@ -350,9 +348,7 @@ export function EventDialog({
                         <Input
                             id="event-name"
                             value={eventName}
-                            onChange={(e) =>
-                                setEventName(e.target.value)
-                            }
+                            onChange={(e) => setEventName(e.target.value)}
                             className="mt-1"
                         />
                     </div>
@@ -375,9 +371,7 @@ export function EventDialog({
                             id="event-date"
                             type="date"
                             value={eventDate}
-                            onChange={(e) =>
-                                setEventDate(e.target.value)
-                            }
+                            onChange={(e) => setEventDate(e.target.value)}
                             className="mt-1 block w-full"
                         />
                     </div>
@@ -400,19 +394,14 @@ export function EventDialog({
                             />
                         </div>
                         <div className="min-w-0">
-                            <Label
-                                htmlFor="end-sell-date"
-                                className="text-sm"
-                            >
+                            <Label htmlFor="end-sell-date" className="text-sm">
                                 End Sell
                             </Label>
                             <Input
                                 id="end-sell-date"
                                 type="date"
                                 value={endSellDate}
-                                onChange={(e) =>
-                                    setEndSellDate(e.target.value)
-                                }
+                                onChange={(e) => setEndSellDate(e.target.value)}
                                 className="mt-1 block w-full"
                             />
                         </div>
@@ -496,15 +485,11 @@ export function EventDialog({
                     </div>
                     {!editingEvent && (
                         <div>
-                            <Label className="text-sm">
-                                Spreadsheet ID
-                            </Label>
+                            <Label className="text-sm">Spreadsheet ID</Label>
                             <Input
                                 value={googleSpreadsheetId}
                                 onChange={(e) =>
-                                    setGoogleSpreadsheetId(
-                                        e.target.value,
-                                    )
+                                    setGoogleSpreadsheetId(e.target.value)
                                 }
                                 placeholder="Google Sheet ID"
                                 className="mt-1"
@@ -552,12 +537,8 @@ export function EventDialog({
                                     <button
                                         type="button"
                                         role="tab"
-                                        aria-selected={
-                                            stockMode === 'simple'
-                                        }
-                                        onClick={() =>
-                                            setStockMode('simple')
-                                        }
+                                        aria-selected={stockMode === 'simple'}
+                                        onClick={() => setStockMode('simple')}
                                         className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'simple' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
                                     >
                                         Simple
@@ -565,12 +546,8 @@ export function EventDialog({
                                     <button
                                         type="button"
                                         role="tab"
-                                        aria-selected={
-                                            stockMode === 'variants'
-                                        }
-                                        onClick={() =>
-                                            setStockMode('variants')
-                                        }
+                                        aria-selected={stockMode === 'variants'}
+                                        onClick={() => setStockMode('variants')}
                                         className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'variants' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
                                     >
                                         Variants
@@ -584,9 +561,7 @@ export function EventDialog({
                                         <Checkbox
                                             id="variable-amount"
                                             checked={!!variableAmount}
-                                            onCheckedChange={(
-                                                checked,
-                                            ) =>
+                                            onCheckedChange={(checked) =>
                                                 setVariableAmount(
                                                     checked === true,
                                                 )
@@ -611,13 +586,10 @@ export function EventDialog({
                                                 <Input
                                                     id="quantity-with-card"
                                                     type="number"
-                                                    value={
-                                                        quantityWithCard
-                                                    }
+                                                    value={quantityWithCard}
                                                     onChange={(e) =>
                                                         setQuantityWithCard(
-                                                            e.target
-                                                                .value,
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1"
@@ -633,13 +605,10 @@ export function EventDialog({
                                                 <Input
                                                     id="quantity-without-card"
                                                     type="number"
-                                                    value={
-                                                        quantityWithoutCard
-                                                    }
+                                                    value={quantityWithoutCard}
                                                     onChange={(e) =>
                                                         setQuantityWithoutCard(
-                                                            e.target
-                                                                .value,
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1"
@@ -659,12 +628,10 @@ export function EventDialog({
                                                 type="number"
                                                 value={quantity}
                                                 onChange={(e) =>
-                                                    setQuantity(
-                                                        e.target.value,
-                                                    )
+                                                    setQuantity(e.target.value)
                                                 }
                                                 className="mt-1"
-                                                placeholder="Leave empty = unlimited"
+                                                placeholder="Leave empty for unlimited"
                                             />
                                         </div>
                                     )}
@@ -676,13 +643,8 @@ export function EventDialog({
                                     <VariantManager
                                         initialConfig={variantsConfig}
                                         initialVariants={variants}
-                                        onChange={(
-                                            newConfig,
-                                            newVariants,
-                                        ) => {
-                                            setVariantsConfig(
-                                                newConfig,
-                                            );
+                                        onChange={(newConfig, newVariants) => {
+                                            setVariantsConfig(newConfig);
                                             setVariants(newVariants);
                                         }}
                                     />
@@ -721,9 +683,7 @@ export function EventDialog({
                                     id="online-sellable"
                                     checked={!!isOnlineSellable}
                                     onCheckedChange={(checked) =>
-                                        setIsOnlineSellable(
-                                            checked === true,
-                                        )
+                                        setIsOnlineSellable(checked === true)
                                     }
                                 />
                                 <Label

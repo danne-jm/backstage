@@ -16,11 +16,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 #Office
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('office', [App\Http\Controllers\OfficeController::class, 'index'])->name('office');
-});
+    Route::post('office/start', [App\Http\Controllers\OfficeController::class, 'start'])->name('office.start');
 
-#Office Shift
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('office-shift', 'office/office-shift')->name('office-shift');
+    // Shift interactions
+    Route::get('office/{office}', [App\Http\Controllers\OfficeController::class, 'show'])->name('office.show');
+    Route::post('office/{office}/end', [App\Http\Controllers\OfficeController::class, 'end'])->name('office.end');
+    Route::post('office/{office}/reopen', [App\Http\Controllers\OfficeController::class, 'reopen'])->name('office.reopen');
+    Route::post('office/{office}/workers', [App\Http\Controllers\OfficeController::class, 'addWorker'])->name('office.workers.add');
+    Route::delete('office/{office}/workers', [App\Http\Controllers\OfficeController::class, 'removeWorker'])->name('office.workers.remove');
+    Route::post('office/{office}/record-sale', [App\Http\Controllers\OfficeController::class, 'recordSale'])->name('office.sales.record');
+    Route::delete('office/{office}/remove-sale', [App\Http\Controllers\OfficeController::class, 'removeSale'])->name('office.sales.remove');
+    Route::post('office/{office}/update-cash-breakdown', [App\Http\Controllers\OfficeController::class, 'updateCashBreakdown'])->name('office.breakdown.update');
+    Route::post('office/{office}/update-start-totals', [App\Http\Controllers\OfficeController::class, 'updateStartTotals'])->name('office.start_totals.update');
+    Route::post('office/{office}/update-sale-breakdown', [App\Http\Controllers\OfficeController::class, 'updateSaleBreakdown'])->name('office.sale_breakdown.update');
 });
 
 #Sellables

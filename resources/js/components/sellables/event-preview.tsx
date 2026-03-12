@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+import { ExternalLink, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -9,8 +11,6 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { Link } from '@inertiajs/react';
-import { ExternalLink, ImageIcon } from 'lucide-react';
 
 import type { Event } from '@/types/sellables';
 
@@ -81,7 +81,7 @@ export function EventPreview({
     // Helper to render variant list
     const renderVariantList = () => (
         <div className="mt-1 space-y-0.5">
-            {event.variants?.map((variant, idx) => {
+            {(event.variants || []).map((variant, idx) => {
                 const remaining =
                     variant.quantity !== null &&
                     variant.sold_count !== undefined
@@ -93,7 +93,7 @@ export function EventPreview({
                         className="text-xs text-muted-foreground"
                     >
                         •{' '}
-                        {Object.entries(variant.options)
+                        {Object.entries(variant.options || {})
                             .map(([k, v]) => `${k}: ${v}`)
                             .join(', ')}
                         {' - '}
@@ -287,7 +287,10 @@ export function EventPreview({
                                                     Variants:
                                                 </span>{' '}
                                                 <span className="text-foreground">
-                                                    {event.variants_config
+                                                    {(
+                                                        event.variants_config ||
+                                                        []
+                                                    )
                                                         .map((vc) => vc.name)
                                                         .join(', ')}
                                                 </span>

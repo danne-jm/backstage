@@ -9,6 +9,8 @@ use App\Services\SellablesService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Http\Resources\ProductResource;
+use App\Http\Resources\EventResource;
 
 class SellablesController extends Controller
 {
@@ -41,14 +43,17 @@ class SellablesController extends Controller
 
     public function index(Request $request)
     {
-        $products = Product::with('variants')->withCount(['sales', 'onlineSales'])->orderBy('name')->get();
+        $products = Product::with('variants')
+            ->withCount(['sales', 'onlineSales'])
+            ->orderBy('name')
+            ->get();
+
         $now = now();
 
         $liveEvents = $this->baseEventQuery()
             ->where('end_sell_date', '>=', $now)
             ->orderBy('event_date', 'asc')
-            ->get()
-            ->map(fn($event) => $this->formatEvent($event));
+            ->get();
 
         $expiredPage = max(1, (int) $request->query('expired_page', 1));
         $expiredPerPage = max(1, (int) $request->query('expired_per_page', 10));
@@ -58,14 +63,11 @@ class SellablesController extends Controller
             ->orderBy('event_date', 'desc')
             ->paginate($expiredPerPage, ['*'], 'expired_page', $expiredPage);
 
-        $expiredEvents = collect($expiredPaginator->items())->map(fn($event) => $this->formatEvent($event));
-
-        $events = $liveEvents->concat($expiredEvents)->values();
         $boardUsers = User::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'email']);
 
         return Inertia::render('sellables', [
-            'products' => $products,
-            'events' => $events,
+            'products' => ProductResource::collection($products)->resolve(),
+            'events' => EventResource::collection($liveEvents->concat($expiredPaginator->items()))->resolve(),
             'expired_pagination' => [
                 'current_page' => $expiredPaginator->currentPage(),
                 'last_page' => $expiredPaginator->lastPage(),
@@ -81,52 +83,6 @@ class SellablesController extends Controller
         ]);
     }
 
-    protected function formatEvent(Event $event)
-    {
-        $hasVariants = !empty($event->variants_config);
-
-        return [
-            'id' => $event->id,
-            'is_variant_based' => $event->is_variant_based,
-            'name' => $event->name,
-            'description' => $event->description,
-            'event_date' => $event->event_date,
-            'start_sell_date' => $event->start_sell_date,
-            'end_sell_date' => $event->end_sell_date,
-            'price_with_card' => $event->price_with_card,
-            'price_without_card' => $event->price_without_card,
-            'quantity' => $event->quantity,
-            'unlimited_quantity' => (bool) ($event->unlimited_quantity ?? false),
-            'responsible_user_id' => $event->responsible_user_id,
-            'notes' => $event->notes,
-            'variable_amount' => $event->variable_amount,
-            'quantity_with_card' => $event->quantity_with_card,
-            'unlimited_quantity_with_card' => (bool) ($event->unlimited_quantity_with_card ?? false),
-            'quantity_without_card' => $event->quantity_without_card,
-            'unlimited_quantity_without_card' => (bool) ($event->unlimited_quantity_without_card ?? false),
-            'google_spreadsheet_id' => $event->google_spreadsheet_id,
-            'responsibleUser' => $event->responsibleUser ? [
-                'id' => $event->responsibleUser->id,
-                'first_name' => $event->responsibleUser->first_name,
-                'last_name' => $event->responsibleUser->last_name,
-            ] : null,
-            'remaining' => $event->remaining,
-            'remaining_with_card' => $event->remaining_with_card,
-            'remaining_without_card' => $event->remaining_without_card,
-            'is_online_sellable' => $event->is_online_sellable,
-            'image' => $event->image,
-            'images_list' => $event->images_list,
-            'instagram_link' => $event->instagram_link,
-            'variants_config' => $hasVariants ? $event->variants_config : null,
-            'variants' => $hasVariants ? $event->variants()->get()->map(fn($v) => [
-                'id' => $v->id, // ULID
-                'options' => $v->options,
-                'quantity' => $v->quantity,
-                'sold_count' => $v->sold_count,
-            ]) : [],
-        ];
-    }
-
     public function expired(Request $request)
     {
         $now = now();
@@ -138,10 +94,8 @@ class SellablesController extends Controller
             ->orderBy('event_date', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
 
-        $items = collect($paginator->items())->map(fn($e) => $this->formatEvent($e));
-
         return response()->json([
-            'data' => $items,
+            'data' => EventResource::collection($paginator->items()),
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
@@ -151,7 +105,7 @@ class SellablesController extends Controller
             ],
         ]);
     }
-    
+
     protected function handleImages(Request $request, $sellable)
     {
         if ($request->hasFile('images')) {
@@ -196,7 +150,7 @@ class SellablesController extends Controller
 
         return $this->inventoryService->normalizeInput($validated);
     }
-    
+
     protected function validateAndNormalizeEvent(Request $request)
     {
         $validated = $request->validate([
@@ -231,12 +185,12 @@ class SellablesController extends Controller
         }
 
         $normalized = $this->inventoryService->normalizeInput($validated);
-        
+
         if (array_key_exists('google_spreadsheet_id', $validated) && $validated['google_spreadsheet_id'] === null) {
             unset($normalized['google_spreadsheet_id']);
             $normalized['google_spreadsheet_id'] = null; // explicit
         }
-        
+
         return $normalized;
     }
 
@@ -247,7 +201,7 @@ class SellablesController extends Controller
 
         $isVariantBased = $request->input('is_variant_based', false);
         if ($isVariantBased && $request->has('variants_stock') && !empty($normalized['variants_config'])) {
-            $this->syncVariants($product, $request->input('variants_stock'));
+            $this->inventoryService->syncVariants($product, $request->input('variants_stock'));
         }
 
         $this->handleImages($request, $product);
@@ -271,7 +225,7 @@ class SellablesController extends Controller
 
         if ($isVariantBased) {
             if ($request->has('variants_stock') && !empty($normalized['variants_config'])) {
-                $this->syncVariants($product, $request->input('variants_stock'));
+                $this->inventoryService->syncVariants($product, $request->input('variants_stock'));
             } else {
                 $product->variants()->delete();
             }
@@ -283,6 +237,8 @@ class SellablesController extends Controller
 
         $product->load('variants');
         \App\Events\SellableUpdated::dispatch($product);
+
+        return redirect()->route('sellables');
     }
 
     public function destroyProduct(Product $product)
@@ -299,7 +255,7 @@ class SellablesController extends Controller
 
         $isVariantBased = $request->input('is_variant_based', false);
         if ($isVariantBased && $request->has('variants_stock') && !empty($normalized['variants_config'])) {
-            $this->syncVariants($event, $request->input('variants_stock'));
+            $this->inventoryService->syncVariants($event, $request->input('variants_stock'));
         }
 
         $this->handleImages($request, $event);
@@ -323,18 +279,20 @@ class SellablesController extends Controller
 
         if ($isVariantBased) {
             if ($request->has('variants_stock') && !empty($normalized['variants_config'])) {
-                $this->syncVariants($event, $request->input('variants_stock'));
+                $this->inventoryService->syncVariants($event, $request->input('variants_stock'));
             } else {
                 $event->variants()->delete();
             }
         } else {
-             $event->variants()->delete();
+            $event->variants()->delete();
         }
 
         $this->handleImages($request, $event);
 
         $event->load('variants', 'responsibleUser');
         \App\Events\SellableUpdated::dispatch($event);
+
+        return redirect()->route('sellables');
     }
 
     public function destroyImage(Media $image)
@@ -354,37 +312,5 @@ class SellablesController extends Controller
         $event->delete();
         return redirect()->route('sellables');
     }
-
-    protected function syncVariants($sellable, array $variantsInput)
-    {
-        $existing = $sellable->variants()->get();
-        $processedIds = [];
-
-        foreach ($variantsInput as $variantData) {
-            $options = $variantData['options'];
-            $quantity = isset($variantData['quantity']) && $variantData['quantity'] !== '' ? (int) $variantData['quantity'] : null;
-
-            $match = $existing->first(function ($v) use ($options) {
-                $opt1 = $v->options;
-                ksort($opt1);
-                $opt2 = $options;
-                ksort($opt2);
-
-                return $opt1 == $opt2;
-            });
-
-            if ($match) {
-                $match->update(['quantity' => $quantity]);
-                $processedIds[] = $match->id;
-            } else {
-                $created = $sellable->variants()->create([
-                    'options' => $options,
-                    'quantity' => $quantity,
-                ]);
-                $processedIds[] = $created->id;
-            }
-        }
-
-        $sellable->variants()->whereNotIn('id', $processedIds)->delete();
-    }
 }
+

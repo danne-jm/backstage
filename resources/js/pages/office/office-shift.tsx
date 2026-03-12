@@ -1,33 +1,57 @@
-import { Head } from '@inertiajs/react';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { Head, usePage } from '@inertiajs/react';
+import { RevenueCard } from '@/components/office/revenue-card';
+import { SalesLogCard } from '@/components/office/sales-log-card';
+import { ShiftActionsCard } from '@/components/office/shift-actions-card';
+import { WorkersCard } from '@/components/office/workers-card';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Office Shifts',
-        href: '/office-shift',
-    },
-];
+export default function Show() {
+    const { props } = usePage<any>();
 
-export default function OfficeShift() {
+    const activeShift: any = props.activeShift ?? null;
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Office',
+            href: '/office',
+        },
+        {
+            title:
+                activeShift?.status === 'open'
+                    ? 'Active Shift'
+                    : `Closed Shift #${activeShift?.id || props.shiftId}`,
+            href: '#',
+        },
+    ];
+
+    const workers: any[] = Array.isArray(props.workers) ? props.workers : [];
+    const sales: any[] = Array.isArray(props.sales) ? props.sales : [];
+    const sellables: any[] = Array.isArray(props.sellables)
+        ? props.sellables
+        : [];
+    const staff: any[] = Array.isArray(props.staff) ? props.staff : [];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Office Shifts" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
-                    </div>
+            <Head title="Office Shift" />
+            <div className="flex flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <WorkersCard
+                        workers={workers}
+                        activeShift={activeShift}
+                        staff={staff}
+                    />
+                    <RevenueCard activeShift={activeShift} />
+                    <ShiftActionsCard
+                        activeShift={activeShift}
+                        sellables={sellables}
+                    />
                 </div>
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/20 dark:stroke-neutral-100/20" />
+                <div className="w-full flex-1">
+                    <div className="rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
+                        <SalesLogCard sales={sales} activeShift={activeShift} />
+                    </div>
                 </div>
             </div>
         </AppLayout>

@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -7,7 +8,6 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
-import * as React from 'react';
 
 interface SellableDialogBaseProps {
     open: boolean;

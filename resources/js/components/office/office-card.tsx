@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
 import React, { forwardRef } from 'react';
+import { cn } from '@/lib/utils';
 
 interface OfficeCardProps extends React.HTMLAttributes<HTMLElement> {
     title: string;
@@ -23,7 +23,7 @@ export const OfficeCard = forwardRef<HTMLElement, OfficeCardProps>(
                     <h3 className="text-sm font-semibold">{title}</h3>
                     {action && <div>{action}</div>}
                 </div>
-                <div className="flex flex-col min-h-0 flex-1">{children}</div>
+                <div className="flex min-h-0 flex-1 flex-col">{children}</div>
             </section>
         );
     },

@@ -1,3 +1,5 @@
+import { Plus, Trash, X } from 'lucide-react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,9 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { SellableVariant, VariantConfigItem } from '@/types/sellables';
-import { Plus, Trash, X } from 'lucide-react';
-import React from 'react';
+import type { SellableVariant, VariantConfigItem } from '@/types/sellables';
 
 interface VariantManagerProps {
     initialConfig?: VariantConfigItem[] | null;
@@ -165,7 +165,7 @@ export function VariantManager({
                         <Plus className="mr-2 h-4 w-4" /> Add Attribute
                     </Button>
                 </div>
-                {config.map((attr, idx) => (
+                {(config || []).map((attr, idx) => (
                     <div
                         key={idx}
                         className="rounded-lg border border-gray-700 bg-gray-900/50 p-4"
@@ -207,7 +207,7 @@ export function VariantManager({
                             </Button>
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
-                            {attr.options.map((opt) => (
+                            {(attr.options || []).map((opt) => (
                                 <div
                                     key={opt}
                                     className="flex items-center gap-1 rounded-md bg-zinc-800 px-3 py-1 text-sm font-medium text-white shadow-sm"
@@ -248,13 +248,17 @@ export function VariantManager({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {variants.map((variant, idx) => (
+                                {(variants || []).map((variant, idx) => (
                                     <TableRow key={idx}>
-                                        {config
+                                        {(config || [])
                                             .filter((c) => c.name)
                                             .map((c) => (
                                                 <TableCell key={c.name}>
-                                                    {variant.options[c.name]}
+                                                    {
+                                                        (variant.options || {})[
+                                                            c.name
+                                                        ]
+                                                    }
                                                 </TableCell>
                                             ))}
                                         <TableCell>

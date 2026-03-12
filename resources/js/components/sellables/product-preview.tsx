@@ -1,3 +1,4 @@
+import { ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -8,7 +9,7 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 import type { Product } from '@/types/sellables';
 
@@ -27,7 +28,7 @@ interface ProductPreviewProps {
     ) => void;
 }
 
-import { ImageIcon } from 'lucide-react';
+
 
 export function ProductPreview({
     product,
@@ -113,9 +114,9 @@ export function ProductPreview({
                                 className={cn(
                                     'font-medium',
                                     variant === 'store-manager' &&
-                                        isOnline &&
-                                        product.name.length >= 26 &&
-                                        'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                                    isOnline &&
+                                    product.name.length >= 26 &&
+                                    'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
                                 )}
                             >
                                 {product.name}
@@ -167,19 +168,19 @@ export function ProductPreview({
                                 Price:
                             </span>{' '}
                             <span className="text-foreground">
-                                €{product.price}
+                                {formatCurrency(product.price)}
                             </span>
                         </div>
                         <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0 flex-1">
                                 {product.variants_config &&
-                                product.variants_config.length > 0 ? (
+                                    product.variants_config.length > 0 ? (
                                     <>
                                         <span className="text-muted-foreground">
                                             Quantity by:
                                         </span>{' '}
                                         <span className="text-foreground">
-                                            {product.variants_config
+                                            {(product.variants_config || [])
                                                 .map((vc) => vc.name)
                                                 .join(', ')}
                                         </span>
@@ -193,7 +194,7 @@ export function ProductPreview({
                                             )}
                                         >
                                             {variant ===
-                                            'store-manager' ? null : (
+                                                'store-manager' ? null : (
                                                 <VariantsMatrix
                                                     product={product}
                                                 />
@@ -206,49 +207,49 @@ export function ProductPreview({
                                             Qty w/ ESNcard:
                                         </span>{' '}
                                         {product.unlimited_quantity_with_card ||
-                                        product.quantity_with_card == null
+                                            product.quantity_with_card == null
                                             ? 'Unlimited'
                                             : product.quantity_with_card}
                                         {product.unlimited_quantity_with_card ||
-                                        product.quantity_with_card == null
+                                            product.quantity_with_card == null
                                             ? false
                                             : product.remaining_with_card !==
-                                                  undefined &&
-                                              product.remaining_with_card !==
-                                                  null && (
-                                                  <span className="text-gray-500">
-                                                      {' '}
-                                                      |{' '}
-                                                      {
-                                                          product.remaining_with_card
-                                                      }{' '}
-                                                      remain
-                                                  </span>
-                                              )}{' '}
+                                            undefined &&
+                                            product.remaining_with_card !==
+                                            null && (
+                                                <span className="text-gray-500">
+                                                    {' '}
+                                                    |{' '}
+                                                    {
+                                                        product.remaining_with_card
+                                                    }{' '}
+                                                    remain
+                                                </span>
+                                            )}{' '}
                                         |{' '}
                                         <span className="text-muted-foreground">
                                             w/o ESNcard:
                                         </span>{' '}
                                         {product.unlimited_quantity_without_card ||
-                                        product.quantity_without_card == null
+                                            product.quantity_without_card == null
                                             ? 'Unlimited'
                                             : product.quantity_without_card}
                                         {product.unlimited_quantity_without_card ||
-                                        product.quantity_without_card == null
+                                            product.quantity_without_card == null
                                             ? false
                                             : product.remaining_without_card !==
-                                                  undefined &&
-                                              product.remaining_without_card !==
-                                                  null && (
-                                                  <span className="text-gray-500">
-                                                      {' '}
-                                                      |{' '}
-                                                      {
-                                                          product.remaining_without_card
-                                                      }{' '}
-                                                      remain
-                                                  </span>
-                                              )}
+                                            undefined &&
+                                            product.remaining_without_card !==
+                                            null && (
+                                                <span className="text-gray-500">
+                                                    {' '}
+                                                    |{' '}
+                                                    {
+                                                        product.remaining_without_card
+                                                    }{' '}
+                                                    remain
+                                                </span>
+                                            )}
                                     </>
                                 ) : (
                                     <>
@@ -256,20 +257,20 @@ export function ProductPreview({
                                             Quantity:
                                         </span>{' '}
                                         {product.unlimited_quantity ||
-                                        product.quantity == null
+                                            product.quantity == null
                                             ? 'Unlimited'
                                             : product.quantity}
                                         {product.unlimited_quantity ||
-                                        product.quantity == null
+                                            product.quantity == null
                                             ? false
                                             : product.remaining !== undefined &&
-                                              product.remaining !== null && (
-                                                  <span className="text-gray-500">
-                                                      {' '}
-                                                      | {product.remaining}{' '}
-                                                      remain
-                                                  </span>
-                                              )}
+                                            product.remaining !== null && (
+                                                <span className="text-gray-500">
+                                                    {' '}
+                                                    | {product.remaining}{' '}
+                                                    remain
+                                                </span>
+                                            )}
                                     </>
                                 )}
 
@@ -383,13 +384,13 @@ function VariantsMatrix({ product }: { product: Product }) {
         // Fallback for "variants" mode but no config? Just list them.
         return (
             <div className="space-y-1">
-                {product.variants.map((v, i) => (
+                {(product.variants || []).map((v, i) => (
                     <div
                         key={v.id || i}
                         className="text-xs text-muted-foreground"
                     >
                         •{' '}
-                        {Object.entries(v.options)
+                        {Object.entries(v.options || {})
                             .map(([k, val]) => `${k}: ${val}`)
                             .join(', ')}
                         {' - '}
@@ -408,7 +409,7 @@ function VariantsMatrix({ product }: { product: Product }) {
     const getVariant = (options: Record<string, string>) => {
         return product.variants?.find((v) => {
             for (const [key, val] of Object.entries(options)) {
-                if (v.options[key] !== val) return false;
+                if ((v.options || {})[key] !== val) return false;
             }
             return true;
         });
@@ -427,7 +428,7 @@ function VariantsMatrix({ product }: { product: Product }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y">
-                        {config.options.map((opt) => {
+                        {(config.options || []).map((opt) => {
                             const v = getVariant({ [config.name]: opt });
                             return (
                                 <tr key={opt}>
@@ -459,7 +460,7 @@ function VariantsMatrix({ product }: { product: Product }) {
                             <th className="p-1.5 font-medium">
                                 {rowConfig.name} \ {colConfig.name}
                             </th>
-                            {colConfig.options.map((colOpt) => (
+                            {(colConfig.options || []).map((colOpt) => (
                                 <th
                                     key={colOpt}
                                     className="p-1.5 font-medium whitespace-nowrap"
@@ -470,12 +471,12 @@ function VariantsMatrix({ product }: { product: Product }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y">
-                        {rowConfig.options.map((rowOpt) => (
+                        {(rowConfig.options || []).map((rowOpt) => (
                             <tr key={rowOpt}>
                                 <td className="bg-muted/20 p-1.5 font-medium whitespace-nowrap">
                                     {rowOpt}
                                 </td>
-                                {colConfig.options.map((colOpt) => {
+                                {(colConfig.options || []).map((colOpt) => {
                                     const v = getVariant({
                                         [rowConfig.name]: rowOpt,
                                         [colConfig.name]: colOpt,
@@ -507,7 +508,7 @@ function VariantsMatrix({ product }: { product: Product }) {
             <table className="w-full text-left">
                 <thead className="bg-muted/50">
                     <tr>
-                        {configs.map((c) => (
+                        {(configs || []).map((c) => (
                             <th key={c.name} className="p-1.5 font-medium">
                                 {c.name}
                             </th>
@@ -516,11 +517,11 @@ function VariantsMatrix({ product }: { product: Product }) {
                     </tr>
                 </thead>
                 <tbody className="divide-y">
-                    {product.variants.map((v, idx) => (
+                    {(product.variants || []).map((v, idx) => (
                         <tr key={v.id || idx}>
-                            {configs.map((c) => (
+                            {(configs || []).map((c) => (
                                 <td key={c.name} className="p-1.5">
-                                    {v.options[c.name]}
+                                    {(v.options || {})[c.name]}
                                 </td>
                             ))}
                             <td className="p-1.5 text-muted-foreground">

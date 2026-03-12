@@ -3,12 +3,9 @@
 namespace App\Models\sellables;
 
 use App\Models\Sellable;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Product extends Sellable implements HasMedia
+class Product extends Sellable
 {
-    use InteractsWithMedia;
     protected $fillable = [
         'price',
         'member_price',

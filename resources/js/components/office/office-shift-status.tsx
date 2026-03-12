@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button';
 import { Link, router } from '@inertiajs/react';
-import { formatTimestamp } from './utils';
+import { Button } from '@/components/ui/button';
 import { OfficeCard } from './office-card';
+import { formatTimestamp } from './utils';
 
 interface OfficeShiftStatusProps {
     activeShift: any;
@@ -30,11 +30,11 @@ export function OfficeShiftStatus({
                             Current Workers
                         </div>
                         <div className="mt-1 text-sm">
-                            {Array.isArray(activeShift.workers) &&
-                                activeShift.workers.length > 0
-                                ? activeShift.workers
-                                    .map((w: any) => w.name)
-                                    .join(', ')
+                            {Array.isArray(activeShift.workers_list) &&
+                            activeShift.workers_list.length > 0
+                                ? activeShift.workers_list
+                                      .map((w: any) => w.name)
+                                      .join(', ')
                                 : 'None'}
                         </div>
                     </div>

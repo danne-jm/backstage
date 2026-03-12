@@ -54,4 +54,38 @@ class SellablesService
 
         return $normalized;
     }
+
+    public function syncVariants($sellable, array $variantsInput): void
+    {
+        $existing = $sellable->variants()->get();
+        $processedIds = [];
+
+        foreach ($variantsInput as $variantData) {
+            $options = $variantData['options'];
+            $quantity = isset($variantData['quantity']) && $variantData['quantity'] !== '' ? (int) $variantData['quantity'] : null;
+
+            $match = $existing->first(function ($v) use ($options) {
+                $opt1 = $v->options;
+                ksort($opt1);
+                $opt2 = $options;
+                ksort($opt2);
+
+                return $opt1 == $opt2;
+            });
+
+            if ($match) {
+                $match->update(['quantity' => $quantity]);
+                $processedIds[] = $match->id;
+            } else {
+                $created = $sellable->variants()->create([
+                    'options' => $options,
+                    'quantity' => $quantity,
+                ]);
+                $processedIds[] = $created->id;
+            }
+        }
+
+        $sellable->variants()->whereNotIn('id', $processedIds)->delete();
+    }
 }
+

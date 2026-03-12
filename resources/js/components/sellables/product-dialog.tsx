@@ -1,4 +1,8 @@
+import { router } from '@inertiajs/react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import * as React from 'react';
 import { ImageManager } from '@/components/sellables/image-manager';
+import { SellableDialogBase } from '@/components/sellables/sellable-dialog-base';
 import { VariantManager } from '@/components/sellables/variant-manager';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -7,15 +11,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { SellableDialogBase } from '@/components/sellables/sellable-dialog-base';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,9 +20,6 @@ import type {
     SellableVariant,
     VariantConfigItem,
 } from '@/types/sellables';
-import { router } from '@inertiajs/react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import * as React from 'react';
 
 interface ProductDialogProps {
     open: boolean;
@@ -142,8 +135,11 @@ export function ProductDialog({
     }, [editingProduct, open]);
 
     const allImagesForDisplay = React.useMemo(() => {
-        const existing = imagesList.map((img) => ({ ...img, isNew: false }));
-        const incoming = newImages.map((file, idx) => ({
+        const existing = (imagesList || []).map((img) => ({
+            ...img,
+            isNew: false,
+        }));
+        const incoming = (newImages || []).map((file, idx) => ({
             id: -1 * (idx + 1),
             url: URL.createObjectURL(file),
             isNew: true,
@@ -229,9 +225,9 @@ export function ProductDialog({
             formData.append('quantity_without_card', '');
             formData.append('unlimited_quantity_without_card', '0');
 
-            variantsConfig.forEach((config, idx) => {
+            (variantsConfig || []).forEach((config, idx) => {
                 formData.append(`variants_config[${idx}][name]`, config.name);
-                config.options.forEach((opt, optIdx) => {
+                (config.options || []).forEach((opt, optIdx) => {
                     formData.append(
                         `variants_config[${idx}][options][${optIdx}]`,
                         opt,
@@ -239,14 +235,16 @@ export function ProductDialog({
                 });
             });
 
-            variants.forEach((variant, idx) => {
+            (variants || []).forEach((variant, idx) => {
                 // Append options
-                Object.entries(variant.options).forEach(([key, value]) => {
-                    formData.append(
-                        `variants_stock[${idx}][options][${key}]`,
-                        value,
-                    );
-                });
+                Object.entries(variant.options || {}).forEach(
+                    ([key, value]) => {
+                        formData.append(
+                            `variants_stock[${idx}][options][${key}]`,
+                            value,
+                        );
+                    },
+                );
                 // Append quantity
                 if (variant.quantity !== null) {
                     formData.append(
@@ -304,9 +302,7 @@ export function ProductDialog({
                         <Input
                             id="product-name"
                             value={productName}
-                            onChange={(e) =>
-                                setProductName(e.target.value)
-                            }
+                            onChange={(e) => setProductName(e.target.value)}
                             className="mt-1"
                         />
                     </div>
@@ -330,9 +326,7 @@ export function ProductDialog({
                             type="number"
                             step="0.01"
                             value={productPrice}
-                            onChange={(e) =>
-                                setProductPrice(e.target.value)
-                            }
+                            onChange={(e) => setProductPrice(e.target.value)}
                             className="mt-1"
                         />
                     </div>
@@ -378,12 +372,8 @@ export function ProductDialog({
                                     <button
                                         type="button"
                                         role="tab"
-                                        aria-selected={
-                                            stockMode === 'simple'
-                                        }
-                                        onClick={() =>
-                                            setStockMode('simple')
-                                        }
+                                        aria-selected={stockMode === 'simple'}
+                                        onClick={() => setStockMode('simple')}
                                         className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'simple' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
                                     >
                                         Simple
@@ -391,12 +381,8 @@ export function ProductDialog({
                                     <button
                                         type="button"
                                         role="tab"
-                                        aria-selected={
-                                            stockMode === 'variants'
-                                        }
-                                        onClick={() =>
-                                            setStockMode('variants')
-                                        }
+                                        aria-selected={stockMode === 'variants'}
+                                        onClick={() => setStockMode('variants')}
                                         className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'variants' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
                                     >
                                         Variants
@@ -409,12 +395,8 @@ export function ProductDialog({
                                     <div className="flex items-center space-x-2">
                                         <Checkbox
                                             id="product-variable-amount"
-                                            checked={
-                                                !!productVariableAmount
-                                            }
-                                            onCheckedChange={(
-                                                checked,
-                                            ) =>
+                                            checked={!!productVariableAmount}
+                                            onCheckedChange={(checked) =>
                                                 setProductVariableAmount(
                                                     checked === true,
                                                 )
@@ -445,8 +427,7 @@ export function ProductDialog({
                                                     }
                                                     onChange={(e) =>
                                                         setProductQuantityWithCard(
-                                                            e.target
-                                                                .value,
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1"
@@ -467,8 +448,7 @@ export function ProductDialog({
                                                     }
                                                     onChange={(e) =>
                                                         setProductQuantityWithoutCard(
-                                                            e.target
-                                                                .value,
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1"
@@ -493,7 +473,7 @@ export function ProductDialog({
                                                     )
                                                 }
                                                 className="mt-1"
-                                                placeholder="Leave empty = unlimited"
+                                                placeholder="Leave empty for unlimited"
                                             />
                                         </div>
                                     )}
@@ -505,13 +485,8 @@ export function ProductDialog({
                                     <VariantManager
                                         initialConfig={variantsConfig}
                                         initialVariants={variants}
-                                        onChange={(
-                                            newConfig,
-                                            newVariants,
-                                        ) => {
-                                            setVariantsConfig(
-                                                newConfig,
-                                            );
+                                        onChange={(newConfig, newVariants) => {
+                                            setVariantsConfig(newConfig);
                                             setVariants(newVariants);
                                         }}
                                     />
@@ -551,9 +526,7 @@ export function ProductDialog({
                                     id="online-sellable"
                                     checked={!!isOnlineSellable}
                                     onCheckedChange={(checked) =>
-                                        setIsOnlineSellable(
-                                            checked === true,
-                                        )
+                                        setIsOnlineSellable(checked === true)
                                     }
                                 />
                                 <Label
