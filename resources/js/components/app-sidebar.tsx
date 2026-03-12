@@ -29,7 +29,7 @@ import {
     ticketScanner,
     emailDistributor,
     inventory,
-    store,
+    storeManager,
     office,
 } from '@/routes';
 import type { NavItem } from '@/types';
@@ -67,7 +67,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Store Manager',
-        href: store(),
+        href: storeManager(),
         icon: Store,
     },
 ];

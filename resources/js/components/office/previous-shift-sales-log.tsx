@@ -122,13 +122,13 @@ export function PreviousShiftSalesLog({
                                                 </Badge>
                                                 {s.ticket_type ===
                                                     'with_card' && (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="border-white bg-white px-1.5 py-0 text-[10px] text-black hover:bg-white/90"
-                                                        >
-                                                            ESNcard
-                                                        </Badge>
-                                                    )}
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-white bg-white px-1.5 py-0 text-[10px] text-black hover:bg-white/90"
+                                                    >
+                                                        ESNcard
+                                                    </Badge>
+                                                )}
                                                 {s.is_custom && (
                                                     <Badge
                                                         variant="secondary"

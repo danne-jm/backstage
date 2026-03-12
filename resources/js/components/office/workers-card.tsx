@@ -55,16 +55,18 @@ export function WorkersCard({ workers, activeShift, staff }: any) {
                                                 {member.name}
                                             </span>
                                             {String(member.id) ===
-                                                String(activeShift?.started_by) && (
-                                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                                        Started by
-                                                    </span>
-                                                )}
+                                                String(
+                                                    activeShift?.started_by,
+                                                ) && (
+                                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                                                    Started by
+                                                </span>
+                                            )}
                                             {activeShift?.status === 'closed' &&
                                                 String(member.id) ===
-                                                String(
-                                                    activeShift?.ended_by,
-                                                ) && (
+                                                    String(
+                                                        activeShift?.ended_by,
+                                                    ) && (
                                                     <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-400">
                                                         Closed by
                                                     </span>
@@ -99,7 +101,7 @@ export function WorkersCard({ workers, activeShift, staff }: any) {
                                                 disabled={
                                                     isProcessing ||
                                                     activeShift?.status !==
-                                                    'open'
+                                                        'open'
                                                 }
                                                 onClick={() =>
                                                     handleRemoveWorker(

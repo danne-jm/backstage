@@ -162,22 +162,22 @@ export function SalesLogCard({ sales, activeShift }: any) {
                                             </div>
                                             {String(s.method).toLowerCase() ===
                                                 'cash' && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        disabled={
-                                                            activeShift?.status !==
-                                                            'open'
-                                                        }
-                                                        onClick={() =>
-                                                            handleOpenSaleBreakdown(
-                                                                s,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                )}
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    disabled={
+                                                        activeShift?.status !==
+                                                        'open'
+                                                    }
+                                                    onClick={() =>
+                                                        handleOpenSaleBreakdown(
+                                                            s,
+                                                        )
+                                                    }
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="overflow-hidden px-1 py-3">

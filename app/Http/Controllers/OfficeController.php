@@ -181,7 +181,7 @@ class OfficeController extends Controller
     {
         $data = $request->validate([
             'product_id' => ['nullable'],
-            'item_type' => ['nullable', 'string'],
+            'item_type' => ['nullable', 'string', 'in:product,event,custom'],
             'method' => ['required', 'in:cash,card'],
             'amount' => ['required', 'numeric'],
             'description' => ['nullable', 'string'],
@@ -189,6 +189,18 @@ class OfficeController extends Controller
             'variant_id' => ['nullable', 'string'],
             'breakdown' => ['nullable', 'array'],
         ]);
+
+        // The frontend always sends the sellable's ID as `product_id` regardless of type.
+        // Route it to the correct field so SaleService can distinguish products from events.
+        if (($data['item_type'] ?? null) === 'event') {
+            $data['event_id'] = $data['product_id'];
+            $data['product_id'] = null;
+        }
+
+        // Treat an explicit 'Quick Sale' description the same as no description.
+        if (($data['description'] ?? null) === 'Quick Sale') {
+            $data['description'] = null;
+        }
 
         $this->officeService->recordSale($office, $data);
 

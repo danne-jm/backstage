@@ -17,8 +17,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-
-
 export default function Office() {
     const { props: initialProps } = usePage<any>();
     // Cast to any since we are expecting these from backend potentially, or default to null/empty
@@ -125,8 +123,8 @@ export default function Office() {
                                             <td className="px-1 py-3 whitespace-nowrap">
                                                 {s.ended_at
                                                     ? formatTimestamp(
-                                                        s.ended_at,
-                                                    )
+                                                          s.ended_at,
+                                                      )
                                                     : '-'}
                                             </td>
                                             <td className="px-1 py-3">

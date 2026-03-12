@@ -50,7 +50,9 @@ export function RevenueCard({ activeShift }: any) {
         );
     };
 
-    const handleSaveStartCashBreakdown = (breakdown: Record<string, number>) => {
+    const handleSaveStartCashBreakdown = (
+        breakdown: Record<string, number>,
+    ) => {
         if (!activeShift?.id) return;
         setSubmitting(true);
         router.post(

@@ -175,7 +175,7 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.start_cash_breakdown ||
-                                            {},
+                                                {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>
@@ -220,7 +220,7 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.end_of_shift_cash_breakdown ||
-                                            {},
+                                                {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>

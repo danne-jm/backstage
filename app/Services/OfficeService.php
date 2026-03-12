@@ -6,12 +6,12 @@ use App\Models\OfficeShift;
 use App\Models\OfficeShiftWorker;
 use App\Models\OfficeShiftSale;
 use App\Models\User;
-use App\Models\SellableVariant;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class OfficeService
 {
+    public function __construct(protected SaleService $saleService) {}
+
     public function startShift(User $user): OfficeShift
     {
         return DB::transaction(function () use ($user) {
@@ -72,66 +72,7 @@ class OfficeService
 
     public function recordSale(OfficeShift $office, array $data): OfficeShiftSale
     {
-        return DB::transaction(function () use ($office, $data) {
-            $sale = new OfficeShiftSale();
-            $sale->office_shift_id = $office->id;
-            $sale->method = $data['method'];
-            $sale->amount = $data['amount'];
-            $sale->description = ($data['description'] && $data['description'] !== 'Quick Sale') ? $data['description'] : null;
-            $sale->sold_by = Auth::id();
-            $sale->sold_at = now();
-
-            if (($data['item_type'] ?? null) === 'product') {
-                $sale->product_id = $data['product_id'];
-            } elseif (($data['item_type'] ?? null) === 'event') {
-                $sale->event_id = $data['product_id'];
-            }
-
-            $snapshot = [];
-            if (!empty($data['ticket_type'])) {
-                $snapshot['ticket_type'] = $data['ticket_type'];
-            }
-            if (!empty($data['variant_id'])) {
-                $snapshot['variant_id'] = $data['variant_id'];
-                $variant = SellableVariant::find($data['variant_id']);
-                if ($variant) {
-                    $snapshot['variant_options'] = $variant->options;
-                    $variant->increment('sold_count');
-                }
-            }
-            $sale->snapshot = $snapshot;
-
-            if ($data['method'] === 'cash' && isset($data['breakdown']) && is_array($data['breakdown'])) {
-                $cleanBreakdown = [];
-                foreach (OfficeShift::DENOMINATIONS as $k) {
-                    $val = $data['breakdown'][$k] ?? 0;
-                    $cleanBreakdown[$k] = max(0, intval($val));
-                }
-                $sale->breakdown = $cleanBreakdown;
-                $sale->amount = (float) $office->totalFromBreakdown($cleanBreakdown);
-            }
-
-            $sale->save();
-
-            // Increment totals
-            if ($sale->method === 'cash') {
-                $office->increment('cash_total', (float) $sale->amount);
-            } else {
-                $office->increment('card_total', (float) $sale->amount);
-            }
-
-            $office->refresh();
-
-            if ($sale->method === 'cash' && isset($cleanBreakdown)) {
-                $office->cash_breakdown = OfficeShift::mergeBreakdowns($office->cash_breakdown, $cleanBreakdown);
-            }
-
-            $office->total_cash = (float) (($office->start_cash ?? 0) + ($office->cash_total ?? 0));
-            $office->total_card = (float) (($office->start_card ?? 0) + ($office->card_total ?? 0));
-            $office->save();
-
-            return $sale;
-        });
+        return $this->saleService->recordOfficeSale($office, $data);
     }
 
     public function removeSale(OfficeShift $office, string $saleId): void

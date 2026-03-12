@@ -41,7 +41,9 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
     useEffect(() => {
         if (sellables && sellables.length > 0 && !saleProductId) {
             const timer = setTimeout(() => {
-                setSaleProductId(sellables[0].unique_id);
+                const first = sellables[0];
+                setSaleProductId(first.unique_id);
+                setSaleItemType(first.type);
             }, 0);
             return () => clearTimeout(timer);
         }
@@ -264,8 +266,8 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         const item = isCustom
             ? null
             : sellables?.find(
-                (i: any) => String(i.unique_id) === String(customSaleItemId),
-            );
+                  (i: any) => String(i.unique_id) === String(customSaleItemId),
+              );
 
         setSubmitting(true);
         router.post(
@@ -297,8 +299,8 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         const item = isCustom
             ? null
             : sellables?.find(
-                (i: any) => String(i.unique_id) === String(customSaleItemId),
-            );
+                  (i: any) => String(i.unique_id) === String(customSaleItemId),
+              );
 
         setSubmitting(true);
         router.post(

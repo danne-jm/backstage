@@ -60,9 +60,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('inventory', 'inventory')->name('inventory');
 });
 
-#Store
+#Store Manager
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('store', 'store')->name('store');
+    Route::inertia('store-manager', 'store-manager/index')->name('store-manager');
+    Route::get('store-manager/data', [\App\Http\Controllers\StoreManagerController::class, 'data'])->name('store-manager.data');
+    Route::get('sales/summary', [\App\Http\Controllers\SalesController::class, 'summary'])->name('sales.summary');
 });
 
 require __DIR__ . '/settings.php';
