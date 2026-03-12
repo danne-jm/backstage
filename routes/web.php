@@ -8,6 +8,22 @@ Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
+# Google OAuth
+Route::get('auth/google/connect', [\App\Http\Controllers\Auth\GoogleController::class, 'redirectToConnect'])
+    ->middleware(['auth', 'verified'])
+    ->name('google.connect');
+
+Route::get('auth/google/login', [\App\Http\Controllers\Auth\GoogleController::class, 'redirectToLogin'])
+    ->middleware('guest')
+    ->name('google.login');
+
+Route::get('auth/google/callback', [\App\Http\Controllers\Auth\GoogleController::class, 'handleConnectCallback'])
+    ->name('google.callback');
+
+Route::delete('auth/google/disconnect', [\App\Http\Controllers\Auth\GoogleController::class, 'disconnect'])
+    ->middleware(['auth', 'verified'])
+    ->name('google.disconnect');
+
 #Dashboard / home
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');

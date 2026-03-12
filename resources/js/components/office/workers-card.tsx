@@ -5,6 +5,30 @@ import { Button } from '@/components/ui/button';
 
 export function WorkersCard({ workers, activeShift, staff }: any) {
     const [processingId, setProcessingId] = useState<string | null>(null);
+    
+    // Ensure staff list shows users who are currently on the shift first.
+    // We create a sorted copy so we don't mutate the original prop.
+    const sortedStaff = Array.isArray(staff)
+        ? [...staff].sort((a: any, b: any) => {
+              const aOnShift = Array.isArray(workers)
+                  ? workers.some((w: any) => w.id === a.id)
+                  : false;
+              const bOnShift = Array.isArray(workers)
+                  ? workers.some((w: any) => w.id === b.id)
+                  : false;
+
+              // Put on-shift users first
+              if (aOnShift && !bOnShift) return -1;
+              if (!aOnShift && bOnShift) return 1;
+
+              // Otherwise sort by name for consistency
+              try {
+                  return String(a.name).localeCompare(String(b.name));
+              } catch {
+                  return 0;
+              }
+          })
+        : [];
 
     const handleAddWorker = (userId: string) => {
         if (!userId || !activeShift?.id) return;
@@ -34,7 +58,7 @@ export function WorkersCard({ workers, activeShift, staff }: any) {
             </div>
             <div className="mt-4">
                 <ul className="flex flex-col divide-y divide-sidebar-border/50">
-                    {staff?.map((member: any) => {
+                    {sortedStaff?.map((member: any) => {
                         const isOnShift = workers?.some(
                             (w: any) => w.id === member.id,
                         );
