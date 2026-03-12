@@ -29,4 +29,4 @@ yarn-error.log
 
 /original-backstage-repo-to-refactor
 /dev-tools
-./.env.realistic
+.env.realistic
