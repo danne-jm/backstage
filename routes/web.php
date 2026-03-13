@@ -68,7 +68,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 #Email Distributor
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('email-distributor', 'email-distributor')->name('email-distributor');
+    Route::get('email-distributor', [App\Http\Controllers\EmailDistributorController::class, 'index'])
+        ->name('email-distributor');
+    
+    Route::get('email-distributor/attendees/{event}', [App\Http\Controllers\EmailDistributorController::class, 'getAttendees'])
+        ->name('email-distributor.attendees');
+    
+    Route::post('distribution/distribute', [App\Http\Controllers\DistributionController::class, 'distribute'])
+        ->name('distribution.distribute');
 });
 
 #Inventory

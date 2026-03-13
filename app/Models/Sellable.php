@@ -94,4 +94,9 @@ abstract class Sellable extends Model implements HasMedia
     {
         return $this->hasMany(OnlineSale::class);
     }
+
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class, 'event_id');
+    }
 }
