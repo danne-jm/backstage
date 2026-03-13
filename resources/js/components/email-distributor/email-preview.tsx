@@ -18,6 +18,8 @@ interface EmailPreviewProps {
     selectedIndex: number;
     showRendered: boolean;
     onToggleView: (showRendered: boolean) => void;
+    hasEventSelected?: boolean;
+    hasSpreadsheetConfigured?: boolean;
 }
 
 export function EmailPreview({
@@ -25,11 +27,23 @@ export function EmailPreview({
     selectedIndex,
     showRendered,
     onToggleView,
+    hasEventSelected,
+    hasSpreadsheetConfigured,
 }: EmailPreviewProps) {
     if (!generatedEmails || generatedEmails.length === 0) {
+        let message = "No preview generated yet. Click Generate Preview.";
+
+        if (!hasEventSelected) {
+            message = "Select an event to begin.";
+        } else if (!hasSpreadsheetConfigured) {
+            message = "This event has no attendee spreadsheet linked. Please configure it in the Attendees page.";
+        } else if (generatedEmails !== null) {
+            message = "No attendees found in the linked spreadsheet.";
+        }
+
         return (
-            <div className="text-sm text-muted-foreground">
-                No preview generated yet. Click Generate Preview.
+            <div className="flex h-32 items-center justify-center rounded-lg border-2 border-dashed text-sm text-muted-foreground">
+                {message}
             </div>
         );
     }
@@ -49,11 +63,10 @@ export function EmailPreview({
                         role="tab"
                         aria-selected={!showRendered}
                         onClick={() => onToggleView(false)}
-                        className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] ${
-                            !showRendered
+                        className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] ${!showRendered
                                 ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30'
                                 : 'text-foreground dark:text-muted-foreground'
-                        }`}
+                            }`}
                     >
                         JSON
                     </button>
@@ -62,11 +75,10 @@ export function EmailPreview({
                         role="tab"
                         aria-selected={showRendered}
                         onClick={() => onToggleView(true)}
-                        className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] ${
-                            showRendered
+                        className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] ${showRendered
                                 ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30'
                                 : 'text-foreground dark:text-muted-foreground'
-                        }`}
+                            }`}
                     >
                         HTML Preview
                     </button>

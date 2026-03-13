@@ -7,9 +7,10 @@ import * as React from 'react';
 interface RecipientSummaryProps {
     data: Record<string, any>[];
     emailField: string;
+    actions?: React.ReactNode;
 }
 
-export function RecipientSummary({ data, emailField }: RecipientSummaryProps) {
+export function RecipientSummary({ data, emailField, actions }: RecipientSummaryProps) {
     const analysis = React.useMemo(() => {
         const emails = data
             .map((row) => String(row[emailField] ?? '').trim())
@@ -47,7 +48,7 @@ export function RecipientSummary({ data, emailField }: RecipientSummaryProps) {
         const domainEntries = Object.entries(domainCounts).sort(
             (a, b) => b[1] - a[1]
         );
-        
+
         const suspicious = domainEntries.filter(
             ([domain]) => !knownDomains.includes(domain)
         );
@@ -58,10 +59,19 @@ export function RecipientSummary({ data, emailField }: RecipientSummaryProps) {
     return (
         <div className="flex h-full max-h-[75vh] flex-col overflow-y-auto rounded-md border bg-background p-4">
             <div className="flex-shrink-0">
-                <h4 className="text-sm font-semibold">Recipients summary</h4>
-                <p className="mt-1 text-xs text-muted-foreground">
-                    Domain analysis and potential typos
-                </p>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h4 className="text-sm font-semibold">Recipients summary</h4>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Domain analysis and potential typos
+                        </p>
+                    </div>
+                    {actions && (
+                        <div className="flex flex-col gap-2 ml-4">
+                            {actions}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="mt-3 space-y-3 text-xs">

@@ -27,24 +27,16 @@ class EmailDistributionService
      */
     public function getUpcomingEvents(int $days = 14): Collection
     {
-        $now = now()->startOfDay();
-        $end = now()->addDays($days)->endOfDay();
+        // Show events that are within the next 2 weeks OR occurred at most 2 days ago
+        $from = now()->subDays(2)->startOfDay();
+        $until = now()->addDays(14)->endOfDay();
 
-        // Query both Event and Product tables since they both extend Sellable
-        $events = Event::query()
-            ->whereNotNull('start_date')
-            ->whereBetween('start_date', [$now, $end])
-            ->orderBy('start_date')
+        return Event::query()
+            ->where(function ($q) use ($from, $until) {
+                $q->whereBetween('event_date', [$from, $until]);
+            })
+            ->orderBy('event_date', 'asc')
             ->get();
-
-        $products = Product::query()
-            ->whereNotNull('start_date')
-            ->whereBetween('start_date', [$now, $end])
-            ->orderBy('start_date')
-            ->get();
-
-        // Combine and sort by start_date
-        return $events->concat($products)->sortBy('start_date');
     }
 
     /**
@@ -157,8 +149,8 @@ class EmailDistributionService
      */
     private function needsQrCode(array $recipient): bool
     {
-        return isset($recipient['body']) && 
-               str_contains($recipient['body'], '{{qr}}');
+        return isset($recipient['body']) &&
+            str_contains($recipient['body'], '{{qr}}');
     }
 
     /**

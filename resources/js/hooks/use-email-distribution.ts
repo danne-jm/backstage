@@ -43,7 +43,17 @@ export function useEmailDistribution({
 
     // Email composition
     const [subject, setSubject] = React.useState('Your ticket information');
-    const [editorContent, setEditorContent] = React.useState('');
+    const [editorContent, setEditorContent] = React.useState(`Hello {{firstName}} {{last_name}},
+
+Thanks for registering — below are your ticket details for the event.
+
+Event: {{event_name}}
+Date: {{event_date}}
+Bring: Your ESN card (if applicable)
+Please bring a copy of this email (printed or on your phone).
+
+See you there,
+ESN Leuven`);
 
     // Preview
     const [generatedEmails, setGeneratedEmails] = React.useState<any[] | null>(
@@ -65,6 +75,12 @@ export function useEmailDistribution({
         null
     );
 
+    // Verification state
+    const [isValidating, setIsValidating] = React.useState(false);
+    const [isVerifyingEmails, setIsVerifyingEmails] = React.useState(false);
+    const [emailVerificationResults, setEmailVerificationResults] = React.useState<Record<number, any>>({});
+    const [validationResults, setValidationResults] = React.useState<Record<number, boolean | null>>({});
+
     // Dirty state tracking
     const [isConfigDirty, setIsConfigDirty] = React.useState(false);
 
@@ -75,7 +91,7 @@ export function useEmailDistribution({
     );
 
     const selectedEvent = React.useMemo(
-        () => events.find((e) => e.id === selectedEventId) || null,
+        () => events.find((e) => String(e.id) === String(selectedEventId)) || null,
         [events, selectedEventId]
     );
 
@@ -117,22 +133,22 @@ export function useEmailDistribution({
                         headers.find((f: string) =>
                             f.toLowerCase().includes('first')
                         ) ||
-                            headers[0] ||
-                            ''
+                        headers[0] ||
+                        ''
                     );
                     setLastNameField(
                         headers.find((f: string) =>
                             f.toLowerCase().includes('last')
                         ) ||
-                            headers[1] ||
-                            ''
+                        headers[1] ||
+                        ''
                     );
                     setEmailField(
                         headers.find((f: string) =>
                             f.toLowerCase().includes('email')
                         ) ||
-                            headers[2] ||
-                            ''
+                        headers[2] ||
+                        ''
                     );
                     setSelectedSampleIndex(0);
                 } else {
@@ -171,7 +187,7 @@ export function useEmailDistribution({
             if (selectedTemplate) {
                 let tmpl = selectedTemplate.html_content || '';
                 tmpl = tmpl.replace(/\\n/g, '<br />').replace(/\\r/g, '');
-                
+
                 if (selectedEvent) {
                     tmpl = tmpl.replace(/{{event_name}}/g, selectedEvent.name || '');
                     const date = selectedEvent.start_date || selectedEvent.event_date;
@@ -180,7 +196,7 @@ export function useEmailDistribution({
                         date ? new Date(date).toLocaleDateString() : ''
                     );
                 }
-                
+
                 return tmpl.replace('{{body}}', innerHtml);
             }
             return innerHtml;
@@ -188,7 +204,7 @@ export function useEmailDistribution({
 
         const generated = attendeeData.map((row) => {
             let personalizedBody = editorContent;
-            
+
             fields.forEach((field) => {
                 const placeholder = `{{${field}}}`;
                 const value = String(row[field] ?? '');
@@ -210,6 +226,9 @@ export function useEmailDistribution({
                 );
             }
 
+            // Convert newlines to <br /> for HTML preview and email
+            const htmlBody = personalizedBody.replaceAll('\n', '<br />');
+
             return {
                 first_name: String(row[firstNameField] ?? ''),
                 last_name: String(row[lastNameField] ?? ''),
@@ -218,7 +237,7 @@ export function useEmailDistribution({
                 event_name: selectedEvent?.name || null,
                 event_date: selectedEvent?.start_date || selectedEvent?.event_date || null,
                 subject,
-                body: buildEmailHtml(personalizedBody),
+                body: buildEmailHtml(htmlBody),
             };
         });
 
@@ -279,6 +298,47 @@ export function useEmailDistribution({
         }
     }, [generatedEmails]);
 
+    // Verification methods
+    const validatePurchases = React.useCallback(async () => {
+        if (!selectedEventId) return;
+        setIsValidating(true);
+        try {
+            const res = await axios.post(`/sellables/events/${selectedEventId}/attendees/validate-purchases`);
+            setSuccessMessage(`Validated ${res.data.total_checked} entries. ${res.data.valid_count} valid.`);
+            // Results are stored in the spreadsheet, we might need to refresh data or manage local state
+            // For distributor, we mainly care about the feedback
+        } catch (e: any) {
+            setDistributionError({
+                title: 'Validation Failed',
+                messages: [e.response?.data?.error || e.message]
+            });
+            setDialogOpen(true);
+        } finally {
+            setIsValidating(false);
+        }
+    }, [selectedEventId]);
+
+    const verifyEmails = React.useCallback(async () => {
+        if (!selectedEventId) return;
+        setIsVerifyingEmails(true);
+        setEmailVerificationResults({});
+        try {
+            const res = await axios.post(`/sellables/events/${selectedEventId}/attendees/verify-emails`);
+            setSuccessMessage(`Checked ${res.data.total_checked} emails. ${res.data.valid_count} valid.`);
+            if (res.data.results) {
+                setEmailVerificationResults(res.data.results);
+            }
+        } catch (e: any) {
+            setDistributionError({
+                title: 'Verification Failed',
+                messages: [e.response?.data?.error || e.message]
+            });
+            setDialogOpen(true);
+        } finally {
+            setIsVerifyingEmails(false);
+        }
+    }, [selectedEventId]);
+
     // Auto-clear success message
     React.useEffect(() => {
         if (!successMessage) return;
@@ -329,6 +389,15 @@ export function useEmailDistribution({
         setDialogOpen,
         distributionError,
         distribute,
+        hasSpreadsheetConfigured: Boolean(selectedEvent?.google_spreadsheet_id && selectedEvent?.google_sheet_name),
         successMessage,
+
+        // Verification
+        isValidating,
+        isVerifyingEmails,
+        emailVerificationResults,
+        validationResults,
+        validatePurchases,
+        verifyEmails,
     };
 }

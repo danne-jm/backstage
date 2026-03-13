@@ -22,8 +22,8 @@ class GoogleController extends Controller
             ->scopes([
                 'email',
                 'profile',
-                'https://mail.google.com/',
                 'https://www.googleapis.com/auth/gmail.send',
+                'https://www.googleapis.com/auth/spreadsheets',
             ])
             ->with(['access_type' => 'offline', 'prompt' => 'consent'])
             ->redirect();
@@ -38,7 +38,7 @@ class GoogleController extends Controller
 
         // --- Connect flow (must be logged in) ---
         if ($intent === 'connect') {
-            if (! Auth::check()) {
+            if (!Auth::check()) {
                 return redirect()->route('login');
             }
 
@@ -72,7 +72,7 @@ class GoogleController extends Controller
         // Only allow sign-in if the Google account is connected to a local user
         $user = User::where('gmail_provider_id', $googleUser->getId())->first();
 
-        if (! $user) {
+        if (!$user) {
             return redirect()->route('login')
                 ->with('error', 'No account is connected to this Google account. Please sign in with your email and password first, then connect your Google account in Settings.');
         }

@@ -77,7 +77,16 @@ export default function EmailDistributor() {
         setDialogOpen,
         distributionError,
         distribute,
+        hasSpreadsheetConfigured,
         successMessage,
+
+        // Verification
+        isValidating,
+        isVerifyingEmails,
+        emailVerificationResults,
+        validationResults,
+        validatePurchases,
+        verifyEmails,
     } = useEmailDistribution({
         events: props.events || [],
         templates: props.templates || [],
@@ -125,29 +134,25 @@ export default function EmailDistributor() {
                             />
 
                             <div className="flex max-w-[320px] min-w-[220px] flex-1 flex-col space-y-2">
-                                <Label htmlFor="sample-user-select">
-                                    Sample user
-                                </Label>
+                                <Label htmlFor="sample-user-select">Sample User</Label>
                                 <select
                                     id="sample-user-select"
-                                    value={String(selectedSampleIndex ?? '')}
-                                    onChange={(e) =>
-                                        setSelectedSampleIndex(
-                                            e.target.value === ''
-                                                ? null
-                                                : Number(e.target.value)
-                                        )
-                                    }
-                                    className="w-full rounded-md border p-2 text-sm"
-                                    disabled={attendeeData.length === 0}
+                                    className="h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                                    value={selectedSampleIndex ?? 0}
+                                    onChange={(e) => setSelectedSampleIndex(Number(e.target.value))}
+                                    disabled={!attendeeData || attendeeData.length === 0}
                                 >
-                                    {attendeeData.map((row, i) => (
-                                        <option key={i} value={i}>
-                                            {String(row[firstNameField] ?? '')}{' '}
-                                            {String(row[lastNameField] ?? '')} —{' '}
-                                            {String(row[emailField] ?? '')}
-                                        </option>
-                                    ))}
+                                    {!hasSpreadsheetConfigured ? (
+                                        <option value={0}>No spreadsheet linked</option>
+                                    ) : !attendeeData || attendeeData.length === 0 ? (
+                                        <option value={0}>No attendees found</option>
+                                    ) : (
+                                        attendeeData.map((attendee, idx) => (
+                                            <option key={idx} value={idx}>
+                                                {attendee[firstNameField] || attendee[emailField] || `User ${idx + 1}`}
+                                            </option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
 
@@ -170,8 +175,8 @@ export default function EmailDistributor() {
                                             !canSend
                                                 ? 'You do not have permission to distribute emails'
                                                 : isConfigDirty
-                                                  ? 'Generate preview first'
-                                                  : ''
+                                                    ? 'Generate preview first'
+                                                    : ''
                                         }
                                     >
                                         {isDistributing ? (
@@ -228,6 +233,30 @@ export default function EmailDistributor() {
                             firstNameField={firstNameField}
                             lastNameField={lastNameField}
                             emailField={emailField}
+                            verificationActions={
+                                <>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={validatePurchases}
+                                        disabled={isValidating || !hasSpreadsheetConfigured}
+                                        className="h-7 text-[10px]"
+                                    >
+                                        {isValidating ? 'Validating...' : 'Verify Payments'}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={verifyEmails}
+                                        disabled={isVerifyingEmails || !hasSpreadsheetConfigured}
+                                        className="h-7 text-[10px]"
+                                    >
+                                        {isVerifyingEmails ? 'Verifying...' : 'Verify Domains'}
+                                    </Button>
+                                </>
+                            }
+                            emailVerificationResults={emailVerificationResults}
+                            validationResults={validationResults}
                         />
                     </aside>
                 </div>
@@ -242,6 +271,8 @@ export default function EmailDistributor() {
                         selectedIndex={selectedSampleIndex ?? 0}
                         showRendered={showRendered}
                         onToggleView={setShowRendered}
+                        hasEventSelected={!!selectedEventId}
+                        hasSpreadsheetConfigured={hasSpreadsheetConfigured}
                     />
                 </div>
 
@@ -262,7 +293,7 @@ export default function EmailDistributor() {
                     isLoading={isDistributing}
                     error={distributionError}
                 />
-            </div>
-        </AppLayout>
+            </div >
+        </AppLayout >
     );
 }

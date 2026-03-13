@@ -22,6 +22,9 @@ interface DataSourcePreviewProps {
     firstNameField: string;
     lastNameField: string;
     emailField: string;
+    verificationActions?: React.ReactNode;
+    emailVerificationResults?: Record<number, any>;
+    validationResults?: Record<number, boolean | null>;
 }
 
 export function DataSourcePreview({
@@ -30,6 +33,9 @@ export function DataSourcePreview({
     firstNameField,
     lastNameField,
     emailField,
+    verificationActions,
+    emailVerificationResults = {},
+    validationResults = {},
 }: DataSourcePreviewProps) {
     const previewColumns = React.useMemo(
         () => [
@@ -95,34 +101,41 @@ export function DataSourcePreview({
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {data.map((row, idx) => (
-                                                    <tr
-                                                        key={idx}
-                                                        className="border-t"
-                                                    >
-                                                        {fields.map((field) => (
-                                                            <td
-                                                                key={field}
-                                                                className="py-1 pr-2 align-top text-xs"
-                                                            >
-                                                                <span
-                                                                    className="inline-block w-full truncate"
-                                                                    title={String(
-                                                                        row[
-                                                                            field
-                                                                        ] ?? ''
-                                                                    )}
+                                                {data.map((row, idx) => {
+                                                    const rowIdx = idx + 1; // 1-based index
+                                                    const res = emailVerificationResults[rowIdx];
+                                                    // ONLY highlight RED if invalid. No green background for valid.
+                                                    const bgColor = res && res.valid === false ? 'bg-red-100/30' : '';
+
+                                                    return (
+                                                        <tr
+                                                            key={idx}
+                                                            className={`border-t ${bgColor}`}
+                                                        >
+                                                            {fields.map((field) => (
+                                                                <td
+                                                                    key={field}
+                                                                    className="py-1 pr-2 align-top text-xs"
                                                                 >
-                                                                    {String(
-                                                                        row[
+                                                                    <span
+                                                                        className="inline-block w-full truncate"
+                                                                        title={String(
+                                                                            row[
                                                                             field
-                                                                        ] ?? ''
-                                                                    )}
-                                                                </span>
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
+                                                                            ] ?? ''
+                                                                        )}
+                                                                    >
+                                                                        {String(
+                                                                            row[
+                                                                            field
+                                                                            ] ?? ''
+                                                                        )}
+                                                                    </span>
+                                                                </td>
+                                                            ))}
+                                                        </tr>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>
@@ -133,6 +146,7 @@ export function DataSourcePreview({
                                     <RecipientSummary
                                         data={data}
                                         emailField={emailField}
+                                        actions={verificationActions}
                                     />
                                 </div>
                             </div>

@@ -59,6 +59,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('sellables/events/{event}', [\App\Http\Controllers\SellablesController::class, 'updateEvent'])->name('sellables.events.update');
     Route::delete('sellables/events/{event}', [\App\Http\Controllers\SellablesController::class, 'destroyEvent'])->name('sellables.events.destroy');
     Route::delete('sellables/events/image/{image}', [\App\Http\Controllers\SellablesController::class, 'destroyImage'])->name('sellables.events.image.destroy');
+
+    // Attendees
+    Route::prefix('sellables/events/{event}')->group(function () {
+        Route::get('attendees', [App\Http\Controllers\EventAttendeeController::class, 'index'])->name('events.attendees');
+        Route::post('attendees/config', [App\Http\Controllers\EventAttendeeController::class, 'updateConfiguration'])->name('events.attendees.config');
+        Route::get('sheets', [App\Http\Controllers\EventAttendeeController::class, 'listSheets'])->name('events.attendees.sheets');
+        Route::get('sheet-data', [App\Http\Controllers\EventAttendeeController::class, 'getSheetData'])->name('events.attendees.sheet-data');
+        Route::post('attendees/update', [App\Http\Controllers\EventAttendeeController::class, 'update'])->name('events.attendees.update');
+        Route::post('attendees/filter', [App\Http\Controllers\EventAttendeeController::class, 'updateFilter'])->name('events.attendees.filter');
+        Route::post('attendees/validate-purchases', [App\Http\Controllers\EventAttendeeController::class, 'validatePurchases'])->name('events.attendees.validate-purchases');
+        Route::post('attendees/verify-emails', [App\Http\Controllers\EventAttendeeController::class, 'verifyEmails'])->name('events.attendees.verify-emails');
+    });
 });
 
 #Ticket Scanner
@@ -70,10 +82,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('email-distributor', [App\Http\Controllers\EmailDistributorController::class, 'index'])
         ->name('email-distributor');
-    
+
     Route::get('email-distributor/attendees/{event}', [App\Http\Controllers\EmailDistributorController::class, 'getAttendees'])
         ->name('email-distributor.attendees');
-    
+
     Route::post('distribution/distribute', [App\Http\Controllers\DistributionController::class, 'distribute'])
         ->name('distribution.distribute');
 });

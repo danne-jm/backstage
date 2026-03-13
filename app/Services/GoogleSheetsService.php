@@ -78,7 +78,7 @@ class GoogleSheetsService
         try {
             $spreadsheet = $this->service->spreadsheets->get($spreadsheetId);
             $sheets = [];
-            
+
             foreach ($spreadsheet->getSheets() as $sheet) {
                 $sheets[] = $sheet->getProperties()->getTitle();
             }
@@ -118,14 +118,14 @@ class GoogleSheetsService
             return $response->getValues() ?? [];
         } catch (\Throwable $e) {
             Log::error('Google Data Fetch Error: ' . $e->getMessage());
-            
+
             $msg = $e->getMessage();
-            
+
             // Check for token expiration
             if (str_contains($msg, 'unregistered callers') || str_contains($msg, 'invalid_grant')) {
                 throw new Exception('GOOGLE_TOKEN_EXPIRED');
             }
-            
+
             throw new Exception('Failed to read sheet data: ' . $e->getMessage());
         }
     }
@@ -144,7 +144,7 @@ class GoogleSheetsService
             $body = new \Google\Service\Sheets\ValueRange([
                 'values' => [$values],
             ]);
-            
+
             // Use 'RAW' to prevent formula injection attacks
             $params = ['valueInputOption' => 'RAW'];
             $this->service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
@@ -166,18 +166,100 @@ class GoogleSheetsService
     {
         try {
             $spreadsheet = $this->service->spreadsheets->get($spreadsheetId);
-            
+
             foreach ($spreadsheet->getSheets() as $sheet) {
                 if ($sheet->getProperties()->getTitle() === $sheetName) {
                     return $sheet->getProperties()->getSheetId();
                 }
             }
-            
+
             throw new Exception("Sheet '{$sheetName}' not found");
         } catch (\Throwable $e) {
             Log::error('Google Sheet ID Fetch Error: ' . $e->getMessage());
             throw new Exception('Failed to get sheet ID: ' . $e->getMessage());
         }
     }
-}
 
+    /**
+     * Apply background colour formatting to a list of cells via batchUpdate
+     *
+     * @param string $spreadsheetId
+     * @param int    $sheetId      Numeric sheet ID (from getSheetId)
+     * @param array  $formats      Each entry: ['row' => int, 'col' => int, 'color' => ['red'=>…,'green'=>…,'blue'=>…]]
+     */
+    public function applyCellFormatting(string $spreadsheetId, int $sheetId, array $formats): void
+    {
+        if (empty($formats))
+            return;
+
+        $requests = [];
+        foreach ($formats as $fmt) {
+            $row = (int) $fmt['row'];
+            $col = (int) $fmt['col'];
+            $color = $fmt['color'];
+
+            $requests[] = [
+                'repeatCell' => [
+                    'range' => [
+                        'sheetId' => $sheetId,
+                        'startRowIndex' => $row,
+                        'endRowIndex' => $row + 1,
+                        'startColumnIndex' => $col,
+                        'endColumnIndex' => $col + 1,
+                    ],
+                    'cell' => [
+                        'userEnteredFormat' => [
+                            'backgroundColor' => [
+                                'red' => (float) ($color['red'] ?? 1),
+                                'green' => (float) ($color['green'] ?? 1),
+                                'blue' => (float) ($color['blue'] ?? 1),
+                            ],
+                        ],
+                    ],
+                    'fields' => 'userEnteredFormat.backgroundColor',
+                ],
+            ];
+        }
+
+        try {
+            $batchUpdateRequest = new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest([
+                'requests' => $requests,
+            ]);
+            $this->service->spreadsheets->batchUpdate($spreadsheetId, $batchUpdateRequest);
+        } catch (\Throwable $e) {
+            Log::error('Google Cell Formatting Error: ' . $e->getMessage());
+            throw new Exception('Failed to apply cell formatting: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Write values to multiple ranges in a single API call
+     *
+     * @param string $spreadsheetId
+     * @param array  $updates  Each entry: ['range' => 'Sheet1!A2', 'values' => ['value']]
+     */
+    public function batchUpdateValues(string $spreadsheetId, array $updates): void
+    {
+        if (empty($updates))
+            return;
+
+        $data = [];
+        foreach ($updates as $update) {
+            $data[] = new \Google\Service\Sheets\ValueRange([
+                'range' => $update['range'],
+                'values' => [$update['values']],
+            ]);
+        }
+
+        try {
+            $body = new \Google\Service\Sheets\BatchUpdateValuesRequest([
+                'valueInputOption' => 'RAW',
+                'data' => $data,
+            ]);
+            $this->service->spreadsheets_values->batchUpdate($spreadsheetId, $body);
+        } catch (\Throwable $e) {
+            Log::error('Google Batch Value Update Error: ' . $e->getMessage());
+            throw new Exception('Failed to batch update values: ' . $e->getMessage());
+        }
+    }
+}
