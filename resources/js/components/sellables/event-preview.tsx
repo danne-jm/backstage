@@ -84,7 +84,7 @@ export function EventPreview({
             {(event.variants || []).map((variant, idx) => {
                 const remaining =
                     variant.quantity !== null &&
-                    variant.sold_count !== undefined
+                        variant.sold_count !== undefined
                         ? variant.quantity - variant.sold_count
                         : null;
                 return (
@@ -193,9 +193,9 @@ export function EventPreview({
                                         className={cn(
                                             'font-medium',
                                             variant === 'store-manager' &&
-                                                isOnline &&
-                                                event.name.length >= 26 &&
-                                                'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
+                                            isOnline &&
+                                            event.name.length >= 26 &&
+                                            'max-w-[150px] truncate md:max-w-none md:overflow-visible md:whitespace-normal',
                                         )}
                                     >
                                         {event.name}
@@ -280,7 +280,7 @@ export function EventPreview({
                                         €{event.price_without_card}
                                     </p>
                                     {event.variants_config &&
-                                    event.variants_config.length > 0 ? (
+                                        event.variants_config.length > 0 ? (
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                             <div className="min-w-0">
                                                 <span className="text-muted-foreground">
@@ -296,7 +296,7 @@ export function EventPreview({
                                                 </span>
                                                 {event.variants &&
                                                     event.variants.length >
-                                                        0 && (
+                                                    0 && (
                                                         <div
                                                             className={cn(
                                                                 'mt-1',
@@ -318,51 +318,51 @@ export function EventPreview({
                                                     Qty w/ ESNcard:
                                                 </span>{' '}
                                                 {event.unlimited_quantity_with_card ||
-                                                event.quantity_with_card == null
+                                                    event.quantity_with_card == null
                                                     ? 'Unlimited'
                                                     : event.quantity_with_card}
                                                 {event.unlimited_quantity_with_card ||
-                                                event.quantity_with_card == null
+                                                    event.quantity_with_card == null
                                                     ? false
                                                     : event.remaining_with_card !==
-                                                          undefined &&
-                                                      event.remaining_with_card !==
-                                                          null && (
-                                                          <span className="text-gray-500">
-                                                              {' '}
-                                                              |{' '}
-                                                              {
-                                                                  event.remaining_with_card
-                                                              }{' '}
-                                                              remain
-                                                          </span>
-                                                      )}{' '}
+                                                    undefined &&
+                                                    event.remaining_with_card !==
+                                                    null && (
+                                                        <span className="text-gray-500">
+                                                            {' '}
+                                                            |{' '}
+                                                            {
+                                                                event.remaining_with_card
+                                                            }{' '}
+                                                            remain
+                                                        </span>
+                                                    )}{' '}
                                                 |{' '}
                                                 <span className="text-muted-foreground">
                                                     w/o ESNcard:
                                                 </span>{' '}
                                                 {event.unlimited_quantity_without_card ||
-                                                event.quantity_without_card ==
+                                                    event.quantity_without_card ==
                                                     null
                                                     ? 'Unlimited'
                                                     : event.quantity_without_card}
                                                 {event.unlimited_quantity_without_card ||
-                                                event.quantity_without_card ==
+                                                    event.quantity_without_card ==
                                                     null
                                                     ? false
                                                     : event.remaining_without_card !==
-                                                          undefined &&
-                                                      event.remaining_without_card !==
-                                                          null && (
-                                                          <span className="text-gray-500">
-                                                              {' '}
-                                                              |{' '}
-                                                              {
-                                                                  event.remaining_without_card
-                                                              }{' '}
-                                                              remain
-                                                          </span>
-                                                      )}
+                                                    undefined &&
+                                                    event.remaining_without_card !==
+                                                    null && (
+                                                        <span className="text-gray-500">
+                                                            {' '}
+                                                            |{' '}
+                                                            {
+                                                                event.remaining_without_card
+                                                            }{' '}
+                                                            remain
+                                                        </span>
+                                                    )}
                                                 {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
                                                 {variant === 'store-manager' &&
                                                     onSetOnline && (
@@ -378,7 +378,7 @@ export function EventPreview({
                                                                     onSetOnline(
                                                                         event.id,
                                                                         checked ===
-                                                                            true,
+                                                                        true,
                                                                         'event',
                                                                     )
                                                                 }
@@ -400,25 +400,25 @@ export function EventPreview({
                                                     Quantity:
                                                 </span>{' '}
                                                 {event.unlimited_quantity ||
-                                                event.quantity == null
+                                                    event.quantity == null
                                                     ? 'Unlimited'
                                                     : event.quantity}
                                                 {event.unlimited_quantity ||
-                                                event.quantity == null
+                                                    event.quantity == null
                                                     ? false
                                                     : event.remaining !==
-                                                          undefined &&
-                                                      event.remaining !==
-                                                          null && (
-                                                          <span className="text-gray-500">
-                                                              {' '}
-                                                              |{' '}
-                                                              {
-                                                                  event.remaining
-                                                              }{' '}
-                                                              remain
-                                                          </span>
-                                                      )}
+                                                    undefined &&
+                                                    event.remaining !==
+                                                    null && (
+                                                        <span className="text-gray-500">
+                                                            {' '}
+                                                            |{' '}
+                                                            {
+                                                                event.remaining
+                                                            }{' '}
+                                                            remain
+                                                        </span>
+                                                    )}
                                                 {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
                                                 {variant === 'store-manager' &&
                                                     onSetOnline && (
@@ -434,7 +434,7 @@ export function EventPreview({
                                                                     onSetOnline(
                                                                         event.id,
                                                                         checked ===
-                                                                            true,
+                                                                        true,
                                                                         'event',
                                                                     )
                                                                 }

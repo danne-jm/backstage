@@ -16,25 +16,25 @@ class EventResource extends JsonResource
     {
         $hasVariants = !empty($this->variants_config);
 
-        $soldWithCard    = (int) ($this->sold_count_with_card ?? 0);
+        $soldWithCard = (int) ($this->sold_count_with_card ?? 0);
         $soldWithoutCard = (int) ($this->sold_count_without_card ?? 0);
 
         // Simple (non-variable) event: single quantity pool shared across ticket types
-        $qty         = $this->quantity ?? null;
-        $unlimited   = (bool) ($this->unlimited_quantity ?? false);
-        $totalSold   = $soldWithCard + $soldWithoutCard;
-        $remaining   = ($unlimited || $qty === null) ? null : max(0, $qty - $totalSold);
+        $qty = $this->quantity ?? null;
+        $unlimited = (bool) ($this->unlimited_quantity ?? false);
+        $totalSold = $soldWithCard + $soldWithoutCard;
+        $remaining = ($unlimited || $qty === null) ? null : max(0, $qty - $totalSold);
 
         // Variable-amount event: separate with_card / without_card pools
-        $qtyWithCard           = $this->quantity_with_card ?? null;
-        $unlimitedWithCard     = (bool) ($this->unlimited_quantity_with_card ?? false);
-        $remainingWithCard     = ($unlimitedWithCard || $qtyWithCard === null)
+        $qtyWithCard = $this->quantity_with_card ?? null;
+        $unlimitedWithCard = (bool) ($this->unlimited_quantity_with_card ?? false);
+        $remainingWithCard = ($unlimitedWithCard || $qtyWithCard === null)
             ? null
             : max(0, $qtyWithCard - $soldWithCard);
 
-        $qtyWithoutCard        = $this->quantity_without_card ?? null;
-        $unlimitedWithoutCard  = (bool) ($this->unlimited_quantity_without_card ?? false);
-        $remainingWithoutCard  = ($unlimitedWithoutCard || $qtyWithoutCard === null)
+        $qtyWithoutCard = $this->quantity_without_card ?? null;
+        $unlimitedWithoutCard = (bool) ($this->unlimited_quantity_without_card ?? false);
+        $remainingWithoutCard = ($unlimitedWithoutCard || $qtyWithoutCard === null)
             ? null
             : max(0, $qtyWithoutCard - $soldWithoutCard);
 

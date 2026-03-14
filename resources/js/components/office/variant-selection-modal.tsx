@@ -129,7 +129,7 @@ export function VariantSelectionModal({
                                             className={cn(
                                                 'h-8 transition-all',
                                                 !isAvailable &&
-                                                    'cursor-not-allowed opacity-30',
+                                                'cursor-not-allowed opacity-30',
                                             )}
                                             disabled={!isAvailable}
                                         >

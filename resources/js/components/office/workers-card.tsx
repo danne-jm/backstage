@@ -5,29 +5,29 @@ import { Button } from '@/components/ui/button';
 
 export function WorkersCard({ workers, activeShift, staff }: any) {
     const [processingId, setProcessingId] = useState<string | null>(null);
-    
+
     // Ensure staff list shows users who are currently on the shift first.
     // We create a sorted copy so we don't mutate the original prop.
     const sortedStaff = Array.isArray(staff)
         ? [...staff].sort((a: any, b: any) => {
-              const aOnShift = Array.isArray(workers)
-                  ? workers.some((w: any) => w.id === a.id)
-                  : false;
-              const bOnShift = Array.isArray(workers)
-                  ? workers.some((w: any) => w.id === b.id)
-                  : false;
+            const aOnShift = Array.isArray(workers)
+                ? workers.some((w: any) => w.id === a.id)
+                : false;
+            const bOnShift = Array.isArray(workers)
+                ? workers.some((w: any) => w.id === b.id)
+                : false;
 
-              // Put on-shift users first
-              if (aOnShift && !bOnShift) return -1;
-              if (!aOnShift && bOnShift) return 1;
+            // Put on-shift users first
+            if (aOnShift && !bOnShift) return -1;
+            if (!aOnShift && bOnShift) return 1;
 
-              // Otherwise sort by name for consistency
-              try {
-                  return String(a.name).localeCompare(String(b.name));
-              } catch {
-                  return 0;
-              }
-          })
+            // Otherwise sort by name for consistency
+            try {
+                return String(a.name).localeCompare(String(b.name));
+            } catch {
+                return 0;
+            }
+        })
         : [];
 
     const handleAddWorker = (userId: string) => {
@@ -70,6 +70,9 @@ export function WorkersCard({ workers, activeShift, staff }: any) {
                                 className="flex items-center justify-between py-2"
                             >
                                 <div className="flex items-center gap-3">
+                                    {/*<div className="flex items-center justify-center rounded-full bg-muted/50 p-2">
+                                        <User className="h-4 w-4" />
+                                    </div>*/}
                                     <div className="flex items-center justify-center rounded-full bg-muted/50 p-2">
                                         <User className="h-4 w-4" />
                                     </div>
@@ -82,16 +85,16 @@ export function WorkersCard({ workers, activeShift, staff }: any) {
                                                 String(
                                                     activeShift?.started_by,
                                                 ) && (
-                                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                                    Started by
-                                                </span>
-                                            )}
+                                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700 whitespace-nowrap flex-shrink-0 dark:bg-green-900/40 dark:text-green-400">
+                                                        Started by
+                                                    </span>
+                                                )}
                                             {activeShift?.status === 'closed' &&
                                                 String(member.id) ===
-                                                    String(
-                                                        activeShift?.ended_by,
-                                                    ) && (
-                                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                                String(
+                                                    activeShift?.ended_by,
+                                                ) && (
+                                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 whitespace-nowrap flex-shrink-0 dark:bg-red-900/40 dark:text-red-400">
                                                         Closed by
                                                     </span>
                                                 )}
@@ -125,7 +128,7 @@ export function WorkersCard({ workers, activeShift, staff }: any) {
                                                 disabled={
                                                     isProcessing ||
                                                     activeShift?.status !==
-                                                        'open'
+                                                    'open'
                                                 }
                                                 onClick={() =>
                                                     handleRemoveWorker(

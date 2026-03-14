@@ -30,6 +30,10 @@ class SaleService
                 $details['options'] = $data['options'];
             }
 
+            if (isset($data['variant_id'])) {
+                $details['variant_id'] = $data['variant_id'];
+            }
+
             // Atomic stock deduction
             $stockResult = $this->deductStock(
                 $productId,
@@ -45,7 +49,7 @@ class SaleService
             // Update shift totals
             if (($data['method'] ?? 'cash') === 'cash') {
                 $shift->increment('cash_total', $data['amount']);
-                if (! empty($data['breakdown'])) {
+                if (!empty($data['breakdown'])) {
                     $shift->cash_breakdown = OfficeShift::mergeBreakdowns(
                         $shift->cash_breakdown,
                         $data['breakdown']
@@ -97,7 +101,7 @@ class SaleService
             ]);
 
             // If sold from a POS terminal, also log it as an OfficeShiftSale
-            if (! empty($data['office_shift_id'])) {
+            if (!empty($data['office_shift_id'])) {
                 $shift = OfficeShift::find($data['office_shift_id']);
                 if ($shift) {
                     $this->createOfficeShiftSale($shift, $data, $sale->id, $resolvedVariant);
@@ -124,18 +128,23 @@ class SaleService
 
             if ($product) {
                 if ($product->is_variant_based) {
+                    $variantId = $details['variant_id'] ?? null;
                     $options = $details['options'] ?? null;
-                    if (empty($options)) {
+
+                    if ($variantId) {
+                        $resolvedVariant = SellableVariant::find($variantId);
+                    } elseif (!empty($options)) {
+                        $resolvedVariant = $this->resolveVariant($product, $options);
+                    }
+
+                    if (!$resolvedVariant) {
                         throw ValidationException::withMessages(['items' => "{$product->name} requires you to select an option."]);
                     }
-                    $resolvedVariant = $this->resolveVariant($product, $options);
-                    if (! $resolvedVariant) {
-                        throw ValidationException::withMessages(['stock' => "Variant not available for {$product->name}."]);
-                    }
+
                     if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
                         throw ValidationException::withMessages(['stock' => "Selected variant for {$product->name} is sold out."]);
                     }
-                } elseif (! empty($details['options'])) {
+                } elseif (!empty($details['options'])) {
                     throw ValidationException::withMessages(['items' => "The configuration for {$product->name} has changed. Please re-select the item."]);
                 }
 
@@ -143,7 +152,7 @@ class SaleService
                     ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count + 1 <= quantity)')
                     ->increment('sold_count');
 
-                if (! $updated) {
+                if (!$updated) {
                     throw ValidationException::withMessages(['stock' => 'Product sold out.']);
                 }
             }
@@ -156,18 +165,23 @@ class SaleService
                 $ticketTypeKey = $ticketType ? strtolower($ticketType) : null;
 
                 if ($event->is_variant_based) {
+                    $variantId = $details['variant_id'] ?? null;
                     $options = $details['options'] ?? null;
-                    if (empty($options)) {
+
+                    if ($variantId) {
+                        $resolvedVariant = SellableVariant::find($variantId);
+                    } elseif (!empty($options)) {
+                        $resolvedVariant = $this->resolveVariant($event, $options);
+                    }
+
+                    if (!$resolvedVariant) {
                         throw ValidationException::withMessages(['items' => "{$event->name} requires you to select an option."]);
                     }
-                    $resolvedVariant = $this->resolveVariant($event, $options);
-                    if (! $resolvedVariant) {
-                        throw ValidationException::withMessages(['stock' => "Variant not available for {$event->name}."]);
-                    }
+
                     if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
                         throw ValidationException::withMessages(['stock' => "Selected variant for {$event->name} is sold out."]);
                     }
-                } elseif (! empty($details['options'])) {
+                } elseif (!empty($details['options'])) {
                     throw ValidationException::withMessages(['items' => "The configuration for {$event->name} has changed. Please re-select the item."]);
                 }
 
@@ -184,7 +198,7 @@ class SaleService
                         ->increment('sold_count_without_card');
                 }
 
-                if (! $updated) {
+                if (!$updated) {
                     throw ValidationException::withMessages(['stock' => 'Event tickets sold out.']);
                 }
             }
@@ -195,7 +209,7 @@ class SaleService
                 ->whereRaw('(quantity IS NULL OR sold_count + 1 <= quantity)')
                 ->increment('sold_count');
 
-            if (! $updated) {
+            if (!$updated) {
                 throw ValidationException::withMessages(['stock' => 'Variant selection sold out.']);
             }
         }
@@ -230,7 +244,7 @@ class SaleService
 
         // Resolve sold_by label
         $soldByName = $data['sold_by_name'] ?? null;
-        if (! $soldByName) {
+        if (!$soldByName) {
             if ($onlineSaleId) {
                 $soldByName = ($method === 'card') ? 'SumUp' : (Auth::user()?->name ?? 'unknown');
             } else {
@@ -239,8 +253,8 @@ class SaleService
         }
 
         if (($itemType === 'custom' || $isManualEntry) && $soldByName && $soldByName !== 'SumUp') {
-            if (! str_starts_with($soldByName, 'Custom - ')) {
-                $soldByName = 'Custom - '.$soldByName;
+            if (!str_starts_with($soldByName, 'Custom - ')) {
+                $soldByName = 'Custom - ' . $soldByName;
             }
         }
 
@@ -248,8 +262,8 @@ class SaleService
             'item_type' => $itemType,
             'name' => $data['name'] ?? (
                 $productId
-                    ? optional(Product::find($productId))->name
-                    : optional(Event::find($eventId))->name
+                ? optional(Product::find($productId))->name
+                : optional(Event::find($eventId))->name
             ),
             'price' => $data['price'] ?? $amount,
             'method' => $method,
@@ -284,7 +298,7 @@ class SaleService
      */
     protected function resolveVariant(mixed $sellable, array $options): ?SellableVariant
     {
-        if (empty($options) || ! is_array($options)) {
+        if (empty($options) || !is_array($options)) {
             return null;
         }
 
@@ -296,7 +310,7 @@ class SaleService
             }
 
             foreach ($options as $key => $val) {
-                if (! isset($vOpts[$key]) || $vOpts[$key] != $val) {
+                if (!isset($vOpts[$key]) || $vOpts[$key] != $val) {
                     return false;
                 }
             }
