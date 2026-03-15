@@ -25,6 +25,7 @@ interface DataSourcePreviewProps {
     verificationActions?: React.ReactNode;
     emailVerificationResults?: Record<number, any>;
     validationResults?: Record<number, boolean | null>;
+    isFiltered?: boolean;
 }
 
 export function DataSourcePreview({
@@ -36,6 +37,7 @@ export function DataSourcePreview({
     verificationActions,
     emailVerificationResults = {},
     validationResults = {},
+    isFiltered = false,
 }: DataSourcePreviewProps) {
     const previewColumns = React.useMemo(
         () => [
@@ -66,7 +68,7 @@ export function DataSourcePreview({
         <div className="space-y-3">
             <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold">
-                    Data Source Preview
+                    {isFiltered ? 'Filtered Data Source' : 'Data Source Preview'}
                 </h4>
                 <Dialog>
                     <DialogTrigger asChild>
@@ -75,7 +77,7 @@ export function DataSourcePreview({
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="flex h-[90vh] !w-[95vw] !max-w-[95vw] flex-col overflow-hidden p-4 sm:!max-w-[95vw]">
-                        <DialogTitle>Full Data Source</DialogTitle>
+                        <DialogTitle>{isFiltered ? 'Filtered Data Source' : 'Full Data Source'}</DialogTitle>
                         <DialogDescription>
                             <div className="text-xs text-muted-foreground">
                                 Total entries: {data.length}

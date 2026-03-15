@@ -64,8 +64,8 @@ export function EmailPreview({
                         aria-selected={!showRendered}
                         onClick={() => onToggleView(false)}
                         className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] ${!showRendered
-                                ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30'
-                                : 'text-foreground dark:text-muted-foreground'
+                            ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30'
+                            : 'text-foreground dark:text-muted-foreground'
                             }`}
                     >
                         JSON
@@ -76,8 +76,8 @@ export function EmailPreview({
                         aria-selected={showRendered}
                         onClick={() => onToggleView(true)}
                         className={`inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] ${showRendered
-                                ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30'
-                                : 'text-foreground dark:text-muted-foreground'
+                            ? 'bg-background text-foreground shadow-sm dark:border-input dark:bg-input/30'
+                            : 'text-foreground dark:text-muted-foreground'
                             }`}
                     >
                         HTML Preview
@@ -99,7 +99,7 @@ export function EmailPreview({
                             dangerouslySetInnerHTML={{
                                 __html: selectedEmail.body.replace(
                                     /{{qr}}/g,
-                                    '<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:0;font-weight:bold;text-align:center;display:flex;align-items:center;justify-content:center;">QR PREVIEW</div>'
+                                    '<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:0;font-weight:bold;text-align:center;display:flex;align-items:center;justify-content:center;color:rgba(0, 0, 0, 1);">QR PREVIEW</div>'
                                 ),
                             }}
                         />

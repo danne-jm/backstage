@@ -2,28 +2,37 @@
 
 namespace App\Services;
 
-use App\Models\Sellable;
 use App\Models\sellables\Event;
-use App\Models\sellables\Product;
 use App\Models\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Service for handling email distribution operations
- * Separates business logic from controllers
+ * 
+ * Focuses exclusively on email distribution logic:
+ * - Ticket generation for QR codes
+ * - Email queuing and dispatch
+ * - Distribution workflow orchestration
+ * 
+ * Delegates to other services:
+ * - AttendeeService: For attendee data fetching and filtering
+ * - QrCodeGenerationService: For QR code ticket generation
+ * - EmailQueueService: For email queuing
  */
 class EmailDistributionService
 {
     public function __construct(
         private readonly QrCodeGenerationService $qrService,
         private readonly EmailQueueService $emailQueueService,
-        private readonly GoogleSheetsService $googleSheetsService
+        private readonly AttendeeService $attendeeService
     ) {
     }
 
     /**
      * Get upcoming events within the specified number of days
+     * 
+     * This method is kept for backward compatibility
+     * Consider moving to a dedicated EventService in the future
      */
     public function getUpcomingEvents(int $days = 14): Collection
     {
@@ -41,38 +50,13 @@ class EmailDistributionService
 
     /**
      * Get available email templates
+     * 
+     * TODO: Implement when MailTemplate model exists
+     * For now return empty collection
      */
     public function getEmailTemplates(): Collection
     {
-        // TODO: Implement when MailTemplate model exists
-        // For now return empty collection
         return collect([]);
-    }
-
-    /**
-     * Get attendees for a specific event from Google Sheets
-     */
-    public function getEventAttendees(Sellable $event, bool $useCache = true): array
-    {
-        if (!$event->google_spreadsheet_id || !$event->google_sheet_name) {
-            throw new \Exception('Spreadsheet not configured for this event');
-        }
-
-        $cacheKey = $this->getAttendeeCacheKey($event);
-
-        if (!$useCache) {
-            Cache::forget($cacheKey);
-        }
-
-        return Cache::remember($cacheKey, 3600, function () use ($event) {
-            $rows = $this->googleSheetsService->getSheetData(
-                $event->google_spreadsheet_id,
-                $event->google_sheet_name
-            );
-
-            // Apply filtering if configured
-            return $this->filterAttendeeRows($event, $rows);
-        });
     }
 
     /**
@@ -151,24 +135,5 @@ class EmailDistributionService
     {
         return isset($recipient['body']) &&
             str_contains($recipient['body'], '{{qr}}');
-    }
-
-    /**
-     * Filter attendee rows based on event configuration
-     */
-    private function filterAttendeeRows(Sellable $event, array $rows): array
-    {
-        // TODO: Implement filtering logic based on event->attendee_filter_config
-        // For now, return rows as-is
-        return $rows;
-    }
-
-    /**
-     * Generate cache key for attendees
-     */
-    private function getAttendeeCacheKey(Sellable $event): string
-    {
-        $filterHash = md5(json_encode($event->attendee_filter_config ?? []));
-        return "email_distributor_attendees_{$event->id}_{$filterHash}";
     }
 }

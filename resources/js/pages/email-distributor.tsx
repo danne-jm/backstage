@@ -11,6 +11,8 @@ import { FieldMappingSection } from '@/components/email-distributor/field-mappin
 import { DataSourcePreview } from '@/components/email-distributor/data-source-preview';
 import { EmailPreview } from '@/components/email-distributor/email-preview';
 import { DistributionDialog } from '@/components/email-distributor/distribution-dialog';
+import { MailTypeSelector } from '@/components/email-distributor/mail-type-selector';
+import { NullableFieldsSection } from '@/components/email-distributor/nullable-fields-section';
 import { useEmailDistribution } from '@/hooks/use-email-distribution';
 
 interface EmailDistributorProps {
@@ -44,7 +46,9 @@ export default function EmailDistributor() {
 
         // Attendee data
         attendeeData,
+        allAttendeeData,
         isLoadingAttendees,
+        isFiltered,
         fields,
 
         // Field mapping
@@ -54,6 +58,12 @@ export default function EmailDistributor() {
         setLastNameField,
         emailField,
         setEmailField,
+
+        // Mail mode
+        mailMode,
+        setMailMode,
+        nullableFields,
+        setNullableFields,
 
         // Email composition
         subject,
@@ -92,6 +102,28 @@ export default function EmailDistributor() {
         templates: props.templates || [],
         permissions,
     });
+
+    const handleNullableFieldChange = (field: string, value: boolean) => {
+        setNullableFields((prev) => ({ ...prev, [field]: value }));
+    };
+
+    // Helper to format attendee name for display
+    const getAttendeeName = (attendee: any): string => {
+        if (!attendee) return '';
+        
+        const firstName = attendee[firstNameField];
+        const lastName = attendee[lastNameField];
+        
+        if (firstName && lastName) {
+            return `${firstName} ${lastName}`;
+        }
+        if (firstName) return firstName;
+        if (lastName) return lastName;
+        
+        // Fallback to first available field
+        const firstAvailableField = fields[0];
+        return attendee[firstAvailableField] || '';
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -149,7 +181,7 @@ export default function EmailDistributor() {
                                     ) : (
                                         attendeeData.map((attendee, idx) => (
                                             <option key={idx} value={idx}>
-                                                {attendee[firstNameField] || attendee[emailField] || `User ${idx + 1}`}
+                                                {getAttendeeName(attendee) || `User ${idx + 1}`}
                                             </option>
                                         ))
                                     )}
@@ -225,7 +257,20 @@ export default function EmailDistributor() {
                             onFirstNameChange={setFirstNameField}
                             onLastNameChange={setLastNameField}
                             onEmailChange={setEmailField}
-                        />
+                        >
+                            <MailTypeSelector
+                                mailMode={mailMode}
+                                onChange={setMailMode}
+                            />
+
+                            <div className="h-4"></div>
+
+                            <NullableFieldsSection
+                                fields={fields}
+                                nullableFields={nullableFields}
+                                onChange={handleNullableFieldChange}
+                            />
+                        </FieldMappingSection>
 
                         <DataSourcePreview
                             data={attendeeData}
@@ -233,6 +278,7 @@ export default function EmailDistributor() {
                             firstNameField={firstNameField}
                             lastNameField={lastNameField}
                             emailField={emailField}
+                            isFiltered={isFiltered}
                             verificationActions={
                                 <>
                                     <Button

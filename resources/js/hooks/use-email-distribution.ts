@@ -34,26 +34,24 @@ export function useEmailDistribution({
 
     // Attendee data
     const [attendeeData, setAttendeeData] = React.useState<any[]>([]);
+    const [allAttendeeData, setAllAttendeeData] = React.useState<any[]>([]);
     const [isLoadingAttendees, setIsLoadingAttendees] = React.useState(false);
+    const [isFiltered, setIsFiltered] = React.useState(false);
 
     // Field mapping
     const [firstNameField, setFirstNameField] = React.useState('');
     const [lastNameField, setLastNameField] = React.useState('');
     const [emailField, setEmailField] = React.useState('');
 
+    // Mail mode: normal | qr
+    const [mailMode, setMailMode] = React.useState<'normal' | 'qr'>('normal');
+
+    // Nullable / skippable fields
+    const [nullableFields, setNullableFields] = React.useState<Record<string, boolean>>({});
+
     // Email composition
     const [subject, setSubject] = React.useState('Your ticket information');
-    const [editorContent, setEditorContent] = React.useState(`Hello {{firstName}} {{last_name}},
-
-Thanks for registering — below are your ticket details for the event.
-
-Event: {{event_name}}
-Date: {{event_date}}
-Bring: Your ESN card (if applicable)
-Please bring a copy of this email (printed or on your phone).
-
-See you there,
-ESN Leuven`);
+    const [editorContent, setEditorContent] = React.useState('<p style="margin:0;">Hello <strong>{{firstName}}</strong>,</p>\n<p style="margin:0;">Thanks for registering — below are your ticket details for the event.</p><ul style="margin:0; padding-left:20px; list-style-type:disc;">\n<li style="margin:0; padding:0; display:list-item;">Event: {{event_name}}</li>\n<li style="margin:0; padding:0; display:list-item;">Date: {{event_date}}</li>\n<li style="margin:0; padding:0; display:list-item;">Bring: Your ESN card (if applicable)</li>\n</ul><p style="margin:0;">Please bring a copy of this email (printed or on your phone).</p>\n<p style="margin:0;">See you there,<br/>ESN Leuven</p>');
 
     // Preview
     const [generatedEmails, setGeneratedEmails] = React.useState<any[] | null>(
@@ -95,29 +93,75 @@ ESN Leuven`);
         [events, selectedEventId]
     );
 
+    // Keep nullableFields in sync with available fields
+    React.useEffect(() => {
+        setNullableFields((prev) => {
+            const next: Record<string, boolean> = {};
+            fields.forEach((f) => {
+                next[f] = prev[f] ?? false;
+            });
+            return next;
+        });
+    }, [fields]);
+
+    // Auto-insert/remove {{qr}} when switching mail mode
+    React.useEffect(() => {
+        const qrPlaceholder = '{{qr}}';
+        
+        if (mailMode === 'qr') {
+            // Add QR placeholder if not already present
+            setEditorContent((prev) => {
+                if (prev.includes(qrPlaceholder)) return prev;
+                // Append inside a new paragraph
+                if (prev.trim().endsWith('</p>')) {
+                    return prev + `<span style="display:block;margin:0;">${qrPlaceholder}</span>`;
+                }
+                return prev + `<p style="margin:0;">${qrPlaceholder}</p>`;
+            });
+        } else {
+            // Remove QR placeholder when switching to normal mode
+            setEditorContent((prev) => {
+                // Remove all instances of {{qr}}
+                return prev.replaceAll(qrPlaceholder, '').replaceAll(/<span[^>]*style="display:block;margin:0;"><\/span>/g, '').replaceAll(/<p[^>]*style="margin:0;"><\/p>/g, '');
+            });
+        }
+    }, [mailMode]);
+
     // Fetch attendees when event changes
     React.useEffect(() => {
         if (!selectedEventId) {
             setAttendeeData([]);
+            setAllAttendeeData([]);
             setFirstNameField('');
             setLastNameField('');
             setEmailField('');
             setSelectedSampleIndex(null);
+            setIsFiltered(false);
             return;
         }
 
         setIsLoadingAttendees(true);
-        fetch(`/email-distributor/attendees/${selectedEventId}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                Accept: 'application/json',
-            },
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success && Array.isArray(data.rows) && data.rows.length > 0) {
-                    const headers = data.rows[0];
-                    const dataRows = data.rows.slice(1);
+        
+        // Fetch both filtered and unfiltered data in parallel
+        Promise.all([
+            fetch(`/email-distributor/attendees/${selectedEventId}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                },
+            }).then(res => res.json()),
+            fetch(`/email-distributor/attendees-all/${selectedEventId}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                },
+            }).then(res => res.json())
+        ])
+            .then(([filteredData, unfilteredData]) => {
+                // Process filtered data
+                if (filteredData.success && Array.isArray(filteredData.rows) && filteredData.rows.length > 0) {
+                    const headers = filteredData.rows[0];
+                    const dataRows = filteredData.rows.slice(1);
                     const attendees = dataRows.map((row: any[]) => {
                         const obj: any = {};
                         headers.forEach((header: string, idx: number) => {
@@ -154,10 +198,31 @@ ESN Leuven`);
                 } else {
                     setAttendeeData([]);
                 }
+
+                // Process unfiltered data to check if filtering is active
+                if (unfilteredData.success && Array.isArray(unfilteredData.rows) && unfilteredData.rows.length > 0) {
+                    setAllAttendeeData(
+                        unfilteredData.rows.slice(1).map((row: any[]) => {
+                            const headers = unfilteredData.rows[0];
+                            const obj: any = {};
+                            headers.forEach((header: string, idx: number) => {
+                                obj[header] = row[idx] ?? '';
+                            });
+                            return obj;
+                        })
+                    );
+                    
+                    // Check if filtering is active by comparing counts
+                    const filteredCount = filteredData.success && Array.isArray(filteredData.rows) ? filteredData.rows.length - 1 : 0;
+                    const unfilteredCount = unfilteredData.rows.length - 1;
+                    setIsFiltered(filteredCount < unfilteredCount);
+                }
             })
             .catch((error) => {
                 console.error('Error fetching attendees:', error);
                 setAttendeeData([]);
+                setAllAttendeeData([]);
+                setIsFiltered(false);
             })
             .finally(() => {
                 setIsLoadingAttendees(false);
@@ -175,6 +240,8 @@ ESN Leuven`);
         emailField,
         selectedTemplateId,
         selectedSampleIndex,
+        mailMode,
+        nullableFields,
     ]);
 
     // Generate email preview
@@ -207,7 +274,16 @@ ESN Leuven`);
 
             fields.forEach((field) => {
                 const placeholder = `{{${field}}}`;
-                const value = String(row[field] ?? '');
+                const rawValue = row[field];
+
+                let value: string;
+                if (rawValue === null || rawValue === undefined || String(rawValue).trim() === '') {
+                    // If the field is NOT skippable, show "undefined" to alert the user
+                    value = nullableFields[field] ? '' : 'undefined';
+                } else {
+                    value = String(rawValue);
+                }
+
                 personalizedBody = personalizedBody.replaceAll(
                     placeholder,
                     value
@@ -219,10 +295,13 @@ ESN Leuven`);
                     '{{event_name}}',
                     selectedEvent.name || ''
                 );
-                const date = selectedEvent.start_date || selectedEvent.event_date;
+                const rawDate = selectedEvent.start_date || selectedEvent.event_date;
+                const formattedEventDate = rawDate
+                    ? new Date(rawDate).toLocaleDateString()
+                    : '';
                 personalizedBody = personalizedBody.replaceAll(
                     '{{event_date}}',
-                    date ? new Date(date).toLocaleDateString() : ''
+                    formattedEventDate
                 );
             }
 
@@ -356,7 +435,9 @@ ESN Leuven`);
 
         // Attendee data
         attendeeData,
+        allAttendeeData,
         isLoadingAttendees,
+        isFiltered,
         fields,
 
         // Field mapping
@@ -366,6 +447,12 @@ ESN Leuven`);
         setLastNameField,
         emailField,
         setEmailField,
+
+        // Mail mode
+        mailMode,
+        setMailMode,
+        nullableFields,
+        setNullableFields,
 
         // Email composition
         subject,

@@ -14,6 +14,7 @@ interface FieldMappingSectionProps {
     onFirstNameChange: (value: string) => void;
     onLastNameChange: (value: string) => void;
     onEmailChange: (value: string) => void;
+    children?: React.ReactNode;
 }
 
 export function FieldMappingSection({
@@ -24,6 +25,7 @@ export function FieldMappingSection({
     onFirstNameChange,
     onLastNameChange,
     onEmailChange,
+    children,
 }: FieldMappingSectionProps) {
     return (
         <BaseFormSection
@@ -52,6 +54,8 @@ export function FieldMappingSection({
                     options={fields}
                 />
             </div>
+
+            {children && <div className="mt-6 pt-6 border-t">{children}</div>}
         </BaseFormSection>
     );
 }

@@ -86,6 +86,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('email-distributor/attendees/{event}', [App\Http\Controllers\EmailDistributorController::class, 'getAttendees'])
         ->name('email-distributor.attendees');
 
+    Route::get('email-distributor/attendees-all/{event}', [App\Http\Controllers\EmailDistributorController::class, 'getAllAttendees'])
+        ->name('email-distributor.attendees-all');
+
     Route::post('distribution/distribute', [App\Http\Controllers\DistributionController::class, 'distribute'])
         ->name('distribution.distribute');
 });
