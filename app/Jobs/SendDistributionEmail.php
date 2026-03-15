@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\DistributionMail;
 use App\Models\Mail as MailModel;
 use App\Models\User;
+use App\Services\GmailSenderService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -15,7 +16,11 @@ use Illuminate\Support\Facades\Mail;
 
 /**
  * Job for sending distribution emails
- * Processes queued emails and handles Gmail API or SMTP fallback
+ * Processes queued emails and handles Gmail API with SMTP fallback
+ * 
+ * Priority order:
+ * 1. Gmail API (if user has OAuth token)
+ * 2. SMTP fallback (configured mail driver)
  */
 class SendDistributionEmail implements ShouldQueue
 {
@@ -45,7 +50,7 @@ class SendDistributionEmail implements ShouldQueue
     /**
      * Execute the job
      */
-    public function handle(): void
+    public function handle(GmailSenderService $gmailSender): void
     {
         $mailLog = isset($this->recipient['mail_log_id']) 
             ? MailModel::find($this->recipient['mail_log_id']) 
@@ -63,7 +68,7 @@ class SendDistributionEmail implements ShouldQueue
             ]);
 
             // Attempt Gmail API send if sender has token
-            if ($this->tryGmailSend($to, $subject, $body)) {
+            if ($this->tryGmailSend($to, $subject, $body, $gmailSender)) {
                 if ($mailLog) {
                     $mailLog->update(['success' => true]);
                 }
@@ -100,7 +105,7 @@ class SendDistributionEmail implements ShouldQueue
     /**
      * Try to send via Gmail API if user has token
      */
-    private function tryGmailSend(string $to, string $subject, string $body): bool
+    private function tryGmailSend(string $to, string $subject, string $body, GmailSenderService $gmailSender): bool
     {
         $senderId = $this->recipient['sender_id'] ?? null;
         
@@ -117,10 +122,7 @@ class SendDistributionEmail implements ShouldQueue
         }
 
         try {
-            // TODO: Implement GmailSender service if needed
-            // For now, return false to use SMTP
-            Log::info('SendDistributionEmail: Gmail API not implemented, using SMTP');
-            return false;
+            return $gmailSender->send($to, $subject, $body, $user);
         } catch (\Throwable $e) {
             Log::warning('SendDistributionEmail: Gmail API failed, falling back to SMTP', [
                 'error' => $e->getMessage(),

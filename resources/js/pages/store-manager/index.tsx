@@ -1,7 +1,9 @@
 import { Head } from '@inertiajs/react';
+import { Check } from 'lucide-react';
 import { useState } from 'react';
 import { EventDialog } from '@/components/sellables/event-dialog';
 import { ProductDialog } from '@/components/sellables/product-dialog';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import {
     LatestCardSalesList,
     PERIOD_LABELS,
@@ -43,6 +45,9 @@ export default function StoreManager() {
         onlinePage,
         setOnlinePage,
         handleSetOnline,
+        message,
+        setMessage,
+        reload,
     } = useStoreManager();
 
     // ── Dialog state ─────────────────────────────────────────────────────────
@@ -119,15 +124,30 @@ export default function StoreManager() {
                 open={productDialogOpen}
                 onOpenChange={setProductDialogOpen}
                 editingProduct={editingProduct}
-                onSuccess={() => {}}
+                preserveState={true}
+                onSuccess={() => {
+                    reload(onlinePage, 100);
+                }}
             />
             <EventDialog
                 open={eventDialogOpen}
                 onOpenChange={setEventDialogOpen}
                 editingEvent={editingEvent}
                 boardUsers={boardUsers}
-                onSuccess={() => {}}
+                preserveState={true}
+                onSuccess={() => {
+                    reload(onlinePage, 100);
+                }}
             />
+
+            {message && (
+                <div className="fixed top-4 left-1/2 z-50 w-[min(90%,40rem)] -translate-x-1/2 transform">
+                    <Alert>
+                        <Check />
+                        <AlertTitle>{message}</AlertTitle>
+                    </Alert>
+                </div>
+            )}
         </>
     );
 }

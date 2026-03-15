@@ -16,6 +16,16 @@ class SellablesController extends Controller
 {
     protected SellablesService $inventoryService;
 
+    /**
+     * Keep Inertia/XHR callers on their current page (e.g. /store-manager) instead of
+     * always redirecting to /sellables. Fallback to the existing redirect for
+     * non-Inertia requests.
+     */
+    protected function respondAfterMutation(Request $request)
+    {
+        return $request->header('X-Inertia') ? back() : redirect()->route('sellables');
+    }
+
     public function __construct(SellablesService $inventoryService)
     {
         $this->inventoryService = $inventoryService;
@@ -209,7 +219,7 @@ class SellablesController extends Controller
         $product->load('variants');
         \App\Events\SellableUpdated::dispatch($product);
 
-        return redirect()->route('sellables');
+        return $this->respondAfterMutation($request);
     }
 
     public function updateProduct(Request $request, Product $product)
@@ -238,14 +248,14 @@ class SellablesController extends Controller
         $product->load('variants');
         \App\Events\SellableUpdated::dispatch($product);
 
-        return redirect()->route('sellables');
+        return $this->respondAfterMutation($request);
     }
 
     public function destroyProduct(Product $product)
     {
         $product->delete();
 
-        return redirect()->route('sellables');
+        return $this->respondAfterMutation(request());
     }
 
     public function storeEvent(Request $request)
@@ -263,7 +273,7 @@ class SellablesController extends Controller
         $event->load('variants', 'responsibleUser');
         \App\Events\SellableUpdated::dispatch($event);
 
-        return redirect()->route('sellables');
+        return $this->respondAfterMutation($request);
     }
 
     public function updateEvent(Request $request, Event $event)
@@ -292,7 +302,7 @@ class SellablesController extends Controller
         $event->load('variants', 'responsibleUser');
         \App\Events\SellableUpdated::dispatch($event);
 
-        return redirect()->route('sellables');
+        return $this->respondAfterMutation($request);
     }
 
     public function destroyImage(Media $image)
@@ -310,7 +320,7 @@ class SellablesController extends Controller
     public function destroyEvent(Event $event)
     {
         $event->delete();
-        return redirect()->route('sellables');
+        return $this->respondAfterMutation(request());
     }
 }
 

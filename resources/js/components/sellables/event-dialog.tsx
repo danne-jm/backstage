@@ -36,6 +36,7 @@ interface EventDialogProps {
     editingEvent: Event | null;
     boardUsers: BoardUser[];
     onSuccess: () => void;
+    preserveState?: boolean;
 }
 
 export function EventDialog({
@@ -44,6 +45,7 @@ export function EventDialog({
     editingEvent,
     boardUsers,
     onSuccess,
+    preserveState = false,
 }: EventDialogProps) {
     const [eventName, setEventName] = React.useState('');
     const [eventDescription, setEventDescription] = React.useState('');
@@ -308,6 +310,8 @@ export function EventDialog({
                     onSuccess();
                 },
                 forceFormData: true,
+                preserveState: preserveState,
+                preserveScroll: true,
             });
         } else {
             router.post('/sellables/events', formData, {
@@ -316,6 +320,8 @@ export function EventDialog({
                     onSuccess();
                 },
                 forceFormData: true,
+                preserveState: preserveState,
+                preserveScroll: true,
             });
         }
     };

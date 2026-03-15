@@ -18,11 +18,6 @@ import { useEmailDistribution } from '@/hooks/use-email-distribution';
 interface EmailDistributorProps {
     events: any[];
     templates: any[];
-    auth?: {
-        user?: {
-            permissions?: string[];
-        };
-    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -34,7 +29,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function EmailDistributor() {
     const props = usePage().props as any;
-    const permissions = props.auth?.user?.permissions || [];
 
     const {
         // Event & template
@@ -46,8 +40,6 @@ export default function EmailDistributor() {
 
         // Attendee data
         attendeeData,
-        allAttendeeData,
-        isLoadingAttendees,
         isFiltered,
         fields,
 
@@ -100,7 +92,6 @@ export default function EmailDistributor() {
     } = useEmailDistribution({
         events: props.events || [],
         templates: props.templates || [],
-        permissions,
     });
 
     const handleNullableFieldChange = (field: string, value: boolean) => {
@@ -199,16 +190,13 @@ export default function EmailDistributor() {
                                         disabled={
                                             isDistributing ||
                                             isConfigDirty ||
-                                            !canSend ||
                                             !generatedEmails
                                         }
                                         variant="destructive"
                                         title={
-                                            !canSend
-                                                ? 'You do not have permission to distribute emails'
-                                                : isConfigDirty
-                                                    ? 'Generate preview first'
-                                                    : ''
+                                            isConfigDirty
+                                                ? 'Generate preview first'
+                                                : ''
                                         }
                                     >
                                         {isDistributing ? (

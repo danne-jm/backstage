@@ -26,6 +26,7 @@ interface ProductDialogProps {
     onOpenChange: (open: boolean) => void;
     editingProduct: Product | null;
     onSuccess: () => void;
+    preserveState?: boolean;
 }
 
 export function ProductDialog({
@@ -33,6 +34,7 @@ export function ProductDialog({
     onOpenChange,
     editingProduct,
     onSuccess,
+    preserveState = false,
 }: ProductDialogProps) {
     const [productName, setProductName] = React.useState('');
     const [productPrice, setProductPrice] = React.useState('');
@@ -269,6 +271,8 @@ export function ProductDialog({
                     onSuccess();
                 },
                 forceFormData: true,
+                preserveState: preserveState,
+                preserveScroll: true,
             });
         } else {
             router.post('/sellables/products', formData, {
@@ -277,6 +281,8 @@ export function ProductDialog({
                     onSuccess();
                 },
                 forceFormData: true,
+                preserveState: preserveState,
+                preserveScroll: true,
             });
         }
     };

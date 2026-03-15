@@ -36,6 +36,7 @@ export function useStoreManager() {
     const [officeSales, setOfficeSales] = useState<OfficeSale[]>([]);
     const [onlineSalesTotal, setOnlineSalesTotal] = useState(0);
     const [onlineSellablesCount, setOnlineSellablesCount] = useState(0);
+    const [message, setMessage] = useState('');
     const [period, setPeriod] = useState<TimePeriod>('7days');
     const [onlinePage, setOnlinePage] = useState(1);
 
@@ -293,10 +294,27 @@ export function useStoreManager() {
                 );
             }
 
-            router.put(url, data, { preserveState: true, onSuccess: () => {} });
+            router.put(url, data, {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setMessage(
+                        isOnline
+                            ? 'Sellable made available online'
+                            : 'Sellable removed from online store',
+                    );
+                    load(onlinePage, PAGE_SIZE);
+                },
+            });
         },
-        [sellables],
+        [sellables, load, onlinePage],
     );
+
+    useEffect(() => {
+        if (!message) return;
+        const t = setTimeout(() => setMessage(''), 3000);
+        return () => clearTimeout(t);
+    }, [message]);
 
     // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -384,6 +402,8 @@ export function useStoreManager() {
         onlineSellablesCount,
         totalOnlinePages,
         visibleOnlineSales,
+        message,
+        setMessage,
         // Actions
         handleSetOnline,
         reload: load,

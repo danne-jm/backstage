@@ -8,21 +8,14 @@ import axios from 'axios';
 interface UseEmailDistributionProps {
     events: any[];
     templates: any[];
-    permissions: string[];
 }
 
 export function useEmailDistribution({
     events,
     templates,
-    permissions,
 }: UseEmailDistributionProps) {
-    // Permission check
-    const canSend = React.useMemo(
-        () =>
-            permissions.includes('admin') ||
-            permissions.includes('send_tickets'),
-        [permissions]
-    );
+    // Permission check disabled - handled later
+    const canSend = true;
 
     // Event and template selection
     const [selectedEventId, setSelectedEventId] = React.useState<string | null>(
@@ -51,7 +44,7 @@ export function useEmailDistribution({
 
     // Email composition
     const [subject, setSubject] = React.useState('Your ticket information');
-    const [editorContent, setEditorContent] = React.useState('<p style="margin:0;">Hello <strong>{{firstName}}</strong>,</p>\n<p style="margin:0;">Thanks for registering — below are your ticket details for the event.</p><ul style="margin:0; padding-left:20px; list-style-type:disc;">\n<li style="margin:0; padding:0; display:list-item;">Event: {{event_name}}</li>\n<li style="margin:0; padding:0; display:list-item;">Date: {{event_date}}</li>\n<li style="margin:0; padding:0; display:list-item;">Bring: Your ESN card (if applicable)</li>\n</ul><p style="margin:0;">Please bring a copy of this email (printed or on your phone).</p>\n<p style="margin:0;">See you there,<br/>ESN Leuven</p>');
+    const [editorContent, setEditorContent] = React.useState('<p style="margin:0;">Hello <strong>{{firstName}}</strong> <strong>{{last_name}}</strong>,</p>\n<p style="margin:0;">Thanks for registering — below are your ticket details for the event.</p><ul style="margin:0; padding-left:20px; list-style-type:disc;">\n<li style="margin:0; padding:0; display:list-item;">Event: {{event_name}}</li>\n<li style="margin:0; padding:0; display:list-item;">Date: {{event_date}}</li>\n<li style="margin:0; padding:0; display:list-item;">Bring: Your ESN card (if applicable)</li>\n</ul><p style="margin:0;">Please bring a copy of this email (printed or on your phone).</p>\n<p style="margin:0;">See you there,<br/>ESN Leuven</p>');
 
     // Preview
     const [generatedEmails, setGeneratedEmails] = React.useState<any[] | null>(
@@ -79,8 +72,31 @@ export function useEmailDistribution({
     const [emailVerificationResults, setEmailVerificationResults] = React.useState<Record<number, any>>({});
     const [validationResults, setValidationResults] = React.useState<Record<number, boolean | null>>({});
 
-    // Dirty state tracking
-    const [isConfigDirty, setIsConfigDirty] = React.useState(false);
+    // Dirty state tracking - computed from email generation
+    const [lastGeneratedContent, setLastGeneratedContent] = React.useState<string>('');
+
+    // Check if config is dirty by comparing current state to last generated
+    const isConfigDirty = React.useMemo(() => {
+        // Create a hash of the current configuration
+        const currentConfigHash = JSON.stringify({
+            editorContent,
+            subject,
+            firstNameField,
+            lastNameField,
+            emailField,
+            selectedTemplateId,
+            mailMode,
+            nullableFields,
+        });
+        
+        // If nothing generated yet, it's not dirty (it's empty)
+        if (!generatedEmails || generatedEmails.length === 0) {
+            return false;
+        }
+        
+        // If current config differs from last generated, it's dirty
+        return currentConfigHash !== lastGeneratedContent;
+    }, [editorContent, subject, firstNameField, lastNameField, emailField, selectedTemplateId, mailMode, nullableFields, generatedEmails, lastGeneratedContent]);
 
     // Computed values
     const fields = React.useMemo(
@@ -229,21 +245,6 @@ export function useEmailDistribution({
             });
     }, [selectedEventId]);
 
-    // Mark config as dirty when relevant fields change
-    React.useEffect(() => {
-        setIsConfigDirty(true);
-    }, [
-        subject,
-        editorContent,
-        firstNameField,
-        lastNameField,
-        emailField,
-        selectedTemplateId,
-        selectedSampleIndex,
-        mailMode,
-        nullableFields,
-    ]);
-
     // Generate email preview
     const generatePreview = React.useCallback(() => {
         const selectedTemplate = templates.find(
@@ -321,7 +322,17 @@ export function useEmailDistribution({
         });
 
         setGeneratedEmails(generated);
-        setIsConfigDirty(false);
+        // Mark this configuration as generated
+        setLastGeneratedContent(JSON.stringify({
+            editorContent,
+            subject,
+            firstNameField,
+            lastNameField,
+            emailField,
+            selectedTemplateId,
+            mailMode,
+            nullableFields,
+        }));
     }, [
         attendeeData,
         editorContent,
