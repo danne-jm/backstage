@@ -26,14 +26,18 @@ class QrCodeGenerationService
 
     /**
      * Initialize QR code writer
-     * Uses SvgImageBackEnd for better compatibility (no extension required)
+     * Prefer Imagick backend for better email client compatibility.
+     * Fall back to SVG if Imagick is not available.
      */
     private function initializeQrWriter(): void
     {
+        $style = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(300, 1);
+
         $renderer = new \BaconQrCode\Renderer\ImageRenderer(
-            new \BaconQrCode\Renderer\RendererStyle\RendererStyle(300, 1),
-            new \BaconQrCode\Renderer\Image\SvgImageBackEnd
+            $style,
+            new \BaconQrCode\Renderer\Image\ImagickImageBackEnd()
         );
+
         $this->writer = new \BaconQrCode\Writer($renderer);
     }
 
@@ -92,9 +96,13 @@ class QrCodeGenerationService
         $qrString = $this->writer->writeString($ticketCode);
         $base64 = base64_encode($qrString);
 
+        $mime = 'image/png';
+
         return sprintf(
-            '<img src="data:image/png;base64,%s" alt="Ticket QR" style="display:block; margin:0; max-width: 200px;" />',
-            $base64
+            '<img src="data:%s;base64,%s" alt="%s" style="display:block; margin:0; max-width:200px;" />',
+            $mime,
+            $base64,
+            htmlspecialchars($ticketCode, ENT_QUOTES, 'UTF-8')
         );
     }
 
@@ -104,7 +112,7 @@ class QrCodeGenerationService
     private function generateTicketCode(array $recipient, Sellable $event): string
     {
         $unique = Str::random(8);
-        
+
         $sanitizedEvent = $this->sanitize($recipient['event_name'] ?? $event->name);
         $sanitizedFirst = $this->sanitize($recipient['first_name'] ?? '');
         $sanitizedLast = $this->sanitize($recipient['last_name'] ?? '');

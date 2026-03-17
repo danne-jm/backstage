@@ -24,6 +24,10 @@ class EmailQueueService
      */
     public function queueEmail(array $recipient, ?User $sender): void
     {
+        if (!$sender || !$sender->gmail_refresh_token) {
+            throw new \RuntimeException('Sender must have a connected Google account to distribute emails.');
+        }
+
         // Store original body before QR embedding
         $originalBody = $recipient['body'] ?? '';
 

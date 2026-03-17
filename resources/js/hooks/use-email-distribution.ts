@@ -44,7 +44,7 @@ export function useEmailDistribution({
 
     // Email composition
     const [subject, setSubject] = React.useState('Your ticket information');
-    const [editorContent, setEditorContent] = React.useState('<p style="margin:0;">Hello <strong>{{firstName}}</strong> <strong>{{last_name}}</strong>,</p>\n<p style="margin:0;">Thanks for registering — below are your ticket details for the event.</p><ul style="margin:0; padding-left:20px; list-style-type:disc;">\n<li style="margin:0; padding:0; display:list-item;">Event: {{event_name}}</li>\n<li style="margin:0; padding:0; display:list-item;">Date: {{event_date}}</li>\n<li style="margin:0; padding:0; display:list-item;">Bring: Your ESN card (if applicable)</li>\n</ul><p style="margin:0;">Please bring a copy of this email (printed or on your phone).</p>\n<p style="margin:0;">See you there,<br/>ESN Leuven</p>');
+    const [editorContent, setEditorContent] = React.useState('<p style="border-color: oklch(0.269 0 0); line-height: 1.4;">Hello <strong style="border-color: oklch(0.269 0 0);">{{firstName}}</strong> <strong style="border-color: oklch(0.269 0 0);">{{last_name}}</strong>,</p><p style="line-height: 1.4;"></p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;"><br></p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;">Thanks for registering — below are your ticket details for the event.</p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;"><br></p><ul style="border-color: oklch(0.269 0 0); padding-left: 20px; list-style-type: disc; line-height: 1.4;"><li style="border-color: oklch(0.269 0 0); line-height: 1.4;">Event: {{event_name}}</li><li style="border-color: oklch(0.269 0 0); line-height: 1.4;">Date: {{event_date}}</li><li style="border-color: oklch(0.269 0 0); line-height: 1.4;">Bring: Your ESN card (if applicable)</li></ul><p style="border-color: oklch(0.269 0 0); line-height: 1.4;"><br></p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;">Please bring a copy of this email (printed or on your phone).</p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;"><br></p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;">See you there,<br style="border-color: oklch(0.269 0 0);">ESN Leuven</p>');
 
     // Preview
     const [generatedEmails, setGeneratedEmails] = React.useState<any[] | null>(
@@ -88,12 +88,12 @@ export function useEmailDistribution({
             mailMode,
             nullableFields,
         });
-        
+
         // If nothing generated yet, it's not dirty (it's empty)
         if (!generatedEmails || generatedEmails.length === 0) {
             return false;
         }
-        
+
         // If current config differs from last generated, it's dirty
         return currentConfigHash !== lastGeneratedContent;
     }, [editorContent, subject, firstNameField, lastNameField, emailField, selectedTemplateId, mailMode, nullableFields, generatedEmails, lastGeneratedContent]);
@@ -123,14 +123,14 @@ export function useEmailDistribution({
     // Auto-insert/remove {{qr}} when switching mail mode
     React.useEffect(() => {
         const qrPlaceholder = '{{qr}}';
-        
+
         if (mailMode === 'qr') {
             // Add QR placeholder if not already present
             setEditorContent((prev) => {
                 if (prev.includes(qrPlaceholder)) return prev;
                 // Append inside a new paragraph
                 if (prev.trim().endsWith('</p>')) {
-                    return prev + `<span style="display:block;margin:0;">${qrPlaceholder}</span>`;
+                    return prev + `<p style="margin:0;">${qrPlaceholder}</p>`;
                 }
                 return prev + `<p style="margin:0;">${qrPlaceholder}</p>`;
             });
@@ -157,7 +157,7 @@ export function useEmailDistribution({
         }
 
         setIsLoadingAttendees(true);
-        
+
         // Fetch both filtered and unfiltered data in parallel
         Promise.all([
             fetch(`/email-distributor/attendees/${selectedEventId}`, {
@@ -227,7 +227,7 @@ export function useEmailDistribution({
                             return obj;
                         })
                     );
-                    
+
                     // Check if filtering is active by comparing counts
                     const filteredCount = filteredData.success && Array.isArray(filteredData.rows) ? filteredData.rows.length - 1 : 0;
                     const unfilteredCount = unfilteredData.rows.length - 1;
@@ -359,13 +359,27 @@ export function useEmailDistribution({
                 recipients: generatedEmails,
             });
 
-            if (response.data.queued) {
-                setSuccessMessage(
-                    `Distribution started! Sent ${response.data.sent_count} emails.`
-                );
-                setGeneratedEmails(null);
-                setDialogOpen(false);
+            const {
+                queued,
+                sent_count,
+                dispatch_errors: dispatchErrors,
+                message,
+            } = response.data;
+
+            if (!queued || (Array.isArray(dispatchErrors) && dispatchErrors.length > 0)) {
+                setDistributionError({
+                    title: 'Distribution Failed',
+                    messages: dispatchErrors?.map((e: any) => `${e.recipient}: ${e.error}`) || [message || 'Unable to start distribution'],
+                });
+                setDialogOpen(true);
+                return;
             }
+
+            setSuccessMessage(
+                `Distribution started! Queued ${sent_count} emails.`
+            );
+            setGeneratedEmails(null);
+            setDialogOpen(false);
         } catch (error: any) {
             let title = 'Distribution Failed';
             let messages: string[] = [];

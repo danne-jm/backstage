@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DistributeEmailsRequest;
 use App\Services\EmailDistributionService;
+use App\Services\GmailSenderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Auth;
 class DistributionController extends Controller
 {
     public function __construct(
-        private readonly EmailDistributionService $distributionService
+        private readonly EmailDistributionService $distributionService,
+        private readonly GmailSenderService $gmailSender
     ) {
     }
 
@@ -25,6 +27,22 @@ class DistributionController extends Controller
     {
         $recipients = $request->validated('recipients');
         $sender = Auth::user();
+
+        if (!$sender || !$sender->gmail_refresh_token) {
+            return response()->json([
+                'message' => 'Connect your Google account to send emails.',
+                'dispatch_errors' => [['recipient' => 'all', 'error' => 'Google account not connected']],
+            ], 422);
+        }
+
+        // Preflight: validate refresh token so we fail fast instead of queueing doomed jobs
+        if (!$this->gmailSender->canSend($sender)) {
+            $error = method_exists($this->gmailSender, 'getLastError') ? $this->gmailSender->getLastError() : null;
+            return response()->json([
+                'message' => $error ?? 'Google token invalid or expired. Please reconnect your Google account in Settings.',
+                'dispatch_errors' => [['recipient' => 'all', 'error' => $error ?? 'Google token invalid or expired']],
+            ], 422);
+        }
 
         $result = $this->distributionService->processDistribution(
             $recipients,

@@ -38,7 +38,21 @@ export function RichTextEditor({
     const handleInput = () => {
         isInternalChange.current = true;
         if (editorRef.current) {
-            onChange(editorRef.current.innerHTML);
+            // Get the raw HTML and clean it
+            let html = editorRef.current.innerHTML;
+
+            // Ensure all p, li, ul, ol tags have proper inline styles if they don't already
+            html = html.replace(/<p(?![^>]*style=)([^>]*)>/gi, '<p style="margin:0; padding:0; line-height:1.4;"$1>');
+            html = html.replace(/<li(?![^>]*style=)([^>]*)>/gi, '<li style="margin:0; padding:0; display:list-item; line-height:1.4;"$1>');
+            html = html.replace(/<ul(?![^>]*style=)([^>]*)>/gi, '<ul style="margin:0; padding-left:20px; list-style-type:disc; line-height:1.4;"$1>');
+            html = html.replace(/<ol(?![^>]*style=)([^>]*)>/gi, '<ol style="margin:0; padding-left:20px; list-style-type:decimal; line-height:1.4;"$1>');
+
+            // Mark empty paragraphs with a special inline style so backend can detect them
+            // Replace <p><br></p> with <p class="email-spacing"><br></p>
+            html = html.replace(/<p([^>]*style="[^"]*")><br\s*\/?><\/p>/gi, '<p$1 data-spacing="true"><br></p>');
+            html = html.replace(/<p(?![^>]*data-spacing)><br\s*\/?><\/p>/gi, '<p data-spacing="true"><br></p>');
+
+            onChange(html);
         }
     };
 
@@ -46,6 +60,10 @@ export function RichTextEditor({
         editorRef.current?.focus();
         document.execCommand(cmd, false, arg);
         handleInput();
+    };
+
+    const handleFocus = () => {
+        document.execCommand('defaultParagraphSeparator', false, 'p');
     };
 
     const toolbarActions = (
@@ -105,18 +123,19 @@ export function RichTextEditor({
     return (
         <div className={cn('space-y-2', className)}>
             {label && <Label>{label}</Label>}
-            
+
             {toolbar && <div className="flex items-center justify-between">
                 {toolbarActions}
                 {toolbar}
             </div>}
-            
+
             {!toolbar && toolbarActions}
 
             <div
                 ref={editorRef}
                 contentEditable
                 onInput={handleInput}
+                onFocus={handleFocus}
                 className="min-h-[200px] rounded-md border border-input bg-background p-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 style={{
                     whiteSpace: 'pre-wrap',

@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Mail\DistributionMail;
 use App\Models\Mail as MailModel;
 use App\Models\User;
 use App\Services\GmailSenderService;
@@ -12,15 +11,10 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Job for sending distribution emails
- * Processes queued emails and handles Gmail API with SMTP fallback
- * 
- * Priority order:
- * 1. Gmail API (if user has OAuth token)
- * 2. SMTP fallback (configured mail driver)
+ * Processes queued emails and sends via Gmail API using user OAuth
  */
 class SendDistributionEmail implements ShouldQueue
 {
@@ -67,22 +61,16 @@ class SendDistributionEmail implements ShouldQueue
                 'has_sender_id' => isset($this->recipient['sender_id']),
             ]);
 
-            // Attempt Gmail API send if sender has token
-            if ($this->tryGmailSend($to, $subject, $body, $gmailSender)) {
-                if ($mailLog) {
-                    $mailLog->update(['success' => true]);
-                }
-                return;
+            // Attempt Gmail API send; fail if it cannot be sent
+            if (!$this->tryGmailSend($to, $subject, $body, $gmailSender)) {
+                throw new \RuntimeException('Gmail send failed or Google account not connected.');
             }
 
-            // Fallback to SMTP
-            $this->sendViaSmtp($to, $subject, $body);
-            
             if ($mailLog) {
                 $mailLog->update(['success' => true]);
             }
 
-            Log::info('SendDistributionEmail: Email sent successfully', ['to' => $to]);
+            Log::info('SendDistributionEmail: Email sent successfully via Gmail', ['to' => $to]);
 
         } catch (\Throwable $e) {
             if ($mailLog) {
@@ -110,15 +98,13 @@ class SendDistributionEmail implements ShouldQueue
         $senderId = $this->recipient['sender_id'] ?? null;
         
         if (!$senderId) {
-            Log::info('SendDistributionEmail: No sender_id, skipping Gmail API');
-            return false;
+            throw new \RuntimeException('No sender_id provided for Gmail send.');
         }
 
         $user = User::find($senderId);
         
         if (!$user || empty($user->gmail_refresh_token)) {
-            Log::info('SendDistributionEmail: User has no Gmail token, skipping Gmail API');
-            return false;
+            throw new \RuntimeException('User has no connected Google account.');
         }
 
         try {
@@ -131,12 +117,4 @@ class SendDistributionEmail implements ShouldQueue
         }
     }
 
-    /**
-     * Send email via SMTP
-     */
-    private function sendViaSmtp(string $to, string $subject, string $body): void
-    {
-        Log::info('SendDistributionEmail: Sending via SMTP', ['to' => $to]);
-        Mail::to($to)->send(new DistributionMail($subject, $body));
-    }
 }
