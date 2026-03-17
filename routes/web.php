@@ -75,7 +75,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 #Ticket Scanner
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('ticket-scanner', 'ticket-scanner')->name('ticket-scanner');
+    Route::get('ticket-scanner', [App\Http\Controllers\TicketScannerController::class, 'index'])->name('ticket-scanner');
+    Route::post('ticket-scanner/import', [App\Http\Controllers\TicketScannerController::class, 'import'])->name('ticket-scanner.import');
+    Route::post('ticket-scanner/verify', [App\Http\Controllers\TicketScannerController::class, 'verify'])->name('ticket-scanner.verify');
+    Route::get('ticket-scanner/available-tickets', [App\Http\Controllers\TicketScannerController::class, 'availableTickets'])->name('ticket-scanner.available-tickets');
+    Route::get('ticket-scanner/scanned-tickets', [App\Http\Controllers\TicketScannerController::class, 'scannedTickets'])->name('ticket-scanner.scanned-tickets');
 });
 
 #Email Distributor
