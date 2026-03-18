@@ -537,11 +537,17 @@ export default function TicketScanner() {
                                     onChange={(e) =>
                                         setSelectedEvent(e.target.value || null)
                                     }
-                                    className="w-full rounded-md border p-2 bg-background"
+                                    className="w-full rounded-md border p-2 bg-background text-foreground"
                                 >
-                                    <option value="">-- select event --</option>
+                                    <option value="" className="bg-white text-black">
+                                        -- select event --
+                                    </option>
                                     {filteredEvents.map((ev) => (
-                                        <option key={ev.id} value={ev.id}>
+                                        <option
+                                            key={ev.id}
+                                            value={ev.id}
+                                            className="bg-white text-black"
+                                        >
                                             {ev.name}{' '}
                                             {ev.event_date
                                                 ? `(${String(ev.event_date).slice(0, 10)})`
@@ -634,7 +640,7 @@ export default function TicketScanner() {
                             />
                             {!scanning && (
                                 <div
-                                    className="mt-2 flex flex-1 flex-col items-center justify-center gap-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+                                    className="mt-2 flex flex-1 flex-col items-center justify-center gap-3 rounded-xl bg-gray-100"
                                     style={{ minHeight: 160 }}
                                 >
                                     <p className="text-center text-lg text-gray-500">

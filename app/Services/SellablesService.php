@@ -63,6 +63,7 @@ class SellablesService
         foreach ($variantsInput as $variantData) {
             $options = $variantData['options'];
             $quantity = isset($variantData['quantity']) && $variantData['quantity'] !== '' ? (int) $variantData['quantity'] : null;
+            $remainingQuantity = isset($variantData['remaining_quantity']) && $variantData['remaining_quantity'] !== '' ? (int) $variantData['remaining_quantity'] : null;
 
             $match = $existing->first(function ($v) use ($options) {
                 $opt1 = $v->options;
@@ -74,9 +75,15 @@ class SellablesService
             });
 
             if ($match) {
+                if ($remainingQuantity !== null) {
+                    $quantity = $remainingQuantity + ($match->sold_count ?? 0);
+                }
                 $match->update(['quantity' => $quantity]);
                 $processedIds[] = $match->id;
             } else {
+                if ($remainingQuantity !== null) {
+                    $quantity = $remainingQuantity;
+                }
                 $created = $sellable->variants()->create([
                     'options' => $options,
                     'quantity' => $quantity,

@@ -537,14 +537,17 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                                 );
                                 if (item) setSaleItemType(item.type);
                             }}
-                            className="w-full rounded-md border border-input bg-background bg-transparent p-2 text-sm"
+                            className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
                             disabled={activeShift?.status !== 'open'}
                         >
-                            <option value="">Select item...</option>
+                            <option value="" className="bg-white text-black">
+                                Select item...
+                            </option>
                             {activeSellables.map((item: any) => (
                                 <option
                                     key={item.unique_id}
                                     value={item.unique_id}
+                                    className="bg-white text-black"
                                 >
                                     {item.name} ({getQuantityLabel(item)})
                                     {getDropdownPriceLabel(item)}
@@ -640,14 +643,17 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                             onChange={(e) =>
                                 setCustomSaleItemId(e.target.value)
                             }
-                            className="w-full rounded-md border border-input bg-background bg-transparent p-2 text-sm"
+                            className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
                             disabled={activeShift?.status !== 'open'}
                         >
-                            <option value="custom">Custom</option>
+                            <option value="custom" className="bg-white text-black">
+                                Custom
+                            </option>
                             {activeSellables.map((item: any) => (
                                 <option
                                     key={item.unique_id}
                                     value={item.unique_id}
+                                    className="bg-white text-black"
                                 >
                                     {item.name}
                                 </option>

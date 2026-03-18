@@ -132,7 +132,7 @@ class SellablesController extends Controller
         }
     }
 
-    protected function validateAndNormalizeProduct(Request $request)
+    protected function validateAndNormalizeProduct(Request $request, ?Product $product = null)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -140,16 +140,70 @@ class SellablesController extends Controller
             'variants_config' => ['nullable'],
             'price' => ['required', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'integer', 'min:0'],
+            'remaining_quantity' => ['nullable', 'integer', 'min:0'],
             'unlimited_quantity' => ['sometimes', 'boolean'],
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
+            'remaining_quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
+            'remaining_quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'is_online_sellable' => ['sometimes', 'boolean'],
             'is_variant_based' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
+            'variants_stock' => ['nullable', 'array'],
+            'variants_stock.*.remaining_quantity' => ['nullable', 'integer', 'min:0'],
         ]);
 
+        // Convert remaining quantities to total quantities if present
+        if ($product) {
+            // Main quantity
+            if (isset($validated['remaining_quantity']) && $validated['remaining_quantity'] !== null) {
+                // For Product, we use sold_count column or sales relation. Column is safer if maintained.
+                // Assuming column is maintained. If not, use relation count.
+                // Migration showed sold_count column.
+                $sold = $product->sold_count; 
+                $validated['quantity'] = $validated['remaining_quantity'] + $sold;
+                unset($validated['remaining_quantity']);
+            }
+            
+            // Variable amount quantities
+            if (isset($validated['remaining_quantity_with_card']) && $validated['remaining_quantity_with_card'] !== null) {
+                // Product doesn't have sold_count_with_card column in migration?
+                // Migration only showed sold_count.
+                // So for products variable pricing, we might need relation count filtered by type.
+                // Or maybe Product doesn't support variable pricing properly in backend model?
+                // Product table DOES have quantity_with_card, quantity_without_card columns.
+                // BUT NO sold_count_with_card.
+                // So we must count via relations.
+                $soldWithCard = $product->sales()->where('snapshot->ticket_type', 'with_card')->count() 
+                              + $product->onlineSales()->where('details->ticket_type', 'with_card')->count();
+                $validated['quantity_with_card'] = $validated['remaining_quantity_with_card'] + $soldWithCard;
+                 unset($validated['remaining_quantity_with_card']);
+            }
+
+            if (isset($validated['remaining_quantity_without_card']) && $validated['remaining_quantity_without_card'] !== null) {
+                $soldWithoutCard = $product->sales()->where('snapshot->ticket_type', 'without_card')->count() 
+                                 + $product->onlineSales()->where('details->ticket_type', 'without_card')->count();
+                 $validated['quantity_without_card'] = $validated['remaining_quantity_without_card'] + $soldWithoutCard;
+                 unset($validated['remaining_quantity_without_card']);
+            }
+        } elseif (isset($validated['remaining_quantity']) || isset($validated['remaining_quantity_with_card']) || isset($validated['remaining_quantity_without_card'])) {
+            // Creation mode: Remaining = Total (Sold = 0)
+             if (isset($validated['remaining_quantity'])) {
+                 $validated['quantity'] = $validated['remaining_quantity'];
+                 unset($validated['remaining_quantity']);
+             }
+             if (isset($validated['remaining_quantity_with_card'])) {
+                 $validated['quantity_with_card'] = $validated['remaining_quantity_with_card'];
+                 unset($validated['remaining_quantity_with_card']);
+             }
+            if (isset($validated['remaining_quantity_without_card'])) {
+                 $validated['quantity_without_card'] = $validated['remaining_quantity_without_card'];
+                 unset($validated['remaining_quantity_without_card']);
+             }
+        }
+        
         if (array_key_exists('variants_config', $validated)) {
             if (empty($validated['variants_config']) || $validated['variants_config'] === '') {
                 $validated['variants_config'] = null;
@@ -161,7 +215,7 @@ class SellablesController extends Controller
         return $this->inventoryService->normalizeInput($validated);
     }
 
-    protected function validateAndNormalizeEvent(Request $request)
+    protected function validateAndNormalizeEvent(Request $request, ?Event $event = null)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -173,18 +227,60 @@ class SellablesController extends Controller
             'price_with_card' => ['required', 'numeric', 'min:0'],
             'price_without_card' => ['required', 'numeric', 'min:0'],
             'quantity' => ['nullable', 'integer', 'min:0'],
+            'remaining_quantity' => ['nullable', 'integer', 'min:0'],
             'unlimited_quantity' => ['sometimes', 'boolean'],
             'responsible_user_id' => ['nullable', 'exists:users,id'],
             'notes' => ['nullable', 'string'],
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],
+            'remaining_quantity_with_card' => ['nullable', 'integer', 'min:0'],
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
+            'remaining_quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
             'is_online_sellable' => ['sometimes', 'boolean'],
             'is_variant_based' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
+            'variants_stock' => ['nullable', 'array'],
+            'variants_stock.*.remaining_quantity' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        if ($event) {
+            // Main quantity (Simple)
+            if (isset($validated['remaining_quantity']) && $validated['remaining_quantity'] !== null) {
+                // Event simple sales calculation
+                $sold = $event->sales()->count() + $event->onlineSales()->count(); 
+                $validated['quantity'] = $validated['remaining_quantity'] + $sold;
+                unset($validated['remaining_quantity']);
+            }
+            
+            // Variable quantities
+            if (isset($validated['remaining_quantity_with_card']) && $validated['remaining_quantity_with_card'] !== null) {
+                $soldWithCard = $event->sold_count_with_card;
+                $validated['quantity_with_card'] = $validated['remaining_quantity_with_card'] + $soldWithCard;
+                unset($validated['remaining_quantity_with_card']);
+            }
+
+            if (isset($validated['remaining_quantity_without_card']) && $validated['remaining_quantity_without_card'] !== null) {
+                $soldWithoutCard = $event->sold_count_without_card;
+                $validated['quantity_without_card'] = $validated['remaining_quantity_without_card'] + $soldWithoutCard;
+                unset($validated['remaining_quantity_without_card']);
+            }
+        } elseif (isset($validated['remaining_quantity']) || isset($validated['remaining_quantity_with_card']) || isset($validated['remaining_quantity_without_card'])) {
+            // New Event: Remaining = Total
+             if (isset($validated['remaining_quantity'])) {
+                 $validated['quantity'] = $validated['remaining_quantity'];
+                 unset($validated['remaining_quantity']);
+             }
+             if (isset($validated['remaining_quantity_with_card'])) {
+                 $validated['quantity_with_card'] = $validated['remaining_quantity_with_card'];
+                 unset($validated['remaining_quantity_with_card']);
+             }
+             if (isset($validated['remaining_quantity_without_card'])) {
+                 $validated['quantity_without_card'] = $validated['remaining_quantity_without_card'];
+                 unset($validated['remaining_quantity_without_card']);
+             }
+        }
 
         if (array_key_exists('variants_config', $validated)) {
             if (empty($validated['variants_config']) || $validated['variants_config'] === '') {
@@ -224,7 +320,7 @@ class SellablesController extends Controller
 
     public function updateProduct(Request $request, Product $product)
     {
-        $normalized = $this->validateAndNormalizeProduct($request);
+        $normalized = $this->validateAndNormalizeProduct($request, $product);
 
         $isVariantBased = $request->input('is_variant_based', false);
         if ($isVariantBased === false && array_key_exists('variants_config', $normalized)) {
@@ -278,7 +374,7 @@ class SellablesController extends Controller
 
     public function updateEvent(Request $request, Event $event)
     {
-        $normalized = $this->validateAndNormalizeEvent($request);
+        $normalized = $this->validateAndNormalizeEvent($request, $event);
 
         $isVariantBased = $request->input('is_variant_based', false);
         if ($isVariantBased === false && array_key_exists('variants_config', $normalized)) {

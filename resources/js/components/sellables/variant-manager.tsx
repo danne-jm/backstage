@@ -112,7 +112,7 @@ export function VariantManager({
         if (val === '') {
             newVariants[index].quantity = null;
         } else {
-            newVariants[index].quantity = parseInt(val) || 0;
+            newVariants[index].quantity = Math.max(0, parseInt(val, 10));
         }
         setVariants(newVariants);
         onChange(config, newVariants);
@@ -264,6 +264,7 @@ export function VariantManager({
                                         <TableCell>
                                             <Input
                                                 type="number"
+                                                min="0"
                                                 className="w-32"
                                                 placeholder="Unlimited"
                                                 value={

@@ -95,7 +95,7 @@ export function EventDialog({
             setQuantity(
                 editingEvent.unlimited_quantity
                     ? ''
-                    : editingEvent.quantity?.toString() || '',
+                    : editingEvent.remaining?.toString() || '',
             );
             setResponsibleUserId(
                 editingEvent.responsible_user_id
@@ -107,12 +107,12 @@ export function EventDialog({
             setQuantityWithCard(
                 editingEvent.unlimited_quantity_with_card
                     ? ''
-                    : editingEvent.quantity_with_card?.toString() || '',
+                    : editingEvent.remaining_with_card?.toString() || '',
             );
             setQuantityWithoutCard(
                 editingEvent.unlimited_quantity_without_card
                     ? ''
-                    : editingEvent.quantity_without_card?.toString() || '',
+                    : editingEvent.remaining_without_card?.toString() || '',
             );
             setGoogleSpreadsheetId(editingEvent.google_spreadsheet_id || '');
             setIsOnlineSellable(editingEvent.is_online_sellable);
@@ -121,7 +121,16 @@ export function EventDialog({
             setImagesToDelete([]);
             setInstagramLink(editingEvent.instagram_link || '');
             setVariantsConfig(editingEvent.variants_config || []);
-            setVariants(editingEvent.variants || []);
+            setVariants(
+                (editingEvent.variants || []).map((v) => ({
+                    ...v,
+                    // If quantity is limited, calculate remaining
+                    quantity:
+                        v.quantity !== null
+                            ? v.quantity - (v.sold_count || 0)
+                            : null,
+                })),
+            );
             setStockMode(
                 (editingEvent.variants_config || []).length > 0
                     ? 'variants'
@@ -212,7 +221,9 @@ export function EventDialog({
         formData.append('price_without_card', priceWithoutCard.toString());
 
         if (stockMode === 'simple' && !variableAmount) {
-            if (quantity) formData.append('quantity', quantity.toString());
+            if (quantity) {
+                formData.append('remaining_quantity', quantity);
+            }
             formData.append(
                 'unlimited_quantity',
                 (!quantity).toString() ? '1' : '0',
@@ -230,15 +241,23 @@ export function EventDialog({
         formData.append('variable_amount', variableAmount ? '1' : '0');
 
         if (stockMode === 'simple' && variableAmount) {
-            if (quantityWithCard)
-                formData.append('quantity_with_card', quantityWithCard);
+            if (quantityWithCard) {
+                formData.append(
+                    'remaining_quantity_with_card',
+                    quantityWithCard,
+                );
+            }
             formData.append(
                 'unlimited_quantity_with_card',
                 !quantityWithCard ? '1' : '0',
             );
 
-            if (quantityWithoutCard)
-                formData.append('quantity_without_card', quantityWithoutCard);
+            if (quantityWithoutCard) {
+                formData.append(
+                    'remaining_quantity_without_card',
+                    quantityWithoutCard,
+                );
+            }
             formData.append(
                 'unlimited_quantity_without_card',
                 !quantityWithoutCard ? '1' : '0',
@@ -291,11 +310,14 @@ export function EventDialog({
                 );
                 if (variant.quantity !== null) {
                     formData.append(
-                        `variants_stock[${idx}][quantity]`,
+                        `variants_stock[${idx}][remaining_quantity]`,
                         variant.quantity.toString(),
                     );
                 } else {
-                    formData.append(`variants_stock[${idx}][quantity]`, '');
+                    formData.append(
+                        `variants_stock[${idx}][remaining_quantity]`,
+                        '',
+                    );
                 }
             });
         } else {
@@ -592,6 +614,7 @@ export function EventDialog({
                                                 <Input
                                                     id="quantity-with-card"
                                                     type="number"
+                                                    min="0"
                                                     value={quantityWithCard}
                                                     onChange={(e) =>
                                                         setQuantityWithCard(
@@ -611,6 +634,7 @@ export function EventDialog({
                                                 <Input
                                                     id="quantity-without-card"
                                                     type="number"
+                                                    min="0"
                                                     value={quantityWithoutCard}
                                                     onChange={(e) =>
                                                         setQuantityWithoutCard(
@@ -632,6 +656,7 @@ export function EventDialog({
                                             <Input
                                                 id="quantity"
                                                 type="number"
+                                                min="0"
                                                 value={quantity}
                                                 onChange={(e) =>
                                                     setQuantity(e.target.value)

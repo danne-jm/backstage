@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { OfficeCard } from './office-card';
+import * as React from 'react';
 
 interface SellablesListProps {
     sellables: any[];
@@ -8,6 +9,34 @@ interface SellablesListProps {
 }
 
 export function SellablesList({ sellables, className }: SellablesListProps) {
+    const sortedSellables = React.useMemo(() => {
+        return [...sellables].sort((a, b) => {
+            const now = new Date().getTime();
+            
+            // Helper to determine if an item has started selling
+            const hasStarted = (item: any) => {
+                // Products (no type or type='product') are usually always available unless logic says otherwise.
+                // Events have start_sell_date.
+                if (item.type === 'event') {
+                    if (!item.start_sell_date) return true; // No start date = started?
+                    const start = new Date(item.start_sell_date).getTime();
+                    return start <= now;
+                }
+                // For products, assume started/available
+                return true;
+            };
+
+            const startedA = hasStarted(a);
+            const startedB = hasStarted(b);
+
+            if (startedA && !startedB) return -1;
+            if (!startedA && startedB) return 1;
+            
+            // Maintain order or sort by name/date as secondary?
+            return 0; // Stable sort preference
+        });
+    }, [sellables]);
+
     const daysRemaining = (iso?: string | null) => {
         if (!iso) return 0;
         const d = new Date(iso);
@@ -53,8 +82,8 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
             }
         >
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-                {sellables.length > 0 ? (
-                    sellables.map((item: any) => (
+                {sortedSellables.length > 0 ? (
+                    sortedSellables.map((item: any) => (
                         <div
                             key={item.unique_id}
                             className="flex items-center justify-between rounded-md bg-muted/40 p-2"

@@ -30,18 +30,24 @@ export function EventSelector({
                 id="event-select"
                 value={selectedEventId || ''}
                 onChange={(e) => onChange(e.target.value || null)}
-                className="w-full rounded-md border p-2"
+                className="w-full rounded-md border p-2 bg-background text-foreground"
             >
-                <option value="">-- Select event --</option>
+                <option value="" className="bg-white text-black">
+                    -- Select event --
+                </option>
                 {events.length === 0 ? (
-                    <option value="" disabled>
+                    <option value="" disabled className="bg-white text-black">
                         No upcoming events
                     </option>
                 ) : (
                     events.map((event) => {
                         const date = event.start_date || event.event_date;
                         return (
-                            <option key={event.id} value={event.id}>
+                            <option
+                                key={event.id}
+                                value={event.id}
+                                className="bg-white text-black"
+                            >
                                 {event.name}
                                 {date && ` (${String(date).slice(0, 10)})`}
                             </option>

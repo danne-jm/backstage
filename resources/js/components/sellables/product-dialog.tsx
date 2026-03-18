@@ -76,18 +76,18 @@ export function ProductDialog({
             setProductQuantity(
                 editingProduct.unlimited_quantity
                     ? ''
-                    : editingProduct.quantity?.toString() || '',
+                    : editingProduct.remaining.toString() || '',
             );
             setProductVariableAmount(Boolean(editingProduct.variable_amount));
             setProductQuantityWithCard(
                 editingProduct.unlimited_quantity_with_card
                     ? ''
-                    : editingProduct.quantity_with_card?.toString() || '',
+                    : editingProduct.remaining_with_card?.toString() || '',
             );
             setProductQuantityWithoutCard(
                 editingProduct.unlimited_quantity_without_card
                     ? ''
-                    : editingProduct.quantity_without_card?.toString() || '',
+                    : editingProduct.remaining_without_card?.toString() || '',
             );
             setIsOnlineSellable(editingProduct.is_online_sellable);
             setImagesList(editingProduct.images_list || []);
@@ -95,7 +95,15 @@ export function ProductDialog({
             setImagesToDelete([]);
             setInstagramLink(editingProduct.instagram_link || '');
             setVariantsConfig(editingProduct.variants_config || []);
-            setVariants(editingProduct.variants || []);
+            setVariants(
+                (editingProduct.variants || []).map((v) => ({
+                    ...v,
+                    quantity:
+                        v.quantity !== null
+                            ? Math.max(0, v.quantity - (v.sold_count || 0))
+                            : null,
+                })),
+            );
             setStockMode(
                 (editingProduct.variants_config || []).length > 0
                     ? 'variants'
@@ -177,25 +185,32 @@ export function ProductDialog({
         formData.append('variable_amount', productVariableAmount ? '1' : '0');
 
         if (stockMode === 'simple' && !productVariableAmount) {
-            if (productQuantity) formData.append('quantity', productQuantity);
+            if (productQuantity) {
+                formData.append('remaining_quantity', productQuantity);
+            }
             formData.append('unlimited_quantity', !productQuantity ? '1' : '0');
         } else {
             formData.append('unlimited_quantity', '0');
         }
 
         if (stockMode === 'simple' && productVariableAmount) {
-            if (productQuantityWithCard)
-                formData.append('quantity_with_card', productQuantityWithCard);
+            if (productQuantityWithCard) {
+                formData.append(
+                    'remaining_quantity_with_card',
+                    productQuantityWithCard,
+                );
+            }
             formData.append(
                 'unlimited_quantity_with_card',
                 !productQuantityWithCard ? '1' : '0',
             );
 
-            if (productQuantityWithoutCard)
+            if (productQuantityWithoutCard) {
                 formData.append(
-                    'quantity_without_card',
+                    'remaining_quantity_without_card',
                     productQuantityWithoutCard,
                 );
+            }
             formData.append(
                 'unlimited_quantity_without_card',
                 !productQuantityWithoutCard ? '1' : '0',
@@ -250,11 +265,14 @@ export function ProductDialog({
                 // Append quantity
                 if (variant.quantity !== null) {
                     formData.append(
-                        `variants_stock[${idx}][quantity]`,
+                        `variants_stock[${idx}][remaining_quantity]`,
                         variant.quantity.toString(),
                     );
                 } else {
-                    formData.append(`variants_stock[${idx}][quantity]`, ''); // Empty string for unlimited/null
+                    formData.append(
+                        `variants_stock[${idx}][remaining_quantity]`,
+                        '',
+                    );
                 }
             });
         } else {
@@ -428,6 +446,7 @@ export function ProductDialog({
                                                 <Input
                                                     id="product-quantity-with-card"
                                                     type="number"
+                                                    min="0"
                                                     value={
                                                         productQuantityWithCard
                                                     }
@@ -449,6 +468,7 @@ export function ProductDialog({
                                                 <Input
                                                     id="product-quantity-without-card"
                                                     type="number"
+                                                    min="0"
                                                     value={
                                                         productQuantityWithoutCard
                                                     }
@@ -472,6 +492,7 @@ export function ProductDialog({
                                             <Input
                                                 id="product-quantity"
                                                 type="number"
+                                                min="0"
                                                 value={productQuantity}
                                                 onChange={(e) =>
                                                     setProductQuantity(

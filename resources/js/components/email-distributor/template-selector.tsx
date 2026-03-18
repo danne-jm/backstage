@@ -26,15 +26,21 @@ export function TemplateSelector({
                 Email Template:
             </span>
             <select
-                className="h-8 w-[160px] rounded border text-xs"
+                className="h-8 w-[160px] rounded border text-xs bg-background text-foreground"
                 value={selectedId}
                 onChange={(e) =>
                     onChange(e.target.value === 'none' ? 'none' : e.target.value)
                 }
             >
-                <option value="none">No Template</option>
+                <option value="none" className="bg-white text-black">
+                    No Template
+                </option>
                 {templates.map((template) => (
-                    <option key={template.id} value={template.id}>
+                    <option
+                        key={template.id}
+                        value={template.id}
+                        className="bg-white text-black"
+                    >
                         {template.name}
                     </option>
                 ))}

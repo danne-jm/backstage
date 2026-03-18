@@ -34,11 +34,17 @@ export function BaseFieldMapper({
                 id={`field-${label}`}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="mt-1 w-full rounded-md border p-2"
+                className="mt-1 w-full rounded-md border p-2 bg-background text-foreground"
             >
-                <option value="">{placeholder}</option>
+                <option value="" className="bg-white text-black">
+                    {placeholder}
+                </option>
                 {options.map((option) => (
-                    <option key={option} value={option}>
+                    <option
+                        key={option}
+                        value={option}
+                        className="bg-white text-black"
+                    >
                         {option}
                     </option>
                 ))}

@@ -160,18 +160,18 @@ export default function EmailDistributor() {
                                 <Label htmlFor="sample-user-select">Sample User</Label>
                                 <select
                                     id="sample-user-select"
-                                    className="h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                                    className="h-9 rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                                     value={selectedSampleIndex ?? 0}
                                     onChange={(e) => setSelectedSampleIndex(Number(e.target.value))}
                                     disabled={!attendeeData || attendeeData.length === 0}
                                 >
                                     {!hasSpreadsheetConfigured ? (
-                                        <option value={0}>No spreadsheet linked</option>
+                                        <option value={0} className="bg-white text-black">No spreadsheet linked</option>
                                     ) : !attendeeData || attendeeData.length === 0 ? (
-                                        <option value={0}>No attendees found</option>
+                                        <option value={0} className="bg-white text-black">No attendees found</option>
                                     ) : (
                                         attendeeData.map((attendee, idx) => (
-                                            <option key={idx} value={idx}>
+                                            <option key={idx} value={idx} className="bg-white text-black">
                                                 {getAttendeeName(attendee) || `User ${idx + 1}`}
                                             </option>
                                         ))
