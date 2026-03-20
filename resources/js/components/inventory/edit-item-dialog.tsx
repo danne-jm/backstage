@@ -63,6 +63,7 @@ export function EditItemDialog({
 
         form.post(`/inventory/items/${item.id}`, {
             preserveScroll: true,
+            forceFormData: true,
             onSuccess: () => {
                 onOpenChange(false);
                 form.reset();

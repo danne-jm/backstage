@@ -76,7 +76,7 @@ export function ProductDialog({
             setProductQuantity(
                 editingProduct.unlimited_quantity
                     ? ''
-                    : editingProduct.remaining.toString() || '',
+                    : editingProduct.remaining?.toString() || '',
             );
             setProductVariableAmount(Boolean(editingProduct.variable_amount));
             setProductQuantityWithCard(

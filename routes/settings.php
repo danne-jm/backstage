@@ -28,9 +28,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
         ->name('two-factor.show');
 
-    Route::get('settings/users', [UsersController::class, 'index'])
-        ->middleware('password.confirm')
-        ->name('settings.users');
+    Route::resource('settings/users', UsersController::class)->except(['create', 'edit', 'show']);
+
     Route::inertia('settings/google', 'settings/google')->name('settings.google');
     Route::get('settings/footer', [FooterController::class, 'edit'])->name('settings.footer');
     Route::patch('settings/footer', [FooterController::class, 'update'])->name('settings.footer.update');

@@ -49,10 +49,9 @@ const sidebarNavItems: NavItem[] = [
     },
 ];
 
-export default function SettingsLayout({ children }: PropsWithChildren) {
+export default function SettingsLayout({ children, wide = false }: PropsWithChildren<{ wide?: boolean }>) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
 
-    // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
         return null;
     }
@@ -93,8 +92,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
                 <Separator className="my-6 lg:hidden" />
 
-                <div className="flex-1 md:max-w-2xl">
-                    <section className="max-w-xl space-y-12">
+                <div className={cn("flex-1", !wide && "md:max-w-2xl")}>
+                    <section className={cn("space-y-12", !wide && "max-w-xl")}>
                         {children}
                     </section>
                 </div>

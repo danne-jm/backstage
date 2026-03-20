@@ -100,7 +100,7 @@ export function AttendeeDetailsDialog({
                                     onOpenChange={setIsOpen}
                                     className="space-y-2"
                                 >
-                                    <div className="flex items-center justify-between space-x-4 px-1">
+                                    <div className="flex items-center justify-between space-x-4 px-1 pb-2 pt-3 border-t">
                                         <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                             All Tickets Under This Email ({allTickets.length})
                                         </h4>
@@ -121,7 +121,7 @@ export function AttendeeDetailsDialog({
                                             </Button>
                                         </CollapsibleTrigger>
                                     </div>
-                                    <CollapsibleContent className="space-y-2">
+                                    <CollapsibleContent className="max-h-[300px] divide-y overflow-y-auto rounded border bg-background">
                                         {allTickets.map((t, idx) => (
                                             <TicketItem
                                                 key={
@@ -139,11 +139,13 @@ export function AttendeeDetailsDialog({
                                     <h4 className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                         Ticket Details
                                     </h4>
-                                    <TicketItem
-                                        t={allTickets[0]}
-                                        onVerify={onVerify}
-                                        isCurrent={false} // single ticket, no highlighting needed? or distinct?
-                                    />
+                                    <div className="max-h-[300px] divide-y overflow-y-auto rounded border bg-background">
+                                        <TicketItem
+                                            t={allTickets[0]}
+                                            onVerify={onVerify}
+                                            isCurrent={false}
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -174,25 +176,28 @@ function TicketItem({
             {isCurrent && (
                 <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-md bg-primary"></div>
             )}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between px-1">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-1">
                 <div>
-                    <div className="text-sm font-medium break-all flex items-center gap-2">
-                        {(() => {
-                            const code = t.ticket_code ?? '';
-                            const parts = code.split('_to_');
-                            if (parts.length > 1) {
-                                return '...' + parts.slice(1).join('_to_');
-                            }
-                            return code;
-                        })()}
+                    <div className="text-sm font-medium flex items-center gap-2">
+                        {t.first_name} {t.last_name}
                         {isCurrent && (
                             <span className="text-xs font-bold text-primary">
                                 (Current)
                             </span>
                         )}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                        {t.event_name}
+                    <div className="text-xs break-all text-muted-foreground">
+                        {(() => {
+                            const code = t.ticket_code ?? t.ticket_id ?? '';
+                            const parts = code.split('_to_');
+                            if (parts.length > 1) {
+                                return '...' + parts.slice(1).join('_to_');
+                            }
+                            return code.replace(/_[0-9]{6,}_/, '_…_');
+                        })()}
+                    </div>
+                    <div className="text-xs break-all text-muted-foreground">
+                        {t.email}
                     </div>
                 </div>
                 <div className="text-left sm:text-right">
@@ -203,6 +208,7 @@ function TicketItem({
                             ? `Scanned x${t.scan_count}`
                             : 'Not Scanned'}
                     </div>
+                    {/* Manual Check-in Button Commented Out As Requested
                     {onVerify && !t.scan_count && (
                         <Button
                             size="sm"
@@ -216,6 +222,7 @@ function TicketItem({
                             Manual Check-in
                         </Button>
                     )}
+                    */}
                     {t.scanned_at && (
                         <div className="text-[10px] text-muted-foreground">
                             Latest: {new Date(t.scanned_at).toLocaleString()}

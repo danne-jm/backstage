@@ -653,6 +653,7 @@ export default function TicketScanner() {
                                 </div>
                             )}
 
+                            {/*
                             <div className="mt-3">
                                 <Label>Manual ticket id</Label>
                                 <div className="mt-1 flex gap-3">
@@ -694,6 +695,7 @@ export default function TicketScanner() {
                                     </Button>
                                 </div>
                             </div>
+                            */}
                         </div>
                     </div>
 

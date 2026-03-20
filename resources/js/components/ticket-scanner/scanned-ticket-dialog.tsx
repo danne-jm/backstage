@@ -186,19 +186,19 @@ export function ScannedTicketDialog({
                             <CollapsibleContent className="max-h-[300px] divide-y overflow-y-auto rounded border bg-background">
                                 {allTickets.map((t, idx) => {
                                     const isCurrent =
-                                        t.ticket_code === ticket.ticket_code ||
-                                        t.id === ticket.id;
+                                        t.ticket_code && ticket.ticket_code && t.ticket_code === ticket.ticket_code ||
+                                        t.id && ticket.id && t.id === ticket.id;
                                     return (
                                         <div
                                             key={t.id ?? t.ticket_id ?? idx}
-                                            className={`p-3 relative transition-colors ${
+                                            className={`relative rounded-md p-3 transition-colors hover:bg-muted/50 ${
                                                 isCurrent
-                                                    ? 'bg-primary/5'
-                                                    : 'hover:bg-muted/50'
+                                                    ? 'bg-primary/5 ring-1 ring-primary'
+                                                    : 'border border-transparent bg-card'
                                             } ${t.scan_count > 0 && !isCurrent ? 'bg-green-50/50 dark:bg-green-900/10' : ''}`}
                                         >
                                             {isCurrent && (
-                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+                                                <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-md bg-primary"></div>
                                             )}
                                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-1">
                                                 <div>
