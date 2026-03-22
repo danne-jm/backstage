@@ -56,6 +56,10 @@ export default function EmailDistributor() {
         setMailMode,
         nullableFields,
         setNullableFields,
+        qrLogo,
+        setQrLogo,
+        setQrLogoBase64,
+        handleQrLogoUpload,
 
         // Email composition
         subject,
@@ -255,6 +259,12 @@ export default function EmailDistributor() {
                             <MailTypeSelector
                                 mailMode={mailMode}
                                 onChange={setMailMode}
+                                qrLogo={qrLogo}
+                                onLogoUpload={handleQrLogoUpload}
+                                onClearLogo={() => {
+                                    setQrLogo(null);
+                                    setQrLogoBase64(null);
+                                }}
                             />
 
                             <div className="h-4"></div>
@@ -313,6 +323,7 @@ export default function EmailDistributor() {
                         onToggleView={setShowRendered}
                         hasEventSelected={!!selectedEventId}
                         hasSpreadsheetConfigured={hasSpreadsheetConfigured}
+                        qrLogo={qrLogo}
                     />
                 </div>
 

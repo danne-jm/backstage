@@ -20,6 +20,7 @@ interface EmailPreviewProps {
     onToggleView: (showRendered: boolean) => void;
     hasEventSelected?: boolean;
     hasSpreadsheetConfigured?: boolean;
+    qrLogo?: string | null;
 }
 
 export function EmailPreview({
@@ -29,6 +30,7 @@ export function EmailPreview({
     onToggleView,
     hasEventSelected,
     hasSpreadsheetConfigured,
+    qrLogo,
 }: EmailPreviewProps) {
     if (!generatedEmails || generatedEmails.length === 0) {
         let message = "No preview generated yet. Click Generate Preview.";
@@ -99,7 +101,7 @@ export function EmailPreview({
                             dangerouslySetInnerHTML={{
                                 __html: selectedEmail.body.replace(
                                     /{{qr}}/g,
-                                    '<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:0;font-weight:bold;text-align:center;display:flex;align-items:center;justify-content:center;color:rgba(0, 0, 0, 1);">QR PREVIEW</div>'
+                                    `<div style="background:rgba(255, 255, 255, 1);border:2px dashed rgba(0, 0, 0, 1);width:150px;height:150px;padding:8px;box-sizing:border-box;margin:0;font-weight:bold;text-align:center;display:flex;align-items:center;justify-content:center;color:rgba(0, 0, 0, 1);position:relative;overflow:hidden;"><span style="z-index:2;position:relative;">QR PREVIEW</span>${qrLogo ? `<img src="${qrLogo}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:1;opacity:0.35;" alt="Logo" />` : ''}</div>`
                                 ),
                             }}
                         />

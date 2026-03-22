@@ -44,9 +44,12 @@ class DistributionController extends Controller
             ], 422);
         }
 
+        $qrLogo = $request->validated('qr_logo') ?? null;
+
         $result = $this->distributionService->processDistribution(
             $recipients,
-            $sender
+            $sender,
+            $qrLogo
         );
 
         return response()->json([

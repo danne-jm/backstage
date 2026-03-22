@@ -42,6 +42,51 @@ export function useEmailDistribution({
     // Nullable / skippable fields
     const [nullableFields, setNullableFields] = React.useState<Record<string, boolean>>({});
 
+    // QR Logo handling
+    const [qrLogo, setQrLogo] = React.useState<string | null>(null);
+    const [qrLogoBase64, setQrLogoBase64] = React.useState<string | null>(null);
+
+    const handleQrLogoUpload = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) {
+            setQrLogo(null);
+            setQrLogoBase64(null);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target?.result as string;
+            setQrLogo(dataUrl);
+
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxSize = 150;
+                let width = img.width;
+                let height = img.height;
+                if (width > maxSize || height > maxSize) {
+                    if (width > height) {
+                        height = Math.round(maxSize * height / width);
+                        width = maxSize;
+                    } else {
+                        width = Math.round(maxSize * width / height);
+                        height = maxSize;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    setQrLogoBase64(canvas.toDataURL('image/png'));
+                }
+            };
+            img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+    }, []);
+
     // Email composition
     const [subject, setSubject] = React.useState('Your ticket information');
     const [editorContent, setEditorContent] = React.useState('<p style="border-color: oklch(0.269 0 0); line-height: 1.4;">Hello <strong style="border-color: oklch(0.269 0 0);">{{firstName}}</strong> <strong style="border-color: oklch(0.269 0 0);">{{last_name}}</strong>,</p><p style="line-height: 1.4;"></p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;"><br></p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;">Thanks for registering — below are your ticket details for the event.</p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;"><br></p><ul style="border-color: oklch(0.269 0 0); padding-left: 20px; list-style-type: disc; line-height: 1.4;"><li style="border-color: oklch(0.269 0 0); line-height: 1.4;">Event: {{event_name}}</li><li style="border-color: oklch(0.269 0 0); line-height: 1.4;">Date: {{event_date}}</li><li style="border-color: oklch(0.269 0 0); line-height: 1.4;">Bring: Your ESN card (if applicable)</li></ul><p style="border-color: oklch(0.269 0 0); line-height: 1.4;"><br></p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;">Please bring a copy of this email (printed or on your phone).</p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;"><br></p><p style="border-color: oklch(0.269 0 0); line-height: 1.4;">See you there,<br style="border-color: oklch(0.269 0 0);">ESN Leuven</p>');
@@ -87,6 +132,7 @@ export function useEmailDistribution({
             selectedTemplateId,
             mailMode,
             nullableFields,
+            qrLogoBase64,
         });
 
         // If nothing generated yet, it's not dirty (it's empty)
@@ -96,7 +142,7 @@ export function useEmailDistribution({
 
         // If current config differs from last generated, it's dirty
         return currentConfigHash !== lastGeneratedContent;
-    }, [editorContent, subject, firstNameField, lastNameField, emailField, selectedTemplateId, mailMode, nullableFields, generatedEmails, lastGeneratedContent]);
+    }, [editorContent, subject, firstNameField, lastNameField, emailField, selectedTemplateId, mailMode, nullableFields, qrLogoBase64, generatedEmails, lastGeneratedContent]);
 
     // Computed values
     const fields = React.useMemo(
@@ -332,6 +378,7 @@ export function useEmailDistribution({
             selectedTemplateId,
             mailMode,
             nullableFields,
+            qrLogoBase64,
         }));
     }, [
         attendeeData,
@@ -357,6 +404,7 @@ export function useEmailDistribution({
         try {
             const response = await axios.post('/distribution/distribute', {
                 recipients: generatedEmails,
+                qr_logo: qrLogoBase64,
             });
 
             const {
@@ -478,6 +526,10 @@ export function useEmailDistribution({
         setMailMode,
         nullableFields,
         setNullableFields,
+        qrLogo,
+        setQrLogo,
+        setQrLogoBase64,
+        handleQrLogoUpload,
 
         // Email composition
         subject,

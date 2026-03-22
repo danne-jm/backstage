@@ -62,7 +62,7 @@ class EmailDistributionService
     /**
      * Process email distribution to recipients
      */
-    public function processDistribution(array $recipients, ?User $sender): array
+    public function processDistribution(array $recipients, ?User $sender, ?string $qrLogo = null): array
     {
         $queued = 0;
         $ticketsCreated = 0;
@@ -78,6 +78,9 @@ class EmailDistributionService
         // Second pass: Queue emails for sending
         foreach ($recipients as $recipient) {
             try {
+                if ($qrLogo) {
+                    $recipient['__qr_logo'] = $qrLogo;
+                }
                 $this->emailQueueService->queueEmail($recipient, $sender);
                 $queued++;
             } catch (\Throwable $e) {

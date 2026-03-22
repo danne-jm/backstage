@@ -8,6 +8,7 @@ use App\Models\sellables\Event;
 use App\Models\sellables\Product;
 use App\Models\Ticket;
 use App\Models\User;
+use BaconQrCode\Common\ErrorCorrectionLevel;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -92,9 +93,18 @@ class QrCodeGenerationService
     /**
      * Generate QR code image tag
      */
-    public function generateQrImageTag(string $ticketCode): string
+    public function generateQrImageTag(string $ticketCode, ?string $logoBase64 = null): string
     {
-        $qrString = $this->writer->writeString($ticketCode);
+        $qrString = $this->writer->writeString(
+            $ticketCode,
+            'utf-8',
+            ErrorCorrectionLevel::H()
+        );
+
+        if ($logoBase64) {
+            $qrString = $this->embedLogoInQr($qrString, $logoBase64);
+        }
+
         $base64 = base64_encode($qrString);
 
         $mime = 'image/png';
@@ -105,6 +115,61 @@ class QrCodeGenerationService
             $base64,
             htmlspecialchars($ticketCode, ENT_QUOTES, 'UTF-8')
         );
+    }
+
+    /**
+     * Embed logo in the center of the QR code using Imagick
+     */
+    private function embedLogoInQr(string $qrBlob, string $logoBase64): string
+    {
+        try {
+            // Strip data uri scheme if present
+            $logoData = preg_replace('#^data:image/[^;]+;base64,#', '', $logoBase64);
+            $logoBlob = base64_decode($logoData);
+
+            if (!$logoBlob) {
+                return $qrBlob;
+            }
+
+            $qrImage = new \Imagick();
+            $qrImage->readImageBlob($qrBlob);
+
+            $logoImage = new \Imagick();
+            $logoImage->readImageBlob($logoBlob);
+
+            $qrWidth = $qrImage->getImageWidth();
+            $qrHeight = $qrImage->getImageHeight();
+
+            // Crop to precisely fill the entire QR code background
+            $logoImage->cropThumbnailImage($qrWidth, $qrHeight);
+
+            // Lighten the uploaded logo strictly to ensure high contrast for the black QR scanning dots
+            $whiteLayer = new \Imagick();
+            $whiteLayer->newImage($qrWidth, $qrHeight, new \ImagickPixel('rgba(255,255,255,0.7)')); // 70% white overlay
+            $logoImage->compositeImage($whiteLayer, \Imagick::COMPOSITE_OVER, 0, 0);
+
+            // MULTIPLY composite treats the QR code as a masking texture.
+            // White background of QR code * Logo = Logo.
+            // Black data dots of QR code * Logo = Black.
+            // Result: The flyer acts as a fully intact, slightly faded background WATERMARK, with solid black crisp QR dots on top.
+            $logoImage->compositeImage($qrImage, \Imagick::COMPOSITE_MULTIPLY, 0, 0);
+
+            $logoImage->setImageFormat('png');
+            $resultBlob = $logoImage->getImageBlob();
+
+            $whiteLayer->clear();
+            $whiteLayer->destroy();
+
+            $qrImage->clear();
+            $qrImage->destroy();
+            $logoImage->clear();
+            $logoImage->destroy();
+
+            return $resultBlob;
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to embed logo into QR code', ['error' => $e->getMessage()]);
+            return $qrBlob;
+        }
     }
 
     /**

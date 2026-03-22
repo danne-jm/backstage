@@ -43,6 +43,9 @@ class EmailQueueService
             );
         }
 
+        // Unset base64 logo to avoid persisting large string in db logs & queue payload
+        unset($recipient['__qr_logo']);
+
         // Create mail log entry
         $mailLog = $this->createMailLog($recipient, $sender, $originalBody);
 
@@ -73,7 +76,8 @@ class EmailQueueService
         }
 
         try {
-            $qrImageTag = $this->qrService->generateQrImageTag($ticketCode);
+            $qrLogo = $recipient['__qr_logo'] ?? null;
+            $qrImageTag = $this->qrService->generateQrImageTag($ticketCode, $qrLogo);
             $recipient['body'] = str_replace('{{qr}}', $qrImageTag, $recipient['body']);
         } catch (\Throwable $e) {
             Log::error('QR code generation failed', [

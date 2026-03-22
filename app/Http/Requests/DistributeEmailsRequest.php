@@ -31,6 +31,7 @@ class DistributeEmailsRequest extends FormRequest
             'recipients.*.unique_trait' => ['nullable', 'string'],
             'recipients.*.scan_count' => ['nullable', 'integer'],
             'recipients.*.scan_details' => ['nullable'],
+            'qr_logo' => ['nullable', 'string'],
         ];
     }
 
