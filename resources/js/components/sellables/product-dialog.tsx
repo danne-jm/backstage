@@ -67,6 +67,17 @@ export function ProductDialog({
     const [stockMode, setStockMode] = React.useState<'simple' | 'variants'>(
         'simple',
     );
+    const [errors, setErrors] = React.useState<Record<string, string>>({});
+    React.useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            setTimeout(() => {
+                const firstError = document.querySelector('.error-scroll-marker');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 50);
+        }
+    }, [errors]);
 
     React.useEffect(() => {
         if (editingProduct) {
@@ -285,21 +296,29 @@ export function ProductDialog({
             formData.append('_method', 'PUT');
             router.post(`/sellables/products/${editingProduct.id}`, formData, {
                 onSuccess: () => {
+                    setErrors({});
                     onOpenChange(false);
                     onSuccess();
                 },
+                onError: (err) => {
+                    setErrors(err);
+                },
                 forceFormData: true,
-                preserveState: preserveState,
+                preserveState: 'errors',
                 preserveScroll: true,
             });
         } else {
             router.post('/sellables/products', formData, {
                 onSuccess: () => {
+                    setErrors({});
                     onOpenChange(false);
                     onSuccess();
                 },
+                onError: (err) => {
+                    setErrors(err);
+                },
                 forceFormData: true,
-                preserveState: preserveState,
+                preserveState: 'errors',
                 preserveScroll: true,
             });
         }
@@ -329,6 +348,7 @@ export function ProductDialog({
                             onChange={(e) => setProductName(e.target.value)}
                             className="mt-1"
                         />
+                        {errors.name && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.name}</p>}
                     </div>
                     <div>
                         <Label htmlFor="product-description">
@@ -342,6 +362,7 @@ export function ProductDialog({
                             }
                             className="min-h-[120px]"
                         />
+                        {errors.description && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.description}</p>}
                     </div>
                     <div>
                         <Label htmlFor="product-price">Price (€)</Label>
@@ -353,6 +374,7 @@ export function ProductDialog({
                             onChange={(e) => setProductPrice(e.target.value)}
                             className="mt-1"
                         />
+                        {errors.price && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price}</p>}
                     </div>
                 </div>
 
@@ -457,6 +479,7 @@ export function ProductDialog({
                                                     }
                                                     className="mt-1"
                                                 />
+                                                {errors.remaining_quantity_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity_with_card}</p>}
                                             </div>
                                             <div>
                                                 <Label
@@ -479,6 +502,7 @@ export function ProductDialog({
                                                     }
                                                     className="mt-1"
                                                 />
+                                                {errors.remaining_quantity_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity_without_card}</p>}
                                             </div>
                                         </div>
                                     ) : (
@@ -502,6 +526,7 @@ export function ProductDialog({
                                                 className="mt-1"
                                                 placeholder="Leave empty for unlimited"
                                             />
+                                            {errors.remaining_quantity && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity}</p>}
                                         </div>
                                     )}
                                 </div>

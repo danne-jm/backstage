@@ -1,15 +1,16 @@
 import { Link } from '@inertiajs/react';
 import { ExternalLink, ImageIcon } from 'lucide-react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 import type { Event } from '@/types/sellables';
@@ -39,6 +40,9 @@ export function EventPreview({
     isOnline,
     onSetOnline,
 }: EventPreviewProps) {
+    const [deleteStep, setDeleteStep] = React.useState<'input' | 'confirm'>('input');
+    const [confirmText, setConfirmText] = React.useState('');
+
     const formatDate = (iso: string) => {
         const d = new Date(iso);
         if (isNaN(d.getTime())) return 'N/A';
@@ -517,25 +521,62 @@ export function EventPreview({
             {variant === 'sellables' && onDelete && setEventToDelete && (
                 <Dialog
                     open={eventToDelete === event.id}
-                    onOpenChange={(open) => !open && setEventToDelete(null)}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setEventToDelete(null);
+                            setDeleteStep('input');
+                            setConfirmText('');
+                        }
+                    }}
                 >
-                    <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                    <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-lg p-6">
                         <DialogTitle>Delete Event</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete "{event.name}"? This
-                            action cannot be undone.
-                        </DialogDescription>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="ghost">Cancel</Button>
-                            </DialogClose>
-                            <Button
-                                variant="destructive"
-                                onClick={() => onDelete(event.id)}
-                            >
-                                Delete
-                            </Button>
-                        </DialogFooter>
+                        <div className="mt-2 flex flex-col justify-between flex-1 min-h-[150px]">
+                            {deleteStep === 'input' ? (
+                                <>
+                                    <div>
+                                        <DialogDescription>
+                                            To delete "<strong>{event.name}</strong>", please type its name exactly to confirm. This extra step helps prevent accidental removals.
+                                        </DialogDescription>
+                                        <div className="mt-4">
+                                            <Input
+                                                value={confirmText}
+                                                onChange={(e) => setConfirmText(e.target.value)}
+                                                placeholder="Type event name"
+                                            />
+                                        </div>
+                                    </div>
+                                    <DialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                        <Button variant="ghost" onClick={() => setEventToDelete(null)}>Cancel</Button>
+                                        <Button
+                                            disabled={confirmText !== event.name}
+                                            onClick={() => setDeleteStep('confirm')}
+                                        >
+                                            Next
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            ) : (
+                                <>
+                                    <DialogDescription>
+                                        Are you sure you want to delete "{event.name}"? This action is permanent. All associated settings, records, and history will be lost and cannot be recovered.
+                                    </DialogDescription>
+                                    <DialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                        <Button variant="ghost" onClick={() => setDeleteStep('input')}>Back</Button>
+                                        <Button
+                                            variant="destructive"
+                                            onClick={() => onDelete(event.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            )}
+                        </div>
+                        <div className="flex justify-center gap-2 mt-2">
+                            <div className={cn("h-1.5 w-1.5 rounded-full transition-all", deleteStep === 'input' ? "bg-primary w-4" : "bg-muted-foreground/30")} />
+                            <div className={cn("h-1.5 w-1.5 rounded-full transition-all", deleteStep === 'confirm' ? "bg-primary w-4" : "bg-muted-foreground/30")} />
+                        </div>
                     </DialogContent>
                 </Dialog>
             )}

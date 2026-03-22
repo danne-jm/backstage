@@ -82,6 +82,17 @@ export function EventDialog({
     const [stockMode, setStockMode] = React.useState<'simple' | 'variants'>(
         'simple',
     );
+    const [errors, setErrors] = React.useState<Record<string, string>>({});
+    React.useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            setTimeout(() => {
+                const firstError = document.querySelector('.error-scroll-marker');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 50);
+        }
+    }, [errors]);
 
     React.useEffect(() => {
         if (editingEvent) {
@@ -328,21 +339,29 @@ export function EventDialog({
             formData.append('_method', 'PUT');
             router.post(`/sellables/events/${editingEvent.id}`, formData, {
                 onSuccess: () => {
+                    setErrors({});
                     onOpenChange(false);
                     onSuccess();
                 },
+                onError: (err) => {
+                    setErrors(err);
+                },
                 forceFormData: true,
-                preserveState: preserveState,
+                preserveState: 'errors',
                 preserveScroll: true,
             });
         } else {
             router.post('/sellables/events', formData, {
                 onSuccess: () => {
+                    setErrors({});
                     onOpenChange(false);
                     onSuccess();
                 },
+                onError: (err) => {
+                    setErrors(err);
+                },
                 forceFormData: true,
-                preserveState: preserveState,
+                preserveState: 'errors',
                 preserveScroll: true,
             });
         }
@@ -379,6 +398,7 @@ export function EventDialog({
                             onChange={(e) => setEventName(e.target.value)}
                             className="mt-1"
                         />
+                        {errors.name && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.name}</p>}
                     </div>
                     <div>
                         <Label htmlFor="event-description">
@@ -392,6 +412,7 @@ export function EventDialog({
                             }
                             className="min-h-[100px]"
                         />
+                        {errors.description && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.description}</p>}
                     </div>
                     <div className="min-w-0">
                         <Label htmlFor="event-date">Event Date</Label>
@@ -402,6 +423,7 @@ export function EventDialog({
                             onChange={(e) => setEventDate(e.target.value)}
                             className="mt-1 block w-full"
                         />
+                        {errors.event_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.event_date}</p>}
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div className="min-w-0">
@@ -420,6 +442,7 @@ export function EventDialog({
                                 }
                                 className="mt-1 block w-full"
                             />
+                            {errors.start_sell_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.start_sell_date}</p>}
                         </div>
                         <div className="min-w-0">
                             <Label htmlFor="end-sell-date" className="text-sm">
@@ -432,6 +455,7 @@ export function EventDialog({
                                 onChange={(e) => setEndSellDate(e.target.value)}
                                 className="mt-1 block w-full"
                             />
+                            {errors.end_sell_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.end_sell_date}</p>}
                         </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -452,6 +476,7 @@ export function EventDialog({
                                 }
                                 className="mt-1"
                             />
+                            {errors.price_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_with_card}</p>}
                         </div>
                         <div>
                             <Label
@@ -470,6 +495,7 @@ export function EventDialog({
                                 }
                                 className="mt-1"
                             />
+                            {errors.price_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_without_card}</p>}
                         </div>
                     </div>
                     <div>
@@ -499,6 +525,7 @@ export function EventDialog({
                                 ))}
                             </SelectContent>
                         </Select>
+                        {errors.responsible_user_id && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.responsible_user_id}</p>}
                     </div>
                     <div>
                         <Label htmlFor="notes" className="text-sm">
@@ -522,6 +549,7 @@ export function EventDialog({
                                 placeholder="Google Sheet ID"
                                 className="mt-1"
                             />
+                            {errors.google_spreadsheet_id && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.google_spreadsheet_id}</p>}
                         </div>
                     )}
                 </div>
@@ -623,6 +651,7 @@ export function EventDialog({
                                                     }
                                                     className="mt-1"
                                                 />
+                                                {errors.remaining_quantity_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity_with_card}</p>}
                                             </div>
                                             <div>
                                                 <Label
@@ -643,6 +672,7 @@ export function EventDialog({
                                                     }
                                                     className="mt-1"
                                                 />
+                                                {errors.remaining_quantity_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity_without_card}</p>}
                                             </div>
                                         </div>
                                     ) : (
@@ -664,6 +694,7 @@ export function EventDialog({
                                                 className="mt-1"
                                                 placeholder="Leave empty for unlimited"
                                             />
+                                            {errors.remaining_quantity && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity}</p>}
                                         </div>
                                     )}
                                 </div>

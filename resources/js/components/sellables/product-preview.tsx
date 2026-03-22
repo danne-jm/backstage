@@ -1,14 +1,15 @@
 import { ImageIcon } from 'lucide-react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { cn, formatCurrency } from '@/lib/utils';
 
 import type { Product } from '@/types/sellables';
@@ -38,6 +39,9 @@ export function ProductPreview({
     isOnline,
     onSetOnline,
 }: ProductPreviewProps) {
+    const [deleteStep, setDeleteStep] = React.useState<'input' | 'confirm'>('input');
+    const [confirmText, setConfirmText] = React.useState('');
+
     return (
         <div
             className={cn(
@@ -341,25 +345,62 @@ export function ProductPreview({
             {variant === 'sellables' && onDelete && setProductToDelete && (
                 <Dialog
                     open={productToDelete === product.id}
-                    onOpenChange={(open) => !open && setProductToDelete(null)}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setProductToDelete(null);
+                            setDeleteStep('input');
+                            setConfirmText('');
+                        }
+                    }}
                 >
-                    <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-md p-4">
+                    <DialogContent className="max-h-[80vh] !w-[95vw] !max-w-lg p-6">
                         <DialogTitle>Delete Product</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete "{product.name}
-                            "? This action cannot be undone.
-                        </DialogDescription>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="ghost">Cancel</Button>
-                            </DialogClose>
-                            <Button
-                                variant="destructive"
-                                onClick={() => onDelete(product.id)}
-                            >
-                                Delete
-                            </Button>
-                        </DialogFooter>
+                        <div className="mt-2 flex flex-col justify-between flex-1 min-h-[150px]">
+                            {deleteStep === 'input' ? (
+                                <>
+                                    <div>
+                                        <DialogDescription>
+                                            To delete "<strong>{product.name}</strong>", please type its name exactly to confirm. This extra step helps prevent accidental removals.
+                                        </DialogDescription>
+                                        <div className="mt-4">
+                                            <Input
+                                                value={confirmText}
+                                                onChange={(e) => setConfirmText(e.target.value)}
+                                                placeholder="Type product name"
+                                            />
+                                        </div>
+                                    </div>
+                                    <DialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                        <Button variant="ghost" onClick={() => setProductToDelete(null)}>Cancel</Button>
+                                        <Button
+                                            disabled={confirmText !== product.name}
+                                            onClick={() => setDeleteStep('confirm')}
+                                        >
+                                            Next
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            ) : (
+                                <>
+                                    <DialogDescription>
+                                        Are you sure you want to delete "{product.name}"? This action is permanent. All associated settings, records, and history will be lost and cannot be recovered.
+                                    </DialogDescription>
+                                    <DialogFooter className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                        <Button variant="ghost" onClick={() => setDeleteStep('input')}>Back</Button>
+                                        <Button
+                                            variant="destructive"
+                                            onClick={() => onDelete(product.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            )}
+                        </div>
+                        <div className="flex justify-center gap-2 mt-2">
+                            <div className={cn("h-1.5 w-1.5 rounded-full transition-all", deleteStep === 'input' ? "bg-primary w-4" : "bg-muted-foreground/30")} />
+                            <div className={cn("h-1.5 w-1.5 rounded-full transition-all", deleteStep === 'confirm' ? "bg-primary w-4" : "bg-muted-foreground/30")} />
+                        </div>
                     </DialogContent>
                 </Dialog>
             )}
