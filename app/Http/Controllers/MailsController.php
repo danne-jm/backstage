@@ -16,6 +16,7 @@ class MailsController extends Controller
         $request->validate([
             'event_id' => 'nullable|integer',
             'user_id' => 'nullable|integer',
+            'type' => 'nullable|string',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
@@ -29,6 +30,14 @@ class MailsController extends Controller
 
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('type')) {
+            if ($request->type === 'ticket') {
+                $query->whereNotNull('metadata->__ticket_id');
+            } elseif ($request->type === 'text') {
+                $query->whereNull('metadata->__ticket_id');
+            }
         }
 
         if ($request->filled('start_date')) {
@@ -48,7 +57,7 @@ class MailsController extends Controller
             'senders' => User::whereIn('id', Mail::select('user_id')->distinct())
                 ->orderBy('email')
                 ->get(['id', 'email']),
-            'filters' => $request->only(['event_id', 'user_id', 'start_date', 'end_date']),
+            'filters' => $request->only(['event_id', 'user_id', 'type', 'start_date', 'end_date']),
         ]);
     }
 

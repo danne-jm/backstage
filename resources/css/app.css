@@ -142,3 +142,13 @@
         @apply bg-background text-foreground;
     }
 }
+
+.calendar-input-fix {
+    position: relative;
+}
+
+.calendar-input-fix::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 12px;
+    cursor: pointer;
+}

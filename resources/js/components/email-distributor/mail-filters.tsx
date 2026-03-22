@@ -16,6 +16,7 @@ interface MailFiltersProps {
     initialFilters: {
         event_id?: string;
         user_id?: string;
+        type?: string;
         start_date?: string;
         end_date?: string;
     };
@@ -30,15 +31,17 @@ export function MailFilters({
 }: MailFiltersProps) {
     const [eventFilter, setEventFilter] = React.useState(initialFilters.event_id || '');
     const [senderFilter, setSenderFilter] = React.useState(initialFilters.user_id || '');
+    const [typeFilter, setTypeFilter] = React.useState(initialFilters.type || '');
     const [startDateFilter, setStartDateFilter] = React.useState(initialFilters.start_date || '');
     const [endDateFilter, setEndDateFilter] = React.useState(initialFilters.end_date || '');
 
     const handleFilterChange = () => {
         const query: Record<string, string> = {};
-        if (eventFilter && eventFilter !== 'all') query['filter[event_id]'] = eventFilter;
-        if (senderFilter && senderFilter !== 'all') query['filter[user_id]'] = senderFilter;
-        if (startDateFilter) query['filter[start_date]'] = startDateFilter;
-        if (endDateFilter) query['filter[end_date]'] = endDateFilter;
+        if (eventFilter && eventFilter !== 'all') query['event_id'] = eventFilter;
+        if (senderFilter && senderFilter !== 'all') query['user_id'] = senderFilter;
+        if (typeFilter && typeFilter !== 'all') query['type'] = typeFilter;
+        if (startDateFilter) query['start_date'] = startDateFilter;
+        if (endDateFilter) query['end_date'] = endDateFilter;
 
         router.get('/email-distributor/mails', query, { preserveState: true, replace: true });
     };
@@ -46,6 +49,7 @@ export function MailFilters({
     const resetFilters = () => {
         setEventFilter('');
         setSenderFilter('');
+        setTypeFilter('');
         setStartDateFilter('');
         setEndDateFilter('');
         router.get('/email-distributor/mails', {}, { preserveState: true, replace: true });
@@ -57,47 +61,64 @@ export function MailFilters({
                 Filter Mails{' '}
                 <span className="text-sm text-muted-foreground">({totalMails} total)</span>
             </h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Select value={eventFilter} onValueChange={setEventFilter}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Filter by event..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Events</SelectItem>
-                        {events.map((event) => (
-                            <SelectItem key={event.id} value={String(event.id)}>
-                                {event.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                <div className="flex flex-col gap-4 md:flex-row">
+                    <Select value={eventFilter} onValueChange={setEventFilter}>
+                        <SelectTrigger className="w-full md:w-[300px]">
+                            <SelectValue placeholder="Filter by event..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Events</SelectItem>
+                            {events.map((event) => (
+                                <SelectItem key={event.id} value={String(event.id)}>
+                                    {event.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                <Select value={senderFilter} onValueChange={setSenderFilter}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Filter by sender..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Senders</SelectItem>
-                        {senders.map((sender) => (
-                            <SelectItem key={sender.id} value={String(sender.id)}>
-                                {sender.email}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                    <Select value={senderFilter} onValueChange={setSenderFilter}>
+                        <SelectTrigger className="w-full md:w-[300px]">
+                            <SelectValue placeholder="Filter by sender..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Senders</SelectItem>
+                            {senders.map((sender) => (
+                                <SelectItem key={sender.id} value={String(sender.id)}>
+                                    {sender.email}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                <Input
-                    type="date"
-                    value={startDateFilter}
-                    onChange={(e) => setStartDateFilter(e.target.value)}
-                    placeholder="Start date"
-                />
-                <Input
-                    type="date"
-                    value={endDateFilter}
-                    onChange={(e) => setEndDateFilter(e.target.value)}
-                    placeholder="End date"
-                />
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                        <SelectTrigger className="w-full md:w-[300px]">
+                            <SelectValue placeholder="Filter by type..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            <SelectItem value="text">Text</SelectItem>
+                            <SelectItem value="ticket">Ticket</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="flex flex-col gap-4 md:flex-row lg:ml-auto">
+                    <Input
+                        type="date"
+                        value={startDateFilter}
+                        onChange={(e) => setStartDateFilter(e.target.value)}
+                        placeholder="Start date"
+                        className="calendar-input-fix w-full md:w-[225px]"
+                    />
+                    <Input
+                        type="date"
+                        value={endDateFilter}
+                        onChange={(e) => setEndDateFilter(e.target.value)}
+                        placeholder="End date"
+                        className="calendar-input-fix w-full md:w-[225px]"
+                    />
+                </div>
             </div>
             <div className="mt-4 flex gap-2">
                 <Button onClick={handleFilterChange}>Apply Filters</Button>
