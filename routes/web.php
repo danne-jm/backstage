@@ -95,6 +95,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('distribution/distribute', [App\Http\Controllers\DistributionController::class, 'distribute'])
         ->name('distribution.distribute');
+
+    # Mail log
+    Route::get('email-distributor/mails', [App\Http\Controllers\MailsController::class, 'index'])
+        ->name('email-distributor.mails');
+
+    Route::get('email-distributor/mails/{mail}/ticket', [App\Http\Controllers\MailsController::class, 'getTicketForMail'])
+        ->name('email-distributor.mails.ticket');
 });
 
 #Inventory

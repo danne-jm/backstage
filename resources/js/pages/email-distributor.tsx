@@ -1,4 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
@@ -101,23 +101,29 @@ export default function EmailDistributor() {
     // Helper to format attendee name for display
     const getAttendeeName = (attendee: any): string => {
         if (!attendee) return '';
-        
+
         const firstName = attendee[firstNameField];
         const lastName = attendee[lastNameField];
-        
+
         if (firstName && lastName) {
             return `${firstName} ${lastName}`;
         }
         if (firstName) return firstName;
         if (lastName) return lastName;
-        
+
         // Fallback to first available field
         const firstAvailableField = fields[0];
         return attendee[firstAvailableField] || '';
     };
 
+    const headerActions = (
+        <Link href="/email-distributor/mails">
+            <Button variant="outline" size="sm">All Mails</Button>
+        </Link>
+    );
+
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs} headerActions={headerActions}>
             <Head title="Email Distributor" />
 
             {/* Success notification */}

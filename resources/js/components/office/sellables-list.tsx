@@ -12,7 +12,7 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
     const sortedSellables = React.useMemo(() => {
         return [...sellables].sort((a, b) => {
             const now = new Date().getTime();
-            
+
             // Helper to determine if an item has started selling
             const hasStarted = (item: any) => {
                 // Products (no type or type='product') are usually always available unless logic says otherwise.
@@ -31,7 +31,7 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
 
             if (startedA && !startedB) return -1;
             if (!startedA && startedB) return 1;
-            
+
             // Maintain order or sort by name/date as secondary?
             return 0; // Stable sort preference
         });
@@ -57,14 +57,14 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
 
         if (start && now.getTime() < start.getTime()) {
             const days = daysRemaining(startIso);
-            return `Starts in ${days} ${days === 1 ? 'day' : 'days'}`;
+            return `Sale starts in ${days} ${days === 1 ? 'day' : 'days'}`;
         }
         if (end && now.getTime() > end.getTime()) {
             return 'Sale ended';
         }
         if (end && now.getTime() <= end.getTime()) {
             const days = daysRemaining(endIso);
-            return `Ends in ${days} ${days === 1 ? 'day' : 'days'}`;
+            return `Sale ends in ${days} ${days === 1 ? 'day' : 'days'}`;
         }
         return 'Available';
     };
@@ -107,9 +107,9 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
                                 <div className="mt-1 text-xs text-muted-foreground">
                                     {item.type === 'event'
                                         ? sellPeriodMessage(
-                                              item.start_sell_date,
-                                              item.end_sell_date,
-                                          )
+                                            item.start_sell_date,
+                                            item.end_sell_date,
+                                        )
                                         : ''}
                                 </div>
                             </div>
