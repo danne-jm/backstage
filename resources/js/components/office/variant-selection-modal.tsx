@@ -98,7 +98,7 @@ export function VariantSelectionModal({
                                     // Check if this option is available given other selections
                                     // (Simplified check: at least one variant exists with this option set and matching other selections)
                                     const isAvailable = variants.some((v) => {
-                                        if (v.options[config.name] !== option)
+                                        if (v.options && v.options[config.name] !== option)
                                             return false;
                                         // For other configs, if selected, they must match
                                         return configs.every((c) => {
@@ -107,7 +107,7 @@ export function VariantSelectionModal({
                                             if (!selectedOptions[c.name])
                                                 return true;
                                             return (
-                                                v.options[c.name] ===
+                                                v.options && v.options[c.name] ===
                                                 selectedOptions[c.name]
                                             );
                                         });

@@ -314,6 +314,26 @@ export function EventPreview({
                                                         </div>
                                                     )}
                                             </div>
+
+                                            {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
+                                            {variant === 'store-manager' && onSetOnline && (
+                                                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                                                    <Checkbox
+                                                        id={`online-${event.id}`}
+                                                        checked={!!isOnline}
+                                                        onCheckedChange={(checked) =>
+                                                            onSetOnline(
+                                                                event.id,
+                                                                checked === true,
+                                                                'event',
+                                                            )
+                                                        }
+                                                    />
+                                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                                                        Sell Online
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : event.variable_amount ? (
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -367,35 +387,27 @@ export function EventPreview({
                                                             remain
                                                         </span>
                                                     )}
-                                                {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
-                                                {variant === 'store-manager' &&
-                                                    onSetOnline && (
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <Checkbox
-                                                                id={`online-${event.id}`}
-                                                                checked={
-                                                                    !!isOnline
-                                                                }
-                                                                onCheckedChange={(
-                                                                    checked,
-                                                                ) =>
-                                                                    onSetOnline(
-                                                                        event.id,
-                                                                        checked ===
-                                                                        true,
-                                                                        'event',
-                                                                    )
-                                                                }
-                                                            />
-                                                            <label
-                                                                htmlFor={`online-${event.id}`}
-                                                                className="cursor-pointer text-xs font-medium text-muted-foreground"
-                                                            >
-                                                                Sell Online
-                                                            </label>
-                                                        </div>
-                                                    )}
                                             </div>
+
+                                            {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
+                                            {variant === 'store-manager' && onSetOnline && (
+                                                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                                                    <Checkbox
+                                                        id={`online-${event.id}`}
+                                                        checked={!!isOnline}
+                                                        onCheckedChange={(checked) =>
+                                                            onSetOnline(
+                                                                event.id,
+                                                                checked === true,
+                                                                'event',
+                                                            )
+                                                        }
+                                                    />
+                                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                                                        Sell Online
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -423,35 +435,27 @@ export function EventPreview({
                                                             remain
                                                         </span>
                                                     )}
-                                                {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
-                                                {variant === 'store-manager' &&
-                                                    onSetOnline && (
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <Checkbox
-                                                                id={`online-${event.id}`}
-                                                                checked={
-                                                                    !!isOnline
-                                                                }
-                                                                onCheckedChange={(
-                                                                    checked,
-                                                                ) =>
-                                                                    onSetOnline(
-                                                                        event.id,
-                                                                        checked ===
-                                                                        true,
-                                                                        'event',
-                                                                    )
-                                                                }
-                                                            />
-                                                            <label
-                                                                htmlFor={`online-${event.id}`}
-                                                                className="cursor-pointer text-xs font-medium text-muted-foreground"
-                                                            >
-                                                                Sell Online
-                                                            </label>
-                                                        </div>
-                                                    )}
                                             </div>
+
+                                            {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
+                                            {variant === 'store-manager' && onSetOnline && (
+                                                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                                                    <Checkbox
+                                                        id={`online-${event.id}`}
+                                                        checked={!!isOnline}
+                                                        onCheckedChange={(checked) =>
+                                                            onSetOnline(
+                                                                event.id,
+                                                                checked === true,
+                                                                'event',
+                                                            )
+                                                        }
+                                                    />
+                                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                                                        Sell Online
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     {variant === 'sellables' && (

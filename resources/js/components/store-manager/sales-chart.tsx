@@ -444,7 +444,7 @@ export function SalesChart({
                         <div className="mb-1 text-muted-foreground">
                             Active sellables
                         </div>
-                        <div className="space-y-1 pr-2">
+                        <div className="h-[116px] overflow-y-auto space-y-1 pr-2 custom-scrollbar">
                             {activeSellables.length > 0 ? (
                                 activeSellables.map((s) => {
                                     const overall =
@@ -460,7 +460,7 @@ export function SalesChart({
                                     return (
                                         <div
                                             key={s.name}
-                                            className="flex items-center justify-between gap-3 text-[10px] sm:text-xs"
+                                            className="flex h-5 items-center justify-between gap-3 text-[10px] sm:text-xs"
                                         >
                                             <div className="flex min-w-0 flex-1 items-center gap-2">
                                                 <span

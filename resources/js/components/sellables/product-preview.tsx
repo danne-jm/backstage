@@ -275,30 +275,27 @@ export function ProductPreview({
                                             )}
                                     </>
                                 )}
-
-                                {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
-                                {variant === 'store-manager' && onSetOnline && (
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <Checkbox
-                                            id={`online-${product.id}`}
-                                            checked={!!isOnline}
-                                            onCheckedChange={(checked) =>
-                                                onSetOnline(
-                                                    product.id,
-                                                    checked === true,
-                                                    'product',
-                                                )
-                                            }
-                                        />
-                                        <label
-                                            htmlFor={`online-${product.id}`}
-                                            className="cursor-pointer text-xs font-medium text-muted-foreground"
-                                        >
-                                            Sell Online
-                                        </label>
-                                    </div>
-                                )}
                             </div>
+
+                            {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
+                            {variant === 'store-manager' && onSetOnline && (
+                                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                                    <Checkbox
+                                        id={`online-${product.id}`}
+                                        checked={!!isOnline}
+                                        onCheckedChange={(checked) =>
+                                            onSetOnline(
+                                                product.id,
+                                                checked === true,
+                                                'product',
+                                            )
+                                        }
+                                    />
+                                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                                        Sell Online
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
