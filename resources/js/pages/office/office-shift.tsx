@@ -50,7 +50,7 @@ export default function Show() {
                 </div>
                 <div className="w-full flex-1">
                     <div className="rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-                        <SalesLogCard sales={sales} activeShift={activeShift} />
+                        <SalesLogCard sales={sales} activeShift={activeShift} sellables={sellables} />
                     </div>
                 </div>
             </div>

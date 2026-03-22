@@ -26,6 +26,7 @@ interface VariantSelectionModalProps {
             remaining: number | null;
         }>;
     } | null;
+    initialOptions?: Record<string, string>;
 }
 
 export function VariantSelectionModal({
@@ -33,6 +34,7 @@ export function VariantSelectionModal({
     onClose,
     onConfirm,
     sellable,
+    initialOptions,
 }: VariantSelectionModalProps) {
     const [selectedOptions, setSelectedOptions] = useState<
         Record<string, string>
@@ -41,9 +43,9 @@ export function VariantSelectionModal({
     // Reset selection when modal opens or sellable changes
     React.useEffect(() => {
         if (isOpen) {
-            setSelectedOptions({});
+            setSelectedOptions(initialOptions || {});
         }
-    }, [isOpen, sellable]);
+    }, [isOpen, sellable, initialOptions]);
 
     const configs = useMemo(() => sellable?.variants_config || [], [sellable]);
     const variants = useMemo(() => sellable?.variants || [], [sellable]);
@@ -168,7 +170,7 @@ export function VariantSelectionModal({
                         onClick={() =>
                             matchedVariant && onConfirm(matchedVariant.id)
                         }
-                        disabled={!matchedVariant || isOutOfStock}
+                        disabled={!matchedVariant || !!isOutOfStock}
                     >
                         Confirm
                     </Button>

@@ -62,7 +62,8 @@ class QrCodeGenerationService
             throw new \Exception('Event not found for ticket generation');
         }
 
-        $ticketCode = $this->generateTicketCode($recipient, $event);
+        $uniqueTrait = $recipient['unique_trait'] ?? Str::random(8);
+        $ticketCode = $this->generateTicketCode($recipient, $event, $uniqueTrait);
 
         $ticket = $event->tickets()->create([
             'user_id' => $sender?->id,
@@ -72,7 +73,7 @@ class QrCodeGenerationService
             'email' => $recipient['email'] ?? '',
             'event_name' => $recipient['event_name'] ?? $event->name,
             'event_date' => $this->formatEventDate($recipient, $event),
-            'unique_trait' => $recipient['unique_trait'] ?? Str::random(8),
+            'unique_trait' => $uniqueTrait,
             'scan_count' => $recipient['scan_count'] ?? 0,
             'scan_details' => $recipient['scan_details'] ?? null,
             'metadata' => $this->buildTicketMetadata($recipient, $event),
@@ -109,10 +110,8 @@ class QrCodeGenerationService
     /**
      * Generate unique ticket code
      */
-    private function generateTicketCode(array $recipient, Sellable $event): string
+    private function generateTicketCode(array $recipient, Sellable $event, string $uniqueTrait): string
     {
-        $unique = Str::random(8);
-
         $sanitizedEvent = $this->sanitize($recipient['event_name'] ?? $event->name);
         $sanitizedFirst = $this->sanitize($recipient['first_name'] ?? '');
         $sanitizedLast = $this->sanitize($recipient['last_name'] ?? '');
@@ -127,7 +126,7 @@ class QrCodeGenerationService
             $datePart,
             $sanitizedFullName,
             $sanitizedEmail,
-            $unique
+            $uniqueTrait
         );
     }
 

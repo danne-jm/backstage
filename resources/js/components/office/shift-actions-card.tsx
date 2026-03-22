@@ -28,6 +28,9 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
     const [pendingSaleMethod, setPendingSaleMethod] = useState<
         'cash' | 'card' | null
     >(null);
+    const [pendingSaleSection, setPendingSaleSection] = useState<
+        'quick' | 'custom' | null
+    >(null);
     const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
         null,
     );
@@ -241,6 +244,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         // If item is variant based but no variantId provided, open modal
         if (item.is_variant_based && !variantId) {
             setPendingSaleMethod('card');
+            setPendingSaleSection('quick');
             setIsVariantModalOpen(true);
             return;
         }
@@ -277,6 +281,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
 
         if (item.is_variant_based && !selectedVariantId) {
             setPendingSaleMethod('cash');
+            setPendingSaleSection('quick');
             setIsVariantModalOpen(true);
             return;
         }
@@ -319,24 +324,39 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         setSelectedVariantId(variantId);
         setIsVariantModalOpen(false);
 
-        if (pendingSaleMethod === 'card') {
-            handleQuickSaleCard(variantId);
-        } else if (pendingSaleMethod === 'cash') {
-            setIsQuickSaleCashModalOpen(true);
+        if (pendingSaleSection === 'quick') {
+            if (pendingSaleMethod === 'card') {
+                handleQuickSaleCard(variantId);
+            } else if (pendingSaleMethod === 'cash') {
+                setIsQuickSaleCashModalOpen(true);
+            }
+        } else if (pendingSaleSection === 'custom') {
+            if (pendingSaleMethod === 'card') {
+                handleCustomSaleCard(variantId);
+            } else if (pendingSaleMethod === 'cash') {
+                setIsCustomSaleCashModalOpen(true);
+            }
         }
     };
 
     const getCustomSalePrice = () => Number(customAmount || 0);
 
-    const handleCustomSaleCard = () => {
+    const handleCustomSaleCard = (variantId?: string | null) => {
         if (!activeShift?.id || !customDescription || !customAmount) return;
 
         const isCustom = customSaleItemId === 'custom';
         const item = isCustom
             ? null
             : sellables?.find(
-                  (i: any) => String(i.unique_id) === String(customSaleItemId),
-              );
+                (i: any) => String(i.unique_id) === String(customSaleItemId),
+            );
+
+        if (item?.is_variant_based && !variantId) {
+            setPendingSaleMethod('card');
+            setPendingSaleSection('custom');
+            setIsVariantModalOpen(true);
+            return;
+        }
 
         setSubmitting(true);
         router.post(
@@ -349,16 +369,39 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                 description:
                     customDescription || (item ? item.name : 'Custom Sale'),
                 ticket_type: customSaleTicketType,
+                variant_id: variantId || (item?.is_variant_based ? selectedVariantId : null),
             },
             {
                 onSuccess: () => {
                     setCustomAmount('');
                     setCustomDescription('');
                     setCustomSaleItemId('custom');
+                    setSelectedVariantId(null);
+                    setPendingSaleSection(null);
                 },
                 onFinish: () => setSubmitting(false),
             },
         );
+    };
+
+    const triggerCustomSaleCash = () => {
+        if (!activeShift?.id || !customDescription || !customAmount) return;
+
+        const isCustom = customSaleItemId === 'custom';
+        const item = isCustom
+            ? null
+            : sellables?.find(
+                (i: any) => String(i.unique_id) === String(customSaleItemId),
+            );
+
+        if (item?.is_variant_based && !selectedVariantId) {
+            setPendingSaleMethod('cash');
+            setPendingSaleSection('custom');
+            setIsVariantModalOpen(true);
+            return;
+        }
+
+        setIsCustomSaleCashModalOpen(true);
     };
 
     const handleCustomSaleCash = (breakdown: Record<string, number>) => {
@@ -368,8 +411,8 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         const item = isCustom
             ? null
             : sellables?.find(
-                  (i: any) => String(i.unique_id) === String(customSaleItemId),
-              );
+                (i: any) => String(i.unique_id) === String(customSaleItemId),
+            );
 
         setSubmitting(true);
         router.post(
@@ -383,6 +426,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                     customDescription || (item ? item.name : 'Custom Sale'),
                 breakdown: breakdown,
                 ticket_type: customSaleTicketType,
+                variant_id: item?.is_variant_based ? selectedVariantId : null,
             },
             {
                 onSuccess: () => {
@@ -390,6 +434,8 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                     setCustomAmount('');
                     setCustomDescription('');
                     setCustomSaleItemId('custom');
+                    setSelectedVariantId(null);
+                    setPendingSaleSection(null);
                 },
                 onFinish: () => setSubmitting(false),
             },
@@ -531,6 +577,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                             onChange={(e) => {
                                 const id = e.target.value || null;
                                 setSaleProductId(id);
+                                setSelectedVariantId(null);
                                 const item = sellables.find(
                                     (i: any) =>
                                         String(i.unique_id) === String(id),
@@ -614,13 +661,14 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                             onClose={() => {
                                 setIsVariantModalOpen(false);
                                 setPendingSaleMethod(null);
+                                setPendingSaleSection(null);
                             }}
                             onConfirm={handleVariantSelection}
-                            sellable={sellables?.find(
-                                (i: any) =>
-                                    String(i.unique_id) ===
-                                    String(saleProductId),
-                            )}
+                            sellable={
+                                pendingSaleSection === 'custom'
+                                    ? sellables?.find((i: any) => String(i.unique_id) === String(customSaleItemId))
+                                    : sellables?.find((i: any) => String(i.unique_id) === String(saleProductId))
+                            }
                         />
                         <SaleCashBreakdownModal
                             isOpen={isQuickSaleCashModalOpen}
@@ -640,9 +688,10 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                     <div className="mt-2 grid grid-cols-1 gap-2">
                         <select
                             value={customSaleItemId}
-                            onChange={(e) =>
-                                setCustomSaleItemId(e.target.value)
-                            }
+                            onChange={(e) => {
+                                setCustomSaleItemId(e.target.value);
+                                setSelectedVariantId(null);
+                            }}
                             className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
                             disabled={activeShift?.status !== 'open'}
                         >
@@ -725,7 +774,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                                 activeShift?.status !== 'open' ||
                                 submitting
                             }
-                            onClick={() => setIsCustomSaleCashModalOpen(true)}
+                            onClick={triggerCustomSaleCash}
                         >
                             Add Cash
                         </Button>
@@ -738,7 +787,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                                 activeShift?.status !== 'open' ||
                                 submitting
                             }
-                            onClick={handleCustomSaleCard}
+                            onClick={() => handleCustomSaleCard()}
                         >
                             Add Card
                         </Button>

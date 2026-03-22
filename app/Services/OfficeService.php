@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 class OfficeService
 {
-    public function __construct(protected SaleService $saleService) {}
+    public function __construct(protected SaleService $saleService)
+    {
+    }
 
     public function startShift(User $user): OfficeShift
     {
@@ -88,6 +90,8 @@ class OfficeService
                 } else {
                     $office->decrement('card_total', $sale->amount);
                 }
+
+                $this->saleService->restoreStock($sale);
 
                 $sale->delete();
 
@@ -182,6 +186,41 @@ class OfficeService
             $office->cash_breakdown = $globalBreakdown;
             $office->save();
             $this->syncTotals($office);
+        });
+    }
+
+    public function updateSaleVariant(OfficeShift $office, string $saleId, string $variantId): void
+    {
+        DB::transaction(function () use ($office, $saleId, $variantId) {
+            $sale = OfficeShiftSale::where('office_shift_id', $office->id)
+                ->where('id', $saleId)
+                ->firstOrFail();
+
+            $snapshot = $sale->snapshot;
+            $oldVariantId = $snapshot['variant_id'] ?? null;
+
+            if ($oldVariantId === $variantId) {
+                return; // No change
+            }
+
+            $newVariant = \App\Models\SellableVariant::findOrFail($variantId);
+
+            // Deduct from NEW variant count
+            if ($newVariant->quantity !== null && ($newVariant->quantity - $newVariant->sold_count) <= 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['stock' => "Selected variant is sold out."]);
+            }
+
+            // Transactional update
+            if ($oldVariantId) {
+                \App\Models\SellableVariant::where('id', $oldVariantId)->decrement('sold_count');
+            }
+            \App\Models\SellableVariant::where('id', $variantId)->increment('sold_count');
+
+            // Update snapshot
+            $snapshot['variant_id'] = $newVariant->id;
+            $snapshot['variant_options'] = $newVariant->options;
+            $sale->snapshot = $snapshot;
+            $sale->save();
         });
     }
 

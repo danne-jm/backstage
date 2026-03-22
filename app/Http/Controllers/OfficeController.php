@@ -251,5 +251,17 @@ class OfficeController extends Controller
 
         return redirect()->route('office.show', $office->id);
     }
+
+    public function updateSaleVariant(Request $request, OfficeShift $office)
+    {
+        $validated = $request->validate([
+            'sale_id' => ['required'],
+            'variant_id' => ['required', 'string'],
+        ]);
+
+        $this->officeService->updateSaleVariant($office, $validated['sale_id'], $validated['variant_id']);
+
+        return redirect()->route('office.show', $office->id);
+    }
 }
 

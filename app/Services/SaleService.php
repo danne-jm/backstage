@@ -43,6 +43,14 @@ class SaleService
             );
             $resolvedVariant = $stockResult['resolved_variant'] ?? null;
 
+            if (!isset($data['price'])) {
+                $data['price'] = $data['amount'] ?? 0;
+            }
+
+            if (($data['method'] ?? 'cash') === 'cash' && !empty($data['breakdown'])) {
+                $data['amount'] = $shift->totalFromBreakdown($data['breakdown']);
+            }
+
             // Create the OfficeShiftSale record
             $sale = $this->createOfficeShiftSale($shift, $data, null, $resolvedVariant);
 
@@ -215,6 +223,43 @@ class SaleService
         }
 
         return ['resolved_variant' => $resolvedVariant];
+    }
+
+    /**
+     * Restore stock for a deleted sale.
+     * Decrements the sold_count on the cellable and variant where applicable.
+     */
+    public function restoreStock(OfficeShiftSale $sale): void
+    {
+        $productId = $sale->product_id;
+        $eventId = $sale->event_id;
+        $ticketType = $sale->snapshot['ticket_type'] ?? null;
+        $variantId = $sale->snapshot['variant_id'] ?? null;
+
+        if ($productId) {
+            Product::where('id', $productId)
+                ->where('sold_count', '>', 0)
+                ->decrement('sold_count');
+        }
+
+        if ($eventId) {
+            $ticketTypeKey = $ticketType ? strtolower($ticketType) : null;
+            if ($ticketTypeKey === 'with_card') {
+                Event::where('id', $eventId)
+                    ->where('sold_count_with_card', '>', 0)
+                    ->decrement('sold_count_with_card');
+            } else {
+                Event::where('id', $eventId)
+                    ->where('sold_count_without_card', '>', 0)
+                    ->decrement('sold_count_without_card');
+            }
+        }
+
+        if ($variantId) {
+            SellableVariant::where('id', $variantId)
+                ->where('sold_count', '>', 0)
+                ->decrement('sold_count');
+        }
     }
 
     /**

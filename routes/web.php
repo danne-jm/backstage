@@ -45,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('office/{office}/update-cash-breakdown', [App\Http\Controllers\OfficeController::class, 'updateCashBreakdown'])->name('office.breakdown.update');
     Route::post('office/{office}/update-start-totals', [App\Http\Controllers\OfficeController::class, 'updateStartTotals'])->name('office.start_totals.update');
     Route::post('office/{office}/update-sale-breakdown', [App\Http\Controllers\OfficeController::class, 'updateSaleBreakdown'])->name('office.sale_breakdown.update');
+    Route::post('office/{office}/update-sale-variant', [App\Http\Controllers\OfficeController::class, 'updateSaleVariant'])->name('office.sale_variant.update');
 });
 
 #Sellables
