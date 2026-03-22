@@ -47,7 +47,7 @@ class SaleService
                 $data['price'] = $data['amount'] ?? 0;
             }
 
-            if (($data['method'] ?? 'cash') === 'cash' && !empty($data['breakdown'])) {
+            if (($data['method'] ?? 'cash') === 'cash' && isset($data['breakdown'])) {
                 $data['amount'] = $shift->totalFromBreakdown($data['breakdown']);
             }
 
