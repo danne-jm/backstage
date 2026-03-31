@@ -102,7 +102,7 @@ class QrCodeGenerationService
         );
 
         if ($logoBase64) {
-            $qrString = $this->embedLogoInQr($qrString, $logoBase64);
+            $qrString = $this->embedLogoInQr($ticketCode, $qrString, $logoBase64);
         }
 
         $base64 = base64_encode($qrString);
@@ -120,7 +120,7 @@ class QrCodeGenerationService
     /**
      * Embed logo in the center of the QR code using Imagick
      */
-    private function embedLogoInQr(string $qrBlob, string $logoBase64): string
+    private function embedLogoInQr(string $ticketCode, string $qrBlob, string $logoBase64): string
     {
         try {
             // Strip data uri scheme if present
@@ -134,36 +134,65 @@ class QrCodeGenerationService
             $qrImage = new \Imagick();
             $qrImage->readImageBlob($qrBlob);
 
+            // Generate Matrix logic to calculate exact mathematical module boundaries safely
+            $qrCode = \BaconQrCode\Encoder\Encoder::encode($ticketCode, \BaconQrCode\Common\ErrorCorrectionLevel::H(), 'utf-8');
+            $matrixSize = $qrCode->getMatrix()->getWidth();
+
+            $qrWidth = $qrImage->getImageWidth();
+            $marginModules = 1; // BaconQrCode ImageRenderer natively processes with margin=1
+            $totalModules = $matrixSize + ($marginModules * 2);
+
+            $moduleSize = $qrWidth / $totalModules;
+            $marginPixels = $marginModules * $moduleSize;
+            $realEyeSizeForCrop = ceil(7 * $moduleSize) + 1; // 7x7 modules are the structural standard for finding eyes
+
             $logoImage = new \Imagick();
             $logoImage->readImageBlob($logoBlob);
 
-            $qrWidth = $qrImage->getImageWidth();
-            $qrHeight = $qrImage->getImageHeight();
+            // Crop the uploaded poster specifically tracking the data box (avoiding quiet zone margins)
+            $innerBoxSize = (int) ceil($qrWidth - (2 * $marginPixels));
+            $logoImage->cropThumbnailImage($innerBoxSize, $innerBoxSize);
 
-            // Crop to precisely fill the entire QR code background
-            $logoImage->cropThumbnailImage($qrWidth, $qrHeight);
+            // Darken the logo by 40% globally. This aggressively protects the contrast parity so scanners
+            // can safely identify the modules even if the uploaded art contains perfectly white elements!
+            $blackLayer = new \Imagick();
+            $blackLayer->newImage($innerBoxSize, $innerBoxSize, new \ImagickPixel('rgba(0,0,0,0.4)'));
+            $logoImage->compositeImage($blackLayer, \Imagick::COMPOSITE_OVER, 0, 0);
 
-            // Lighten the uploaded logo strictly to ensure high contrast for the black QR scanning dots
-            $whiteLayer = new \Imagick();
-            $whiteLayer->newImage($qrWidth, $qrHeight, new \ImagickPixel('rgba(255,255,255,0.7)')); // 70% white overlay
-            $logoImage->compositeImage($whiteLayer, \Imagick::COMPOSITE_OVER, 0, 0);
+            // Strip out the quiet margin from our B/W tracking matrix
+            $innerQr = clone $qrImage;
+            $innerQr->cropImage($innerBoxSize, $innerBoxSize, $marginPixels, $marginPixels);
 
-            // MULTIPLY composite treats the QR code as a masking texture.
-            // White background of QR code * Logo = Logo.
-            // Black data dots of QR code * Logo = Black.
-            // Result: The flyer acts as a fully intact, slightly faded background WATERMARK, with solid black crisp QR dots on top.
-            $logoImage->compositeImage($qrImage, \Imagick::COMPOSITE_MULTIPLY, 0, 0);
+            // SCREEN composite maps the masked texture into the QR. White areas stay firmly White.
+            // Black areas become directly linked to the poster tracking layer structure.
+            $logoImage->compositeImage($innerQr, \Imagick::COMPOSITE_SCREEN, 0, 0);
 
-            $logoImage->setImageFormat('png');
-            $resultBlob = $logoImage->getImageBlob();
+            // Extract pure intact Finder Patterns (the Big Corners) heavily preserved from unmodified QR layout.
+            $eyeTL = clone $qrImage;
+            $eyeTL->cropImage($realEyeSizeForCrop, $realEyeSizeForCrop, $marginPixels, $marginPixels);
 
-            $whiteLayer->clear();
-            $whiteLayer->destroy();
+            $eyeTR = clone $qrImage;
+            $eyeTR->cropImage($realEyeSizeForCrop, $realEyeSizeForCrop, $qrWidth - $marginPixels - (7 * $moduleSize), $marginPixels);
 
+            $eyeBL = clone $qrImage;
+            $eyeBL->cropImage($realEyeSizeForCrop, $realEyeSizeForCrop, $marginPixels, $qrWidth - $marginPixels - (7 * $moduleSize));
+
+            // Pin the tracking eyes precisely back down over the poster layer!
+            $logoImage->compositeImage($eyeTL, \Imagick::COMPOSITE_OVER, 0, 0);
+            $logoImage->compositeImage($eyeTR, \Imagick::COMPOSITE_OVER, $innerBoxSize - (7 * $moduleSize), 0);
+            $logoImage->compositeImage($eyeBL, \Imagick::COMPOSITE_OVER, 0, $innerBoxSize - (7 * $moduleSize));
+
+            // Paste our flawless Scanova rendering back into the generic canvas bounds to safely attach original margins
+            $qrImage->compositeImage($logoImage, \Imagick::COMPOSITE_OVER, $marginPixels, $marginPixels);
+
+            $qrImage->setImageFormat('png');
+            $resultBlob = $qrImage->getImageBlob();
+
+            // Clear buffers carefully
             $qrImage->clear();
-            $qrImage->destroy();
             $logoImage->clear();
-            $logoImage->destroy();
+            $blackLayer->clear();
+            $innerQr->clear();
 
             return $resultBlob;
         } catch (\Throwable $e) {
