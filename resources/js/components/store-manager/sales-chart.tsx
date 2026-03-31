@@ -220,24 +220,30 @@ export function SalesChart({
         const matchDate = (saleDate: string, dk: string) => {
             if (isHourlyData) {
                 const d = new Date(saleDate);
-                const y = d.getFullYear();
-                const mo = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                const h = String(d.getHours()).padStart(2, '0');
+                const y = d.getUTCFullYear();
+                const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(d.getUTCDate()).padStart(2, '0');
+                const h = String(d.getUTCHours()).padStart(2, '0');
                 return `${y}-${mo}-${day} ${h}:00:00` === dk;
             }
             return saleDate.split('T')[0].split(' ')[0] === dk;
         };
 
         const data = dateKeys.map((dk) => {
-            const point: Record<string, unknown> = {
-                date: new Date(dk).toLocaleDateString('en-US', {
+            let dateLabel: string;
+            if (isHourlyData) {
+                const d = new Date(dk.replace(' ', 'T') + 'Z');
+                const h = String(d.getHours()).padStart(2, '0');
+                const m = String(d.getMinutes()).padStart(2, '0');
+                dateLabel = `${h}:${m}`;
+            } else {
+                dateLabel = new Date(dk).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
-                    ...(isHourlyData
-                        ? { hour: '2-digit', minute: '2-digit', hour12: false }
-                        : {}),
-                }),
+                });
+            }
+            const point: Record<string, unknown> = {
+                date: dateLabel,
                 fullDate: dk,
             };
 
@@ -393,6 +399,7 @@ export function SalesChart({
                                 />
                                 <XAxis
                                     dataKey="date"
+                                    interval={isHourlyData ? 1 : Math.max(0, Math.ceil(chartData.length / 6) - 1)}
                                     tick={{
                                         fontSize: 11,
                                         fill: 'currentColor',

@@ -97,6 +97,7 @@ export function useStoreManager() {
                     summaryUrl = `/sales/summary?from=${encodeURIComponent(json.lastClosedShiftDate)}`;
                 }
 
+                setSales([]);
                 const sres = await fetch(summaryUrl, {
                     credentials: 'same-origin',
                 });
@@ -179,13 +180,13 @@ export function useStoreManager() {
 
                         if (isHourlyData) {
                             const d = new Date(soldAt);
-                            const y = d.getFullYear();
-                            const mo = String(d.getMonth() + 1).padStart(
+                            const y = d.getUTCFullYear();
+                            const mo = String(d.getUTCMonth() + 1).padStart(
                                 2,
                                 '0',
                             );
-                            const dy = String(d.getDate()).padStart(2, '0');
-                            const h = String(d.getHours()).padStart(2, '0');
+                            const dy = String(d.getUTCDate()).padStart(2, '0');
+                            const h = String(d.getUTCHours()).padStart(2, '0');
                             matchKey = `${y}-${mo}-${dy} ${h}:00:00`;
                         } else {
                             matchKey = soldAt.split('T')[0].split(' ')[0];

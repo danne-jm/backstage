@@ -66,7 +66,7 @@ class SalesController extends Controller
 
                 $office = OfficeShiftSale::query()
                     ->whereBetween('sold_at', [$start, $end])
-                    ->selectRaw('DATE_FORMAT(sold_at, "%Y-%m-%d %H:00:00") as hour, SUM(amount) as total')
+                    ->selectRaw("strftime('%Y-%m-%d %H:00:00', sold_at) as hour, SUM(amount) as total")
                     ->groupBy('hour')
                     ->get();
 
@@ -78,7 +78,7 @@ class SalesController extends Controller
 
                 $online = OnlineSale::query()
                     ->whereBetween('sold_at', [$start, $end])
-                    ->selectRaw('DATE_FORMAT(sold_at, "%Y-%m-%d %H:00:00") as hour, SUM(amount) as total')
+                    ->selectRaw("strftime('%Y-%m-%d %H:00:00', sold_at) as hour, SUM(amount) as total")
                     ->groupBy('hour')
                     ->get();
 
