@@ -5,7 +5,7 @@ import ReactDOMServer from 'react-dom/server';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 const backstagePages = import.meta.glob('./backstage/pages/**/*.tsx', { eager: true });
-const storePages = import.meta.glob('./online-store/pages/**/*.tsx', { eager: true });
+const storePages    = import.meta.glob('./online-store/pages/**/*.tsx', { eager: true });
 
 createServer((page) =>
     createInertiaApp({

@@ -31,8 +31,18 @@ readonly class StoreItemData
 
     public static function fromProduct(Product $product): self
     {
-        $price = (float) $product->price;
-        $memberPrice = $product->member_price !== null ? (float) $product->member_price : null;
+        $isVariantBased = (bool) $product->is_variant_based;
+
+        // Use price_with_card / price_without_card when set; fall back to legacy member_price.
+        // ESNcard pricing only applies to non-variant products.
+        $priceWithCard    = $product->price_with_card    ? (float) $product->price_with_card    : null;
+        $priceWithoutCard = $product->price_without_card ? (float) $product->price_without_card : null;
+        $basePrice        = $priceWithoutCard ?? (float) $product->price;
+
+        // Resolve member_price: use price_with_card when it's a real discount, else null.
+        $memberPrice = (!$isVariantBased && $priceWithCard !== null && $priceWithCard > 0 && $priceWithCard < $basePrice)
+            ? $priceWithCard
+            : null;
 
         $hasStock = $product->unlimited_quantity
             || is_null($product->quantity)
@@ -54,13 +64,13 @@ readonly class StoreItemData
             name: $product->name,
             description: $product->description,
             image: $product->image,
-            price: $price,
+            price: $basePrice,
             has_stock: $hasStock,
             is_variable: false,
             event_date: null,
-            member_price: ($memberPrice !== null && $memberPrice < $price) ? $memberPrice : null,
-            price_without_card: null,
-            is_variant_based: (bool) $product->is_variant_based,
+            member_price: $memberPrice,
+            price_without_card: ($memberPrice !== null) ? $basePrice : null,
+            is_variant_based: $isVariantBased,
             variants_config: $product->variants_config,
             variants: $variants,
             has_stock_with_card: false,

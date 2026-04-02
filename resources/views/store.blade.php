@@ -15,7 +15,7 @@
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
         @viteReactRefresh
-        @vite(['resources/css/app.css', 'resources/js/shop.tsx', "resources/js/online-store/pages/{$page['component']}.tsx"])
+        @vite(['resources/css/app.css', 'resources/js/store.tsx', "resources/js/online-store/pages/{$page['component']}.tsx"])
         @inertiaHead
     </head>
     <body class="font-sans antialiased">

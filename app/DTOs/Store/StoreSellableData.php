@@ -23,8 +23,14 @@ readonly class StoreSellableData
 
     public static function fromProduct(Product $product): self
     {
-        $price = (float) $product->price;
-        $memberPrice = $product->member_price !== null ? (float) $product->member_price : null;
+        $isVariantBased   = (bool) $product->is_variant_based;
+        $priceWithCard    = $product->price_with_card    ? (float) $product->price_with_card    : null;
+        $priceWithoutCard = $product->price_without_card ? (float) $product->price_without_card : null;
+        $basePrice        = $priceWithoutCard ?? (float) $product->price;
+
+        $memberPrice = (!$isVariantBased && $priceWithCard !== null && $priceWithCard > 0 && $priceWithCard < $basePrice)
+            ? $priceWithCard
+            : null;
 
         $hasStock = $product->unlimited_quantity
             || is_null($product->quantity)
@@ -36,12 +42,12 @@ readonly class StoreSellableData
             name: $product->name,
             description: $product->description,
             image: $product->image,
-            price: $price,
+            price: $basePrice,
             has_stock: $hasStock,
             is_variable: false,
             event_date: null,
-            member_price: ($memberPrice !== null && $memberPrice < $price) ? $memberPrice : null,
-            price_without_card: null,
+            member_price: $memberPrice,
+            price_without_card: ($memberPrice !== null) ? $basePrice : null,
         );
     }
 

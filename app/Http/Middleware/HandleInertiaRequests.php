@@ -26,10 +26,10 @@ class HandleInertiaRequests extends Middleware
         $host = $request->getHost();
 
         if ($host === $storeDomain || $host === 'store.localhost') {
-            return 'shop';
+            return 'store';
         }
 
-        return 'app';
+        return 'backstage';
     }
 
     /**

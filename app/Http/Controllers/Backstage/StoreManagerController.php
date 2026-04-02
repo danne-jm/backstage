@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\OfficeShift;
 use App\Models\OfficeShiftSale;
 use App\Models\OnlineSale;
+use App\Models\OnlineTransaction;
 use App\Models\sellables\Event;
 use App\Models\sellables\Product;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class StoreManagerController extends Controller
 {
@@ -155,5 +158,76 @@ class StoreManagerController extends Controller
             'boardUsers'          => $boardUsers,
             'lastClosedShiftDate' => $lastClosedShift?->ended_at?->toIso8601String(),
         ];
+    }
+
+    public function allSales(Request $request): \Inertia\Response
+    {
+        $fromDate = $request->query('from_date', now()->subDays(7)->format('Y-m-d'));
+        $toDate   = $request->query('to_date', now()->format('Y-m-d'));
+        $method   = $request->query('method', 'all'); // all | cash | card | online
+
+        $from = Carbon::parse($fromDate)->startOfDay();
+        $to   = Carbon::parse($toDate)->endOfDay();
+
+        $items = collect();
+
+        // ── Online sales ──────────────────────────────────────────────────
+        if ($method === 'all' || $method === 'online') {
+            $onlineItems = OnlineSale::with(['product', 'event', 'transaction'])
+                ->whereBetween('sold_at', [$from, $to])
+                ->get()
+                ->map(fn ($s) => [
+                    'id'                    => $s->id,
+                    'name'                  => $s->product?->name ?? $s->event?->name ?? 'Unknown',
+                    'method'                => 'online',
+                    'amount'                => (float) $s->amount,
+                    'ticket_type'           => $s->ticket_type,
+                    'variant_opts'          => $s->details['options'] ?? null,
+                    'code_used'             => ($s->ticket_type === 'with_card') ? ($s->details['code_used'] ?? null) : null,
+                    'reference_id'          => $s->reference_id,
+                    'sold_at'               => $s->sold_at?->toIso8601String(),
+                    'online_transaction_id' => $s->online_transaction_id,
+                    'transaction_ref'       => $s->transaction?->reference_id,
+                    'email'                 => $s->transaction?->email,
+                    'mail_success'          => $s->transaction?->mail_success,
+                ]);
+            $items = $items->concat($onlineItems);
+        }
+
+        // ── Office shift sales ────────────────────────────────────────────
+        if ($method !== 'online') {
+            $query = OfficeShiftSale::with(['product', 'event'])
+                ->whereBetween('sold_at', [$from, $to]);
+            if ($method !== 'all') {
+                $query->where('method', $method);
+            }
+            $officeItems = $query->get()->map(fn ($s) => [
+                'id'           => $s->id,
+                'name'         => $s->product?->name ?? $s->event?->name ?? ($s->description ?? 'Unknown'),
+                'method'       => $s->method ?? 'cash',
+                'amount'       => (float) $s->amount,
+                'ticket_type'  => $s->snapshot['ticket_type'] ?? null,
+                'variant_opts' => $s->snapshot['options'] ?? $s->snapshot['variant_options'] ?? null,
+                'description'  => $s->description,
+                'sold_at'      => $s->sold_at?->toIso8601String(),
+            ]);
+            $items = $items->concat($officeItems);
+        }
+
+        $storeUrl = rtrim(
+            env('STORE_APP_URL', 'http://'.env('STORE_DOMAIN', 'store.localhost').':'.
+                (parse_url(env('APP_URL', 'http://localhost:8000'), PHP_URL_PORT) ?? 80)),
+            '/'
+        );
+
+        return Inertia::render('store-manager/all-sales', [
+            'filters' => [
+                'from_date' => $fromDate,
+                'to_date'   => $toDate,
+                'method'    => $method,
+            ],
+            'sales'    => $items->sortByDesc('sold_at')->values(),
+            'storeUrl' => $storeUrl,
+        ]);
     }
 }

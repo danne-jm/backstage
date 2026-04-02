@@ -10,7 +10,7 @@ import {
     Ticket,
     Trash2,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useCart } from '@store/hooks/use-cart';
 import type { CartItem } from '@store/hooks/use-cart';
 import ShopLayout from '@store/layouts/shop-layout';
@@ -23,6 +23,10 @@ interface Props {
 
 export default function ShopCart({ sellables, processingFeeRate }: Props) {
     const { entries, removeFromCart, updateQuantity, clearCart } = useCart();
+    const entriesRef = useRef(entries);
+    entriesRef.current = entries;
+    const removeFromCartRef = useRef(removeFromCart);
+    removeFromCartRef.current = removeFromCart;
     const [appliedDiscounts, setAppliedDiscounts] = useState<string[]>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('cart_discounts');
@@ -105,15 +109,13 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
 
     // Scrub items no longer online-sellable
     useEffect(() => {
-        const validIds = new Set(
-            sellables.map((s) => `${s.type}-${s.id}`),
-        );
-        entries.forEach((entry) => {
+        const validIds = new Set(sellables.map((s) => `${s.type}-${s.id}`));
+        entriesRef.current.forEach((entry) => {
             if (!validIds.has(`${entry.type}-${entry.id}`)) {
-                removeFromCart(entry.id, entry.type);
+                removeFromCartRef.current(entry.id, entry.type);
             }
         });
-    }, [sellables, entries, removeFromCart]);
+    }, [sellables]);
 
     // Stock warnings using has_stock (no numeric leaking)
     const cartWarnings = useMemo(() => {
@@ -266,8 +268,8 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                             <h2 id="cart-heading" className="sr-only">Items in your shopping cart</h2>
 
                             <ul role="list" className="divide-y divide-gray-200 border-t border-b border-gray-200">
-                                {sortedCart.map((item, idx) => (
-                                    <li key={`${item.type}-${item.id}-${idx}`} className="flex py-4 sm:py-6 lg:py-10">
+                                {sortedCart.map((item) => (
+                                    <li key={`${item.type}-${item.id}-${JSON.stringify(item.options || {})}`} className="flex py-4 sm:py-6 lg:py-10">
                                         <div className="flex-shrink-0">
                                             <img
                                                 src={item.image || '/images/product.png'}
@@ -370,15 +372,19 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                             (s) => s.id === item.id && s.type === item.type,
                                         );
                                         const discountedCount = sItem?.discounted_quantity || 0;
-                                        const isUnitDiscounted = i < discountedCount;
+                                        const hasActualDiscount =
+                                            item.member_price != null &&
+                                            Number(item.member_price) < Number(item.price);
+                                        const isUnitDiscounted = hasActualDiscount && i < discountedCount;
                                         const codeUsed =
                                             sItem?.codes_applied?.[i] || (isUnitDiscounted ? 'Discount' : null);
                                         const unitRegularPrice = Number(item.price);
                                         const unitMemberPrice = Number(item.member_price ?? item.price);
 
+                                        const optKey = item.options ? JSON.stringify(item.options) : '';
                                         return (
                                             <div
-                                                key={`${item.type}-${item.id}-${i}`}
+                                                key={`${item.type}-${item.id}-${optKey}-${i}`}
                                                 className="flex flex-col border-b border-gray-100 py-2 last:border-0"
                                             >
                                                 <div className="flex w-full items-baseline justify-between gap-2">

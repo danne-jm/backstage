@@ -26,6 +26,13 @@
 
         .header { text-align: center; margin-bottom: 48px; }
 
+        .brand-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            display: block;
+        }
+
         .title { font-size: 28px; font-weight: 700; margin: 0 0 12px; color: #1e3a5f; }
 
         .subtitle { font-size: 16px; color: #6b7280; margin: 0; }
@@ -120,13 +127,15 @@
 
         .social-link {
             display: inline-block;
-            margin: 0 8px;
-            font-size: 13px;
-            color: #374151;
+            margin: 0 10px;
             text-decoration: none;
         }
 
-        .social-link:hover { text-decoration: underline; }
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+        }
 
         .copyright { font-size: 14px; color: #6b7280; margin: 0; }
 
@@ -138,6 +147,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <img src="{{ $message->embed(public_path('images/social/esnstar.png')) }}" alt="ESN" width="80" height="80" class="brand-logo">
             <h1 class="title">Thank you for your purchase!</h1>
             <p class="subtitle">Your order has been confirmed. Please save your reference IDs below.</p>
         </div>
@@ -223,19 +233,29 @@
         <div class="footer">
             <div class="social-links">
                 @if(env('LINKTREE_URL'))
-                    <a href="{{ env('LINKTREE_URL') }}" class="social-link">Linktree</a>
-                @endif
-                @if(env('INSTAGRAM_URL'))
-                    <a href="{{ env('INSTAGRAM_URL') }}" class="social-link">Instagram</a>
+                    <a href="{{ env('LINKTREE_URL') }}" class="social-link" title="Linktree">
+                        <img src="{{ $message->embed(public_path('images/social/linktree.png')) }}" alt="Linktree" class="social-icon">
+                    </a>
                 @endif
                 @if(env('FACEBOOK_URL'))
-                    <a href="{{ env('FACEBOOK_URL') }}" class="social-link">Facebook</a>
+                    <a href="{{ env('FACEBOOK_URL') }}" class="social-link" title="Facebook">
+                        <img src="{{ $message->embed(public_path('images/social/facebook.png')) }}" alt="Facebook" class="social-icon">
+                    </a>
                 @endif
                 @if(env('WEBSITE_URL'))
-                    <a href="{{ env('WEBSITE_URL') }}" class="social-link">Website</a>
+                    <a href="{{ env('WEBSITE_URL') }}" class="social-link" title="Website">
+                        <img src="{{ $message->embed(public_path('images/social/website.png')) }}" alt="Website" class="social-icon">
+                    </a>
                 @endif
                 @if(env('TIKTOK_URL'))
-                    <a href="{{ env('TIKTOK_URL') }}" class="social-link">TikTok</a>
+                    <a href="{{ env('TIKTOK_URL') }}" class="social-link" title="TikTok">
+                        <img src="{{ $message->embed(public_path('images/social/tiktok.png')) }}" alt="TikTok" class="social-icon">
+                    </a>
+                @endif
+                @if(env('INSTAGRAM_URL'))
+                    <a href="{{ env('INSTAGRAM_URL') }}" class="social-link" title="Instagram">
+                        <img src="{{ $message->embed(public_path('images/social/instagram.png')) }}" alt="Instagram" class="social-icon">
+                    </a>
                 @endif
             </div>
             <p class="copyright">&copy; {{ date('Y') }} {{ env('COPYRIGHT', 'ESN Leuven') }}</p>

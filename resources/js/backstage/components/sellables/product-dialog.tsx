@@ -38,8 +38,13 @@ export function ProductDialog({
 }: ProductDialogProps) {
     const [productName, setProductName] = React.useState('');
     const [productPrice, setProductPrice] = React.useState('');
+    const [productPriceWithCard, setProductPriceWithCard] = React.useState('');
+    const [productPriceWithoutCard, setProductPriceWithoutCard] = React.useState('');
+    const [priceMode, setPriceMode] = React.useState<'single' | 'esncard'>('single');
     const [productDescription, setProductDescription] = React.useState('');
     const [productQuantity, setProductQuantity] = React.useState('');
+    const [startSellDate, setStartSellDate] = React.useState('');
+    const [endSellDate, setEndSellDate] = React.useState('');
 
     const [productVariableAmount, setProductVariableAmount] =
         React.useState(false);
@@ -68,6 +73,7 @@ export function ProductDialog({
         'simple',
     );
     const [errors, setErrors] = React.useState<Record<string, string>>({});
+
     React.useEffect(() => {
         if (Object.keys(errors).length > 0) {
             setTimeout(() => {
@@ -82,7 +88,13 @@ export function ProductDialog({
     React.useEffect(() => {
         if (editingProduct) {
             setProductName(editingProduct.name);
+            const hasEsncardPricing = !!editingProduct.price_with_card || !!editingProduct.price_without_card;
+            setPriceMode(hasEsncardPricing ? 'esncard' : 'single');
             setProductPrice(editingProduct.price.toString());
+            setProductPriceWithCard(editingProduct.price_with_card?.toString() ?? '');
+            setProductPriceWithoutCard(editingProduct.price_without_card?.toString() ?? '');
+            setStartSellDate(editingProduct.start_sell_date?.split('T')[0] ?? '');
+            setEndSellDate(editingProduct.end_sell_date?.split('T')[0] ?? '');
             setProductDescription(editingProduct.description || '');
             setProductQuantity(
                 editingProduct.unlimited_quantity
@@ -137,6 +149,11 @@ export function ProductDialog({
         } else {
             setProductName('');
             setProductPrice('');
+            setProductPriceWithCard('');
+            setProductPriceWithoutCard('');
+            setPriceMode('single');
+            setStartSellDate('');
+            setEndSellDate('');
             setProductDescription('');
             setProductQuantity('');
             setProductVariableAmount(false);
@@ -190,7 +207,18 @@ export function ProductDialog({
     const submitProduct = () => {
         const formData = new FormData();
         formData.append('name', productName);
-        formData.append('price', productPrice);
+        const useEsncardPricing = priceMode === 'esncard';
+        if (useEsncardPricing) {
+            formData.append('price', productPriceWithoutCard || productPrice);
+            formData.append('price_with_card', productPriceWithCard);
+            formData.append('price_without_card', productPriceWithoutCard);
+        } else {
+            formData.append('price', productPrice);
+            formData.append('price_with_card', '');
+            formData.append('price_without_card', '');
+        }
+        if (startSellDate) formData.append('start_sell_date', startSellDate);
+        if (endSellDate)   formData.append('end_sell_date', endSellDate);
         if (productDescription)
             formData.append('description', productDescription);
         formData.append('variable_amount', productVariableAmount ? '1' : '0');
@@ -364,18 +392,92 @@ export function ProductDialog({
                         />
                         {errors.description && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.description}</p>}
                     </div>
-                    <div>
-                        <Label htmlFor="product-price">Price (€)</Label>
-                        <Input
-                            id="product-price"
-                            type="number"
-                            step="0.01"
-                            value={productPrice}
-                            onChange={(e) => setProductPrice(e.target.value)}
-                            className="mt-1"
-                        />
-                        {errors.price && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price}</p>}
+                    {/* Pricing mode toggle — ESNcard option disabled when variants mode active */}
+                    <div className="mb-0 flex items-center justify-between border-b pb-3">
+                        <span className="text-sm text-muted-foreground">Pricing</span>
+                        <div
+                            role="tablist"
+                            aria-orientation="horizontal"
+                            className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground"
+                        >
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={priceMode === 'single'}
+                                onClick={() => {
+                                    setPriceMode('single');
+                                    setProductPriceWithCard('');
+                                    setProductPriceWithoutCard('');
+                                }}
+                                className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${priceMode === 'single' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                            >
+                                Single Price
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={priceMode === 'esncard'}
+                                onClick={() => setPriceMode('esncard')}
+                                className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${priceMode === 'esncard' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                            >
+                                ESNcard Pricing
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Single price field */}
+                    {priceMode === 'single' && (
+                        <div>
+                            <Label htmlFor="product-price">Price (€)</Label>
+                            <Input
+                                id="product-price"
+                                type="number"
+                                step="0.01"
+                                value={productPrice}
+                                onChange={(e) => setProductPrice(e.target.value)}
+                                className="mt-1"
+                            />
+                            {errors.price && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price}</p>}
+                        </div>
+                    )}
+
+                    {/* ESNcard pricing fields — only when priceMode = esncard (auto-reset when variants active) */}
+                    {priceMode === 'esncard' && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label htmlFor="product-price-with-card" className="text-sm">
+                                    Price w/ ESNcard (€)
+                                </Label>
+                                <Input
+                                    id="product-price-with-card"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={productPriceWithCard}
+                                    onChange={(e) => setProductPriceWithCard(e.target.value)}
+                                    placeholder="Discounted price"
+                                    className="mt-1"
+                                />
+                                {errors.price_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_with_card}</p>}
+                            </div>
+                            <div>
+                                <Label htmlFor="product-price-without-card" className="text-sm">
+                                    Price w/o ESNcard (€)
+                                </Label>
+                                <Input
+                                    id="product-price-without-card"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={productPriceWithoutCard}
+                                    onChange={(e) => setProductPriceWithoutCard(e.target.value)}
+                                    placeholder="Full price"
+                                    className="mt-1"
+                                />
+                                {errors.price_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_without_card}</p>}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Section 2: Sidebar Options */}
@@ -587,6 +689,35 @@ export function ProductDialog({
                                 >
                                     Sellable Online
                                 </Label>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label htmlFor="product-start-sell-date" className="text-sm">
+                                        Release Date
+                                    </Label>
+                                    <Input
+                                        id="product-start-sell-date"
+                                        type="date"
+                                        value={startSellDate}
+                                        onChange={(e) => setStartSellDate(e.target.value)}
+                                        className="mt-1"
+                                    />
+                                    <p className="mt-1 text-xs text-muted-foreground">When to show on store</p>
+                                </div>
+                                <div>
+                                    <Label htmlFor="product-end-sell-date" className="text-sm">
+                                        End Date
+                                    </Label>
+                                    <Input
+                                        id="product-end-sell-date"
+                                        type="date"
+                                        value={endSellDate}
+                                        onChange={(e) => setEndSellDate(e.target.value)}
+                                        className="mt-1"
+                                    />
+                                    <p className="mt-1 text-xs text-muted-foreground">Leave empty for no end</p>
+                                </div>
                             </div>
 
                             <div>

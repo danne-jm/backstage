@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // to avoid route collision on '/' while keeping domain separation.
             $backstageDomains = $isTesting
                 ? ['localhost']
-                : array_map('trim', explode(',', env('APP_DOMAIN', 'localhost')));
+                : array_map('trim', explode(',', env('BACKSTAGE_DOMAIN', 'localhost')));
             $storeDomain = $isTesting ? 'store.localhost' : env('STORE_DOMAIN', 'store.localhost');
 
             foreach ($backstageDomains as $backstageDomain) {

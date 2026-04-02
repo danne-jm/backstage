@@ -25,6 +25,12 @@ class ShopController extends Controller
                 ->map(fn ($e) => StoreSellableData::fromEvent($e)->toArray());
 
             $products = Product::where('is_online_sellable', true)
+                ->where(function ($q) use ($now) {
+                    $q->whereNull('start_sell_date')->orWhere('start_sell_date', '<=', $now);
+                })
+                ->where(function ($q) use ($now) {
+                    $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
+                })
                 ->orderBy('name')
                 ->get()
                 ->map(fn ($p) => StoreSellableData::fromProduct($p)->toArray());

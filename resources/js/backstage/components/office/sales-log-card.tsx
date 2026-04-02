@@ -48,7 +48,8 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
     const [confirmRemoveSaleName, setConfirmRemoveSaleName] = useState('');
 
     const cashTotal = activeShift ? Number(activeShift.cash_total || 0) : 0;
-    const cardTotal = activeShift ? Number(activeShift.card_total || 0) : 0;
+    const onlineTotal = onlineSales.reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
+    const cardTotal = (activeShift ? Number(activeShift.card_total || 0) : 0) + onlineTotal;
     const combinedTotal = cashTotal + cardTotal;
 
     const formatDateTime = (dateStr: string) => {

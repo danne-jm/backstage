@@ -1,6 +1,7 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@backstage/components/ui/button';
 import { EventDialog } from '@backstage/components/sellables/event-dialog';
 import { ProductDialog } from '@backstage/components/sellables/product-dialog';
 import { Alert, AlertTitle } from '@backstage/components/ui/alert';
@@ -66,9 +67,15 @@ export default function StoreManager() {
         setEventDialogOpen(true);
     };
 
+    const headerActions = (
+        <Link href="/store-manager/all-sales">
+            <Button variant="outline" size="sm">All Sales</Button>
+        </Link>
+    );
+
     return (
         <>
-            <AppLayout breadcrumbs={breadcrumbs}>
+            <AppLayout breadcrumbs={breadcrumbs} headerActions={headerActions}>
                 <Head title="Store Manager" />
 
                 <div className="flex flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
