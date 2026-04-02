@@ -10,6 +10,7 @@ use App\Models\sellables\Event;
 use App\Models\OfficeShift;
 use App\Models\OfficeShiftWorker;
 use App\Models\OfficeShiftSale;
+use App\Models\OnlineSale;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\OfficeShiftResource;
@@ -103,6 +104,26 @@ class OfficeController extends Controller
             ->values()
             ->all();
 
+        $shiftEnd = $office->ended_at ?? now();
+        $onlineSalesQuery = OnlineSale::with(['product', 'event'])
+            ->where('sold_at', '>=', $office->started_at)
+            ->where('sold_at', '<=', $shiftEnd)
+            ->orderByDesc('sold_at');
+
+        $onlineSales = $onlineSalesQuery->get()->map(fn($s) => [
+            'id' => $s->id,
+            'name' => $s->product?->name ?? $s->event?->name ?? 'Unknown Item',
+            'method' => 'online',
+            'amount' => (float) $s->amount,
+            'ticket_type' => $s->ticket_type,
+            'reference_id' => $s->reference_id,
+            'variant_options' => $s->details['options'] ?? null,
+            'code_used' => $s->details['code_used'] ?? null,
+            'sold_at' => $s->sold_at?->toIso8601String(),
+            'created_at' => $s->sold_at?->toIso8601String(),
+            'is_online' => true,
+        ]);
+
         return Inertia::render('office/office-shift', [
             'shiftId' => $id,
             'activeShift' => (new OfficeShiftResource($office))->resolve(),
@@ -113,6 +134,7 @@ class OfficeController extends Controller
                 'email' => $w->user->email,
             ]),
             'sales' => OfficeShiftSaleResource::collection($office->sales->sortByDesc('created_at'))->resolve(),
+            'onlineSales' => $onlineSales,
             'sellables' => $sellables,
             'staff' => $staffNodes,
         ]);

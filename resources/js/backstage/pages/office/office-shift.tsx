@@ -27,6 +27,7 @@ export default function Show() {
 
     const workers: any[] = Array.isArray(props.workers) ? props.workers : [];
     const sales: any[] = Array.isArray(props.sales) ? props.sales : [];
+    const onlineSales: any[] = Array.isArray(props.onlineSales) ? props.onlineSales : [];
     const sellables: any[] = Array.isArray(props.sellables)
         ? props.sellables
         : [];
@@ -50,7 +51,7 @@ export default function Show() {
                 </div>
                 <div className="w-full flex-1">
                     <div className="rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-                        <SalesLogCard sales={sales} activeShift={activeShift} sellables={sellables} />
+                        <SalesLogCard sales={sales} onlineSales={onlineSales} activeShift={activeShift} sellables={sellables} />
                     </div>
                 </div>
             </div>

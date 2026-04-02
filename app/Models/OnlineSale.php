@@ -31,4 +31,19 @@ class OnlineSale extends Model
     {
         return $this->morphTo();
     }
+
+    public function product()
+    {
+        return $this->belongsTo(\App\Models\sellables\Product::class, 'product_id');
+    }
+
+    public function event()
+    {
+        return $this->belongsTo(\App\Models\sellables\Event::class, 'event_id');
+    }
+
+    public function transaction()
+    {
+        return $this->belongsTo(OnlineTransaction::class, 'online_transaction_id');
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Store;
 use App\Contracts\PaymentGatewayInterface;
 use App\Contracts\PaymentResult;
 use App\Http\Controllers\Controller;
+use App\Mail\OrderConfirmation;
 use App\Models\DiscountUsage;
 use App\Models\OnlineSale;
 use App\Models\OnlineTransaction;
@@ -14,6 +15,7 @@ use App\Models\sellables\Product;
 use App\Services\DiscountAllocator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -154,6 +156,7 @@ class OnlinePaymentController extends Controller
                 foreach ($salesToCreate as $saleData) {
                     OnlineSale::create([
                         'online_transaction_id' => $transaction->id,
+                        'reference_id' => strtoupper(Str::random(10)),
                         'product_id' => $saleData['product_id'],
                         'event_id' => $saleData['event_id'],
                         'method' => 'card',
@@ -207,6 +210,8 @@ class OnlinePaymentController extends Controller
             );
 
             if ($verifyResult->isSuccessful()) {
+                $this->dispatchConfirmationEmail($transaction->fresh());
+
                 return response()->json([
                     'success' => true,
                     'redirect_url' => '/confirmation?bag='.$transaction->reference_id,
@@ -253,6 +258,8 @@ class OnlinePaymentController extends Controller
             $result = $this->paymentGateway->verifyPayment($paymentId, $transaction);
 
             if ($result->isSuccessful()) {
+                $this->dispatchConfirmationEmail($transaction->fresh());
+
                 return redirect('/confirmation?bag='.$transaction->reference_id);
             }
 
@@ -631,6 +638,26 @@ class OnlinePaymentController extends Controller
             if ($sale->product_id) {
                 Product::where('id', $sale->product_id)->decrement('sold_count');
             }
+        }
+    }
+
+    /**
+     * Dispatch the order confirmation email if not already sent.
+     */
+    protected function dispatchConfirmationEmail(OnlineTransaction $transaction): void
+    {
+        if ($transaction->mail_success || empty($transaction->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($transaction->email)->send(new OrderConfirmation($transaction));
+            $transaction->update(['mail_success' => true]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Order confirmation email failed', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

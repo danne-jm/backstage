@@ -10,7 +10,16 @@ import { Button } from '@backstage/components/ui/button';
 import { Alert, AlertTitle } from '@backstage/components/ui/alert';
 import { VariantSelectionModal } from '@backstage/components/office/variant-selection-modal';
 
-export function SalesLogCard({ sales, activeShift, sellables }: any) {
+export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }: any) {
+    // Merge and sort in-person and online sales by time descending
+    const allSales = [
+        ...sales,
+        ...onlineSales,
+    ].sort((a: any, b: any) => {
+        const aTime = new Date(a.created_at ?? a.sold_at ?? 0).getTime();
+        const bTime = new Date(b.created_at ?? b.sold_at ?? 0).getTime();
+        return bTime - aTime;
+    });
     const [cashBreakdownOpen, setCashBreakdownOpen] = useState(false);
     const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
     const [editingSaleBreakdown, setEditingSaleBreakdown] = useState<
@@ -138,7 +147,7 @@ export function SalesLogCard({ sales, activeShift, sellables }: any) {
                 <div className="mb-4 flex items-center justify-between">
                     <h3 className="text-sm font-semibold">Sales log</h3>
                     <div className="text-xs text-muted-foreground">
-                        {sales?.length} sales
+                        {allSales.length} sales
                     </div>
                 </div>
                 <div className="relative overflow-x-auto">
@@ -158,14 +167,14 @@ export function SalesLogCard({ sales, activeShift, sellables }: any) {
                                 </tr>
                             </thead>
                             <tbody className="mt-2">
-                                {sales?.map((s: any) => (
+                                {allSales.map((s: any) => (
                                     <tr key={s.id} className="border-t">
                                         <td className="overflow-hidden px-1 py-3">
                                             <div className="flex items-center gap-1.5">
                                                 <div className="truncate" title={s.name ?? ''}>
                                                     {s.name ?? 'N/A'}
                                                 </div>
-                                                {s.is_variant_based && (
+                                                {!s.is_online && s.is_variant_based && (
                                                     <Button
                                                         size="sm"
                                                         variant="ghost"
@@ -182,21 +191,27 @@ export function SalesLogCard({ sales, activeShift, sellables }: any) {
                                             </div>
                                         </td>
                                         <td className="overflow-hidden px-1 py-3">
-                                            <div className="flex flex-wrap items-center gap-1">
-                                                <Badge variant="outline" className="capitalize" title={s.method}>
-                                                    {s.method}
+                                            {s.is_online ? (
+                                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">
+                                                    Online
                                                 </Badge>
-                                                {s.ticket_type === 'with_card' && (
-                                                    <Badge variant="outline" className="border-white bg-white text-[10px] text-black hover:bg-white/90">
-                                                        ESNcard
+                                            ) : (
+                                                <div className="flex flex-wrap items-center gap-1">
+                                                    <Badge variant="outline" className="capitalize" title={s.method}>
+                                                        {s.method}
                                                     </Badge>
-                                                )}
-                                                {s.is_custom && (
-                                                    <Badge variant="secondary" className="text-[10px] capitalize">
-                                                        Custom
-                                                    </Badge>
-                                                )}
-                                            </div>
+                                                    {s.ticket_type === 'with_card' && (
+                                                        <Badge variant="outline" className="border-white bg-white text-[10px] text-black hover:bg-white/90">
+                                                            ESNcard
+                                                        </Badge>
+                                                    )}
+                                                    {s.is_custom && (
+                                                        <Badge variant="secondary" className="text-[10px] capitalize">
+                                                            Custom
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="overflow-hidden px-1 py-3">
                                             <div className="flex items-center gap-1.5">
@@ -204,14 +219,14 @@ export function SalesLogCard({ sales, activeShift, sellables }: any) {
                                                     const amt = Number(s.amount ?? 0);
                                                     const exp = Number(s.expected_amount ?? s.amount ?? 0);
                                                     const diff = amt - exp;
-                                                    const colorClass = diff > 0.01 ? 'text-green-500 font-medium' : diff < -0.01 ? 'text-red-500 font-medium' : '';
+                                                    const colorClass = !s.is_online && diff > 0.01 ? 'text-green-500 font-medium' : !s.is_online && diff < -0.01 ? 'text-red-500 font-medium' : '';
                                                     return (
-                                                        <div className={`truncate ${colorClass}`} title={`€${amt.toFixed(2)}${Math.abs(diff) > 0.01 ? ` (Expected: €${exp.toFixed(2)})` : ''}`}>
+                                                        <div className={`truncate ${colorClass}`} title={`€${amt.toFixed(2)}`}>
                                                             €{amt.toFixed(2)}
                                                         </div>
                                                     );
                                                 })()}
-                                                {String(s.method).toLowerCase() === 'cash' && (
+                                                {!s.is_online && String(s.method).toLowerCase() === 'cash' && (
                                                     <Button
                                                         size="sm"
                                                         variant="ghost"
@@ -224,13 +239,15 @@ export function SalesLogCard({ sales, activeShift, sellables }: any) {
                                             </div>
                                         </td>
                                         <td className="overflow-hidden px-1 py-3">
-                                            <div className="w-full truncate" title={s.description ?? ''}>
-                                                {s.description ?? ''}
+                                            <div className="w-full truncate text-xs text-muted-foreground" title={s.is_online ? (s.reference_id ?? '') : (s.description ?? '')}>
+                                                {s.is_online
+                                                    ? (s.reference_id ? `Ref: ${s.reference_id}` : '')
+                                                    : (s.description ?? '')}
                                             </div>
                                         </td>
                                         <td className="overflow-hidden px-1 py-3">
-                                            <div className="w-full truncate" title={s.sold_by ?? ''}>
-                                                {s.sold_by ?? 'Unknown'}
+                                            <div className="w-full truncate" title={s.is_online ? 'Online Store' : (s.sold_by ?? '')}>
+                                                {s.is_online ? 'Online Store' : (s.sold_by ?? 'Unknown')}
                                             </div>
                                         </td>
                                         <td className="overflow-hidden px-1 py-3">
@@ -239,14 +256,16 @@ export function SalesLogCard({ sales, activeShift, sellables }: any) {
                                             </div>
                                         </td>
                                         <td className="px-1 py-3 text-right">
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                disabled={activeShift?.status !== 'open'}
-                                                onClick={() => handleConfirmRemove(s)}
-                                            >
-                                                Remove
-                                            </Button>
+                                            {!s.is_online && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    disabled={activeShift?.status !== 'open'}
+                                                    onClick={() => handleConfirmRemove(s)}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
