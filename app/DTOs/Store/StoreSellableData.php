@@ -38,7 +38,7 @@ readonly class StoreSellableData
             image: $product->image,
             price: $price,
             has_stock: $hasStock,
-            is_variable: (bool) $product->is_variant_based,
+            is_variable: false,
             event_date: null,
             member_price: ($memberPrice !== null && $memberPrice < $price) ? $memberPrice : null,
             price_without_card: null,
@@ -78,7 +78,7 @@ readonly class StoreSellableData
             has_stock: $hasStock,
             is_variable: $isVariable,
             event_date: $event->event_date?->toIso8601String(),
-            member_price: ($isVariable && $priceWithCard < $priceWithoutCard) ? $priceWithCard : null,
+            member_price: ($priceWithCard > 0 && $priceWithCard < $priceWithoutCard) ? $priceWithCard : null,
             price_without_card: $isVariable ? $priceWithoutCard : null,
         );
     }

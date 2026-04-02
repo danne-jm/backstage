@@ -6,8 +6,11 @@ use App\Contracts\PaymentGatewayInterface;
 use App\Services\DevelopmentPaymentGateway;
 use App\Services\SumUpPaymentGateway;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -46,6 +49,10 @@ class AppServiceProvider extends ServiceProvider
                 config(['app.name' => env('STORE_APP_NAME', 'Online Store')]);
             }
         }
+
+        RateLimiter::for('checkout', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
 
         $this->configureDefaults();
     }
