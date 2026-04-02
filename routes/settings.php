@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\Settings\FooterController;
-use App\Http\Controllers\Settings\PasswordController;
-use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
-use App\Http\Controllers\Settings\UsersController;
+use App\Http\Controllers\Backstage\Settings\FooterController;
+use App\Http\Controllers\Backstage\Settings\PasswordController;
+use App\Http\Controllers\Backstage\Settings\ProfileController;
+use App\Http\Controllers\Backstage\Settings\TwoFactorAuthenticationController;
+use App\Http\Controllers\Backstage\Settings\UsersController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {

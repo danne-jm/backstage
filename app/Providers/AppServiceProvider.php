@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Contracts\PaymentGatewayInterface;
+use App\Services\DevelopmentPaymentGateway;
+use App\Services\SumUpPaymentGateway;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +19,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PaymentGatewayInterface::class, function () {
+            return $this->app->isProduction()
+                ? $this->app->make(SumUpPaymentGateway::class)
+                : $this->app->make(DevelopmentPaymentGateway::class);
+        });
     }
 
     /**
@@ -28,6 +35,16 @@ class AppServiceProvider extends ServiceProvider
         // This is required for ngrok or reverse proxies to avoid mixed content errors
         if (str_starts_with(config('app.url'), 'https://')) {
             URL::forceScheme('https');
+        }
+
+        // Set app.name dynamically based on which domain is being served
+        if (! app()->runningInConsole()) {
+            $host = request()->getHost();
+            $storeDomain = env('STORE_DOMAIN', 'store.localhost');
+
+            if ($host === $storeDomain || $host === 'store.localhost') {
+                config(['app.name' => env('STORE_APP_NAME', 'Online Store')]);
+            }
         }
 
         $this->configureDefaults();
