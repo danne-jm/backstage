@@ -174,6 +174,12 @@ export default function Confirmation({ transaction, items }: Props) {
                         >
                             Continue Shopping
                         </Link>
+                        <a
+                            href={typeof window !== 'undefined' ? window.location.href : '#'}
+                            className="hidden rounded-md bg-black px-4 py-2 text-sm font-medium text-white uppercase print:inline-block"
+                        >
+                            View Order
+                        </a>
                     </div>
 
                     <div className="mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-3 sm:mt-8 sm:p-4 print:mt-4 print:p-2">

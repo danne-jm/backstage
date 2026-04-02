@@ -30,6 +30,7 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
 
     // Variant editing state
     const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+    const [isVariantModalReadOnly, setIsVariantModalReadOnly] = useState(false);
     const [editingVariantSale, setEditingVariantSale] = useState<any>(null);
 
     // Toast state
@@ -144,10 +145,28 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
             )}
 
             <div className="flex h-full w-full flex-col">
-                <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">Sales log</h3>
-                    <div className="text-xs text-muted-foreground">
-                        {allSales.length} sales
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <h3 className="shrink-0 text-sm font-semibold">Sales log</h3>
+                    <div className="truncate text-right text-xs text-muted-foreground" title={(() => {
+                        const summary = allSales.reduce((acc: Record<string, number>, s: any) => {
+                            const key = s.name ?? 'Unknown';
+                            acc[key] = (acc[key] || 0) + 1;
+                            return acc;
+                        }, {});
+                        const total = allSales.reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
+                        const parts = Object.entries(summary).map(([name, count]) => `${name} ${count}`);
+                        return `${allSales.length} sales | €${total.toFixed(2)} | ${parts.join(' | ')}`;
+                    })()}>
+                        {(() => {
+                            const summary = allSales.reduce((acc: Record<string, number>, s: any) => {
+                                const key = s.name ?? 'Unknown';
+                                acc[key] = (acc[key] || 0) + 1;
+                                return acc;
+                            }, {});
+                            const total = allSales.reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
+                            const parts = Object.entries(summary).map(([name, count]) => `${name} ${count}`);
+                            return `${allSales.length} sales | ${parts.join(' | ')}`;
+                        })()}
                     </div>
                 </div>
                 <div className="relative overflow-x-auto">
@@ -174,14 +193,15 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                                                 <div className="truncate" title={s.name ?? ''}>
                                                     {s.name ?? 'N/A'}
                                                 </div>
-                                                {!s.is_online && s.is_variant_based && (
+                                                {s.is_variant_based && (
                                                     <Button
                                                         size="sm"
                                                         variant="ghost"
                                                         className="h-6 w-6 p-0"
-                                                        disabled={activeShift?.status !== 'open'}
+                                                        disabled={!s.is_online && activeShift?.status !== 'open'}
                                                         onClick={() => {
                                                             setEditingVariantSale(s);
+                                                            setIsVariantModalReadOnly(!!s.is_online);
                                                             setIsVariantModalOpen(true);
                                                         }}
                                                     >
@@ -192,9 +212,16 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                                         </td>
                                         <td className="overflow-hidden px-1 py-3">
                                             {s.is_online ? (
-                                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">
-                                                    Online
-                                                </Badge>
+                                                <div className="flex flex-wrap items-center gap-1">
+                                                    <Badge className="border-transparent bg-blue-800 text-white hover:bg-blue-800">
+                                                        Online
+                                                    </Badge>
+                                                    {s.ticket_type === 'with_card' && (
+                                                        <Badge variant="outline" className="border-white bg-white text-[10px] text-black hover:bg-white/90">
+                                                            ESNcard
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <div className="flex flex-wrap items-center gap-1">
                                                     <Badge variant="outline" className="capitalize" title={s.method}>
@@ -291,10 +318,21 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                     onClose={() => {
                         setIsVariantModalOpen(false);
                         setEditingVariantSale(null);
+                        setIsVariantModalReadOnly(false);
                     }}
                     onConfirm={handleSaveSaleVariant}
-                    sellable={editingVariantSale ? getSellableForSale(editingVariantSale) : null}
+                    sellable={editingVariantSale ? (isVariantModalReadOnly
+                        ? {
+                            name: editingVariantSale.name,
+                            variants_config: Object.keys(editingVariantSale.variant_options ?? {}).map((k) => ({
+                                name: k,
+                                options: [editingVariantSale.variant_options[k]],
+                            })),
+                            variants: [],
+                          }
+                        : getSellableForSale(editingVariantSale)) : null}
                     initialOptions={editingVariantSale?.variant_options}
+                    readOnly={isVariantModalReadOnly}
                 />
 
                 {/* Confirmation modal for removing a sale */}

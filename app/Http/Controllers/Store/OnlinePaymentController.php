@@ -651,7 +651,7 @@ class OnlinePaymentController extends Controller
         }
 
         try {
-            Mail::to($transaction->email)->send(new OrderConfirmation($transaction));
+            Mail::to($transaction->email)->sendNow(new OrderConfirmation($transaction));
             $transaction->update(['mail_success' => true]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Order confirmation email failed', [

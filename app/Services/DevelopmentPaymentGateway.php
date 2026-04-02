@@ -23,7 +23,7 @@ class DevelopmentPaymentGateway implements PaymentGatewayInterface
             'completed_at' => now(),
         ]);
 
-        return PaymentResult::success($paymentId, 'Development payment auto-completed');
+        return PaymentResult::success($paymentId, 'Development payment auto-completed', ['auto_complete' => true]);
     }
 
     public function verifyPayment(string $paymentId, OnlineTransaction $transaction): PaymentResult

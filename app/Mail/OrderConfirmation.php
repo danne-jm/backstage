@@ -3,12 +3,17 @@
 namespace App\Mail;
 
 use App\Models\OnlineTransaction;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
 
-class OrderConfirmation extends Mailable
+class OrderConfirmation extends Mailable implements ShouldQueue
 {
+    use Queueable, SerializesModels;
+
     public OnlineTransaction $transaction;
 
     public function __construct(OnlineTransaction $transaction)
@@ -33,5 +38,10 @@ class OrderConfirmation extends Mailable
     public function attachments(): array
     {
         return [];
+    }
+
+    public function failed(\Throwable $exception): void
+    {
+        $this->transaction->update(['mail_success' => false]);
     }
 }

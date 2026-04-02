@@ -110,19 +110,23 @@ class OfficeController extends Controller
             ->where('sold_at', '<=', $shiftEnd)
             ->orderByDesc('sold_at');
 
-        $onlineSales = $onlineSalesQuery->get()->map(fn($s) => [
-            'id' => $s->id,
-            'name' => $s->product?->name ?? $s->event?->name ?? 'Unknown Item',
-            'method' => 'online',
-            'amount' => (float) $s->amount,
-            'ticket_type' => $s->ticket_type,
-            'reference_id' => $s->reference_id,
-            'variant_options' => $s->details['options'] ?? null,
-            'code_used' => $s->details['code_used'] ?? null,
-            'sold_at' => $s->sold_at?->toIso8601String(),
-            'created_at' => $s->sold_at?->toIso8601String(),
-            'is_online' => true,
-        ]);
+        $onlineSales = $onlineSalesQuery->get()->map(function ($s) {
+            $variantOptions = $s->details['options'] ?? null;
+            return [
+                'id' => $s->id,
+                'name' => $s->product?->name ?? $s->event?->name ?? 'Unknown Item',
+                'method' => 'online',
+                'amount' => (float) $s->amount,
+                'ticket_type' => $s->ticket_type,
+                'reference_id' => $s->reference_id,
+                'variant_options' => $variantOptions,
+                'is_variant_based' => !empty($variantOptions),
+                'code_used' => $s->details['code_used'] ?? null,
+                'sold_at' => $s->sold_at?->toIso8601String(),
+                'created_at' => $s->sold_at?->toIso8601String(),
+                'is_online' => true,
+            ];
+        });
 
         return Inertia::render('office/office-shift', [
             'shiftId' => $id,

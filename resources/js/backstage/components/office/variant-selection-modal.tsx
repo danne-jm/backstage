@@ -27,6 +27,7 @@ interface VariantSelectionModalProps {
         }>;
     } | null;
     initialOptions?: Record<string, string>;
+    readOnly?: boolean;
 }
 
 export function VariantSelectionModal({
@@ -35,6 +36,7 @@ export function VariantSelectionModal({
     onConfirm,
     sellable,
     initialOptions,
+    readOnly = false,
 }: VariantSelectionModalProps) {
     const [selectedOptions, setSelectedOptions] = useState<
         Record<string, string>
@@ -78,9 +80,11 @@ export function VariantSelectionModal({
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Select Variant</DialogTitle>
+                    <DialogTitle>{readOnly ? 'Variant Details' : 'Select Variant'}</DialogTitle>
                     <DialogDescription>
-                        Please select the options for {sellable?.name}.
+                        {readOnly
+                            ? `Variant configuration for this online sale of ${sellable?.name}.`
+                            : `Please select the options for ${sellable?.name}.`}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -95,12 +99,9 @@ export function VariantSelectionModal({
                                     const isSelected =
                                         selectedOptions[config.name] === option;
 
-                                    // Check if this option is available given other selections
-                                    // (Simplified check: at least one variant exists with this option set and matching other selections)
                                     const isAvailable = variants.some((v) => {
                                         if (v.options && v.options[config.name] !== option)
                                             return false;
-                                        // For other configs, if selected, they must match
                                         return configs.every((c) => {
                                             if (c.name === config.name)
                                                 return true;
@@ -116,24 +117,17 @@ export function VariantSelectionModal({
                                     return (
                                         <Button
                                             key={option}
-                                            variant={
-                                                isSelected
-                                                    ? 'default'
-                                                    : 'outline'
-                                            }
+                                            variant={isSelected ? 'default' : 'outline'}
                                             size="sm"
-                                            onClick={() =>
-                                                handleSelectOption(
-                                                    config.name,
-                                                    option,
-                                                )
-                                            }
+                                            onClick={() => {
+                                                if (!readOnly) handleSelectOption(config.name, option);
+                                            }}
                                             className={cn(
                                                 'h-8 transition-all',
-                                                !isAvailable &&
-                                                'cursor-not-allowed opacity-30',
+                                                readOnly && 'cursor-default',
+                                                !readOnly && !isAvailable && 'cursor-not-allowed opacity-30',
                                             )}
-                                            disabled={!isAvailable}
+                                            disabled={!readOnly && !isAvailable}
                                         >
                                             {option}
                                         </Button>
@@ -144,7 +138,7 @@ export function VariantSelectionModal({
                     ))}
                 </div>
 
-                {matchedVariant && (
+                {!readOnly && matchedVariant && (
                     <div className="py-2 text-center text-sm">
                         {isOutOfStock ? (
                             <span className="font-semibold text-destructive">
@@ -163,17 +157,25 @@ export function VariantSelectionModal({
                 )}
 
                 <DialogFooter className="flex gap-2 sm:justify-end">
-                    <Button variant="ghost" onClick={onClose}>
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() =>
-                            matchedVariant && onConfirm(matchedVariant.id)
-                        }
-                        disabled={!matchedVariant || !!isOutOfStock}
-                    >
-                        Confirm
-                    </Button>
+                    {readOnly ? (
+                        <Button variant="outline" onClick={onClose}>
+                            Close
+                        </Button>
+                    ) : (
+                        <>
+                            <Button variant="ghost" onClick={onClose}>
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() =>
+                                    matchedVariant && onConfirm(matchedVariant.id)
+                                }
+                                disabled={!matchedVariant || !!isOutOfStock}
+                            >
+                                Confirm
+                            </Button>
+                        </>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
