@@ -32,9 +32,7 @@ readonly class StoreSellableData
             ? $priceWithCard
             : null;
 
-        $hasStock = $product->unlimited_quantity
-            || is_null($product->quantity)
-            || ($product->quantity - ($product->sold_count ?? 0)) > 0;
+        $hasStock = $product->checkHasStock();
 
         return new self(
             id: $product->id,
@@ -57,22 +55,9 @@ readonly class StoreSellableData
         $priceWithCard = (float) ($event->price_with_card ?? 0);
         $isVariable = (bool) $event->variable_amount;
 
-        if ($isVariable) {
-            // Variable event: at least one tier must have stock
-            $withCardStock = $event->unlimited_quantity_with_card
-                || is_null($event->quantity_with_card)
-                || ($event->quantity_with_card - ($event->sold_count_with_card ?? 0)) > 0;
-
-            $withoutCardStock = $event->unlimited_quantity_without_card
-                || is_null($event->quantity_without_card)
-                || ($event->quantity_without_card - ($event->sold_count_without_card ?? 0)) > 0;
-
-            $hasStock = $withCardStock || $withoutCardStock;
-        } else {
-            $hasStock = $event->unlimited_quantity
-                || is_null($event->quantity)
-                || ($event->quantity - ($event->sold_count_without_card ?? 0)) > 0;
-        }
+        $hasStock = $isVariable
+            ? ($event->checkHasStockWithCard() || $event->checkHasStockWithoutCard())
+            : $event->checkHasStock();
 
         return new self(
             id: $event->id,

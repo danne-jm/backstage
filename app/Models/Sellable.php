@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSellableStock;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\HasMedia;
@@ -10,7 +11,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 abstract class Sellable extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    use HasFactory, InteractsWithMedia, HasSellableStock;
 
     protected $commonFillable = [
         'name',
@@ -79,6 +80,17 @@ abstract class Sellable extends Model implements HasMedia
                 'url' => $media->hasGeneratedConversion('optimized') ? $media->getUrl('optimized') : $media->getUrl(),
             ];
         })->toArray();
+    }
+
+    /**
+     * Whether the main entity has any stock available.
+     * Events override this to use sold_count_without_card.
+     */
+    public function checkHasStock(): bool
+    {
+        return (bool) $this->unlimited_quantity
+            || is_null($this->quantity)
+            || ($this->quantity - ($this->sold_count ?? 0)) > 0;
     }
 
     public function variants()

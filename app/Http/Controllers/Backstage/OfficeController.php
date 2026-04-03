@@ -208,18 +208,9 @@ class OfficeController extends Controller
         return redirect()->route('office.show', $office->id);
     }
 
-    public function recordSale(Request $request, OfficeShift $office)
+    public function recordSale(\App\Http\Requests\Backstage\RecordOfficeSaleRequest $request, OfficeShift $office)
     {
-        $data = $request->validate([
-            'product_id' => ['nullable'],
-            'item_type' => ['nullable', 'string', 'in:product,event,custom'],
-            'method' => ['required', 'in:cash,card'],
-            'amount' => ['required', 'numeric'],
-            'description' => ['nullable', 'string'],
-            'ticket_type' => ['nullable', 'string', 'in:with_card,without_card'],
-            'variant_id' => ['nullable', 'string'],
-            'breakdown' => ['nullable', 'array'],
-        ]);
+        $data = $request->validated();
 
         // The frontend always sends the sellable's ID as `product_id` regardless of type.
         // Route it to the correct field so SaleService can distinguish products from events.

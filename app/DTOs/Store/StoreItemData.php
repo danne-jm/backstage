@@ -44,9 +44,7 @@ readonly class StoreItemData
             ? $priceWithCard
             : null;
 
-        $hasStock = $product->unlimited_quantity
-            || is_null($product->quantity)
-            || ($product->quantity - ($product->sold_count ?? 0)) > 0;
+        $hasStock = $product->checkHasStock();
 
         $variants = collect($product->variants ?? [])
             ->map(fn ($v) => StoreVariantData::fromVariant($v)->toArray())
@@ -86,21 +84,12 @@ readonly class StoreItemData
         $priceWithCard = (float) ($event->price_with_card ?? 0);
         $isVariable = (bool) $event->variable_amount;
 
-        $withCardStock = $event->unlimited_quantity_with_card
-            || is_null($event->quantity_with_card)
-            || ($event->quantity_with_card - ($event->sold_count_with_card ?? 0)) > 0;
+        $withCardStock    = $event->checkHasStockWithCard();
+        $withoutCardStock = $event->checkHasStockWithoutCard();
 
-        $withoutCardStock = $event->unlimited_quantity_without_card
-            || is_null($event->quantity_without_card)
-            || ($event->quantity_without_card - ($event->sold_count_without_card ?? 0)) > 0;
-
-        if ($isVariable) {
-            $hasStock = $withCardStock || $withoutCardStock;
-        } else {
-            $hasStock = $event->unlimited_quantity
-                || is_null($event->quantity)
-                || ($event->quantity - ($event->sold_count_without_card ?? 0)) > 0;
-        }
+        $hasStock = $isVariable
+            ? ($withCardStock || $withoutCardStock)
+            : $event->checkHasStock();
 
         $images = collect($event->images_list ?? [])
             ->map(fn ($img) => ['id' => $img['id'], 'url' => $img['url']])

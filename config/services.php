@@ -41,4 +41,8 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'store' => [
+        'max_quantity_per_item' => env('STORE_MAX_QTY_PER_ITEM', 50),
+    ],
+
 ];
