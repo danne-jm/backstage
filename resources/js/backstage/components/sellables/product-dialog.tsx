@@ -233,7 +233,7 @@ export function ProductDialog({
             formData.append('price_without_card', '');
         }
         if (startSellDate) formData.append('start_sell_date', startSellDate);
-        if (endSellDate)   formData.append('end_sell_date', endSellDate);
+        if (endSellDate) formData.append('end_sell_date', endSellDate);
         if (productDescription)
             formData.append('description', productDescription);
         formData.append('variable_amount', productVariableAmount ? '1' : '0');
@@ -598,7 +598,7 @@ export function ProductDialog({
                                                     htmlFor="product-quantity-with-card"
                                                     className="text-sm"
                                                 >
-                                                    With Card
+                                                    {editingProduct ? 'Remaining With Card' : 'Initial With Card'}
                                                 </Label>
                                                 <Input
                                                     id="product-quantity-with-card"
@@ -621,7 +621,7 @@ export function ProductDialog({
                                                     htmlFor="product-quantity-without-card"
                                                     className="text-sm"
                                                 >
-                                                    Without Card
+                                                    {editingProduct ? 'Remaining Without Card' : 'Initial Without Card'}
                                                 </Label>
                                                 <Input
                                                     id="product-quantity-without-card"
@@ -646,7 +646,7 @@ export function ProductDialog({
                                                 htmlFor="product-quantity"
                                                 className="text-sm"
                                             >
-                                                Quantity Total
+                                                {editingProduct ? 'Remaining Quantity' : 'Initial Quantity'}
                                             </Label>
                                             <Input
                                                 id="product-quantity"

@@ -244,7 +244,7 @@ export function VariantManager({
                                                 {c.name}
                                             </TableHead>
                                         ))}
-                                    <TableHead>Quantity</TableHead>
+                                    <TableHead>Quantity (Remaining if editing)</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -256,7 +256,7 @@ export function VariantManager({
                                                 <TableCell key={c.name}>
                                                     {
                                                         (variant.options || {})[
-                                                            c.name
+                                                        c.name
                                                         ]
                                                     }
                                                 </TableCell>

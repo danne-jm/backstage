@@ -116,12 +116,12 @@ export function EventDialog({
 
             const priceWithCardValue =
                 editingEvent.price_with_card !== undefined &&
-                editingEvent.price_with_card !== null
+                    editingEvent.price_with_card !== null
                     ? editingEvent.price_with_card.toString()
                     : '';
             const priceWithoutCardValue =
                 editingEvent.price_without_card !== undefined &&
-                editingEvent.price_without_card !== null
+                    editingEvent.price_without_card !== null
                     ? editingEvent.price_without_card.toString()
                     : '';
 
@@ -266,15 +266,15 @@ export function EventDialog({
         const formData = new FormData();
         formData.append('name', eventName);
         if (eventDescription) formData.append('description', eventDescription);
-    formData.append('event_date', eventDate);
-    formData.append('start_sell_date', startSellDate);
-    formData.append('end_sell_date', endSellDate);
+        formData.append('event_date', eventDate);
+        formData.append('start_sell_date', startSellDate);
+        formData.append('end_sell_date', endSellDate);
 
-    // Always send both prices; in single mode, they are identical
-    const withCardToSend = formatToTwoDecimals(priceWithCard);
-    const withoutCardToSend = formatToTwoDecimals(priceWithoutCard);
-    formData.append('price_with_card', withCardToSend);
-    formData.append('price_without_card', withoutCardToSend);
+        // Always send both prices; in single mode, they are identical
+        const withCardToSend = formatToTwoDecimals(priceWithCard);
+        const withoutCardToSend = formatToTwoDecimals(priceWithoutCard);
+        formData.append('price_with_card', withCardToSend);
+        formData.append('price_without_card', withoutCardToSend);
 
         if (stockMode === 'simple' && !variableAmount) {
             if (quantity) {
@@ -567,11 +567,11 @@ export function EventDialog({
                                 />
                                 {(errors.price_with_card ||
                                     errors.price_without_card) && (
-                                    <p className="mt-1 text-xs text-destructive error-scroll-marker">
-                                        {errors.price_with_card ||
-                                            errors.price_without_card}
-                                    </p>
-                                )}
+                                        <p className="mt-1 text-xs text-destructive error-scroll-marker">
+                                            {errors.price_with_card ||
+                                                errors.price_without_card}
+                                        </p>
+                                    )}
                             </div>
                         )}
 
@@ -775,7 +775,7 @@ export function EventDialog({
                                                     htmlFor="quantity-with-card"
                                                     className="text-sm"
                                                 >
-                                                    With Card
+                                                    {editingEvent ? 'Remaining With Card' : 'Initial With Card'}
                                                 </Label>
                                                 <Input
                                                     id="quantity-with-card"
@@ -796,7 +796,7 @@ export function EventDialog({
                                                     htmlFor="quantity-without-card"
                                                     className="text-sm"
                                                 >
-                                                    Without Card
+                                                    {editingEvent ? 'Remaining Without Card' : 'Initial Without Card'}
                                                 </Label>
                                                 <Input
                                                     id="quantity-without-card"
@@ -819,7 +819,7 @@ export function EventDialog({
                                                 htmlFor="quantity"
                                                 className="text-sm"
                                             >
-                                                Quantity Total
+                                                {editingEvent ? 'Remaining Quantity' : 'Initial Quantity'}
                                             </Label>
                                             <Input
                                                 id="quantity"

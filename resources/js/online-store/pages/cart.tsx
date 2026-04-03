@@ -254,6 +254,41 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
         }
     };
 
+    const renderItems = useMemo(() => {
+        const counts: Record<string, number> = {};
+        const itemsToRender: any[] = [];
+
+        for (const item of sortedCart) {
+            const key = `${item.type}-${item.id}`;
+            const sItem = serverBreakdown?.find((s) => s.id === item.id && s.type === item.type);
+            const discountedCount = sItem?.discounted_quantity || 0;
+            const codesApplied = sItem?.codes_applied || [];
+
+            for (let i = 0; i < item.quantity; i++) {
+                if (!counts[key]) counts[key] = 0;
+                const hasActualDiscount = item.member_price != null && Number(item.member_price) < Number(item.price);
+
+                const isUnitDiscounted = hasActualDiscount && counts[key] < discountedCount;
+                const codeUsed = isUnitDiscounted ? (codesApplied[counts[key]] || 'Discount') : null;
+
+                if (isUnitDiscounted) {
+                    counts[key]++;
+                }
+
+                itemsToRender.push({
+                    item,
+                    originalIndex: i,
+                    isUnitDiscounted,
+                    codeUsed,
+                    unitRegularPrice: Number(item.price),
+                    unitMemberPrice: Number(item.member_price ?? item.price),
+                    optKey: item.options ? JSON.stringify(item.options) : '',
+                });
+            }
+        }
+        return itemsToRender;
+    }, [sortedCart, serverBreakdown]);
+
     return (
         <ShopLayout>
             <Head title="Shopping Cart" />
@@ -366,54 +401,38 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                             </h2>
 
                             <dl className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
-                                {sortedCart.flatMap((item) =>
-                                    Array.from({ length: item.quantity }).map((_, i) => {
-                                        const sItem = serverBreakdown?.find(
-                                            (s) => s.id === item.id && s.type === item.type,
-                                        );
-                                        const discountedCount = sItem?.discounted_quantity || 0;
-                                        const hasActualDiscount =
-                                            item.member_price != null &&
-                                            Number(item.member_price) < Number(item.price);
-                                        const isUnitDiscounted = hasActualDiscount && i < discountedCount;
-                                        const codeUsed =
-                                            sItem?.codes_applied?.[i] || (isUnitDiscounted ? 'Discount' : null);
-                                        const unitRegularPrice = Number(item.price);
-                                        const unitMemberPrice = Number(item.member_price ?? item.price);
-
-                                        const optKey = item.options ? JSON.stringify(item.options) : '';
-                                        return (
-                                            <div
-                                                key={`${item.type}-${item.id}-${optKey}-${i}`}
-                                                className="flex flex-col border-b border-gray-100 py-2 last:border-0"
-                                            >
-                                                <div className="flex w-full items-baseline justify-between gap-2">
-                                                    <dt className="text-xs text-gray-600 sm:text-sm">{item.name}</dt>
-                                                    <dd className="flex-shrink-0 text-right text-xs font-medium text-gray-900 sm:text-sm">
-                                                        {isUnitDiscounted ? (
-                                                            <div className="flex flex-col items-end gap-0.5">
-                                                                <div className="flex items-center gap-1 sm:gap-2">
-                                                                    <span className="text-xs text-emerald-700">
-                                                                        {codeUsed && `(${codeUsed})`}
-                                                                    </span>
-                                                                    <span className="text-xs text-gray-500 line-through">
-                                                                        €{unitRegularPrice.toFixed(2)}
-                                                                    </span>
-                                                                    <span className="text-xs sm:text-sm">
-                                                                        €{unitMemberPrice.toFixed(2)}
-                                                                    </span>
-                                                                    <Ticket className="h-3 w-3 text-emerald-700" />
-                                                                </div>
+                                {renderItems.map(({ item, originalIndex: i, isUnitDiscounted, codeUsed, unitRegularPrice, unitMemberPrice, optKey }) => {
+                                    return (
+                                        <div
+                                            key={`${item.type}-${item.id}-${optKey}-${i}`}
+                                            className="flex flex-col border-b border-gray-100 py-2 last:border-0"
+                                        >
+                                            <div className="flex w-full items-baseline justify-between gap-2">
+                                                <dt className="text-xs text-gray-600 sm:text-sm">{item.name}</dt>
+                                                <dd className="flex-shrink-0 text-right text-xs font-medium text-gray-900 sm:text-sm">
+                                                    {isUnitDiscounted ? (
+                                                        <div className="flex flex-col items-end gap-0.5">
+                                                            <div className="flex items-center gap-1 sm:gap-2">
+                                                                <span className="text-xs text-emerald-700">
+                                                                    {codeUsed && `(${codeUsed})`}
+                                                                </span>
+                                                                <span className="text-xs text-gray-500 line-through">
+                                                                    €{unitRegularPrice.toFixed(2)}
+                                                                </span>
+                                                                <span className="text-xs sm:text-sm">
+                                                                    €{unitMemberPrice.toFixed(2)}
+                                                                </span>
+                                                                <Ticket className="h-3 w-3 text-emerald-700" />
                                                             </div>
-                                                        ) : (
-                                                            <span>€{unitRegularPrice.toFixed(2)}</span>
-                                                        )}
-                                                    </dd>
-                                                </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span>€{unitRegularPrice.toFixed(2)}</span>
+                                                    )}
+                                                </dd>
                                             </div>
-                                        );
-                                    }),
-                                )}
+                                        </div>
+                                    );
+                                })}
 
                                 {/* Discount Code */}
                                 <div className="border-t border-gray-200 pt-3 sm:pt-4">
