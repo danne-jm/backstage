@@ -9,3 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('transactions:cleanup-abandoned --minutes=30')->everyFifteenMinutes();
+
+if (env('LEDGER_BACKFILL_SCHEDULED', false)) {
+    Schedule::command('ledger:backfill --chunk=500')->dailyAt('02:45');
+}

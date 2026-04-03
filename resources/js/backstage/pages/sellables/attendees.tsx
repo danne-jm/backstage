@@ -49,7 +49,7 @@ export default function EventAttendees({ event }: { event: any }) {
         setTimeout(() => setMessage(null), 3000);
     };
 
-    const gmailConnected = Boolean(auth.user?.gmail_refresh_token);
+    const gmailConnected = Boolean(auth.user?.gmail_provider_email);
 
     // Auto-load data after a sheet is selected via the config component
     const handleSheetsLoaded = (sheets: string[]) => {

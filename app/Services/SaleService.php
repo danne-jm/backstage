@@ -14,6 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class SaleService
 {
+    public function __construct(protected FinancialLedgerService $financialLedgerService)
+    {
+    }
+
     /**
      * Record a sale from the Office/POS.
      * Handles atomic stock deduction, OfficeShiftSale creation, and shift total updates.
@@ -74,6 +78,8 @@ class SaleService
             $shift->total_card = (float) (($shift->start_card ?? 0) + ($shift->card_total ?? 0));
             $shift->save();
 
+            $this->financialLedgerService->recordOfficeSale($sale, $shift);
+
             return $sale;
         });
     }
@@ -130,12 +136,6 @@ class SaleService
 
         if ($amount > 0) {
             OnlineSale::whereNull('office_shift_id')->update(['office_shift_id' => $shift->id]);
-
-            $shift->increment('card_total', $amount);
-
-            // Re-sync the final total_card on the shift
-            $officeService = app(OfficeService::class);
-            $officeService->syncTotals($shift);
         }
     }
 

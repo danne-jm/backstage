@@ -26,6 +26,7 @@ class CheckoutService
         protected DiscountAllocator $allocator,
         public PaymentGatewayInterface $paymentGateway,
         protected SaleService $saleService,
+        protected FinancialLedgerService $financialLedgerService,
     ) {
     }
 
@@ -139,7 +140,17 @@ class CheckoutService
      */
     public function verifyPayment(string $paymentId, OnlineTransaction $transaction): PaymentResult
     {
-        return $this->paymentGateway->verifyPayment($paymentId, $transaction);
+        $wasCompleted = $transaction->isCompleted();
+
+        $result = $this->paymentGateway->verifyPayment($paymentId, $transaction);
+
+        $transaction->refresh();
+
+        if (!$wasCompleted && $transaction->isCompleted()) {
+            $this->financialLedgerService->recordOnlineTransactionCompleted($transaction);
+        }
+
+        return $result;
     }
 
     /**
@@ -151,6 +162,7 @@ class CheckoutService
         DB::transaction(function () use ($transaction) {
             $this->revertStockForTransaction($transaction);
             $this->revertDiscountUsagesForTransaction($transaction);
+            $this->financialLedgerService->recordOnlineTransactionReversal($transaction, 'failed');
             $transaction->update(['payment_status' => PaymentResult::STATUS_FAILED]);
         });
     }
@@ -215,7 +227,10 @@ class CheckoutService
         }
 
         try {
-            Mail::to($transaction->email)->sendNow(new OrderConfirmation($transaction));
+                Mail::to($transaction->email)->queue(
+                    (new OrderConfirmation($transaction))
+                        ->onQueue(config('mail.confirmation_queue', 'confirmations'))
+                );
             $transaction->update(['mail_success' => true]);
         } catch (\Throwable $e) {
             Log::error('Order confirmation email failed', [

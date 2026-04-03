@@ -32,6 +32,32 @@ class SellablesController extends Controller
         $this->inventoryService = $inventoryService;
     }
 
+    /**
+     * Sanitize rich text content coming from staff/admin forms before persisting.
+     * Keeps a safe subset of tags and strips executable/event-handler payloads.
+     */
+    protected function sanitizeRichText(?string $html): ?string
+    {
+        if ($html === null) {
+            return null;
+        }
+
+        $clean = preg_replace('#<(script|style)[^>]*>.*?</\\1>#is', '', $html) ?? '';
+
+        $clean = strip_tags(
+            $clean,
+            '<p><br><strong><em><b><i><u><ul><ol><li><a><h1><h2><h3><h4><blockquote><span>'
+        );
+
+        // Remove inline event handlers like onclick/onerror/etc.
+        $clean = preg_replace('/\s(on\w+)\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $clean) ?? '';
+
+        // Neutralize javascript: URLs if present in href/src attributes.
+        $clean = preg_replace('/(href|src)\s*=\s*([\"\'])\s*javascript:[^\"\']*\2/i', '$1="#"', $clean) ?? '';
+
+        return trim($clean);
+    }
+
     protected function baseEventQuery()
     {
         return Event::with(['responsibleUser', 'variants'])->withCount([
@@ -217,6 +243,10 @@ class SellablesController extends Controller
             }
         }
 
+        if (array_key_exists('description', $validated)) {
+            $validated['description'] = $this->sanitizeRichText($validated['description']);
+        }
+
         return $this->inventoryService->normalizeInput($validated);
     }
 
@@ -293,6 +323,10 @@ class SellablesController extends Controller
             } elseif (!is_array($validated['variants_config'])) {
                 abort(422, 'Invalid variants configuration');
             }
+        }
+
+        if (array_key_exists('description', $validated)) {
+            $validated['description'] = $this->sanitizeRichText($validated['description']);
         }
 
         $normalized = $this->inventoryService->normalizeInput($validated);

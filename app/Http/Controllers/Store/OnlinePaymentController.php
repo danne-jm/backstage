@@ -97,14 +97,24 @@ class OnlinePaymentController extends Controller
      */
     public function paymentCallback(Request $request)
     {
-        $reference = $request->query('reference');
-        $paymentId = $request->query('payment_id');
+        $reference = $request->query('reference') ?? $request->query('checkout_reference');
+        $paymentId = $request->query('payment_id')
+            ?? $request->query('checkout_id')
+            ?? $request->query('co');
 
-        if (!$reference) {
+        if (!$reference && !$paymentId) {
             return redirect('/cart')->with('error', 'Invalid payment callback.');
         }
 
-        $transaction = OnlineTransaction::where('reference_id', $reference)->lockForUpdate()->first();
+        $transaction = null;
+
+        if ($reference) {
+            $transaction = OnlineTransaction::where('reference_id', $reference)->lockForUpdate()->first();
+        }
+
+        if (!$transaction && $paymentId) {
+            $transaction = OnlineTransaction::where('external_payment_id', $paymentId)->lockForUpdate()->first();
+        }
 
         if (!$transaction) {
             return redirect('/cart')->with('error', 'Transaction not found.');

@@ -18,6 +18,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Confirmation Mail Queue
+    |--------------------------------------------------------------------------
+    |
+    | Queue name used for online order confirmation emails. Keeping this on a
+    | dedicated queue avoids blocking webhook/callback requests and isolates
+    | traffic from other distribution emails.
+    |
+    */
+
+    'confirmation_queue' => env('MAIL_CONFIRMATION_QUEUE', 'confirmations'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Mailer Configurations
     |--------------------------------------------------------------------------
     |

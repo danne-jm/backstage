@@ -22,10 +22,10 @@ export function PreviousShiftSalesLog({
     const cashTotal = totals ? Number(totals.cash_total || 0) : sales
         .filter((s) => s.method === 'cash')
         .reduce((sum, s) => sum + Number(s.amount), 0);
-    const cardTotal = totals ? (Number(totals.card_total || 0) + Number(totals.start_card || 0)) : sales
+    const cardTotal = totals ? Number(totals.card_total || 0) : sales
         .filter((s) => s.method === 'card' || s.method === 'online')
         .reduce((sum, s) => sum + Number(s.amount), 0);
-    const total = totals ? (Number(totals.total || 0) + Number(totals.start_card || 0)) : cashTotal + cardTotal;
+    const total = totals ? Number(totals.total || 0) : cashTotal + cardTotal;
 
     const formatDateTime = (dateStr: string) => {
         if (!dateStr) return '';

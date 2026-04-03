@@ -270,7 +270,21 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
 
             if (response.data.success) {
                 clearCart();
-                window.location.href = response.data.redirect_url;
+
+                const checkoutUrl = response.data.checkout_url;
+                const redirectUrl = response.data.redirect_url;
+
+                if (checkoutUrl) {
+                    window.location.href = checkoutUrl;
+                    return;
+                }
+
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                    return;
+                }
+
+                setMessage({ text: 'Payment link missing. Please try again.', type: 'error' });
             }
         } catch (error: any) {
             const stockErr = error?.response?.data?.errors?.stock;

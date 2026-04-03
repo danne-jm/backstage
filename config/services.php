@@ -48,6 +48,7 @@ return [
     'sumup' => [
         'api_key' => env('SUMUP_API_KEY'),
         'merchant_code' => env('SUMUP_MERCHANT_CODE'),
+        'merchant_slug' => env('SUMUP_MERCHANT_SLUG'),
         'webhook_secret' => env('SUMUP_WEBHOOK_SECRET'),
         'processing_fee_rate' => (float) env('SUMUP_PROCESSING_FEE_RATE', 0.02),
     ],

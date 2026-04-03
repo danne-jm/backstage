@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class OfficeService
 {
-    public function __construct(protected SaleService $saleService)
-    {
+    public function __construct(
+        protected SaleService $saleService,
+        protected FinancialLedgerService $financialLedgerService,
+    ) {
     }
 
     public function startShift(User $user): OfficeShift
@@ -102,6 +104,8 @@ class OfficeService
                 }
 
                 $this->saleService->restoreStock($sale);
+
+                $this->financialLedgerService->recordOfficeSaleRemoved($sale, $office, 'removed');
 
                 $sale->delete();
 

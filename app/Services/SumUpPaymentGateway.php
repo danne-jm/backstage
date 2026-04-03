@@ -19,10 +19,12 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
     public function __construct(
         private ?string $apiKey = null,
         private ?string $merchantCode = null,
+        private ?string $merchantSlug = null,
         private ?string $webhookSecret = null,
     ) {
         $this->apiKey = $apiKey ?? config('services.sumup.api_key');
         $this->merchantCode = $merchantCode ?? config('services.sumup.merchant_code');
+        $this->merchantSlug = $merchantSlug ?? config('services.sumup.merchant_slug');
         $this->webhookSecret = $webhookSecret ?? config('services.sumup.webhook_secret');
     }
 
@@ -36,13 +38,17 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
                     'currency' => 'EUR',
                     'merchant_code' => $this->merchantCode,
                     'description' => 'Online Store Order',
-                    'return_url' => url('/payment/callback'),
+                    'return_url' => route('shop.payment.callback', ['reference' => $transaction->reference_id]),
                 ]);
 
             if ($response->successful()) {
                 $data = $response->json();
                 $checkoutId = $data['id'] ?? null;
-                $checkoutUrl = "https://pay.sumup.com/b2c/QLPBDVUN?co={$checkoutId}";
+                $checkoutUrl = $data['checkout_url'] ?? null;
+
+                if (!$checkoutUrl && $checkoutId && $this->merchantSlug) {
+                    $checkoutUrl = "https://pay.sumup.com/b2c/{$this->merchantSlug}?co={$checkoutId}";
+                }
 
                 $transaction->update([
                     'external_payment_id' => $checkoutId,

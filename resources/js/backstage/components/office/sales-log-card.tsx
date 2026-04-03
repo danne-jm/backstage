@@ -56,9 +56,8 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
     const salesSummaryText = summarizeSales(allSales);
 
     const cashTotal = activeShift ? Number(activeShift.cash_total || 0) : 0;
-    // Sales log summary should include BOTH live card revenue AND start-of-shift orphans
-    const cardTotal = activeShift ? (Number(activeShift.card_total || 0) + Number(activeShift.start_card || 0)) : 0;
-    const combinedTotal = activeShift ? (Number(activeShift.total || 0) + Number(activeShift.start_card || 0)) : 0;
+    const cardTotal = activeShift ? Number(activeShift.card_total || 0) : 0;
+    const combinedTotal = activeShift ? Number(activeShift.total || 0) : 0;
 
     const formatDateTime = (dateStr: string) => {
         if (!dateStr) return '';
