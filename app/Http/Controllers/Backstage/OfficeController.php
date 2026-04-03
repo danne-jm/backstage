@@ -93,7 +93,10 @@ class OfficeController extends Controller
 
         $sellables = collect($products)->map(fn($p) => \App\DTOs\Office\PosSellableDTO::fromProduct($p))
             ->concat(collect($events)->map(fn($e) => \App\DTOs\Office\PosSellableDTO::fromEvent($e)))
-            ->sortBy('name')
+            ->sortBy([
+                ['type', 'desc'],
+                ['start_sell_date', 'asc'],
+            ])
             ->values()
             ->all();
 
@@ -134,7 +137,10 @@ class OfficeController extends Controller
 
         $sellables = collect($products)->map(fn($p) => \App\DTOs\Office\PosSellableDTO::fromProduct($p))
             ->concat(collect($events)->map(fn($e) => \App\DTOs\Office\PosSellableDTO::fromEvent($e)))
-            ->sortBy('name')
+            ->sortBy([
+                ['type', 'desc'],
+                ['start_sell_date', 'asc'],
+            ])
             ->values()
             ->all();
 

@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
-import { Eye, Pencil } from 'lucide-react';
+import { Eye, HelpCircle, Pencil } from 'lucide-react';
 import React, { useState } from 'react';
+import { BaseModal } from './base-modal';
 import { CashBreakdownModal } from '@backstage/components/office/cash-breakdown-modal';
 import { SaleCashBreakdownModal } from '@backstage/components/office/sale-cash-breakdown-modal';
 import { Button } from '@backstage/components/ui/button';
@@ -14,10 +15,11 @@ export function RevenueCard({ activeShift, onlineSales = [] }: any) {
     const [liveCashBreakdownOpen, setLiveCashBreakdownOpen] = useState(false);
     const [totalCashBreakdownOpen, setTotalCashBreakdownOpen] = useState(false);
 
+    const [isCashInfoModalOpen, setIsCashInfoModalOpen] = useState(false);
+    const [isCardInfoModalOpen, setIsCardInfoModalOpen] = useState(false);
+
     // Inline editing state for Start Cash/Card
     const [isStartCashModalOpen, setIsStartCashModalOpen] = useState(false);
-    const [editingStartCard, setEditingStartCard] = useState(false);
-    const [pendingStartCard, setPendingStartCard] = useState<string>('');
     const [submitting, setSubmitting] = useState(false);
 
     // Compute totals based on activeShift
@@ -33,23 +35,6 @@ export function RevenueCard({ activeShift, onlineSales = [] }: any) {
     const totalCard = startCard + cardTotal;
     const totalCombined = totalCash + totalCard;
 
-    const handleSaveStartCard = () => {
-        if (!activeShift?.id) return;
-        setSubmitting(true);
-        router.post(
-            `/office/${activeShift.id}/update-start-totals`,
-            {
-                cash: Number(activeShift?.start_cash) || 0,
-                card: Number(pendingStartCard) || 0,
-            },
-            {
-                onSuccess: () => {
-                    setEditingStartCard(false);
-                },
-                onFinish: () => setSubmitting(false),
-            },
-        );
-    };
 
     const handleSaveStartCashBreakdown = (
         breakdown: Record<string, number>,
@@ -126,6 +111,16 @@ export function RevenueCard({ activeShift, onlineSales = [] }: any) {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                     <span>Cash</span>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-5 w-5"
+                                        onClick={() =>
+                                            setIsCashInfoModalOpen(true)
+                                        }
+                                    >
+                                        <HelpCircle className="h-4 w-4" />
+                                    </Button>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="text-lg font-medium">
@@ -160,62 +155,21 @@ export function RevenueCard({ activeShift, onlineSales = [] }: any) {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                     <span>Card</span>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-5 w-5"
+                                        onClick={() =>
+                                            setIsCardInfoModalOpen(true)
+                                        }
+                                    >
+                                        <HelpCircle className="h-4 w-4" />
+                                    </Button>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {editingStartCard ? (
-                                        <>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                className="h-8 w-24"
-                                                value={pendingStartCard}
-                                                onChange={(e) =>
-                                                    setPendingStartCard(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                            <Button
-                                                size="sm"
-                                                onClick={handleSaveStartCard}
-                                                disabled={submitting}
-                                            >
-                                                Save
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() =>
-                                                    setEditingStartCard(false)
-                                                }
-                                            >
-                                                Cancel
-                                            </Button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="text-lg font-medium">
-                                                €{startCard.toFixed(2)}
-                                            </div>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-5 w-5"
-                                                disabled={
-                                                    activeShift?.status !==
-                                                    'open'
-                                                }
-                                                onClick={() => {
-                                                    setPendingStartCard(
-                                                        startCard.toString(),
-                                                    );
-                                                    setEditingStartCard(true);
-                                                }}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                        </>
-                                    )}
+                                    <div className="text-lg font-medium">
+                                        €{startCard.toFixed(2)}
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -352,6 +306,36 @@ export function RevenueCard({ activeShift, onlineSales = [] }: any) {
                     )}
                 </div>
             </div>
+
+            <BaseModal
+                isOpen={isCashInfoModalOpen}
+                onClose={setIsCashInfoModalOpen}
+                title="Start Cash Explained"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm">
+                        This value is the <strong>inherited cash breakdown balance</strong> from the previously closed office shift.
+                    </p>
+                    <div className="rounded-lg bg-muted/50 p-3 text-sm italic">
+                        "Your shift starts with the exact amount the last worker ended with."
+                    </div>
+                </div>
+            </BaseModal>
+
+            <BaseModal
+                isOpen={isCardInfoModalOpen}
+                onClose={setIsCardInfoModalOpen}
+                title="Start Card Explained"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm">
+                        This value represents <strong>orphaned online sales</strong> made while no office shift was active.
+                    </p>
+                    <p className="text-sm">
+                        These sales (typically through the online store) are automatically claimed by this newly opened shift to ensure all revenue is associated with a office shift.
+                    </p>
+                </div>
+            </BaseModal>
         </section>
     );
 }

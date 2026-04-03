@@ -51,6 +51,11 @@ class DevelopmentPaymentGateway implements PaymentGatewayInterface
         return PaymentResult::failed('Refunds not supported in development mode');
     }
 
+    public function isWebhookSignatureValid(string $body, string $signature): bool
+    {
+        return true; // Always valid in development
+    }
+
     public function getName(): string
     {
         return 'development';

@@ -23,14 +23,16 @@ class OfficeService
                 ->first();
 
             $startCash = 0;
-            $startCard = 0;
             $startCashBreakdown = null;
 
             if ($lastShift) {
                 $startCash = (float) ($lastShift->total_cash ?? 0);
-                $startCard = (float) ($lastShift->total_card ?? 0);
                 $startCashBreakdown = $lastShift->end_of_shift_cash_breakdown;
             }
+
+            // New shift card total always starts with orphaned online sales,
+            // not a carry-over from the previous office shift.
+            $orphanedCardSum = (float) \App\Models\OnlineSale::whereNull('office_shift_id')->sum('amount');
 
             $shift = OfficeShift::create([
                 'started_by' => $user->id,
@@ -39,11 +41,14 @@ class OfficeService
                 'cash_total' => 0,
                 'card_total' => 0,
                 'start_cash' => $startCash,
-                'start_card' => $startCard,
+                'start_card' => $orphanedCardSum,
                 'start_cash_breakdown' => $startCashBreakdown,
                 'total_cash' => $startCash,
-                'total_card' => $startCard,
+                'total_card' => $orphanedCardSum,
             ]);
+
+            // Claim orphans immediately so they are linked to the new shift
+            \App\Models\OnlineSale::whereNull('office_shift_id')->update(['office_shift_id' => $shift->id]);
 
             // Add the starter as a worker immediately
             OfficeShiftWorker::create([
@@ -229,7 +234,7 @@ class OfficeService
         });
     }
 
-    protected function syncTotals(OfficeShift $office): void
+    public function syncTotals(OfficeShift $office): void
     {
         $office->refresh();
         $office->total_cash = (float) (($office->start_cash ?? 0) + ($office->cash_total ?? 0));

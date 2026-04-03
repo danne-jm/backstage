@@ -18,5 +18,7 @@ interface PaymentGatewayInterface
 
     public function refund(string $paymentId, ?float $amount = null): PaymentResult;
 
+    public function isWebhookSignatureValid(string $body, string $signature): bool;
+
     public function getName(): string;
 }

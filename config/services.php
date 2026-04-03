@@ -45,4 +45,11 @@ return [
         'max_quantity_per_item' => env('STORE_MAX_QTY_PER_ITEM', 50),
     ],
 
+    'sumup' => [
+        'api_key' => env('SUMUP_API_KEY'),
+        'merchant_code' => env('SUMUP_MERCHANT_CODE'),
+        'webhook_secret' => env('SUMUP_WEBHOOK_SECRET'),
+        'processing_fee_rate' => (float) env('SUMUP_PROCESSING_FEE_RATE', 0.02),
+    ],
+
 ];

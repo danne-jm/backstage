@@ -10,6 +10,7 @@ use App\Models\sellables\Event;
 use App\Models\sellables\Product;
 use App\Services\CheckoutService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -17,7 +18,8 @@ class OnlinePaymentController extends Controller
 {
     public function __construct(
         protected CheckoutService $checkoutService,
-    ) {}
+    ) {
+    }
 
     /**
      * Validate cart and return discount breakdown + stock warnings.
@@ -52,11 +54,11 @@ class OnlinePaymentController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 422);
         }
 
-        $transaction   = $result['transaction'];
+        $transaction = $result['transaction'];
         $paymentResult = $result['payment_result'];
 
         if ($paymentResult->metadata['auto_complete'] ?? false) {
@@ -69,7 +71,7 @@ class OnlinePaymentController extends Controller
                 $this->checkoutService->dispatchConfirmationEmail($transaction->fresh());
 
                 return response()->json([
-                    'success'      => true,
+                    'success' => true,
                     'redirect_url' => '/confirmation?bag=' . $transaction->reference_id,
                 ]);
             }
@@ -77,15 +79,15 @@ class OnlinePaymentController extends Controller
 
         if ($paymentResult->checkoutUrl) {
             return response()->json([
-                'success'      => true,
+                'success' => true,
                 'checkout_url' => $paymentResult->checkoutUrl,
-                'payment_id'   => $paymentResult->paymentId,
-                'reference'    => $transaction->reference_id,
+                'payment_id' => $paymentResult->paymentId,
+                'reference' => $transaction->reference_id,
             ]);
         }
 
         return response()->json([
-            'success'      => true,
+            'success' => true,
             'redirect_url' => '/confirmation?bag=' . $transaction->reference_id,
         ]);
     }
@@ -102,7 +104,7 @@ class OnlinePaymentController extends Controller
             return redirect('/cart')->with('error', 'Invalid payment callback.');
         }
 
-        $transaction = OnlineTransaction::where('reference_id', $reference)->first();
+        $transaction = OnlineTransaction::where('reference_id', $reference)->lockForUpdate()->first();
 
         if (!$transaction) {
             return redirect('/cart')->with('error', 'Transaction not found.');
@@ -134,11 +136,37 @@ class OnlinePaymentController extends Controller
      */
     public function webhook(Request $request)
     {
+        $signature = $request->header('X-SumUp-Signature') ?? '';
+
+        // Verify signature if a secret is configured or if we're in production
+        if (!$this->checkoutService->paymentGateway->isWebhookSignatureValid($request->getContent(), $signature)) {
+            Log::warning('SumUp webhook signature verification failed', [
+                'ip' => $request->ip(),
+                'signature' => $signature,
+            ]);
+
+            return response()->json(['success' => false, 'error' => 'Invalid signature'], 401);
+        }
+
         $result = $this->checkoutService->handleWebhook($request->all());
 
-        return $result->isSuccessful()
-            ? response()->json(['success' => true])
-            : response()->json(['success' => false], 400);
+        if ($result->isSuccessful()) {
+            $externalId = $result->paymentId;
+
+            $transaction = OnlineTransaction::where('external_payment_id', $externalId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($transaction && $transaction->isPending()) {
+                $verifyResult = $this->checkoutService->verifyPayment($externalId, $transaction);
+
+                if ($verifyResult->isSuccessful()) {
+                    $this->checkoutService->dispatchConfirmationEmail($transaction->fresh());
+                }
+            }
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -146,8 +174,8 @@ class OnlinePaymentController extends Controller
      */
     public function verifyPayment(Request $request)
     {
-        $reference   = $request->input('reference');
-        $transaction = OnlineTransaction::where('reference_id', $reference)->first();
+        $reference = $request->input('reference');
+        $transaction = OnlineTransaction::where('reference_id', $reference)->lockForUpdate()->first();
 
         if (!$transaction) {
             return response()->json(['error' => 'Transaction not found'], 404);
@@ -155,7 +183,7 @@ class OnlinePaymentController extends Controller
 
         if ($transaction->isCompleted()) {
             return response()->json([
-                'status'       => 'completed',
+                'status' => 'completed',
                 'redirect_url' => '/confirmation?bag=' . $transaction->reference_id,
             ]);
         }
@@ -167,7 +195,7 @@ class OnlinePaymentController extends Controller
             );
 
             return response()->json([
-                'status'       => $result->status,
+                'status' => $result->status,
                 'redirect_url' => $result->isSuccessful()
                     ? '/confirmation?bag=' . $transaction->reference_id
                     : null,
@@ -196,10 +224,10 @@ class OnlinePaymentController extends Controller
             return redirect('/')->with('error', 'Transaction not found.');
         }
 
-        $productIds   = $transaction->sales->pluck('product_id')->filter()->unique();
-        $eventIds     = $transaction->sales->pluck('event_id')->filter()->unique();
+        $productIds = $transaction->sales->pluck('product_id')->filter()->unique();
+        $eventIds = $transaction->sales->pluck('event_id')->filter()->unique();
         $productNames = Product::whereIn('id', $productIds)->pluck('name', 'id');
-        $eventNames   = Event::whereIn('id', $eventIds)->pluck('name', 'id');
+        $eventNames = Event::whereIn('id', $eventIds)->pluck('name', 'id');
 
         $items = $transaction->sales->map(function ($sale) use ($productNames, $eventNames) {
             $name = $sale->product_id
@@ -207,25 +235,25 @@ class OnlinePaymentController extends Controller
                 : ($eventNames[$sale->event_id] ?? 'Unknown Item');
 
             return [
-                'id'              => $sale->id,
-                'reference_id'    => $sale->reference_id,
-                'name'            => $name,
-                'type'            => $sale->product_id ? 'product' : 'event',
-                'amount'          => $sale->amount,
-                'ticket_type'     => $sale->ticket_type,
+                'id' => $sale->id,
+                'reference_id' => $sale->reference_id,
+                'name' => $name,
+                'type' => $sale->product_id ? 'product' : 'event',
+                'amount' => $sale->amount,
+                'ticket_type' => $sale->ticket_type,
                 'variant_options' => $sale->details['options'] ?? null,
-                'code_used'       => $sale->details['code_used'] ?? null,
+                'code_used' => $sale->details['code_used'] ?? null,
             ];
         });
 
         return Inertia::render('confirmation', [
             'transaction' => [
-                'id'              => $transaction->id,
-                'total_amount'    => $transaction->total_amount,
-                'processing_fee'  => $transaction->processing_fee,
-                'discount_codes'  => $transaction->discount_codes,
-                'completed_at'    => $transaction->completed_at?->toIso8601String(),
-                'payment_status'  => $transaction->payment_status,
+                'id' => $transaction->id,
+                'total_amount' => $transaction->total_amount,
+                'processing_fee' => $transaction->processing_fee,
+                'discount_codes' => $transaction->discount_codes,
+                'completed_at' => $transaction->completed_at?->toIso8601String(),
+                'payment_status' => $transaction->payment_status,
             ],
             'items' => $items,
         ]);

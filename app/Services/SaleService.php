@@ -126,7 +126,17 @@ class SaleService
      */
     public function claimStrayOnlineSales(OfficeShift $shift): void
     {
-        OnlineSale::whereNull('office_shift_id')->update(['office_shift_id' => $shift->id]);
+        $amount = OnlineSale::whereNull('office_shift_id')->sum('amount');
+
+        if ($amount > 0) {
+            OnlineSale::whereNull('office_shift_id')->update(['office_shift_id' => $shift->id]);
+
+            $shift->increment('card_total', $amount);
+
+            // Re-sync the final total_card on the shift
+            $officeService = app(OfficeService::class);
+            $officeService->syncTotals($shift);
+        }
     }
 
     /**

@@ -24,7 +24,7 @@ class CheckoutService
 {
     public function __construct(
         protected DiscountAllocator $allocator,
-        protected PaymentGatewayInterface $paymentGateway,
+        public PaymentGatewayInterface $paymentGateway,
         protected SaleService $saleService,
     ) {
     }

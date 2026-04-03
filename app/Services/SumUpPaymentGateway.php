@@ -17,10 +17,14 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
     private const API_BASE = 'https://api.sumup.com/v0.1';
 
     public function __construct(
-        private readonly string $apiKey = '',
-        private readonly string $appId = '',
-        private readonly string $merchantCode = '',
-    ) {}
+        private ?string $apiKey = null,
+        private ?string $merchantCode = null,
+        private ?string $webhookSecret = null,
+    ) {
+        $this->apiKey = $apiKey ?? config('services.sumup.api_key');
+        $this->merchantCode = $merchantCode ?? config('services.sumup.merchant_code');
+        $this->webhookSecret = $webhookSecret ?? config('services.sumup.webhook_secret');
+    }
 
     public function createPayment(OnlineTransaction $transaction, array $metadata = []): PaymentResult
     {
@@ -67,7 +71,7 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
             $response = Http::withToken($this->apiKey)
                 ->get(self::API_BASE . "/checkouts/{$paymentId}");
 
-            if (! $response->successful()) {
+            if (!$response->successful()) {
                 return PaymentResult::failed('Could not verify payment');
             }
 
@@ -110,6 +114,21 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
         }
 
         return PaymentResult::pending($checkoutId ?? '');
+    }
+
+    /**
+     * Verify the SumUp webhook signature.
+     * The signature is a SHA256 HMAC of the request body using the secret key.
+     */
+    public function isWebhookSignatureValid(string $body, string $signature): bool
+    {
+        if (!$this->webhookSecret) {
+            return false;
+        }
+
+        $expectedSignature = hash_hmac('sha256', $body, $this->webhookSecret);
+
+        return hash_equals($expectedSignature, $signature);
     }
 
     public function supportsRefunds(): bool

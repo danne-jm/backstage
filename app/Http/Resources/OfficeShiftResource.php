@@ -26,8 +26,8 @@ class OfficeShiftResource extends JsonResource
             'ended_at' => $this->ended_at,
             'ended_by' => $this->ended_by,
             'cash_total' => $posCashTotal + 0, // In case we want to add online cash in future
-            'card_total' => $posCardTotal + $onlineRevenue,
-            'total' => $posCashTotal + $posCardTotal + $onlineRevenue,
+            'card_total' => $posCardTotal + $onlineRevenue - (float) $this->start_card,
+            'total' => $posCashTotal + $posCardTotal + $onlineRevenue - (float) $this->start_card,
             'pos_cash_total' => $posCashTotal,
             'pos_card_total' => $posCardTotal,
             'online_revenue' => $onlineRevenue,
