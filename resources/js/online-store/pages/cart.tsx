@@ -10,7 +10,7 @@ import {
     Ticket,
     Trash2,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useCart } from '@store/hooks/use-cart';
 import type { CartItem } from '@store/hooks/use-cart';
 import ShopLayout from '@store/layouts/shop-layout';
@@ -22,11 +22,9 @@ interface Props {
 }
 
 export default function ShopCart({ sellables, processingFeeRate }: Props) {
+    const [sellablesState, setSellablesState] = useState<StoreItem[]>(sellables ?? []);
+    const [sellablesFetchState, setSellablesFetchState] = useState<'idle' | 'loaded' | 'error'>('idle');
     const { entries, removeFromCart, updateQuantity, clearCart } = useCart();
-    const entriesRef = useRef(entries);
-    entriesRef.current = entries;
-    const removeFromCartRef = useRef(removeFromCart);
-    removeFromCartRef.current = removeFromCart;
     const [appliedDiscounts, setAppliedDiscounts] = useState<string[]>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('cart_discounts');
@@ -54,11 +52,49 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
     const [serverTotal, setServerTotal] = useState<number | null>(null);
 
     const discountApplied = appliedDiscounts.length > 0;
+    const isSellablesLoading = entries.length > 0 && sellablesFetchState === 'idle';
+
+    useEffect(() => {
+        const fetchSellables = async () => {
+            if (entries.length === 0) {
+                setSellablesState([]);
+                setSellablesFetchState('loaded');
+                return;
+            }
+
+            setSellablesFetchState('idle');
+
+            try {
+                const uniqueItems = Array.from(
+                    new Map(entries.map((entry) => [`${entry.type}-${entry.id}`, {
+                        id: entry.id,
+                        type: entry.type,
+                    }])).values(),
+                );
+
+                const response = await axios.post('/cart/sellables', {
+                    items: uniqueItems,
+                });
+
+                const nextSellables = Array.isArray(response.data?.sellables)
+                    ? response.data.sellables
+                    : [];
+
+                setSellablesState(nextSellables);
+                setSellablesFetchState('loaded');
+            } catch (error) {
+                console.error('Failed to fetch cart sellables', error);
+                setSellablesFetchState('error');
+            }
+        };
+
+        fetchSellables();
+    }, [entries]);
 
     const cart: CartItem[] = useMemo(() => {
         return entries
             .map((entry): CartItem | null => {
-                const sellable = sellables.find(
+                const sellable = sellablesState.find(
                     (s) => String(s.id) === String(entry.id) && s.type === entry.type,
                 );
                 if (!sellable) return null;
@@ -72,9 +108,14 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                 };
             })
             .filter((item): item is CartItem => item !== null);
-    }, [entries, sellables]);
+    }, [entries, sellablesState]);
 
     useEffect(() => {
+        if (sellablesFetchState !== 'loaded') {
+            setServerTotal(null);
+            return;
+        }
+
         if (cart.length === 0) {
             setServerBreakdown([]);
             setServerTotal(0);
@@ -105,23 +146,13 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [cart, appliedDiscounts]);
-
-    // Scrub items no longer online-sellable
-    useEffect(() => {
-        const validIds = new Set(sellables.map((s) => `${s.type}-${s.id}`));
-        entriesRef.current.forEach((entry) => {
-            if (!validIds.has(`${entry.type}-${entry.id}`)) {
-                removeFromCartRef.current(entry.id, entry.type);
-            }
-        });
-    }, [sellables]);
+    }, [cart, appliedDiscounts, sellablesFetchState]);
 
     // Stock warnings using has_stock (no numeric leaking)
     const cartWarnings = useMemo(() => {
         const warnings: string[] = [...serverWarnings];
         cart.forEach((item) => {
-            const sellable = sellables.find(
+            const sellable = sellablesState.find(
                 (s) => String(s.id) === String(item.id) && s.type === item.type,
             );
             if (!sellable) return;
@@ -152,7 +183,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
             }
         });
         return Array.from(new Set(warnings));
-    }, [cart, sellables, discountApplied, serverWarnings]);
+    }, [cart, sellablesState, discountApplied, serverWarnings]);
 
     const handleApplyDiscount = async () => {
         const code = inputCode.trim().toUpperCase();
@@ -384,7 +415,13 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                     </li>
                                 ))}
                             </ul>
-                            {cart.length === 0 && (
+                            {isSellablesLoading && (
+                                <div className="flex items-center justify-center py-8 text-sm text-gray-500 sm:text-base">
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin sm:h-5 sm:w-5" />
+                                    Loading your cart...
+                                </div>
+                            )}
+                            {!isSellablesLoading && cart.length === 0 && (
                                 <p className="py-6 text-center text-sm text-gray-500 sm:text-base">
                                     Your cart is empty.
                                 </p>
@@ -581,7 +618,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                             <div className="mt-4 sm:mt-6">
                                 <button
                                     type="button"
-                                    disabled={cart.length === 0 || isProcessing || cartWarnings.length > 0 || !email.trim()}
+                                    disabled={isSellablesLoading || cart.length === 0 || isProcessing || cartWarnings.length > 0 || !email.trim()}
                                     onClick={handleCheckout}
                                     className="flex w-full items-center justify-center border border-transparent bg-black px-4 py-2.5 text-sm font-medium text-white uppercase shadow-sm hover:bg-gray-800 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-base"
                                 >

@@ -40,10 +40,7 @@ class OnlineSaleResource extends JsonResource
             'reference_id' => $this->reference_id,
             'variant_options' => $variantOptions,
             'is_variant_based' => !empty($variantOptions),
-            // Only expose code_used when relevant (with_card), matching existing usage
-            'code_used' => ($this->ticket_type === 'with_card')
-                ? ($this->details['code_used'] ?? null)
-                : null,
+            'code_used' => $this->details['code_used'] ?? null,
             'sold_at' => $this->sold_at?->toIso8601String(),
             'created_at' => $this->sold_at?->toIso8601String(),
             'is_online' => true,

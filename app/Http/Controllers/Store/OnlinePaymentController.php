@@ -152,13 +152,37 @@ class OnlinePaymentController extends Controller
 
         if ($result->isSuccessful()) {
             $externalId = $result->paymentId;
+            $checkoutId = $result->metadata['checkout_id'] ?? null;
+            $referenceId = $result->metadata['reference_id'] ?? null;
 
-            $transaction = OnlineTransaction::where('external_payment_id', $externalId)
-                ->lockForUpdate()
-                ->first();
+            $transaction = null;
+
+            if ($externalId) {
+                $transaction = OnlineTransaction::where('external_payment_id', $externalId)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            if (!$transaction && $checkoutId) {
+                $transaction = OnlineTransaction::where('external_payment_id', $checkoutId)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            if (!$transaction && $referenceId) {
+                $transaction = OnlineTransaction::where('reference_id', $referenceId)
+                    ->lockForUpdate()
+                    ->first();
+            }
 
             if ($transaction && $transaction->isPending()) {
-                $verifyResult = $this->checkoutService->verifyPayment($externalId, $transaction);
+                $paymentLookupId = $transaction->external_payment_id ?? $checkoutId ?? $externalId;
+
+                if (!$paymentLookupId) {
+                    return response()->json(['success' => true]);
+                }
+
+                $verifyResult = $this->checkoutService->verifyPayment($paymentLookupId, $transaction);
 
                 if ($verifyResult->isSuccessful()) {
                     $this->checkoutService->dispatchConfirmationEmail($transaction->fresh());

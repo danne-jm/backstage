@@ -358,7 +358,7 @@ function SaleRow({ sale, isFirst, indent, onViewBreakdown }: { sale: SaleItem; i
             <td className="px-2 py-2.5 align-middle whitespace-nowrap w-[180px]">
                 <div className="flex items-center justify-start gap-1">
                     <MethodBadge method={sale.method} />
-                    {sale.ticket_type === 'with_card' && (
+                    {(sale.ticket_type === 'with_card' || !!sale.code_used) && (
                         <Badge
                             variant="outline"
                             className="border-white bg-white text-[10px] text-black hover:bg-white/90"

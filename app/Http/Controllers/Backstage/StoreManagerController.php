@@ -58,7 +58,6 @@ class StoreManagerController extends Controller
 
         $events = Event::with(['responsibleUser', 'variants'])
             ->withCount(['sales', 'onlineSales'])
-            ->where('event_date', '>=', $now)
             ->orderBy('event_date', 'asc')
             ->get()
             ->map(fn($e) => [
@@ -132,13 +131,7 @@ class StoreManagerController extends Controller
             ->get();
 
         $onlineSellablesCount = Product::where('is_online_sellable', true)->count()
-            + Event::where('is_online_sellable', true)
-                ->where('event_date', '>=', $now)
-                ->where(function ($query) use ($now) {
-                    $query->whereNull('end_sell_date')
-                        ->orWhere('end_sell_date', '>=', $now);
-                })
-                ->count();
+            + Event::where('is_online_sellable', true)->count();
 
         $boardUsers = User::orderBy('first_name')
             ->get(['id', 'first_name', 'last_name', 'email'])

@@ -96,7 +96,7 @@ export default function Confirmation({ transaction, items }: Props) {
                             {items.map((item) => {
                                 const hasVariants =
                                     item.variant_options && Object.keys(item.variant_options).length > 0;
-                                const hasEsnCardDiscount = item.code_used && item.ticket_type === 'with_card';
+                                const hasEsnCardDiscount = Boolean(item.code_used || item.ticket_type === 'with_card');
 
                                 return (
                                     <div

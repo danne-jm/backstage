@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class SalesController extends Controller
 {
@@ -52,6 +53,8 @@ class SalesController extends Controller
             $cacheKey = 'sales_summary_hourly_' . md5(json_encode([$start->toString(), $end->toString()]));
 
             $data = Cache::remember($cacheKey, 30, function () use ($start, $end) {
+                $hourBucketExpression = $this->hourBucketExpression('sold_at');
+
                 $hours = [];
                 $cursor    = (clone $start)->startOfHour();
                 $endCursor = (clone $end)->startOfHour()->addHours(2);
@@ -67,7 +70,7 @@ class SalesController extends Controller
 
                 $office = OfficeShiftSale::query()
                     ->whereBetween('sold_at', [$start, $end])
-                    ->selectRaw("strftime('%Y-%m-%d %H:00:00', sold_at) as hour, SUM(amount) as total")
+                    ->selectRaw("{$hourBucketExpression} as hour, SUM(amount) as total")
                     ->groupBy('hour')
                     ->get();
 
@@ -79,7 +82,7 @@ class SalesController extends Controller
 
                 $online = OnlineSale::query()
                     ->whereBetween('sold_at', [$start, $end])
-                    ->selectRaw("strftime('%Y-%m-%d %H:00:00', sold_at) as hour, SUM(amount) as total")
+                    ->selectRaw("{$hourBucketExpression} as hour, SUM(amount) as total")
                     ->groupBy('hour')
                     ->get();
 
@@ -139,5 +142,17 @@ class SalesController extends Controller
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Build a SQL expression that buckets timestamps by hour for the current DB driver.
+     */
+    protected function hourBucketExpression(string $column): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'mysql', 'mariadb' => "DATE_FORMAT({$column}, '%Y-%m-%d %H:00:00')",
+            'pgsql' => "TO_CHAR(DATE_TRUNC('hour', {$column}), 'YYYY-MM-DD HH24:00:00')",
+            default => "strftime('%Y-%m-%d %H:00:00', {$column})",
+        };
     }
 }

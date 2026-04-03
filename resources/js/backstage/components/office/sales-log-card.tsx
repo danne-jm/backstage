@@ -225,7 +225,7 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                                                     <Badge className="border-transparent bg-blue-800 text-white hover:bg-blue-800">
                                                         Online
                                                     </Badge>
-                                                    {s.ticket_type === 'with_card' && (
+                                                    {(s.ticket_type === 'with_card' || !!s.code_used) && (
                                                         <Badge variant="outline" className="border-white bg-white text-[10px] text-black hover:bg-white/90">
                                                             ESNcard
                                                         </Badge>

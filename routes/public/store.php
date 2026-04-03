@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 // Shop display — browsing, listing, item detail
 Route::get('/', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/cart', [ShopController::class, 'cart'])->name('shop.cart');
+Route::post('/cart/sellables', [ShopController::class, 'cartSellables'])->name('shop.cart.sellables')->middleware('throttle:60,1');
 Route::get('/item/{type}/{id}', [ShopController::class, 'show'])->name('shop.show');
 
 // Checkout & payment

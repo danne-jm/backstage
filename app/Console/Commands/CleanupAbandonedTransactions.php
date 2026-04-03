@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Log;
 class CleanupAbandonedTransactions extends Command
 {
     protected $signature = 'transactions:cleanup-abandoned
-                            {--hours=2 : Cancel transactions pending longer than this many hours}
+                            {--minutes=30 : Fail transactions pending longer than this many minutes}
                             {--dry-run : Report without making any changes}';
 
-    protected $description = 'Cancel pending transactions older than the threshold and revert their stock and discount usages.';
+    protected $description = 'Fail pending transactions older than the threshold and revert their stock and discount usages.';
 
     public function __construct(protected CheckoutService $checkoutService)
     {
@@ -23,9 +23,9 @@ class CleanupAbandonedTransactions extends Command
 
     public function handle(): int
     {
-        $hours     = (int) $this->option('hours');
+        $minutes   = (int) $this->option('minutes');
         $isDryRun  = (bool) $this->option('dry-run');
-        $threshold = now()->subHours($hours);
+        $threshold = now()->subMinutes($minutes);
 
         $transactions = OnlineTransaction::with(['sales', 'discountUsages'])
             ->where('payment_status', 'pending')
@@ -38,11 +38,11 @@ class CleanupAbandonedTransactions extends Command
             return self::SUCCESS;
         }
 
-        $this->info("Found {$transactions->count()} abandoned transaction(s) older than {$hours} hour(s).");
+        $this->info("Found {$transactions->count()} abandoned transaction(s) older than {$minutes} minute(s).");
 
         foreach ($transactions as $transaction) {
             if ($isDryRun) {
-                $this->line("  [dry-run] Would cancel: {$transaction->reference_id} (created {$transaction->created_at})");
+                $this->line("  [dry-run] Would fail: {$transaction->reference_id} (created {$transaction->created_at})");
                 continue;
             }
 
@@ -53,12 +53,12 @@ class CleanupAbandonedTransactions extends Command
                     // Use atomic condition to avoid double-cancellation in concurrent runs
                     OnlineTransaction::where('id', $transaction->id)
                         ->where('payment_status', 'pending')
-                        ->update(['payment_status' => 'cancelled']);
+                        ->update(['payment_status' => 'failed']);
                 });
 
-                $this->line("  Cancelled: {$transaction->reference_id}");
+                $this->line("  Failed and reverted: {$transaction->reference_id}");
             } catch (\Throwable $e) {
-                Log::error('Failed to cancel abandoned transaction', [
+                Log::error('Failed to process abandoned transaction cleanup', [
                     'transaction_id' => $transaction->id,
                     'error'          => $e->getMessage(),
                 ]);

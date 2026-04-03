@@ -72,9 +72,15 @@ class CheckoutService
 
             $salesToCreate = $this->validateStockAndPrepareSales($allocation);
 
-            $subtotal = collect($salesToCreate)->sum('amount');
-            $processingFee = round($subtotal * config('services.sumup.processing_fee_rate', 0.02), 2);
-            $totalAmount = $subtotal + $processingFee;
+            $subtotalCents = (int) collect($salesToCreate)
+                ->sum(fn(array $sale): int => $this->toCents((float) $sale['amount']));
+
+            $processingFeeRate = (float) config('services.sumup.processing_fee_rate', 0.02);
+            $processingFeeCents = $this->calculateProcessingFeeCents($subtotalCents, $processingFeeRate);
+
+            $subtotal = $subtotalCents / 100;
+            $processingFee = $processingFeeCents / 100;
+            $totalAmount = ($subtotalCents + $processingFeeCents) / 100;
 
             $transaction = OnlineTransaction::create([
                 'reference_id' => Str::random(64),
@@ -516,5 +522,23 @@ class CheckoutService
                 }
             }
         }
+    }
+
+    /**
+     * Convert a decimal money value to integer cents with deterministic rounding.
+     */
+    protected function toCents(float $amount): int
+    {
+        return (int) round($amount * 100, 0, PHP_ROUND_HALF_UP);
+    }
+
+    /**
+     * Calculate fee in cents using basis points to avoid float accumulation errors.
+     */
+    protected function calculateProcessingFeeCents(int $subtotalCents, float $rate): int
+    {
+        $basisPoints = (int) round($rate * 10000, 0, PHP_ROUND_HALF_UP);
+
+        return (int) round(($subtotalCents * $basisPoints) / 10000, 0, PHP_ROUND_HALF_UP);
     }
 }

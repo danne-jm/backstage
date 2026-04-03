@@ -96,9 +96,10 @@ export function LatestCardSalesList({
                                     sale.details?.options &&
                                     Object.keys(sale.details.options).length >
                                         0;
-                                const hasEsnCardDiscount =
-                                    sale.details?.code_used &&
-                                    sale.ticket_type === 'with_card';
+                                const hasEsnCardDiscount = Boolean(
+                                    sale.details?.code_used ||
+                                        sale.ticket_type === 'with_card',
+                                );
 
                                 return (
                                     <div

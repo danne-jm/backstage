@@ -128,7 +128,7 @@ export function PreviousShiftSalesLog({
                                                         {s.method}
                                                     </Badge>
                                                 )}
-                                                {s.ticket_type === 'with_card' && (
+                                                {(s.ticket_type === 'with_card' || !!s.code_used) && (
                                                     <Badge
                                                         variant="outline"
                                                         className="border-white bg-white px-1.5 py-0 text-[10px] text-black hover:bg-white/90"

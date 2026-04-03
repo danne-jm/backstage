@@ -8,4 +8,4 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('transactions:cleanup-abandoned')->hourly();
+Schedule::command('transactions:cleanup-abandoned --minutes=30')->everyFifteenMinutes();

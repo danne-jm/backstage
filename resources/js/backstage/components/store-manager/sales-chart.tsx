@@ -112,6 +112,23 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
     );
 }
 
+function formatAxisLabel(value: string, isHourlyData: boolean): string {
+    if (!value) return '';
+
+    if (isHourlyData) {
+        const d = new Date(value.replace(' ', 'T') + 'Z');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+
+        return `${hh}:${mm}`;
+    }
+
+    return new Date(value).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+    });
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function SalesChart({
@@ -230,20 +247,8 @@ export function SalesChart({
         };
 
         const data = dateKeys.map((dk) => {
-            let dateLabel: string;
-            if (isHourlyData) {
-                const d = new Date(dk.replace(' ', 'T') + 'Z');
-                const h = String(d.getHours()).padStart(2, '0');
-                const m = String(d.getMinutes()).padStart(2, '0');
-                dateLabel = `${h}:${m}`;
-            } else {
-                dateLabel = new Date(dk).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                });
-            }
             const point: Record<string, unknown> = {
-                date: dateLabel,
+                date: formatAxisLabel(dk, isHourlyData),
                 fullDate: dk,
             };
 
@@ -398,7 +403,8 @@ export function SalesChart({
                                     strokeOpacity={0.08}
                                 />
                                 <XAxis
-                                    dataKey="date"
+                                    dataKey="fullDate"
+                                    tickFormatter={(value) => formatAxisLabel(String(value), isHourlyData)}
                                     interval={isHourlyData ? 1 : Math.max(0, Math.ceil(chartData.length / 6) - 1)}
                                     tick={{
                                         fontSize: 11,
@@ -426,6 +432,7 @@ export function SalesChart({
                                 />
                                 <Tooltip
                                     content={<CustomTooltip />}
+                                    labelFormatter={(value) => formatAxisLabel(String(value), isHourlyData)}
                                     cursor={{
                                         stroke: 'currentColor',
                                         strokeOpacity: 0.2,

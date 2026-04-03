@@ -161,7 +161,7 @@
                     $variantOptions = $sale->details['options'] ?? null;
                     $codeUsed = $sale->details['code_used'] ?? null;
                     $hasVariants = $variantOptions && is_array($variantOptions) && count($variantOptions) > 0;
-                    $hasEsnCardDiscount = $codeUsed && $sale->ticket_type === 'with_card';
+                    $hasEsnCardDiscount = !empty($codeUsed) || $sale->ticket_type === 'with_card';
                 @endphp
                 <div class="item-card">
                     <table style="width: 100%;">

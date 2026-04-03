@@ -106,14 +106,40 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
 
     public function handleWebhook(array $payload): PaymentResult
     {
-        $eventType = $payload['event_type'] ?? '';
-        $checkoutId = $payload['id'] ?? null;
+        $eventType = strtoupper((string) ($payload['event_type'] ?? ''));
+        $status = strtoupper((string) ($payload['status'] ?? data_get($payload, 'transaction.status', '')));
 
-        if ($eventType === 'CHECKOUT_STATUS_CHANGED' && ($payload['status'] ?? '') === 'PAID') {
-            return PaymentResult::success($checkoutId);
+        // SumUp webhook payloads can include multiple id fields depending on event type.
+        // Prefer checkout identifiers first because external_payment_id stores checkout id.
+        $checkoutId = $payload['checkout_id']
+            ?? data_get($payload, 'checkout.id')
+            ?? data_get($payload, 'transaction.checkout_id')
+            ?? data_get($payload, 'data.checkout_id')
+            ?? null;
+
+        $paymentId = $payload['transaction_id']
+            ?? data_get($payload, 'transaction.id')
+            ?? null;
+
+        $resolvedId = $checkoutId ?? $payload['id'] ?? $paymentId;
+        $checkoutReference = $payload['checkout_reference']
+            ?? data_get($payload, 'checkout_reference')
+            ?? data_get($payload, 'transaction.checkout_reference')
+            ?? null;
+
+        if ($status === 'PAID' || ($eventType === 'CHECKOUT_STATUS_CHANGED' && $status === 'PAID')) {
+            return PaymentResult::success($resolvedId, metadata: [
+                'checkout_id' => $checkoutId,
+                'payment_id' => $paymentId,
+                'reference_id' => $checkoutReference,
+            ]);
         }
 
-        return PaymentResult::pending($checkoutId ?? '');
+        return PaymentResult::pending($resolvedId ?? '', metadata: [
+            'checkout_id' => $checkoutId,
+            'payment_id' => $paymentId,
+            'reference_id' => $checkoutReference,
+        ]);
     }
 
     /**
