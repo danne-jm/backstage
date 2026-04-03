@@ -48,11 +48,27 @@ class OfficeController extends Controller
             $previousSales = OfficeShiftSaleResource::collection($previousSalesQuery)->resolve();
         }
 
-        $allShifts = OfficeShiftResource::collection(
-            OfficeShift::with(['workers.user'])
-                ->orderBy('started_at', 'desc')
-                ->get()
-        )->resolve();
+        $shifts = OfficeShift::with(['workers.user'])
+            ->orderBy('started_at', 'desc')
+            ->get();
+
+        // For the overview table, include online card revenue in the
+        // card/total figures so they match the detailed shift view.
+        $allShifts = $shifts->map(function (OfficeShift $shift) {
+            $data = (new OfficeShiftResource($shift))->resolve();
+
+            $shiftEnd = $shift->ended_at ?? now();
+
+            $onlineCardTotal = OnlineSale::where('sold_at', '>=', $shift->started_at)
+                ->where('sold_at', '<=', $shiftEnd)
+                ->sum('amount');
+
+            $data['online_card_total'] = (float) $onlineCardTotal;
+            $data['card_total'] = (float) $data['card_total'] + (float) $onlineCardTotal;
+            $data['total'] = (float) $data['cash_total'] + (float) $data['card_total'];
+
+            return $data;
+        })->values()->all();
 
         $products = Product::with('variants')->get();
         $events = Event::with('variants')->get();
@@ -110,23 +126,11 @@ class OfficeController extends Controller
             ->where('sold_at', '<=', $shiftEnd)
             ->orderByDesc('sold_at');
 
-        $onlineSales = $onlineSalesQuery->get()->map(function ($s) {
-            $variantOptions = $s->details['options'] ?? null;
-            return [
-                'id' => $s->id,
-                'name' => $s->product?->name ?? $s->event?->name ?? 'Unknown Item',
-                'method' => 'online',
-                'amount' => (float) $s->amount,
-                'ticket_type' => $s->ticket_type,
-                'reference_id' => $s->reference_id,
-                'variant_options' => $variantOptions,
-                'is_variant_based' => !empty($variantOptions),
-                'code_used' => $s->details['code_used'] ?? null,
-                'sold_at' => $s->sold_at?->toIso8601String(),
-                'created_at' => $s->sold_at?->toIso8601String(),
-                'is_online' => true,
-            ];
-        });
+        // Use OnlineSaleResource so the online sale shape stays consistent
+        // across Office and Store Manager views.
+        $onlineSales = \App\Http\Resources\OnlineSaleResource::collection(
+            $onlineSalesQuery->get()
+        )->resolve();
 
         return Inertia::render('office/office-shift', [
             'shiftId' => $id,

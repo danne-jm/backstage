@@ -271,9 +271,14 @@ export function useStoreManager() {
                 data.event_date = ev.event_date;
                 data.start_sell_date = ev.start_sell_date;
                 data.end_sell_date = ev.end_sell_date;
-                data.responsible_user_id = ev.responsible_user_id;
-                data.notes = ev.notes;
-                data.google_spreadsheet_id = ev.google_spreadsheet_id;
+            } else {
+                const prod = sellable as Product;
+                data.price_with_card = prod.price_with_card;
+                data.price_without_card = prod.price_without_card;
+                if ((prod as any).start_sell_date) data.start_sell_date = (prod as any).start_sell_date?.split('T')[0];
+                if ((prod as any).end_sell_date) data.end_sell_date = (prod as any).end_sell_date?.split('T')[0];
+                if ((prod as any).variants_config) data.variants_config = (prod as any).variants_config;       
+                if ((prod as any).is_variant_based) data.is_variant_based = (prod as any).is_variant_based;       
             }
 
             // Optimistic update

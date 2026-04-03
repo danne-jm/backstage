@@ -77,7 +77,7 @@ export const summarizeSales = (sales?: any[]) => {
     }
     const grouped = Object.values(groups);
     grouped.sort((a, b) => {
-        const diff = a.count - b.count;
+        const diff = b.count - a.count; // sort by quantity, highest first
         if (diff !== 0) return diff;
         return a.name.localeCompare(b.name);
     });

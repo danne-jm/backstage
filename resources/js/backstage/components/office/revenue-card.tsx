@@ -6,7 +6,7 @@ import { SaleCashBreakdownModal } from '@backstage/components/office/sale-cash-b
 import { Button } from '@backstage/components/ui/button';
 import { Input } from '@backstage/components/ui/input';
 
-export function RevenueCard({ activeShift }: any) {
+export function RevenueCard({ activeShift, onlineSales = [] }: any) {
     const [activeCollapsed, setActiveCollapsed] = useState(false);
     const [totalCollapsed, setTotalCollapsed] = useState(false);
     const [startCollapsed, setStartCollapsed] = useState(false);
@@ -25,7 +25,17 @@ export function RevenueCard({ activeShift }: any) {
     const startCard = Number(activeShift?.start_card) || 0;
 
     const cashTotal = activeShift ? Number(activeShift.cash_total || 0) : 0;
-    const cardTotal = activeShift ? Number(activeShift.card_total || 0) : 0;
+    const onlineCardTotal = Array.isArray(onlineSales)
+        ? onlineSales.reduce(
+              (sum: number, sale: any) =>
+                  sum + Number(sale.amount ?? 0),
+              0,
+          )
+        : 0;
+    const baseCardTotal = activeShift
+        ? Number(activeShift.card_total || 0)
+        : 0;
+    const cardTotal = baseCardTotal + onlineCardTotal;
     const combinedTotal = cashTotal + cardTotal;
 
     const totalCash = startCash + cashTotal;

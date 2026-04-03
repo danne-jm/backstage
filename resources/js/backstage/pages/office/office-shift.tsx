@@ -27,7 +27,9 @@ export default function Show() {
 
     const workers: any[] = Array.isArray(props.workers) ? props.workers : [];
     const sales: any[] = Array.isArray(props.sales) ? props.sales : [];
-    const onlineSales: any[] = Array.isArray(props.onlineSales) ? props.onlineSales : [];
+    const onlineSales: any[] = Array.isArray(props.onlineSales)
+        ? props.onlineSales
+        : [];
     const sellables: any[] = Array.isArray(props.sellables)
         ? props.sellables
         : [];
@@ -43,7 +45,10 @@ export default function Show() {
                         activeShift={activeShift}
                         staff={staff}
                     />
-                    <RevenueCard activeShift={activeShift} />
+                    <RevenueCard
+                        activeShift={activeShift}
+                        onlineSales={onlineSales}
+                    />
                     <ShiftActionsCard
                         activeShift={activeShift}
                         sellables={sellables}

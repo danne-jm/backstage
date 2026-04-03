@@ -17,6 +17,10 @@ export interface Product {
     image: string | null;
     description: string | null;
     price: number;
+    price_with_card?: number;
+    price_without_card?: number;
+    start_sell_date?: string | null;
+    end_sell_date?: string | null;
     quantity?: number | null;
     unlimited_quantity?: boolean;
     variable_amount?: boolean;

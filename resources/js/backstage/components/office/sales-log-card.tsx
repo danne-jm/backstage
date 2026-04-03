@@ -9,7 +9,8 @@ import { Badge } from '@backstage/components/ui/badge';
 import { Button } from '@backstage/components/ui/button';
 import { Alert, AlertTitle } from '@backstage/components/ui/alert';
 import { VariantSelectionModal } from '@backstage/components/office/variant-selection-modal';
-
+import { summarizeSales } from '@backstage/components/office/utils';
+ 
 export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }: any) {
     // Merge and sort in-person and online sales by time descending
     const allSales = [
@@ -20,6 +21,7 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
         const bTime = new Date(b.created_at ?? b.sold_at ?? 0).getTime();
         return bTime - aTime;
     });
+
     const [cashBreakdownOpen, setCashBreakdownOpen] = useState(false);
     const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
     const [editingSaleBreakdown, setEditingSaleBreakdown] = useState<
@@ -46,6 +48,12 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
         string | null
     >(null);
     const [confirmRemoveSaleName, setConfirmRemoveSaleName] = useState('');
+
+    const totalSalesAmount = allSales.reduce(
+        (sum: number, s: any) => sum + Number(s.amount ?? 0),
+        0,
+    );
+    const salesSummaryText = summarizeSales(allSales);
 
     const cashTotal = activeShift ? Number(activeShift.cash_total || 0) : 0;
     const onlineTotal = onlineSales.reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
@@ -147,27 +155,22 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
 
             <div className="flex h-full w-full flex-col">
                 <div className="mb-4 flex items-center justify-between gap-3">
-                    <h3 className="shrink-0 text-sm font-semibold">Sales log</h3>
-                    <div className="truncate text-right text-xs text-muted-foreground" title={(() => {
-                        const summary = allSales.reduce((acc: Record<string, number>, s: any) => {
-                            const key = s.name ?? 'Unknown';
-                            acc[key] = (acc[key] || 0) + 1;
-                            return acc;
-                        }, {});
-                        const total = allSales.reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
-                        const parts = Object.entries(summary).map(([name, count]) => `${name} ${count}`);
-                        return `${allSales.length} sales | €${total.toFixed(2)} | ${parts.join(' | ')}`;
-                    })()}>
-                        {(() => {
-                            const summary = allSales.reduce((acc: Record<string, number>, s: any) => {
-                                const key = s.name ?? 'Unknown';
-                                acc[key] = (acc[key] || 0) + 1;
-                                return acc;
-                            }, {});
-                            const total = allSales.reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
-                            const parts = Object.entries(summary).map(([name, count]) => `${name} ${count}`);
-                            return `${allSales.length} sales | ${parts.join(' | ')}`;
-                        })()}
+                    <h3 className="shrink-0 text-sm font-semibold">
+                        Sales log
+                    </h3>
+                    <div
+                        className="truncate text-right text-xs text-muted-foreground"
+                        title={`${allSales.length} sales | €${totalSalesAmount.toFixed(
+                            2,
+                        )}${
+                            salesSummaryText
+                                ? ` | ${salesSummaryText}`
+                                : ''
+                        }`}
+                    >
+                        {`${allSales.length} sales${
+                            salesSummaryText ? ` | ${salesSummaryText}` : ''
+                        }`}
                     </div>
                 </div>
                 <div className="relative overflow-x-auto">
@@ -322,16 +325,24 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                         setIsVariantModalReadOnly(false);
                     }}
                     onConfirm={handleSaveSaleVariant}
-                    sellable={editingVariantSale ? (isVariantModalReadOnly
-                        ? {
-                            name: editingVariantSale.name,
-                            variants_config: Object.keys(editingVariantSale.variant_options ?? {}).map((k) => ({
-                                name: k,
-                                options: [editingVariantSale.variant_options[k]],
-                            })),
-                            variants: [],
-                          }
-                        : getSellableForSale(editingVariantSale)) : null}
+                    sellable={
+                        editingVariantSale
+                            ? getSellableForSale(editingVariantSale) || {
+                                  name: editingVariantSale.name,
+                                  variants_config: Object.keys(
+                                      editingVariantSale.variant_options ?? {},
+                                  ).map((k) => ({
+                                      name: k,
+                                      options: [
+                                          editingVariantSale.variant_options[
+                                              k
+                                          ],
+                                      ],
+                                  })),
+                                  variants: [],
+                              }
+                            : null
+                    }
                     initialOptions={editingVariantSale?.variant_options}
                     readOnly={isVariantModalReadOnly}
                 />
@@ -400,5 +411,5 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                 </div>
             </div>
         </>
-    )
+    );
 }

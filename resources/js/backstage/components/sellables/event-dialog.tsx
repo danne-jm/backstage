@@ -61,6 +61,10 @@ export function EventDialog({
     const [variableAmount, setVariableAmount] = React.useState(false);
     const [quantityWithCard, setQuantityWithCard] = React.useState('');
     const [quantityWithoutCard, setQuantityWithoutCard] = React.useState('');
+    const [priceMode, setPriceMode] = React.useState<'single' | 'esncard'>(
+        'esncard',
+    );
+    const [singlePrice, setSinglePrice] = React.useState('');
     const [googleSpreadsheetId, setGoogleSpreadsheetId] = React.useState('');
 
     // Online Store & Images
@@ -94,6 +98,14 @@ export function EventDialog({
         }
     }, [errors]);
 
+    const formatToTwoDecimals = (value: string): string => {
+        if (!value) return '';
+        const normalized = value.replace(',', '.');
+        const numeric = parseFloat(normalized);
+        if (Number.isNaN(numeric)) return value;
+        return numeric.toFixed(2);
+    };
+
     React.useEffect(() => {
         if (editingEvent) {
             setEventName(editingEvent.name);
@@ -101,8 +113,35 @@ export function EventDialog({
             setEventDate(editingEvent.event_date?.split('T')[0] || '');
             setStartSellDate(editingEvent.start_sell_date?.split('T')[0] || '');
             setEndSellDate(editingEvent.end_sell_date?.split('T')[0] || '');
-            setPriceWithCard(editingEvent.price_with_card.toString());
-            setPriceWithoutCard(editingEvent.price_without_card.toString());
+
+            const priceWithCardValue =
+                editingEvent.price_with_card !== undefined &&
+                editingEvent.price_with_card !== null
+                    ? editingEvent.price_with_card.toString()
+                    : '';
+            const priceWithoutCardValue =
+                editingEvent.price_without_card !== undefined &&
+                editingEvent.price_without_card !== null
+                    ? editingEvent.price_without_card.toString()
+                    : '';
+
+            if (
+                priceWithCardValue &&
+                priceWithoutCardValue &&
+                priceWithCardValue === priceWithoutCardValue
+            ) {
+                // Treat equal prices as a single-price configuration
+                const formatted = formatToTwoDecimals(priceWithCardValue);
+                setPriceMode('single');
+                setSinglePrice(formatted);
+                setPriceWithCard(formatted);
+                setPriceWithoutCard(formatted);
+            } else {
+                setPriceMode('esncard');
+                setSinglePrice('');
+                setPriceWithCard(priceWithCardValue);
+                setPriceWithoutCard(priceWithoutCardValue);
+            }
             setQuantity(
                 editingEvent.unlimited_quantity
                     ? ''
@@ -167,6 +206,8 @@ export function EventDialog({
             setEventDate('');
             setStartSellDate('');
             setEndSellDate('');
+            setPriceMode('esncard');
+            setSinglePrice('');
             setPriceWithCard('');
             setPriceWithoutCard('');
             setQuantity('');
@@ -225,11 +266,15 @@ export function EventDialog({
         const formData = new FormData();
         formData.append('name', eventName);
         if (eventDescription) formData.append('description', eventDescription);
-        formData.append('event_date', eventDate);
-        formData.append('start_sell_date', startSellDate);
-        formData.append('end_sell_date', endSellDate);
-        formData.append('price_with_card', priceWithCard.toString());
-        formData.append('price_without_card', priceWithoutCard.toString());
+    formData.append('event_date', eventDate);
+    formData.append('start_sell_date', startSellDate);
+    formData.append('end_sell_date', endSellDate);
+
+    // Always send both prices; in single mode, they are identical
+    const withCardToSend = formatToTwoDecimals(priceWithCard);
+    const withoutCardToSend = formatToTwoDecimals(priceWithoutCard);
+    formData.append('price_with_card', withCardToSend);
+    formData.append('price_without_card', withoutCardToSend);
 
         if (stockMode === 'simple' && !variableAmount) {
             if (quantity) {
@@ -458,45 +503,138 @@ export function EventDialog({
                             {errors.end_sell_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.end_sell_date}</p>}
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <Label
-                                htmlFor="price-with-card"
-                                className="text-sm"
+                    {/* Pricing Section: separate container, similar style to Stock Management */}
+                    <div className="rounded-lg border bg-muted/5 px-4 py-3 space-y-4">
+                        <div className="mb-0 flex items-center justify-between border-b pb-3">
+                            <span className="text-sm font-semibold text-muted-foreground">
+                                Pricing
+                            </span>
+                            <div
+                                role="tablist"
+                                aria-orientation="horizontal"
+                                className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground"
                             >
-                                Price w/ Card
-                            </Label>
-                            <Input
-                                id="price-with-card"
-                                type="number"
-                                step="0.01"
-                                value={priceWithCard}
-                                onChange={(e) =>
-                                    setPriceWithCard(e.target.value)
-                                }
-                                className="mt-1"
-                            />
-                            {errors.price_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_with_card}</p>}
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={priceMode === 'single'}
+                                    onClick={() =>
+                                        setPriceMode('single')
+                                    }
+                                    className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${priceMode === 'single' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                >
+                                    Single Price
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={priceMode === 'esncard'}
+                                    onClick={() =>
+                                        setPriceMode('esncard')
+                                    }
+                                    className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${priceMode === 'esncard' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                >
+                                    ESNcard Pricing
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <Label
-                                htmlFor="price-without-card"
-                                className="text-sm"
-                            >
-                                Price w/o Card
-                            </Label>
-                            <Input
-                                id="price-without-card"
-                                type="number"
-                                step="0.01"
-                                value={priceWithoutCard}
-                                onChange={(e) =>
-                                    setPriceWithoutCard(e.target.value)
-                                }
-                                className="mt-1"
-                            />
-                            {errors.price_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_without_card}</p>}
-                        </div>
+
+                        {priceMode === 'single' && (
+                            <div>
+                                <Label htmlFor="single-price">Price (€)</Label>
+                                <Input
+                                    id="single-price"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={singlePrice}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setSinglePrice(value);
+                                        setPriceWithCard(value);
+                                        setPriceWithoutCard(value);
+                                    }}
+                                    onBlur={() =>
+                                        setSinglePrice((prev) => {
+                                            const formatted =
+                                                formatToTwoDecimals(prev);
+                                            setPriceWithCard(formatted);
+                                            setPriceWithoutCard(formatted);
+                                            return formatted;
+                                        })
+                                    }
+                                    className="mt-1"
+                                />
+                                {(errors.price_with_card ||
+                                    errors.price_without_card) && (
+                                    <p className="mt-1 text-xs text-destructive error-scroll-marker">
+                                        {errors.price_with_card ||
+                                            errors.price_without_card}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {priceMode === 'esncard' && (
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <Label htmlFor="price-with-card">
+                                        Price w/ ESNcard (€)
+                                    </Label>
+                                    <Input
+                                        id="price-with-card"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={priceWithCard}
+                                        onChange={(e) =>
+                                            setPriceWithCard(
+                                                e.target.value,
+                                            )
+                                        }
+                                        onBlur={() =>
+                                            setPriceWithCard((prev) =>
+                                                formatToTwoDecimals(prev),
+                                            )
+                                        }
+                                        className="mt-1"
+                                    />
+                                    {errors.price_with_card && (
+                                        <p className="mt-1 text-xs text-destructive error-scroll-marker">
+                                            {errors.price_with_card}
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="price-without-card">
+                                        Price w/o ESNcard (€)
+                                    </Label>
+                                    <Input
+                                        id="price-without-card"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={priceWithoutCard}
+                                        onChange={(e) =>
+                                            setPriceWithoutCard(
+                                                e.target.value,
+                                            )
+                                        }
+                                        onBlur={() =>
+                                            setPriceWithoutCard((prev) =>
+                                                formatToTwoDecimals(prev),
+                                            )
+                                        }
+                                        className="mt-1"
+                                    />
+                                    {errors.price_without_card && (
+                                        <p className="mt-1 text-xs text-destructive error-scroll-marker">
+                                            {errors.price_without_card}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div>
                         <Label htmlFor="responsible-user">

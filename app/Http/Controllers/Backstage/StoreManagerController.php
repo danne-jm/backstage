@@ -162,7 +162,7 @@ class StoreManagerController extends Controller
 
     public function allSales(Request $request): \Inertia\Response
     {
-        $fromDate = $request->query('from_date', now()->subDays(7)->format('Y-m-d'));
+        $fromDate = $request->query('from_date', now()->subDays(28)->format('Y-m-d'));
         $toDate   = $request->query('to_date', now()->format('Y-m-d'));
         $method   = $request->query('method', 'all'); // all | cash | card | online
 
@@ -173,44 +173,44 @@ class StoreManagerController extends Controller
 
         // ── Online sales ──────────────────────────────────────────────────
         if ($method === 'all' || $method === 'online') {
-            $onlineItems = OnlineSale::with(['product', 'event', 'transaction'])
-                ->whereBetween('sold_at', [$from, $to])
-                ->get()
-                ->map(fn ($s) => [
-                    'id'                    => $s->id,
-                    'name'                  => $s->product?->name ?? $s->event?->name ?? 'Unknown',
-                    'method'                => 'online',
-                    'amount'                => (float) $s->amount,
-                    'ticket_type'           => $s->ticket_type,
-                    'variant_opts'          => $s->details['options'] ?? null,
-                    'code_used'             => ($s->ticket_type === 'with_card') ? ($s->details['code_used'] ?? null) : null,
-                    'reference_id'          => $s->reference_id,
-                    'sold_at'               => $s->sold_at?->toIso8601String(),
-                    'online_transaction_id' => $s->online_transaction_id,
-                    'transaction_ref'       => $s->transaction?->reference_id,
-                    'email'                 => $s->transaction?->email,
-                    'mail_success'          => $s->transaction?->mail_success,
-                ]);
+            // Reuse OnlineSaleResource so this page doesn't reinvent the
+            // online sale shape. We include the transaction relation here so
+            // confirmation URL / mail status metadata is available.
+            $onlineItems = \App\Http\Resources\OnlineSaleResource::collection(
+                OnlineSale::with(['product', 'event', 'transaction'])
+                    ->whereBetween('sold_at', [$from, $to])
+                    ->get()
+            )->resolve();
+
             $items = $items->concat($onlineItems);
         }
 
         // ── Office shift sales ────────────────────────────────────────────
+        // Keep this in sync with OfficeShiftSaleResource so the semantics
+        // (custom flag, ticket type, expected amount, etc.) remain aligned
+        // across /office and /store-manager/all-sales views.
         if ($method !== 'online') {
             $query = OfficeShiftSale::with(['product', 'event'])
                 ->whereBetween('sold_at', [$from, $to]);
             if ($method !== 'all') {
                 $query->where('method', $method);
             }
+
             $officeItems = $query->get()->map(fn ($s) => [
-                'id'           => $s->id,
-                'name'         => $s->product?->name ?? $s->event?->name ?? ($s->description ?? 'Unknown'),
-                'method'       => $s->method ?? 'cash',
-                'amount'       => (float) $s->amount,
-                'ticket_type'  => $s->snapshot['ticket_type'] ?? null,
-                'variant_opts' => $s->snapshot['options'] ?? $s->snapshot['variant_options'] ?? null,
-                'description'  => $s->description,
-                'sold_at'      => $s->sold_at?->toIso8601String(),
+                'id'             => $s->id,
+                'name'           => $s->product?->name ?? $s->event?->name ?? ($s->description ?? 'Unknown'),
+                'method'          => $s->method ?? 'cash',
+                'amount'          => (float) $s->amount,
+                'expected_amount' => (float) ($s->snapshot['price'] ?? $s->amount),
+                'breakdown'       => $s->breakdown,
+                'ticket_type'     => $s->snapshot['ticket_type'] ?? null,
+                'variant_options' => $s->snapshot['options'] ?? $s->snapshot['variant_options'] ?? null,
+                'description'     => $s->description,
+                // Reuse the same definition as OfficeShiftSaleResource
+                'is_custom'       => $s->description !== null && $s->description !== 'Quick Sale',
+                'sold_at'         => $s->sold_at?->toIso8601String(),
             ]);
+
             $items = $items->concat($officeItems);
         }
 

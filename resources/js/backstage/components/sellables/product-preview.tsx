@@ -164,14 +164,31 @@ export function ProductPreview({
                             </p>
                         )}
 
-                        {/* Price: label muted, value prominent */}
+                        {/* Price: mirror event dual-pricing wording when ESNcard prices are configured */}
                         <div className="mt-1 text-sm">
-                            <span className="text-muted-foreground">
-                                Price:
-                            </span>{' '}
-                            <span className="text-foreground">
-                                {formatCurrency(product.price)}
-                            </span>
+                            {product.price_with_card != null &&
+                            product.price_without_card != null &&
+                            product.price_with_card < product.price_without_card ? (
+                                <>
+                                    <span className="text-muted-foreground">
+                                        Price with ESNcard:
+                                    </span>{' '}
+                                    {formatCurrency(product.price_with_card)}{' '}
+                                    <span className="text-muted-foreground">
+                                        | without ESNcard:
+                                    </span>{' '}
+                                    {formatCurrency(product.price_without_card)}
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-muted-foreground">
+                                        Price:
+                                    </span>{' '}
+                                    <span className="text-foreground">
+                                        {formatCurrency(product.price)}
+                                    </span>
+                                </>
+                            )}
                         </div>
                         <div className="mt-1 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0 flex-1">

@@ -1,18 +1,22 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, ExternalLink, MailCheck, MailX, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ExternalLink, MailCheck, MailX, ShoppingBag, Eye } from 'lucide-react';
 import React, { useState } from 'react';
 import { Badge } from '@backstage/components/ui/badge';
 import { Button } from '@backstage/components/ui/button';
 import AppLayout from '@backstage/layouts/app-layout';
 import type { BreadcrumbItem } from '@backstage/types';
+import { SparseCashBreakdownModal } from '@backstage/components/office/cash-breakdown-modal';
 
 interface SaleItem {
     id: string;
     name: string;
     method: 'cash' | 'card' | 'online';
     amount: number;
+    expected_amount?: number | null;
+    breakdown?: Record<string, number> | null;
     ticket_type: string | null;
-    variant_opts: Record<string, string> | null;
+    variant_options: Record<string, string> | null;
+    is_custom?: boolean | null;
     code_used?: string | null;
     reference_id?: string | null;
     description?: string | null;
@@ -107,20 +111,19 @@ function buildSegments(items: SaleItem[]): Segment[] {
 }
 
 export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
-    const [local, setLocal] = useState<Filters>({ ...filters });
+    const [breakdownSale, setBreakdownSale] = useState<SaleItem | null>(null);
 
-    function apply() {
-        router.get('/store-manager/all-sales', local as unknown as Record<string, string>, { preserveState: true });
+    function setAndApply(updates: Partial<Filters>) {
+        const d = { ...filters, ...updates };
+        router.get('/store-manager/all-sales', d as unknown as Record<string, string>, { preserveState: true });
     }
 
     function reset() {
-        const d: Filters = {
-            from_date: new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10),
+        setAndApply({
+            from_date: new Date(Date.now() - 28 * 86400000).toISOString().slice(0, 10),
             to_date: new Date().toISOString().slice(0, 10),
             method: 'all',
-        };
-        setLocal(d);
-        router.get('/store-manager/all-sales', d as unknown as Record<string, string>, { preserveState: true });
+        });
     }
 
     // Group sales by day
@@ -157,9 +160,9 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                         <label className="text-xs text-muted-foreground">From</label>
                         <input
                             type="date"
-                            value={local.from_date}
-                            max={local.to_date}
-                            onChange={e => setLocal(f => ({ ...f, from_date: e.target.value }))}
+                            value={filters.from_date}
+                            max={filters.to_date}
+                            onChange={e => setAndApply({ from_date: e.target.value })}
                             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                         />
                     </div>
@@ -167,10 +170,10 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                         <label className="text-xs text-muted-foreground">To</label>
                         <input
                             type="date"
-                            value={local.to_date}
-                            min={local.from_date}
+                            value={filters.to_date}
+                            min={filters.from_date}
                             max={new Date().toISOString().slice(0, 10)}
-                            onChange={e => setLocal(f => ({ ...f, to_date: e.target.value }))}
+                            onChange={e => setAndApply({ to_date: e.target.value })}
                             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                         />
                     </div>
@@ -181,8 +184,8 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                             {(['all', 'cash', 'card', 'online'] as const).map(v => (
                                 <button
                                     key={v}
-                                    onClick={() => setLocal(f => ({ ...f, method: v }))}
-                                    className={`px-3 capitalize transition-colors ${local.method === v ? 'bg-foreground text-background font-medium' : 'bg-background text-foreground hover:bg-muted'}`}
+                                    onClick={() => setAndApply({ method: v })}
+                                    className={`px-3 capitalize transition-colors ${filters.method === v ? 'bg-foreground text-background font-medium' : 'bg-background text-foreground hover:bg-muted'}`}
                                 >
                                     {v}
                                 </button>
@@ -196,7 +199,6 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                             <div className="text-sm font-semibold">€{totalAmount.toFixed(2)}</div>
                         </div>
                         <Button variant="outline" size="sm" onClick={reset}>Reset</Button>
-                        <Button size="sm" onClick={apply}>Apply</Button>
                     </div>
                 </div>
 
@@ -222,7 +224,7 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                     </div>
 
                                     <div className="rounded-xl border bg-card overflow-hidden">
-                                        <table className="w-full text-sm">
+                                        <table className="w-full text-sm table-fixed">
                                             <tbody>
                                                 {segments.map((seg, si) => {
                                                     if (seg.kind === 'tx') {
@@ -233,13 +235,13 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                 <tr
                                                                     className={`bg-muted/40 ${si > 0 ? 'border-t border-border' : ''}`}
                                                                 >
-                                                                    <td className="px-4 py-2 text-xs text-muted-foreground font-mono w-16 align-middle" />
-                                                                    <td className="px-2 py-2 align-middle">
-                                                                        <div className="flex flex-wrap items-center gap-3">
+                                                                    <td className="px-4 py-2 text-xs text-muted-foreground font-mono w-[72px] align-middle" />
+                                                                    <td className="px-2 py-2 align-middle overflow-hidden">
+                                                                        <div className="flex flex-wrap items-center gap-2 max-w-full">
                                                                             <span className="font-mono text-xs text-muted-foreground">
-                                                                                {seg.txRef}
+                                                                                {seg.txId}
                                                                             </span>
-                                                                            <span className="text-xs text-muted-foreground">{seg.email}</span>
+                                                                            <span className="text-xs text-muted-foreground truncate shrink min-w-0">{seg.email}</span>
                                                                             {seg.mailSuccess === true && (
                                                                                 <MailCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                                                                             )}
@@ -248,8 +250,8 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                             )}
                                                                         </div>
                                                                     </td>
-                                                                    <td className="px-2 py-2 align-middle" />
-                                                                    <td className="px-4 py-2 align-middle text-right">
+                                                                    <td className="px-2 py-2 align-middle w-[180px]" />
+                                                                    <td className="px-4 py-2 align-middle text-right w-[110px]">
                                                                         <a
                                                                             href={confirmUrl}
                                                                             target="_blank"
@@ -270,6 +272,7 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                         sale={sale}
                                                                         isFirst={idx === 0}
                                                                         indent
+                                                                        onViewBreakdown={() => setBreakdownSale(sale)}
                                                                     />
                                                                 ))}
                                                             </React.Fragment>
@@ -281,6 +284,7 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                             key={seg.item.id}
                                                             sale={seg.item}
                                                             isFirst={si === 0}
+                                                            onViewBreakdown={() => setBreakdownSale(seg.item)}
                                                         />
                                                     );
                                                 })}
@@ -293,53 +297,100 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                     </div>
                 )}
             </div>
+
+            {/* Cash Breakdown Modal */}
+            {breakdownSale && (
+                <SparseCashBreakdownModal
+                    isOpen={!!breakdownSale}
+                    onClose={() => setBreakdownSale(null)}
+                    title="Sale Cash Breakdown"
+                    totalAmount={breakdownSale.amount}
+                    breakdown={breakdownSale.breakdown || {}}
+                />
+            )}
         </AppLayout>
     );
 }
 
-function SaleRow({ sale, isFirst, indent }: { sale: SaleItem; isFirst: boolean; indent?: boolean }) {
-    const variantLabel = sale.variant_opts
-        ? Object.entries(sale.variant_opts).map(([k, v]) => `${k}: ${v}`).join(' · ')
+function SaleRow({ sale, isFirst, indent, onViewBreakdown }: { sale: SaleItem; isFirst: boolean; indent?: boolean; onViewBreakdown?: () => void; }) {
+    const variantLabel = sale.variant_options
+        ? Object.entries(sale.variant_options).map(([k, v]) => `${k}: ${v}`).join(' · ')
         : null;
+
+    const amt = Number(sale.amount ?? 0);
+    const exp = Number(sale.expected_amount ?? sale.amount ?? 0);
+    const diff = amt - exp;
+    const colorClass = sale.method !== 'online' && diff > 0.01 ? 'text-green-500 font-medium' : sale.method !== 'online' && diff < -0.01 ? 'text-red-500 font-medium' : '';
+
+    // Mirror the semantics from OfficeShiftSaleResource / SalesLogCard:
+    // only non-online sales can be custom, and the backend exposes the
+    // is_custom flag so we don't have to re-encode the description logic here.
+    const isCustom = sale.method !== 'online' && !!sale.is_custom;
 
     return (
         <tr className={isFirst ? '' : 'border-t border-border'}>
             {/* Time — fixed width, consistent left edge */}
-            <td className={`py-2.5 text-xs text-muted-foreground font-mono w-16 shrink-0 align-middle ${indent ? 'pl-7 pr-2' : 'px-4'}`}>
+            <td className="py-2.5 text-xs text-muted-foreground font-mono w-[72px] shrink-0 align-middle px-4">
                 {fmtTime(sale.sold_at)}
             </td>
 
             {/* Name + variant + discount code + ref id */}
-            <td className="px-2 py-2.5 align-middle">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="font-medium">{sale.name}</span>
-                    {variantLabel && (
-                        <span className="text-xs text-muted-foreground">{variantLabel}</span>
-                    )}
-                    {sale.code_used && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
-                            {sale.code_used}
-                        </Badge>
-                    )}
+            <td className="px-2 py-2.5 align-middle overflow-hidden">
+                <div className="flex flex-col gap-0.5 max-w-full">
+                    <div className="flex items-center gap-x-2 gap-y-0.5 overflow-hidden">
+                        <span className="font-medium align-middle truncate shrink min-w-0">{sale.name}</span>
+                        {variantLabel && (
+                            <span className="text-xs text-muted-foreground truncate shrink min-w-0">{variantLabel}</span>
+                        )}
+                        {sale.code_used && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono shrink-0">
+                                {sale.code_used}
+                            </Badge>
+                        )}
+                    </div>
                     {sale.reference_id && sale.method === 'online' && (
-                        <span className="text-[10px] font-mono text-muted-foreground">{sale.reference_id}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground truncate max-w-full">{sale.reference_id}</span>
                     )}
                 </div>
             </td>
 
-            {/* ESNcard + method badge — right-aligned, no wrap */}
-            <td className="px-2 py-2.5 align-middle text-right whitespace-nowrap">
-                <div className="flex items-center justify-end gap-1">
-                    {sale.ticket_type === 'with_card' && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">ESNcard</Badge>
-                    )}
+            {/* ESNcard + method badge — consistently aligned start */}
+            <td className="px-2 py-2.5 align-middle whitespace-nowrap w-[180px]">
+                <div className="flex items-center justify-start gap-1">
                     <MethodBadge method={sale.method} />
+                    {sale.ticket_type === 'with_card' && (
+                        <Badge
+                            variant="outline"
+                            className="border-white bg-white text-[10px] text-black hover:bg-white/90"
+                        >
+                            ESNcard
+                        </Badge>
+                    )}
+                    {isCustom && (
+                        <Badge variant="secondary" className="text-[10px] capitalize shrink-0">
+                            Custom
+                        </Badge>
+                    )}
                 </div>
             </td>
 
             {/* Amount */}
-            <td className="px-4 py-2.5 align-middle text-right font-semibold tabular-nums">
-                €{sale.amount.toFixed(2)}
+            <td className="px-4 py-2.5 align-middle text-right w-[110px]">
+                <div className="flex items-center justify-end gap-1.5">
+                    <div className={`font-semibold tabular-nums truncate ${colorClass}`}>
+                        €{sale.amount.toFixed(2)}
+                    </div>
+                    {sale.method === 'cash' && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-5 w-5 hover:bg-transparent -mr-1"
+                            onClick={onViewBreakdown}
+                        >
+                            <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                    )}
+                </div>
             </td>
         </tr>
     );

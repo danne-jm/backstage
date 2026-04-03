@@ -85,6 +85,14 @@ export function ProductDialog({
         }
     }, [errors]);
 
+    const formatToTwoDecimals = (value: string): string => {
+        if (!value) return '';
+        const normalized = value.replace(',', '.');
+        const numeric = parseFloat(normalized);
+        if (Number.isNaN(numeric)) return value;
+        return numeric.toFixed(2);
+    };
+
     React.useEffect(() => {
         if (editingProduct) {
             setProductName(editingProduct.name);
@@ -209,11 +217,18 @@ export function ProductDialog({
         formData.append('name', productName);
         const useEsncardPricing = priceMode === 'esncard';
         if (useEsncardPricing) {
-            formData.append('price', productPriceWithoutCard || productPrice);
-            formData.append('price_with_card', productPriceWithCard);
-            formData.append('price_without_card', productPriceWithoutCard);
+            const basePrice = formatToTwoDecimals(
+                productPriceWithoutCard || productPrice,
+            );
+            const withCard = formatToTwoDecimals(productPriceWithCard);
+            const withoutCard = formatToTwoDecimals(productPriceWithoutCard);
+
+            formData.append('price', basePrice);
+            formData.append('price_with_card', withCard);
+            formData.append('price_without_card', withoutCard);
         } else {
-            formData.append('price', productPrice);
+            const basePrice = formatToTwoDecimals(productPrice);
+            formData.append('price', basePrice);
             formData.append('price_with_card', '');
             formData.append('price_without_card', '');
         }
@@ -392,92 +407,110 @@ export function ProductDialog({
                         />
                         {errors.description && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.description}</p>}
                     </div>
-                    {/* Pricing mode toggle — ESNcard option disabled when variants mode active */}
-                    <div className="mb-0 flex items-center justify-between border-b pb-3">
-                        <span className="text-sm text-muted-foreground">Pricing</span>
-                        <div
-                            role="tablist"
-                            aria-orientation="horizontal"
-                            className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground"
-                        >
-                            <button
-                                type="button"
-                                role="tab"
-                                aria-selected={priceMode === 'single'}
-                                onClick={() => {
-                                    setPriceMode('single');
-                                    setProductPriceWithCard('');
-                                    setProductPriceWithoutCard('');
-                                }}
-                                className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${priceMode === 'single' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                    {/* Pricing Section: separate container, similar style to Stock Management */}
+                    <div className="rounded-lg border bg-muted/5 px-4 py-3 space-y-4">
+                        {/* Pricing mode toggle — ESNcard option disabled when variants mode active */}
+                        <div className="mb-0 flex items-center justify-between border-b pb-3">
+                            <span className="text-sm font-semibold text-muted-foreground">Pricing</span>
+                            <div
+                                role="tablist"
+                                aria-orientation="horizontal"
+                                className="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground"
                             >
-                                Single Price
-                            </button>
-                            <button
-                                type="button"
-                                role="tab"
-                                aria-selected={priceMode === 'esncard'}
-                                onClick={() => setPriceMode('esncard')}
-                                className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${priceMode === 'esncard' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
-                            >
-                                ESNcard Pricing
-                            </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={priceMode === 'single'}
+                                    onClick={() => {
+                                        // Switch to single price view but keep any existing ESNcard values in memory
+                                        setPriceMode('single');
+                                    }}
+                                    className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${priceMode === 'single' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                >
+                                    Single Price
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={priceMode === 'esncard'}
+                                    onClick={() => setPriceMode('esncard')}
+                                    className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${priceMode === 'esncard' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                >
+                                    ESNcard Pricing
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Single price field */}
+                        {priceMode === 'single' && (
+                            <div>
+                                <Label htmlFor="product-price">Price (€)</Label>
+                                <Input
+                                    id="product-price"
+                                    type="number"
+                                    step="0.01"
+                                    value={productPrice}
+                                    onChange={(e) => setProductPrice(e.target.value)}
+                                    onBlur={() =>
+                                        setProductPrice((prev) =>
+                                            formatToTwoDecimals(prev),
+                                        )
+                                    }
+                                    className="mt-1"
+                                />
+                                {errors.price && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price}</p>}
+                            </div>
+                        )}
+
+                        {/* ESNcard pricing fields — only when priceMode = esncard (auto-reset when variants active) */}
+                        {priceMode === 'esncard' && (
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div>
+                                    <Label htmlFor="product-price-with-card" className="text-sm">
+                                        Price w/ ESNcard (€)
+                                    </Label>
+                                    <Input
+                                        id="product-price-with-card"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={productPriceWithCard}
+                                        onChange={(e) => setProductPriceWithCard(e.target.value)}
+                                        onBlur={() =>
+                                            setProductPriceWithCard((prev) =>
+                                                formatToTwoDecimals(prev),
+                                            )
+                                        }
+                                        placeholder="Discounted price"
+                                        className="mt-1"
+                                    />
+                                    {errors.price_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_with_card}</p>}
+                                </div>
+                                <div>
+                                    <Label htmlFor="product-price-without-card" className="text-sm">
+                                        Price w/o ESNcard (€)
+                                    </Label>
+                                    <Input
+                                        id="product-price-without-card"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={productPriceWithoutCard}
+                                        onChange={(e) => setProductPriceWithoutCard(e.target.value)}
+                                        onBlur={() =>
+                                            setProductPriceWithoutCard(
+                                                (prev) =>
+                                                    formatToTwoDecimals(prev),
+                                            )
+                                        }
+                                        placeholder="Full price"
+                                        className="mt-1"
+                                    />
+                                    {errors.price_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_without_card}</p>}
+                                </div>
+                            </div>
+                        )}
                     </div>
-
-                    {/* Single price field */}
-                    {priceMode === 'single' && (
-                        <div>
-                            <Label htmlFor="product-price">Price (€)</Label>
-                            <Input
-                                id="product-price"
-                                type="number"
-                                step="0.01"
-                                value={productPrice}
-                                onChange={(e) => setProductPrice(e.target.value)}
-                                className="mt-1"
-                            />
-                            {errors.price && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price}</p>}
-                        </div>
-                    )}
-
-                    {/* ESNcard pricing fields — only when priceMode = esncard (auto-reset when variants active) */}
-                    {priceMode === 'esncard' && (
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <Label htmlFor="product-price-with-card" className="text-sm">
-                                    Price w/ ESNcard (€)
-                                </Label>
-                                <Input
-                                    id="product-price-with-card"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={productPriceWithCard}
-                                    onChange={(e) => setProductPriceWithCard(e.target.value)}
-                                    placeholder="Discounted price"
-                                    className="mt-1"
-                                />
-                                {errors.price_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_with_card}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="product-price-without-card" className="text-sm">
-                                    Price w/o ESNcard (€)
-                                </Label>
-                                <Input
-                                    id="product-price-without-card"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={productPriceWithoutCard}
-                                    onChange={(e) => setProductPriceWithoutCard(e.target.value)}
-                                    placeholder="Full price"
-                                    className="mt-1"
-                                />
-                                {errors.price_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.price_without_card}</p>}
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Section 2: Sidebar Options */}
