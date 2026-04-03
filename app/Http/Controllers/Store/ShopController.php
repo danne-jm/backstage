@@ -17,14 +17,14 @@ class ShopController extends Controller
         $now = now();
 
         $data = Cache::remember('shop_index', 30, function () use ($now) {
-            $events = Event::where('start_sell_date', '<=', $now)
+            $events = Event::with('variants')->where('start_sell_date', '<=', $now)
                 ->where('end_sell_date', '>=', $now)
                 ->where('is_online_sellable', true)
                 ->orderBy('event_date', 'asc')
                 ->get()
-                ->map(fn ($e) => StoreSellableData::fromEvent($e)->toArray());
+                ->map(fn($e) => StoreSellableData::fromEvent($e)->toArray());
 
-            $products = Product::where('is_online_sellable', true)
+            $products = Product::with('variants')->where('is_online_sellable', true)
                 ->where(function ($q) use ($now) {
                     $q->whereNull('start_sell_date')->orWhere('start_sell_date', '<=', $now);
                 })
@@ -33,7 +33,7 @@ class ShopController extends Controller
                 })
                 ->orderBy('name')
                 ->get()
-                ->map(fn ($p) => StoreSellableData::fromProduct($p)->toArray());
+                ->map(fn($p) => StoreSellableData::fromProduct($p)->toArray());
 
             return ['sellables' => $events->concat($products)->values()];
         });
@@ -67,7 +67,7 @@ class ShopController extends Controller
             return null;
         });
 
-        if (! $item) {
+        if (!$item) {
             abort(404);
         }
 
@@ -83,12 +83,12 @@ class ShopController extends Controller
             ->where('end_sell_date', '>=', $now)
             ->where('is_online_sellable', true)
             ->get()
-            ->map(fn ($e) => StoreItemData::fromEvent($e)->toArray());
+            ->map(fn($e) => StoreItemData::fromEvent($e)->toArray());
 
         $products = Product::with('variants')
             ->where('is_online_sellable', true)
             ->get()
-            ->map(fn ($p) => StoreItemData::fromProduct($p)->toArray());
+            ->map(fn($p) => StoreItemData::fromProduct($p)->toArray());
 
         return Inertia::render('cart', [
             'sellables' => $events->concat($products)->values(),

@@ -27,7 +27,7 @@ class StoreManagerController extends Controller
             ->withCount(['sales', 'onlineSales'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($p) => [
+            ->map(fn($p) => [
                 'id' => $p->id,
                 'type' => 'product',
                 'name' => $p->name,
@@ -48,7 +48,7 @@ class StoreManagerController extends Controller
                 'images_list' => $p->images_list,
                 'variants_config' => $p->variants_config,
                 'instagram_link' => $p->instagram_link,
-                'variants' => $p->variants->map(fn ($v) => [
+                'variants' => $p->variants->map(fn($v) => [
                     'id' => $v->id,
                     'options' => $v->options,
                     'quantity' => $v->quantity,
@@ -61,7 +61,7 @@ class StoreManagerController extends Controller
             ->where('event_date', '>=', $now)
             ->orderBy('event_date', 'asc')
             ->get()
-            ->map(fn ($e) => [
+            ->map(fn($e) => [
                 'id' => $e->id,
                 'type' => 'event',
                 'name' => $e->name,
@@ -90,7 +90,7 @@ class StoreManagerController extends Controller
                 'variants_config' => $e->variants_config,
                 'instagram_link' => $e->instagram_link,
                 'notes' => $e->notes,
-                'variants' => $e->variants->map(fn ($v) => [
+                'variants' => $e->variants->map(fn($v) => [
                     'id' => $v->id,
                     'options' => $v->options,
                     'quantity' => $v->quantity,
@@ -106,13 +106,13 @@ class StoreManagerController extends Controller
 
         $from = match ($period) {
             '24hours' => now()->subHours(24),
-            '7days'   => now()->subDays(7),
-            'month'   => now()->subDays(30),
+            '7days' => now()->subDays(7),
+            'month' => now()->subDays(30),
             'lastShift' => $lastClosedShift?->ended_at ?? now()->subDays(14),
-            default   => now()->subDays(14),
+            default => now()->subDays(14),
         };
 
-        $page     = max(1, (int) $request->query('page', 1));
+        $page = max(1, (int) $request->query('page', 1));
         $pageSize = max(1, min(1000, (int) $request->query('pageSize', 100)));
 
         $baseQuery = OnlineSale::with(['product', 'event'])
@@ -133,29 +133,29 @@ class StoreManagerController extends Controller
 
         $onlineSellablesCount = Product::where('is_online_sellable', true)->count()
             + Event::where('is_online_sellable', true)
-            ->where('event_date', '>=', $now)
-            ->where(function ($query) use ($now) {
-                $query->whereNull('end_sell_date')
-                    ->orWhere('end_sell_date', '>=', $now);
-            })
-            ->count();
+                ->where('event_date', '>=', $now)
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('end_sell_date')
+                        ->orWhere('end_sell_date', '>=', $now);
+                })
+                ->count();
 
         $boardUsers = User::orderBy('first_name')
             ->get(['id', 'first_name', 'last_name', 'email'])
-            ->map(fn ($u) => [
-                'id'    => $u->id,
-                'name'  => trim(($u->first_name ?? '').' '.($u->last_name ?? '')),
+            ->map(fn($u) => [
+                'id' => $u->id,
+                'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
                 'email' => $u->email,
             ]);
 
         return [
-            'products'            => $products,
-            'events'              => $events,
-            'onlineSales'         => $onlineSales,
-            'officeSales'         => $officeSales,
-            'onlineSalesTotal'    => $onlineSalesTotal,
+            'products' => $products,
+            'events' => $events,
+            'onlineSales' => $onlineSales,
+            'officeSales' => $officeSales,
+            'onlineSalesTotal' => $onlineSalesTotal,
             'onlineSellablesCount' => $onlineSellablesCount,
-            'boardUsers'          => $boardUsers,
+            'boardUsers' => $boardUsers,
             'lastClosedShiftDate' => $lastClosedShift?->ended_at?->toIso8601String(),
         ];
     }
@@ -163,11 +163,11 @@ class StoreManagerController extends Controller
     public function allSales(Request $request): \Inertia\Response
     {
         $fromDate = $request->query('from_date', now()->subDays(28)->format('Y-m-d'));
-        $toDate   = $request->query('to_date', now()->format('Y-m-d'));
-        $method   = $request->query('method', 'all'); // all | cash | card | online
+        $toDate = $request->query('to_date', now()->format('Y-m-d'));
+        $method = $request->query('method', 'all'); // all | cash | card | online
 
         $from = Carbon::parse($fromDate)->startOfDay();
-        $to   = Carbon::parse($toDate)->endOfDay();
+        $to = Carbon::parse($toDate)->endOfDay();
 
         $items = collect();
 
@@ -191,31 +191,37 @@ class StoreManagerController extends Controller
         // across /office and /store-manager/all-sales views.
         if ($method !== 'online') {
             $query = OfficeShiftSale::with(['product', 'event'])
-                ->whereBetween('sold_at', [$from, $to]);
+                ->whereBetween('sold_at', [$from, $to])
+                ->where(function ($q) {
+                    // Exclude POS records that are actually representing online sales
+                    // to avoid duplicates in the All Sales log.
+                    $q->whereNull('snapshot->online_sale_id')
+                        ->orWhere('snapshot->online_sale_id', '');
+                });
             if ($method !== 'all') {
                 $query->where('method', $method);
             }
 
-            $officeItems = $query->get()->map(fn ($s) => [
-                'id'             => $s->id,
-                'name'           => $s->product?->name ?? $s->event?->name ?? ($s->description ?? 'Unknown'),
-                'method'          => $s->method ?? 'cash',
-                'amount'          => (float) $s->amount,
+            $officeItems = $query->get()->map(fn($s) => [
+                'id' => $s->id,
+                'name' => $s->product?->name ?? $s->event?->name ?? ($s->description ?? 'Unknown'),
+                'method' => $s->method ?? 'cash',
+                'amount' => (float) $s->amount,
                 'expected_amount' => (float) ($s->snapshot['price'] ?? $s->amount),
-                'breakdown'       => $s->breakdown,
-                'ticket_type'     => $s->snapshot['ticket_type'] ?? null,
+                'breakdown' => $s->breakdown,
+                'ticket_type' => $s->snapshot['ticket_type'] ?? null,
                 'variant_options' => $s->snapshot['options'] ?? $s->snapshot['variant_options'] ?? null,
-                'description'     => $s->description,
+                'description' => $s->description,
                 // Reuse the same definition as OfficeShiftSaleResource
-                'is_custom'       => $s->description !== null && $s->description !== 'Quick Sale',
-                'sold_at'         => $s->sold_at?->toIso8601String(),
+                'is_custom' => $s->description !== null && $s->description !== 'Quick Sale',
+                'sold_at' => $s->sold_at?->toIso8601String(),
             ]);
 
             $items = $items->concat($officeItems);
         }
 
         $storeUrl = rtrim(
-            env('STORE_APP_URL', 'http://'.env('STORE_DOMAIN', 'store.localhost').':'.
+            env('STORE_APP_URL', 'http://' . env('STORE_DOMAIN', 'store.localhost') . ':' .
                 (parse_url(env('APP_URL', 'http://localhost:8000'), PHP_URL_PORT) ?? 80)),
             '/'
         );
@@ -223,10 +229,10 @@ class StoreManagerController extends Controller
         return Inertia::render('store-manager/all-sales', [
             'filters' => [
                 'from_date' => $fromDate,
-                'to_date'   => $toDate,
-                'method'    => $method,
+                'to_date' => $toDate,
+                'method' => $method,
             ],
-            'sales'    => $items->sortByDesc('sold_at')->values(),
+            'sales' => $items->sortByDesc('sold_at')->values(),
             'storeUrl' => $storeUrl,
         ]);
     }

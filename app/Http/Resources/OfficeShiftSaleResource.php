@@ -23,13 +23,15 @@ class OfficeShiftSaleResource extends JsonResource
             'method' => $this->method,
             'is_custom' => $this->description !== null && $this->description !== 'Quick Sale',
             'ticket_type' => $this->snapshot['ticket_type'] ?? null,
+            'with_esncard' => ($this->snapshot['ticket_type'] ?? null) === 'with_card',
+            'ticket_type_label' => ($this->snapshot['ticket_type'] ?? null) === 'with_card' ? 'ESNcard' : (($this->snapshot['ticket_type'] ?? null) === 'without_card' ? 'No ESNcard' : null),
             'amount' => (float) $this->amount,
             'expected_amount' => (float) ($this->snapshot['price'] ?? $this->amount),
             'description' => $this->description,
             'breakdown' => $this->breakdown,
             'sold_by' => $user ? trim($user->first_name . ' ' . $user->last_name) : 'Unknown',
-            'sold_at' => $this->sold_at ?? $this->created_at,
-            'created_at' => $this->sold_at ?? $this->created_at, // for backward compatibility in frontend components
+            'sold_at' => ($this->sold_at ?? $this->created_at)?->toIso8601String(),
+            'created_at' => ($this->sold_at ?? $this->created_at)?->toIso8601String(), // for backward compatibility in frontend components
             'is_variant_based' => (bool) (($this->product && $this->product->is_variant_based) || ($this->event && $this->event->is_variant_based)),
             'variant_id' => $this->snapshot['variant_id'] ?? null,
             'variant_options' => $this->snapshot['variant_options'] ?? null,

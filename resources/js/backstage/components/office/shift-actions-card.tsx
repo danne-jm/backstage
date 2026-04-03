@@ -6,6 +6,7 @@ import { SaleCashBreakdownModal } from '@backstage/components/office/sale-cash-b
 import { VariantSelectionModal } from '@backstage/components/office/variant-selection-modal';
 import { Button } from '@backstage/components/ui/button';
 import { Input } from '@backstage/components/ui/input';
+import { Alert, AlertTitle } from '@backstage/components/ui/alert';
 
 export function ShiftActionsCard({ activeShift, sellables }: any) {
     const [submitting, setSubmitting] = useState(false);
@@ -20,8 +21,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         useState('without_card');
 
     // Modals
-    const [isQuickSaleCashModalOpen, setIsQuickSaleCashModalOpen] =
-        useState(false);
+    const [isQuickSaleCashModalOpen, setIsQuickSaleCashModalOpen] = useState(false);
     const [isCustomSaleCashModalOpen, setIsCustomSaleCashModalOpen] =
         useState(false);
     const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
@@ -40,6 +40,13 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
     const [isEndConfirmOpen, setIsEndConfirmOpen] = useState(false);
     const [isReopenConfirmOpen, setIsReopenConfirmOpen] = useState(false);
     const [reopenError, setReopenError] = useState<string | null>(null);
+
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+    const showToast = (msg: string) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 3000);
+    };
 
     useEffect(() => {
         if (sellables && sellables.length > 0 && !saleProductId) {
@@ -253,7 +260,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         router.post(
             `/office/${activeShift.id}/record-sale`,
             {
-                product_id: item.actual_id,
+                item_id: item.actual_id,
                 item_type: saleItemType,
                 method: 'card',
                 amount: getQuickSalePrice(),
@@ -266,6 +273,11 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                     setIsVariantModalOpen(false);
                     setSelectedVariantId(null);
                     setPendingSaleMethod(null);
+                    showToast('Sale recorded successfully!');
+                },
+                onError: (errors) => {
+                    const msg = errors.stock || errors.items || 'Failed to record sale';
+                    showToast(msg);
                 },
                 onFinish: () => setSubmitting(false),
             },
@@ -299,7 +311,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         router.post(
             `/office/${activeShift.id}/record-sale`,
             {
-                product_id: item.actual_id,
+                item_id: item.actual_id,
                 item_type: saleItemType,
                 method: 'cash',
                 amount: getQuickSalePrice(),
@@ -314,6 +326,11 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                     setIsVariantModalOpen(false);
                     setSelectedVariantId(null);
                     setPendingSaleMethod(null);
+                    showToast('Sale recorded successfully!');
+                },
+                onError: (errors) => {
+                    const msg = errors.stock || errors.items || 'Failed to record sale';
+                    showToast(msg);
                 },
                 onFinish: () => setSubmitting(false),
             },
@@ -362,7 +379,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         router.post(
             `/office/${activeShift.id}/record-sale`,
             {
-                product_id: item ? item.actual_id : null,
+                item_id: item ? item.actual_id : null,
                 item_type: item ? item.type : 'custom',
                 method: 'card',
                 amount: getCustomSalePrice(),
@@ -378,6 +395,11 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                     setCustomSaleItemId('custom');
                     setSelectedVariantId(null);
                     setPendingSaleSection(null);
+                    showToast('Sale recorded successfully!');
+                },
+                onError: (errors) => {
+                    const msg = errors.stock || errors.items || 'Failed to record sale';
+                    showToast(msg);
                 },
                 onFinish: () => setSubmitting(false),
             },
@@ -418,7 +440,7 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
         router.post(
             `/office/${activeShift.id}/record-sale`,
             {
-                product_id: item ? item.actual_id : null,
+                item_id: item ? item.actual_id : null,
                 item_type: item ? item.type : 'custom',
                 method: 'cash',
                 amount: getCustomSalePrice(),
@@ -436,6 +458,11 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                     setCustomSaleItemId('custom');
                     setSelectedVariantId(null);
                     setPendingSaleSection(null);
+                    showToast('Sale recorded successfully!');
+                },
+                onError: (errors) => {
+                    const msg = errors.stock || errors.items || 'Failed to record sale';
+                    showToast(msg);
                 },
                 onFinish: () => setSubmitting(false),
             },
@@ -443,175 +470,315 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
     };
 
     return (
-        <section className="flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
-            <h3 className="text-sm font-semibold">
-                {formatShiftHeader(activeShift)}
-            </h3>
-            <div className="mt-4 flex flex-col gap-3">
-                <div className="flex gap-2">
-                    {activeShift?.status === 'closed' ? (
-                        <Button
-                            variant="secondary"
-                            className="flex-1"
-                            disabled={submitting}
-                            onClick={() => setIsReopenConfirmOpen(true)}
-                        >
-                            Reopen shift
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="secondary"
-                            className="flex-1"
-                            disabled={
-                                activeShift?.status === 'open' || submitting
-                            }
-                            onClick={() => setIsStartConfirmOpen(true)}
-                        >
-                            Start shift
-                        </Button>
-                    )}
-                    <Button
-                        variant="outline"
-                        className="flex-1"
-                        disabled={activeShift?.status !== 'open' || submitting}
-                        onClick={() => setIsEndConfirmOpen(true)}
-                    >
-                        End shift
-                    </Button>
+        <>
+            {toastMessage && (
+                <div className="absolute top-4 left-1/2 z-50 w-[min(90%,30rem)] -translate-x-1/2 transform">
+                    <Alert className="bg-background border-primary">
+                        <AlertTitle>{toastMessage}</AlertTitle>
+                    </Alert>
                 </div>
-
-                {/* Confirmation Modals */}
-                <BaseModal
-                    isOpen={isStartConfirmOpen}
-                    onClose={() => setIsStartConfirmOpen(false)}
-                    title="Start Office Shift"
-                    description="Are you sure you want to start a new office shift?"
-                >
-                    <div className="mt-4 flex justify-end gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsStartConfirmOpen(false)}
-                            disabled={submitting}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleStartShift}
-                            disabled={submitting}
-                        >
-                            Start Shift
-                        </Button>
-                    </div>
-                </BaseModal>
-
-                <BaseModal
-                    isOpen={isEndConfirmOpen}
-                    onClose={() => setIsEndConfirmOpen(false)}
-                    title="End Office Shift"
-                    description="Are you sure you want to end this office shift? This will finalize the totals and close the shift."
-                >
-                    <div className="mt-4 flex justify-end gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsEndConfirmOpen(false)}
-                            disabled={submitting}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleEndShift}
-                            disabled={submitting}
-                        >
-                            End Shift
-                        </Button>
-                    </div>
-                </BaseModal>
-
-                <BaseModal
-                    isOpen={isReopenConfirmOpen}
-                    onClose={() => {
-                        setIsReopenConfirmOpen(false);
-                        setReopenError(null);
-                    }}
-                    title="Reopen Office Shift"
-                    description="Are you sure you want to reopen this closed office shift?"
-                >
-                    {reopenError && (
-                        <div className="mt-2 text-sm font-medium text-destructive">
-                            {reopenError}
-                        </div>
-                    )}
-                    <div className="mt-4 flex justify-end gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setIsReopenConfirmOpen(false);
-                                setReopenError(null);
-                            }}
-                            disabled={submitting}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleReopenShift}
-                            disabled={submitting}
-                        >
-                            Reopen Shift
-                        </Button>
-                    </div>
-                </BaseModal>
-
-                <div className="mt-2 border-t pt-2">
-                    <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-medium">Quick add sale</h4>
-                        <Link href="/sellables">
-                            <Button size="sm" variant="ghost">
-                                Manage
+            )}
+            <section className="flex flex-col rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border relative">
+                <h3 className="text-sm font-semibold">
+                    {formatShiftHeader(activeShift)}
+                </h3>
+                <div className="mt-4 flex flex-col gap-3">
+                    <div className="flex gap-2">
+                        {activeShift?.status === 'closed' ? (
+                            <Button
+                                variant="secondary"
+                                className="flex-1"
+                                disabled={submitting}
+                                onClick={() => setIsReopenConfirmOpen(true)}
+                            >
+                                Reopen shift
                             </Button>
-                        </Link>
-                    </div>
-                    <div className="mt-2 grid grid-cols-1 gap-2">
-                        <select
-                            value={String(saleProductId ?? '')}
-                            onChange={(e) => {
-                                const id = e.target.value || null;
-                                setSaleProductId(id);
-                                setSelectedVariantId(null);
-                                const item = sellables.find(
-                                    (i: any) =>
-                                        String(i.unique_id) === String(id),
-                                );
-                                if (item) setSaleItemType(item.type);
-                            }}
-                            className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
-                            disabled={activeShift?.status !== 'open'}
+                        ) : (
+                            <Button
+                                variant="secondary"
+                                className="flex-1"
+                                disabled={
+                                    activeShift?.status === 'open' || submitting
+                                }
+                                onClick={() => setIsStartConfirmOpen(true)}
+                            >
+                                Start shift
+                            </Button>
+                        )}
+                        <Button
+                            variant="outline"
+                            className="flex-1"
+                            disabled={activeShift?.status !== 'open' || submitting}
+                            onClick={() => setIsEndConfirmOpen(true)}
                         >
-                            <option value="" className="bg-white text-black">
-                                Select item...
-                            </option>
-                            {activeSellables.map((item: any) => (
-                                <option
-                                    key={item.unique_id}
-                                    value={item.unique_id}
-                                    className="bg-white text-black"
-                                >
-                                    {item.name} ({getQuantityLabel(item)})
-                                    {getDropdownPriceLabel(item)}
-                                </option>
-                            ))}
-                        </select>
+                            End shift
+                        </Button>
                     </div>
-                    {saleItemType === 'event' && saleProductId && (
+
+                    {/* Confirmation Modals */}
+                    <BaseModal
+                        isOpen={isStartConfirmOpen}
+                        onClose={() => setIsStartConfirmOpen(false)}
+                        title="Start Office Shift"
+                        description="Are you sure you want to start a new office shift?"
+                    >
+                        <div className="mt-4 flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsStartConfirmOpen(false)}
+                                disabled={submitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleStartShift}
+                                disabled={submitting}
+                            >
+                                Start Shift
+                            </Button>
+                        </div>
+                    </BaseModal>
+
+                    <BaseModal
+                        isOpen={isEndConfirmOpen}
+                        onClose={() => setIsEndConfirmOpen(false)}
+                        title="End Office Shift"
+                        description="Are you sure you want to end this office shift? This will finalize the totals and close the shift."
+                    >
+                        <div className="mt-4 flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsEndConfirmOpen(false)}
+                                disabled={submitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleEndShift}
+                                disabled={submitting}
+                            >
+                                End Shift
+                            </Button>
+                        </div>
+                    </BaseModal>
+
+                    <BaseModal
+                        isOpen={isReopenConfirmOpen}
+                        onClose={() => {
+                            setIsReopenConfirmOpen(false);
+                            setReopenError(null);
+                        }}
+                        title="Reopen Office Shift"
+                        description="Are you sure you want to reopen this closed office shift?"
+                    >
+                        {reopenError && (
+                            <div className="mt-2 text-sm font-medium text-destructive">
+                                {reopenError}
+                            </div>
+                        )}
+                        <div className="mt-4 flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setIsReopenConfirmOpen(false);
+                                    setReopenError(null);
+                                }}
+                                disabled={submitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleReopenShift}
+                                disabled={submitting}
+                            >
+                                Reopen Shift
+                            </Button>
+                        </div>
+                    </BaseModal>
+
+                    <div className="mt-2 border-t pt-2">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-medium">Quick add sale</h4>
+                            <Link href="/sellables">
+                                <Button size="sm" variant="ghost">
+                                    Manage
+                                </Button>
+                            </Link>
+                        </div>
+                        <div className="mt-2 grid grid-cols-1 gap-2">
+                            <select
+                                value={String(saleProductId ?? '')}
+                                onChange={(e) => {
+                                    const id = e.target.value || null;
+                                    setSaleProductId(id);
+                                    setSelectedVariantId(null);
+                                    const item = sellables.find(
+                                        (i: any) =>
+                                            String(i.unique_id) === String(id),
+                                    );
+                                    if (item) setSaleItemType(item.type);
+                                }}
+                                className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
+                                disabled={activeShift?.status !== 'open'}
+                            >
+                                <option value="" className="bg-white text-black">
+                                    Select item...
+                                </option>
+                                {activeSellables.map((item: any) => (
+                                    <option
+                                        key={item.unique_id}
+                                        value={item.unique_id}
+                                        className="bg-white text-black"
+                                    >
+                                        {item.name} ({getQuantityLabel(item)})
+                                        {getDropdownPriceLabel(item)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {saleItemType === 'event' && saleProductId && (
+                            <div className="mt-2 space-y-2">
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <input
+                                        type="radio"
+                                        name="ticket-type"
+                                        value="with_card"
+                                        checked={saleTicketType === 'with_card'}
+                                        onChange={() =>
+                                            setSaleTicketType('with_card')
+                                        }
+                                        className="h-4 w-4"
+                                    />
+                                    <span className="text-sm">With ESNcard</span>
+                                </label>
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <input
+                                        type="radio"
+                                        name="ticket-type"
+                                        value="without_card"
+                                        checked={saleTicketType === 'without_card'}
+                                        onChange={() =>
+                                            setSaleTicketType('without_card')
+                                        }
+                                        className="h-4 w-4"
+                                    />
+                                    <span className="text-sm">Without ESNcard</span>
+                                </label>
+                            </div>
+                        )}
+                        <div className="mt-2 flex items-center gap-2">
+                            <Button
+                                disabled={
+                                    activeShift?.status !== 'open' ||
+                                    submitting ||
+                                    !saleProductId ||
+                                    isQuickSaleItemSoldOut()
+                                }
+                                onClick={triggerQuickSaleCash}
+                            >
+                                Add Cash
+                            </Button>
+                            <Button
+                                variant="outline"
+                                disabled={
+                                    activeShift?.status !== 'open' ||
+                                    submitting ||
+                                    !saleProductId ||
+                                    isQuickSaleItemSoldOut()
+                                }
+                                onClick={() => handleQuickSaleCard()}
+                            >
+                                Add Card
+                            </Button>
+                            <VariantSelectionModal
+                                isOpen={isVariantModalOpen}
+                                onClose={() => {
+                                    setIsVariantModalOpen(false);
+                                    setPendingSaleMethod(null);
+                                    setPendingSaleSection(null);
+                                }}
+                                onConfirm={handleVariantSelection}
+                                sellable={
+                                    pendingSaleSection === 'custom'
+                                        ? sellables?.find((i: any) => String(i.unique_id) === String(customSaleItemId))
+                                        : sellables?.find((i: any) => String(i.unique_id) === String(saleProductId))
+                                }
+                            />
+                            <SaleCashBreakdownModal
+                                isOpen={isQuickSaleCashModalOpen}
+                                onClose={setIsQuickSaleCashModalOpen}
+                                title="Quick Sale Breakdown"
+                                description="Confirm the cash received."
+                                expectedAmount={getQuickSalePrice()}
+                                isSubmitting={submitting}
+                                onSave={handleQuickSaleCash}
+                                initialBreakdown={{}}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mt-2 border-t pt-2">
+                        <h4 className="text-xs font-medium">Custom sale</h4>
+                        <div className="mt-2 grid grid-cols-1 gap-2">
+                            <select
+                                value={customSaleItemId}
+                                onChange={(e) => {
+                                    setCustomSaleItemId(e.target.value);
+                                    setSelectedVariantId(null);
+                                }}
+                                className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
+                                disabled={activeShift?.status !== 'open'}
+                            >
+                                <option value="custom" className="bg-white text-black">
+                                    Custom
+                                </option>
+                                {activeSellables.map((item: any) => (
+                                    <option
+                                        key={item.unique_id}
+                                        value={item.unique_id}
+                                        className="bg-white text-black"
+                                    >
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="€0.00"
+                                    value={customAmount}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (
+                                            value === '' ||
+                                            /^\d*\.?\d*$/.test(value)
+                                        )
+                                            setCustomAmount(value);
+                                    }}
+                                    disabled={activeShift?.status !== 'open'}
+                                />
+                            </div>
+                            <Input
+                                placeholder="Description (mandatory)"
+                                value={customDescription}
+                                onChange={(e) =>
+                                    setCustomDescription(e.target.value)
+                                }
+                                disabled={activeShift?.status !== 'open'}
+                            />
+                        </div>
                         <div className="mt-2 space-y-2">
                             <label className="flex cursor-pointer items-center gap-2">
                                 <input
                                     type="radio"
-                                    name="ticket-type"
+                                    name="custom-ticket-type"
                                     value="with_card"
-                                    checked={saleTicketType === 'with_card'}
+                                    checked={customSaleTicketType === 'with_card'}
                                     onChange={() =>
-                                        setSaleTicketType('with_card')
+                                        setCustomSaleTicketType('with_card')
                                     }
                                     className="h-4 w-4"
                                 />
@@ -620,190 +787,59 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                             <label className="flex cursor-pointer items-center gap-2">
                                 <input
                                     type="radio"
-                                    name="ticket-type"
+                                    name="custom-ticket-type"
                                     value="without_card"
-                                    checked={saleTicketType === 'without_card'}
+                                    checked={
+                                        customSaleTicketType === 'without_card'
+                                    }
                                     onChange={() =>
-                                        setSaleTicketType('without_card')
+                                        setCustomSaleTicketType('without_card')
                                     }
                                     className="h-4 w-4"
                                 />
                                 <span className="text-sm">Without ESNcard</span>
                             </label>
                         </div>
-                    )}
-                    <div className="mt-2 flex items-center gap-2">
-                        <Button
-                            disabled={
-                                activeShift?.status !== 'open' ||
-                                submitting ||
-                                !saleProductId ||
-                                isQuickSaleItemSoldOut()
-                            }
-                            onClick={triggerQuickSaleCash}
-                        >
-                            Add Cash
-                        </Button>
-                        <Button
-                            variant="outline"
-                            disabled={
-                                activeShift?.status !== 'open' ||
-                                submitting ||
-                                !saleProductId ||
-                                isQuickSaleItemSoldOut()
-                            }
-                            onClick={() => handleQuickSaleCard()}
-                        >
-                            Add Card
-                        </Button>
-                        <VariantSelectionModal
-                            isOpen={isVariantModalOpen}
-                            onClose={() => {
-                                setIsVariantModalOpen(false);
-                                setPendingSaleMethod(null);
-                                setPendingSaleSection(null);
-                            }}
-                            onConfirm={handleVariantSelection}
-                            sellable={
-                                pendingSaleSection === 'custom'
-                                    ? sellables?.find((i: any) => String(i.unique_id) === String(customSaleItemId))
-                                    : sellables?.find((i: any) => String(i.unique_id) === String(saleProductId))
-                            }
-                        />
-                        <SaleCashBreakdownModal
-                            isOpen={isQuickSaleCashModalOpen}
-                            onClose={setIsQuickSaleCashModalOpen}
-                            title="Quick Sale Breakdown"
-                            description="Confirm the cash received."
-                            expectedAmount={getQuickSalePrice()}
-                            isSubmitting={submitting}
-                            onSave={handleQuickSaleCash}
-                            initialBreakdown={{}}
-                        />
-                    </div>
-                </div>
-
-                <div className="mt-2 border-t pt-2">
-                    <h4 className="text-xs font-medium">Custom sale</h4>
-                    <div className="mt-2 grid grid-cols-1 gap-2">
-                        <select
-                            value={customSaleItemId}
-                            onChange={(e) => {
-                                setCustomSaleItemId(e.target.value);
-                                setSelectedVariantId(null);
-                            }}
-                            className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
-                            disabled={activeShift?.status !== 'open'}
-                        >
-                            <option value="custom" className="bg-white text-black">
-                                Custom
-                            </option>
-                            {activeSellables.map((item: any) => (
-                                <option
-                                    key={item.unique_id}
-                                    value={item.unique_id}
-                                    className="bg-white text-black"
-                                >
-                                    {item.name}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="€0.00"
-                                value={customAmount}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    if (
-                                        value === '' ||
-                                        /^\d*\.?\d*$/.test(value)
-                                    )
-                                        setCustomAmount(value);
-                                }}
-                                disabled={activeShift?.status !== 'open'}
+                        <div className="mt-2 flex items-center gap-2">
+                            <Button
+                                disabled={
+                                    !activeShift ||
+                                    !customAmount ||
+                                    !customDescription ||
+                                    activeShift?.status !== 'open' ||
+                                    submitting
+                                }
+                                onClick={triggerCustomSaleCash}
+                            >
+                                Add Cash
+                            </Button>
+                            <Button
+                                variant="outline"
+                                disabled={
+                                    !activeShift ||
+                                    !customAmount ||
+                                    !customDescription ||
+                                    activeShift?.status !== 'open' ||
+                                    submitting
+                                }
+                                onClick={() => handleCustomSaleCard()}
+                            >
+                                Add Card
+                            </Button>
+                            <SaleCashBreakdownModal
+                                isOpen={isCustomSaleCashModalOpen}
+                                onClose={setIsCustomSaleCashModalOpen}
+                                title="Custom Sale Breakdown"
+                                description="Confirm the cash received."
+                                expectedAmount={getCustomSalePrice()}
+                                isSubmitting={submitting}
+                                onSave={handleCustomSaleCash}
+                                initialBreakdown={{}}
                             />
                         </div>
-                        <Input
-                            placeholder="Description (mandatory)"
-                            value={customDescription}
-                            onChange={(e) =>
-                                setCustomDescription(e.target.value)
-                            }
-                            disabled={activeShift?.status !== 'open'}
-                        />
-                    </div>
-                    <div className="mt-2 space-y-2">
-                        <label className="flex cursor-pointer items-center gap-2">
-                            <input
-                                type="radio"
-                                name="custom-ticket-type"
-                                value="with_card"
-                                checked={customSaleTicketType === 'with_card'}
-                                onChange={() =>
-                                    setCustomSaleTicketType('with_card')
-                                }
-                                className="h-4 w-4"
-                            />
-                            <span className="text-sm">With ESNcard</span>
-                        </label>
-                        <label className="flex cursor-pointer items-center gap-2">
-                            <input
-                                type="radio"
-                                name="custom-ticket-type"
-                                value="without_card"
-                                checked={
-                                    customSaleTicketType === 'without_card'
-                                }
-                                onChange={() =>
-                                    setCustomSaleTicketType('without_card')
-                                }
-                                className="h-4 w-4"
-                            />
-                            <span className="text-sm">Without ESNcard</span>
-                        </label>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                        <Button
-                            disabled={
-                                !activeShift ||
-                                !customAmount ||
-                                !customDescription ||
-                                activeShift?.status !== 'open' ||
-                                submitting
-                            }
-                            onClick={triggerCustomSaleCash}
-                        >
-                            Add Cash
-                        </Button>
-                        <Button
-                            variant="outline"
-                            disabled={
-                                !activeShift ||
-                                !customAmount ||
-                                !customDescription ||
-                                activeShift?.status !== 'open' ||
-                                submitting
-                            }
-                            onClick={() => handleCustomSaleCard()}
-                        >
-                            Add Card
-                        </Button>
-                        <SaleCashBreakdownModal
-                            isOpen={isCustomSaleCashModalOpen}
-                            onClose={setIsCustomSaleCashModalOpen}
-                            title="Custom Sale Breakdown"
-                            description="Confirm the cash received."
-                            expectedAmount={getCustomSalePrice()}
-                            isSubmitting={submitting}
-                            onSave={handleCustomSaleCash}
-                            initialBreakdown={{}}
-                        />
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </>
     );
 }

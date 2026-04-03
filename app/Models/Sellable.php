@@ -5,13 +5,14 @@ namespace App\Models;
 use App\Models\Concerns\HasSellableStock;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 abstract class Sellable extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia, HasSellableStock;
+    use HasFactory, InteractsWithMedia, HasSellableStock, HasUlids;
 
     protected $commonFillable = [
         'name',
@@ -55,8 +56,8 @@ abstract class Sellable extends Model implements HasMedia
     public function registerMediaConversions(Media $media = null): void
     {
         $this->addMediaConversion('optimized')
-            ->width(2000)
-            ->height(2000)
+            ->width(3000)
+            ->height(3000)
             ->format('webp')
             ->quality(92)
             ->nonQueued();

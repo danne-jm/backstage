@@ -11,6 +11,7 @@ class OnlineSale extends Model
 
     protected $fillable = [
         'online_transaction_id',
+        'office_shift_id',
         'reference_id',
         'product_id',
         'event_id',
@@ -26,6 +27,11 @@ class OnlineSale extends Model
         'amount' => 'decimal:2',
         'sold_at' => 'datetime',
     ];
+
+    public function officeShift()
+    {
+        return $this->belongsTo(\App\Models\OfficeShift::class);
+    }
 
     public function sellable()
     {

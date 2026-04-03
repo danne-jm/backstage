@@ -8,27 +8,29 @@ import { OfficeCard } from './office-card';
 
 interface PreviousShiftSalesLogProps {
     sales: any[];
+    totals?: any;
     className?: string;
 }
 
 export function PreviousShiftSalesLog({
     sales,
+    totals,
     className,
 }: PreviousShiftSalesLogProps) {
     const [isExpanded, setIsExpanded] = useState(true);
 
-    const cashTotal = sales
+    const cashTotal = totals ? Number(totals.cash_total || 0) : sales
         .filter((s) => s.method === 'cash')
         .reduce((sum, s) => sum + Number(s.amount), 0);
-    const cardTotal = sales
-        .filter((s) => s.method === 'card')
+    const cardTotal = totals ? Number(totals.card_total || 0) : sales
+        .filter((s) => s.method === 'card' || s.method === 'online')
         .reduce((sum, s) => sum + Number(s.amount), 0);
-    const total = cashTotal + cardTotal;
+    const total = totals ? Number(totals.total || 0) : cashTotal + cardTotal;
 
     const formatDateTime = (dateStr: string) => {
         if (!dateStr) return '';
         try {
-            return format(new Date(dateStr), 'dd/MM/yyyy, HH:mm:ss');
+            return format(new Date(dateStr), 'dd/MM/yyyy HH:mm:ss');
         } catch {
             return '';
         }
@@ -113,15 +115,20 @@ export function PreviousShiftSalesLog({
                                             {s.name}
                                         </td>
                                         <td className="px-1 py-2">
-                                            <div className="flex gap-1">
-                                                <Badge
-                                                    variant="outline"
-                                                    className="px-1.5 py-0 text-[10px] capitalize"
-                                                >
-                                                    {s.method}
-                                                </Badge>
-                                                {s.ticket_type ===
-                                                    'with_card' && (
+                                            <div className="flex flex-wrap gap-1">
+                                                {s.method === 'online' ? (
+                                                    <Badge className="border-transparent bg-blue-800 text-white hover:bg-blue-800 px-1.5 py-0 text-[10px]">
+                                                        Online
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="px-1.5 py-0 text-[10px] capitalize"
+                                                    >
+                                                        {s.method}
+                                                    </Badge>
+                                                )}
+                                                {s.ticket_type === 'with_card' && (
                                                     <Badge
                                                         variant="outline"
                                                         className="border-white bg-white px-1.5 py-0 text-[10px] text-black hover:bg-white/90"

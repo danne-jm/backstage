@@ -72,8 +72,8 @@ class Event extends Sellable
             }
         } else {
             $unlimited = $this->unlimited_quantity_without_card ?? $this->unlimited_quantity;
-            $qtyCol    = $this->quantity_without_card ?? $this->quantity;
-            $sold      = $this->sold_count_without_card ?? 0;
+            $qtyCol = $this->quantity_without_card ?? $this->quantity;
+            $sold = $this->sold_count_without_card ?? 0;
             if ($unlimited || is_null($qtyCol)) {
                 return;
             }
@@ -86,29 +86,83 @@ class Event extends Sellable
         }
     }
 
-    public function incrementMainSoldCount(bool $useMemberPrice = false): int
+    public function incrementMainSoldCount(bool $useMemberPrice = false, int $count = 1): int
     {
         if ($useMemberPrice) {
             return static::where('id', $this->id)
-                ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card + 1 <= quantity_with_card)')
-                ->increment('sold_count_with_card');
+                ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card + ? <= quantity_with_card)', [$count])
+                ->increment('sold_count_with_card', $count);
         }
 
         return static::where('id', $this->id)
-            ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card + 1 <= quantity_without_card)')
-            ->increment('sold_count_without_card');
+            ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card + ? <= quantity_without_card)', [$count])
+            ->increment('sold_count_without_card', $count);
     }
 
-    public function decrementMainSoldCount(bool $useMemberPrice = false): void
+    public function decrementMainSoldCount(bool $useMemberPrice = false, int $count = 1): void
     {
         if ($useMemberPrice) {
             static::where('id', $this->id)
-                ->where('sold_count_with_card', '>', 0)
-                ->decrement('sold_count_with_card');
+                ->where('sold_count_with_card', '>=', $count)
+                ->decrement('sold_count_with_card', $count);
         } else {
             static::where('id', $this->id)
-                ->where('sold_count_without_card', '>', 0)
-                ->decrement('sold_count_without_card');
+                ->where('sold_count_without_card', '>=', $count)
+                ->decrement('sold_count_without_card', $count);
         }
+    }
+
+    /**
+     * Count actual with-card (member-price) sales from real records.
+     */
+    public function computedSoldWithCard(): int
+    {
+        return \App\Models\OfficeShiftSale::where('event_id', $this->id)
+            ->whereJsonContains('snapshot->ticket_type', 'with_card')
+            ->count()
+            + \App\Models\OnlineSale::where('event_id', $this->id)
+                ->where('ticket_type', 'with_card')
+                ->count();
+    }
+
+    /**
+     * Count actual without-card sales from real records.
+     */
+    public function computedSoldWithoutCard(): int
+    {
+        return \App\Models\OfficeShiftSale::where('event_id', $this->id)
+            ->where(function ($q) {
+                $q->whereJsonDoesntContain('snapshot->ticket_type', 'with_card')
+                    ->orWhereNull('snapshot->ticket_type');
+            })
+            ->count()
+            + \App\Models\OnlineSale::where('event_id', $this->id)
+                ->where(function ($q) {
+                    $q->where('ticket_type', '!=', 'with_card')
+                        ->orWhereNull('ticket_type');
+                })
+                ->count();
+    }
+
+    /**
+     * Compute remaining with-card tickets live from actual sales.
+     */
+    public function computedRemainingWithCard(): ?int
+    {
+        if ($this->unlimited_quantity_with_card || is_null($this->quantity_with_card)) {
+            return null;
+        }
+        return max(0, $this->quantity_with_card - $this->computedSoldWithCard());
+    }
+
+    /**
+     * Compute remaining without-card tickets live from actual sales.
+     */
+    public function computedRemainingWithoutCard(): ?int
+    {
+        if ($this->unlimited_quantity_without_card || is_null($this->quantity_without_card)) {
+            return null;
+        }
+        return max(0, $this->quantity_without_card - $this->computedSoldWithoutCard());
     }
 }

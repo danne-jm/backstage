@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('online_transactions', function (Blueprint $table) {
@@ -38,7 +37,8 @@ return new class extends Migration
     {
         if (Schema::hasTable('online_sales')) {
             Schema::table('online_sales', function (Blueprint $table) {
-                $table->dropForeignIfExists(['online_transaction_id']);
+                // Drop foreign key explicitly
+                $table->dropForeign(['online_transaction_id']);
             });
         }
 

@@ -14,8 +14,8 @@ return new class extends Migration {
             $table->ulid('id')->primary();
             $table->string('reference_id')->nullable();
             $table->foreignUlid('online_transaction_id')->nullable();
-            $table->foreignId('product_id')->nullable();
-            $table->foreignId('event_id')->nullable();
+            $table->foreignUlid('product_id')->nullable();
+            $table->foreignUlid('event_id')->nullable();
             $table->string('method')->nullable();
             $table->decimal('amount', 8, 2)->default(0);
             $table->json('details')->nullable();

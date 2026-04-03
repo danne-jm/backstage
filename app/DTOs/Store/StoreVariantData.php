@@ -10,12 +10,13 @@ readonly class StoreVariantData
         public string $id,
         public array $options,
         public bool $has_stock,
-    ) {}
+    ) {
+    }
 
     public static function fromVariant(SellableVariant $variant): self
     {
-        $hasStock = is_null($variant->quantity)
-            || ($variant->quantity - ($variant->sold_count ?? 0)) > 0;
+        $remaining = $variant->computedRemaining();
+        $hasStock = is_null($variant->quantity) || ($remaining !== null && $remaining > 0);
 
         return new self(
             id: $variant->id,

@@ -19,12 +19,12 @@ trait HasSellableStock
      * Atomically increment the entity's sold count using a conditional WHERE clause.
      * Returns the number of affected rows (0 = race-condition sold-out).
      */
-    abstract public function incrementMainSoldCount(bool $useMemberPrice = false): int;
+    abstract public function incrementMainSoldCount(bool $useMemberPrice = false, int $count = 1): int;
 
     /**
      * Decrement the entity's sold count, guarding against going below zero.
      */
-    abstract public function decrementMainSoldCount(bool $useMemberPrice = false): void;
+    abstract public function decrementMainSoldCount(bool $useMemberPrice = false, int $count = 1): void;
 
     /**
      * Resolve a variant from this sellable by matching options exactly.
@@ -95,7 +95,7 @@ trait HasSellableStock
         $this->checkMainStock($qty, $useMemberPrice);
 
         // Atomically increment main entity
-        $updated = $this->incrementMainSoldCount($useMemberPrice);
+        $updated = $this->incrementMainSoldCount($useMemberPrice, $qty);
         if (!$updated) {
             throw new \Exception("{$this->name} sold out during processing.");
         }
@@ -103,11 +103,11 @@ trait HasSellableStock
         // Atomically increment variant (roll back main entity if this fails)
         if ($variant) {
             $variantUpdated = SellableVariant::where('id', $variant->id)
-                ->whereRaw('(quantity IS NULL OR sold_count + 1 <= quantity)')
-                ->increment('sold_count');
+                ->whereRaw('(quantity IS NULL OR sold_count + ? <= quantity)', [$qty])
+                ->increment('sold_count', $qty);
 
             if (!$variantUpdated) {
-                $this->decrementMainSoldCount($useMemberPrice);
+                $this->decrementMainSoldCount($useMemberPrice, $qty);
                 throw new \Exception("Variant of {$this->name} sold out during processing.");
             }
         }

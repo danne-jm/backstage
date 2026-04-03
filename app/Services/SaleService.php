@@ -121,6 +121,15 @@ class SaleService
     }
 
     /**
+     * Finds stray OnlineSales with no office_shift_id and stamps them with the given shift.
+     * Does NOT create OfficeShiftSale records — online sales stay in their own pipeline.
+     */
+    public function claimStrayOnlineSales(OfficeShift $shift): void
+    {
+        OnlineSale::whereNull('office_shift_id')->update(['office_shift_id' => $shift->id]);
+    }
+
+    /**
      * Validate stock and atomically decrement the sold count on the sellable (and variant, if applicable).
      *
      * @return array{resolved_variant: SellableVariant|null}
@@ -331,7 +340,7 @@ class SaleService
             'method' => $method,
             'amount' => $amount,
             'description' => ($data['description'] !== null && $data['description'] !== '') ? $data['description'] : null,
-            'sold_by' => $data['sold_by'] ?? Auth::id(),
+            'sold_by' => array_key_exists('sold_by', $data) ? $data['sold_by'] : Auth::id(),
             'sold_at' => $data['sold_at'] ?? now(),
             'snapshot' => $snapshot,
             'breakdown' => $data['breakdown'] ?? null,
@@ -362,5 +371,21 @@ class SaleService
 
             return true;
         });
+    }
+
+    /** Public wrapper around resolveVariant for external callers (e.g. CheckoutService). */
+    public function resolveVariantPublic(mixed $sellable, array $options): ?SellableVariant
+    {
+        return $this->resolveVariant($sellable, $options);
+    }
+
+    /** Public wrapper around createOfficeShiftSale for external callers (e.g. CheckoutService). */
+    public function createOfficeShiftSalePublic(
+        OfficeShift $shift,
+        array $data,
+        ?string $onlineSaleId = null,
+        ?SellableVariant $resolvedVariant = null
+    ): OfficeShiftSale {
+        return $this->createOfficeShiftSale($shift, $data, $onlineSaleId, $resolvedVariant);
     }
 }

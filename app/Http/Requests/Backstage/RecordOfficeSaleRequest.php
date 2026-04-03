@@ -15,14 +15,14 @@ class RecordOfficeSaleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_id'  => ['nullable'],
-            'item_type'   => ['nullable', 'string', 'in:product,event,custom'],
-            'method'      => ['required', 'in:cash,card'],
-            'amount'      => ['required', 'numeric'],
+            'item_id' => ['nullable'],
+            'item_type' => ['nullable', 'string', 'in:product,event,custom'],
+            'method' => ['required', 'in:cash,card'],
+            'amount' => ['required', 'numeric'],
             'description' => ['nullable', 'string'],
             'ticket_type' => ['nullable', 'string', 'in:with_card,without_card'],
-            'variant_id'  => ['nullable', 'string'],
-            'breakdown'   => ['nullable', 'array'],
+            'variant_id' => ['nullable', 'string'],
+            'breakdown' => ['nullable', 'array'],
         ];
     }
 }

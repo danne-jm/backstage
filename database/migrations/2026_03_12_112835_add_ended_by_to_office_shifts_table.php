@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('office_shifts', function (Blueprint $table) {
-            $table->foreignId('ended_by')->nullable()->after('started_by')->constrained('users')->nullOnDelete();
+            $table->foreignUlid('ended_by')->nullable()->after('started_by')->constrained('users')->nullOnDelete();
         });
     }
 

@@ -77,6 +77,11 @@ class OfficeService
         return $this->saleService->recordOfficeSale($office, $data);
     }
 
+    public function claimStrayOnlineSales(OfficeShift $office): void
+    {
+        $this->saleService->claimStrayOnlineSales($office);
+    }
+
     public function removeSale(OfficeShift $office, string $saleId): void
     {
         DB::transaction(function () use ($office, $saleId) {

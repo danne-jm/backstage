@@ -12,15 +12,15 @@ return new class extends Migration {
     {
         Schema::create('office_shift_sales', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignId('product_id')->nullable();
-            $table->foreignId('event_id')->nullable();
+            $table->foreignUlid('product_id')->nullable();
+            $table->foreignUlid('event_id')->nullable();
             $table->foreignUlid('office_shift_id')->nullable();
             $table->string('method')->nullable();
             $table->decimal('amount', 8, 2)->default(0);
             $table->string('description')->nullable();
             $table->json('snapshot')->nullable();
             $table->json('breakdown')->nullable();
-            $table->foreignId('sold_by')->nullable();
+            $table->foreignUlid('sold_by')->nullable()->constrained('users');
             $table->timestamp('sold_at')->nullable();
             $table->timestamps();
         });

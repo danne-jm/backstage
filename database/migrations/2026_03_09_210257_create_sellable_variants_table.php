@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('sellable_variants', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->morphs('sellable');
+            $table->ulidMorphs('sellable');
             $table->json('options');
             $table->integer('quantity')->nullable();
             $table->integer('sold_count')->default(0);

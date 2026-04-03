@@ -27,32 +27,34 @@ readonly class StoreItemData
         public bool $has_stock_without_card,
         public ?string $instagram_link,
         public array $images,
-    ) {}
+    ) {
+    }
 
     public static function fromProduct(Product $product): self
     {
-    $isVariantBased = (bool) $product->is_variant_based;
+        $isVariantBased = (bool) $product->is_variant_based;
 
-    // Use price_with_card / price_without_card when set; fall back to legacy member_price.
-        $priceWithCard    = $product->price_with_card    !== null ? (float) $product->price_with_card    : null;
+        // Use price_with_card / price_without_card when set; fall back to legacy member_price.
+        $priceWithCard = $product->price_with_card !== null ? (float) $product->price_with_card : null;
+        $legacyMemberPrice = $product->member_price !== null ? (float) $product->member_price : null;
         $priceWithoutCard = $product->price_without_card !== null ? (float) $product->price_without_card : null;
-        $basePrice        = $priceWithoutCard ?? (float) $product->price;
+        $basePrice = $priceWithoutCard ?? (float) $product->price;
 
         // Resolve member_price: use price_with_card when it's a real discount, else null.
-        // Allow ESNcard pricing even for variant-based products; the discount applies uniformly.
-        $memberPrice = ($priceWithCard !== null && $priceWithCard >= 0 && $priceWithCard < $basePrice)
-            ? $priceWithCard
+        $candidateMemberPrice = $priceWithCard ?? $legacyMemberPrice;
+        $memberPrice = ($candidateMemberPrice !== null && $candidateMemberPrice > 0 && $candidateMemberPrice < $basePrice)
+            ? $candidateMemberPrice
             : null;
 
         $hasStock = $product->checkHasStock();
 
         $variants = collect($product->variants ?? [])
-            ->map(fn ($v) => StoreVariantData::fromVariant($v)->toArray())
+            ->map(fn($v) => StoreVariantData::fromVariant($v)->toArray())
             ->values()
             ->all();
 
         $images = collect($product->images_list ?? [])
-            ->map(fn ($img) => ['id' => $img['id'], 'url' => $img['url']])
+            ->map(fn($img) => ['id' => $img['id'], 'url' => $img['url']])
             ->values()
             ->all();
 
@@ -71,8 +73,8 @@ readonly class StoreItemData
             is_variant_based: $isVariantBased,
             variants_config: $product->variants_config,
             variants: $variants,
-            has_stock_with_card: false,
-            has_stock_without_card: false,
+            has_stock_with_card: $hasStock,
+            has_stock_without_card: $hasStock,
             instagram_link: $product->instagram_link,
             images: $images,
         );
@@ -84,7 +86,7 @@ readonly class StoreItemData
         $priceWithCard = (float) ($event->price_with_card ?? 0);
         $isVariable = (bool) $event->variable_amount;
 
-        $withCardStock    = $event->checkHasStockWithCard();
+        $withCardStock = $event->checkHasStockWithCard();
         $withoutCardStock = $event->checkHasStockWithoutCard();
 
         $hasStock = $isVariable
@@ -92,9 +94,11 @@ readonly class StoreItemData
             : $event->checkHasStock();
 
         $images = collect($event->images_list ?? [])
-            ->map(fn ($img) => ['id' => $img['id'], 'url' => $img['url']])
+            ->map(fn($img) => ['id' => $img['id'], 'url' => $img['url']])
             ->values()
             ->all();
+
+        $hasDiscount = ($priceWithCard > 0 && $priceWithCard < $priceWithoutCard);
 
         return new self(
             id: $event->id,
@@ -106,8 +110,8 @@ readonly class StoreItemData
             has_stock: $hasStock,
             is_variable: $isVariable,
             event_date: $event->event_date?->toIso8601String(),
-            member_price: ($priceWithCard >= 0 && $priceWithCard < $priceWithoutCard) ? $priceWithCard : null,
-            price_without_card: $isVariable ? $priceWithoutCard : null,
+            member_price: $hasDiscount ? $priceWithCard : null,
+            price_without_card: $hasDiscount ? $priceWithoutCard : null,
             is_variant_based: false,
             variants_config: null,
             variants: [],

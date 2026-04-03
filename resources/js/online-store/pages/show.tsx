@@ -32,9 +32,9 @@ export default function ShopShow({ item }: Props) {
     const currentVariant =
         item.variants_config && item.variants.length > 0
             ? item.variants.find((v) => {
-                  const requiredKeys = item.variants_config!.map((c) => c.name);
-                  return requiredKeys.every((key) => v.options[key] === selectedOptions[key]);
-              })
+                const requiredKeys = item.variants_config!.map((c) => c.name);
+                return requiredKeys.every((key) => v.options[key] === selectedOptions[key]);
+            })
             : null;
 
     const isSelectionComplete =
@@ -45,7 +45,7 @@ export default function ShopShow({ item }: Props) {
     // Use has_stock from DTO — no numeric stock is leaked to frontend
     const isVariantSoldOut = currentVariant ? !currentVariant.has_stock : false;
     const isItemSoldOut = !item.has_stock;
-    const isSoldOut = isVariantSoldOut || (!item.is_variant_based && isItemSoldOut);
+    const isSoldOut = isVariantSoldOut || (!item.is_variant_based && isItemSoldOut) || (item.is_variant_based && isSelectionComplete && !currentVariant);
 
     const [isAdded, setIsAdded] = useState(false);
 
@@ -106,11 +106,10 @@ export default function ShopShow({ item }: Props) {
                                         <button
                                             key={img.id}
                                             onClick={() => setActiveImage(img.url)}
-                                            className={`relative aspect-square overflow-hidden rounded-md border-2 transition-all hover:opacity-100 ${
-                                                activeImage === img.url
-                                                    ? 'border-gray-100 opacity-100'
-                                                    : 'border-transparent opacity-70'
-                                            }`}
+                                            className={`relative aspect-square overflow-hidden rounded-md border-2 transition-all hover:opacity-100 ${activeImage === img.url
+                                                ? 'border-gray-100 opacity-100'
+                                                : 'border-transparent opacity-70'
+                                                }`}
                                             aria-label={`View image ${item.images.indexOf(img) + 1}`}
                                         >
                                             <img
@@ -307,7 +306,7 @@ export default function ShopShow({ item }: Props) {
                                 </div>
                             )}
 
-                            <div className="prose prose-sm max-w-none text-gray-500">
+                            <div className="prose prose-sm max-w-none text-gray-500 whitespace-pre-wrap">
                                 <div dangerouslySetInnerHTML={{ __html: item.description || '' }} />
                             </div>
                         </div>

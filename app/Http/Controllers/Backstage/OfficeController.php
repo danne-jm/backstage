@@ -41,11 +41,35 @@ class OfficeController extends Controller
 
         $previousSales = [];
         if ($lastShift) {
-            $previousSalesQuery = OfficeShiftSale::where('office_shift_id', $lastShift->id)
+            $shiftEnd = $lastShift->ended_at ?? now();
+
+            // POS Sales
+            $posSales = OfficeShiftSale::where('office_shift_id', $lastShift->id)
                 ->with(['product', 'event'])
-                ->orderByDesc('sold_at')
                 ->get();
-            $previousSales = OfficeShiftSaleResource::collection($previousSalesQuery)->resolve();
+
+            // Online Sales explicitly assigned OR window fallback
+            $idsAssigned = OnlineSale::where('office_shift_id', $lastShift->id)->pluck('id');
+            $idsDuring = OnlineSale::where('sold_at', '>=', $lastShift->started_at)
+                ->where('sold_at', '<=', $shiftEnd)
+                ->pluck('id');
+
+            $onlineSales = OnlineSale::with(['product', 'event', 'transaction'])
+                ->whereIn('id', $idsAssigned->merge($idsDuring)->unique()->values())
+                ->get();
+
+            $previousSales = OfficeShiftSaleResource::collection($posSales)
+                ->resolve();
+
+            $previousSales = array_merge(
+                $previousSales,
+                \App\Http\Resources\OnlineSaleResource::collection($onlineSales)->resolve()
+            );
+
+            // Sort merged sales by time descending
+            usort($previousSales, function ($a, $b) {
+                return (new \DateTime($b['sold_at'])) <=> (new \DateTime($a['sold_at']));
+            });
         }
 
         $shifts = OfficeShift::with(['workers.user'])
@@ -55,26 +79,20 @@ class OfficeController extends Controller
         // For the overview table, include online card revenue in the
         // card/total figures so they match the detailed shift view.
         $allShifts = $shifts->map(function (OfficeShift $shift) {
+            // Ensure open shifts claim their orphans for accuracy in the overview
+            if ($shift->status === 'open') {
+                $this->officeService->claimStrayOnlineSales($shift);
+            }
+
             $data = (new OfficeShiftResource($shift))->resolve();
-
-            $shiftEnd = $shift->ended_at ?? now();
-
-            $onlineCardTotal = OnlineSale::where('sold_at', '>=', $shift->started_at)
-                ->where('sold_at', '<=', $shiftEnd)
-                ->sum('amount');
-
-            $data['online_card_total'] = (float) $onlineCardTotal;
-            $data['card_total'] = (float) $data['card_total'] + (float) $onlineCardTotal;
-            $data['total'] = (float) $data['cash_total'] + (float) $data['card_total'];
-
             return $data;
         })->values()->all();
 
         $products = Product::with('variants')->get();
         $events = Event::with('variants')->get();
 
-        $sellables = collect($products)->map(fn($p) => (new ProductResource($p))->resolve())
-            ->concat(collect($events)->map(fn($e) => (new EventResource($e))->resolve()))
+        $sellables = collect($products)->map(fn($p) => \App\DTOs\Office\PosSellableDTO::fromProduct($p))
+            ->concat(collect($events)->map(fn($e) => \App\DTOs\Office\PosSellableDTO::fromEvent($e)))
             ->sortBy('name')
             ->values()
             ->all();
@@ -114,16 +132,27 @@ class OfficeController extends Controller
         $products = Product::with('variants')->get();
         $events = Event::with('variants')->get();
 
-        $sellables = collect($products)->map(fn($p) => (new ProductResource($p))->resolve())
-            ->concat(collect($events)->map(fn($e) => (new EventResource($e))->resolve()))
+        $sellables = collect($products)->map(fn($p) => \App\DTOs\Office\PosSellableDTO::fromProduct($p))
+            ->concat(collect($events)->map(fn($e) => \App\DTOs\Office\PosSellableDTO::fromEvent($e)))
             ->sortBy('name')
             ->values()
             ->all();
 
         $shiftEnd = $office->ended_at ?? now();
-        $onlineSalesQuery = OnlineSale::with(['product', 'event'])
-            ->where('sold_at', '>=', $office->started_at)
+
+        // For open shifts, permanently stamp any unclaimed online sales with this shift's ID
+        if ($office->status === 'open') {
+            $this->officeService->claimStrayOnlineSales($office);
+        }
+
+        // Show online sales either explicitly assigned to this shift OR sold within the shift window
+        $idsAssigned = \App\Models\OnlineSale::where('office_shift_id', $office->id)->pluck('id');
+        $idsDuring = \App\Models\OnlineSale::where('sold_at', '>=', $office->started_at)
             ->where('sold_at', '<=', $shiftEnd)
+            ->pluck('id');
+
+        $onlineSalesQuery = \App\Models\OnlineSale::with(['product', 'event', 'transaction'])
+            ->whereIn('id', $idsAssigned->merge($idsDuring)->unique()->values())
             ->orderByDesc('sold_at');
 
         // Use OnlineSaleResource so the online sale shape stays consistent
@@ -212,11 +241,13 @@ class OfficeController extends Controller
     {
         $data = $request->validated();
 
-        // The frontend always sends the sellable's ID as `product_id` regardless of type.
-        // Route it to the correct field so SaleService can distinguish products from events.
+        // The frontend now cleanly sends 'item_id' and 'item_type'.
         if (($data['item_type'] ?? null) === 'event') {
-            $data['event_id'] = $data['product_id'];
+            $data['event_id'] = $data['item_id'];
             $data['product_id'] = null;
+        } else {
+            $data['product_id'] = $data['item_id'];
+            $data['event_id'] = null;
         }
 
         // Treat an explicit 'Quick Sale' description the same as no description.

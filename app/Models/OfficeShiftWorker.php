@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class OfficeShiftWorker extends Model
 {
-    use HasFactory;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids;
 
     protected $fillable = [
         'office_shift_id',

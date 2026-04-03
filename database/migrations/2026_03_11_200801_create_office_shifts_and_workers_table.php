@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('office_shifts', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignId('started_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUlid('started_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('ended_at')->nullable();
 
@@ -40,9 +40,9 @@ return new class extends Migration {
         });
 
         Schema::create('office_shift_workers', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->foreignUlid('office_shift_id')->references('id')->on('office_shifts')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignUlid('user_id')->constrained()->onDelete('cascade');
             $table->string('role')->nullable();
             $table->timestamps();
         });

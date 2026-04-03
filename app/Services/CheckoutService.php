@@ -6,11 +6,14 @@ use App\Contracts\PaymentGatewayInterface;
 use App\Contracts\PaymentResult;
 use App\Mail\OrderConfirmation;
 use App\Models\DiscountUsage;
+use App\Models\OfficeShift;
+use App\Models\OfficeShiftSale;
 use App\Models\OnlineSale;
 use App\Models\OnlineTransaction;
 use App\Models\SellableVariant;
 use App\Models\sellables\Event;
 use App\Models\sellables\Product;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -22,7 +25,9 @@ class CheckoutService
     public function __construct(
         protected DiscountAllocator $allocator,
         protected PaymentGatewayInterface $paymentGateway,
-    ) {}
+        protected SaleService $saleService,
+    ) {
+    }
 
     /**
      * Validate cart items and return the discount allocation with stock warnings.
@@ -32,7 +37,7 @@ class CheckoutService
     {
         $allocation = $this->allocator->allocate($items, $codes);
 
-        $warnings     = [];
+        $warnings = [];
         $stockDemands = $this->buildStockDemands($allocation['units']);
 
         foreach ($stockDemands as $demand) {
@@ -67,36 +72,36 @@ class CheckoutService
 
             $salesToCreate = $this->validateStockAndPrepareSales($allocation);
 
-            $subtotal      = collect($salesToCreate)->sum('amount');
+            $subtotal = collect($salesToCreate)->sum('amount');
             $processingFee = round($subtotal * config('services.sumup.processing_fee_rate', 0.02), 2);
-            $totalAmount   = $subtotal + $processingFee;
+            $totalAmount = $subtotal + $processingFee;
 
             $transaction = OnlineTransaction::create([
-                'reference_id'    => Str::random(64),
-                'total_amount'    => $totalAmount,
-                'processing_fee'  => $processingFee,
-                'discount_codes'  => count($codes) > 0 ? $codes : null,
-                'payment_status'  => PaymentResult::STATUS_PENDING,
+                'reference_id' => Str::random(64),
+                'total_amount' => $totalAmount,
+                'processing_fee' => $processingFee,
+                'discount_codes' => count($codes) > 0 ? $codes : null,
+                'payment_status' => PaymentResult::STATUS_PENDING,
                 'payment_gateway' => $this->paymentGateway->getName(),
-                'email'           => $email,
-                'mail_success'    => false,
+                'email' => $email,
+                'mail_success' => false,
             ]);
 
             foreach ($salesToCreate as $saleData) {
                 OnlineSale::create([
                     'online_transaction_id' => $transaction->id,
-                    'reference_id'          => strtoupper(Str::random(10)),
-                    'product_id'            => $saleData['product_id'],
-                    'event_id'              => $saleData['event_id'],
-                    'method'                => 'card',
-                    'amount'                => $saleData['amount'],
-                    'ticket_type'           => $saleData['ticket_type'],
-                    'sold_at'               => now(),
-                    'details'               => [
-                        'item_name'  => $saleData['item_name'],
+                    'reference_id' => strtoupper(Str::random(10)),
+                    'product_id' => $saleData['product_id'],
+                    'event_id' => $saleData['event_id'],
+                    'method' => 'card',
+                    'amount' => $saleData['amount'],
+                    'ticket_type' => $saleData['ticket_type'],
+                    'sold_at' => now(),
+                    'details' => [
+                        'item_name' => $saleData['item_name'],
                         'ticket_type' => $saleData['ticket_type'],
-                        'code_used'  => $saleData['code_used'],
-                        'options'    => $saleData['options'] ?? null,
+                        'code_used' => $saleData['code_used'],
+                        'options' => $saleData['options'] ?? null,
                         'variant_id' => $saleData['variant_id'] ?? null,
                     ],
                 ]);
@@ -109,7 +114,7 @@ class CheckoutService
 
             $paymentResult = $this->paymentGateway->createPayment($transaction, [
                 'description' => 'Store Purchase - ' . $transaction->reference_id,
-                'items'       => $salesToCreate,
+                'items' => $salesToCreate,
             ]);
 
             if ($paymentResult->isFailed()) {
@@ -117,7 +122,7 @@ class CheckoutService
             }
 
             return [
-                'transaction'    => $transaction,
+                'transaction' => $transaction,
                 'payment_result' => $paymentResult,
             ];
         });
@@ -157,11 +162,11 @@ class CheckoutService
             $variantId = $sale->details['variant_id'] ?? null;
 
             if (!$variantId && !empty($sale->details['options'])) {
-                $type   = $sale->product_id ? Product::class : Event::class;
-                $id     = $sale->product_id ?? $sale->event_id;
+                $type = $sale->product_id ? Product::class : Event::class;
+                $id = $sale->product_id ?? $sale->event_id;
                 $entity = $type::find($id);
                 if ($entity) {
-                    $variant   = $entity->resolveVariantByOptions($sale->details['options']);
+                    $variant = $entity->resolveVariantByOptions($sale->details['options']);
                     $variantId = $variant?->id;
                 }
             }
@@ -192,9 +197,13 @@ class CheckoutService
 
     /**
      * Dispatch the order confirmation email if not already sent. Idempotent.
+     * Also links each online sale to the currently open office shift (if any).
      */
     public function dispatchConfirmationEmail(OnlineTransaction $transaction): void
     {
+        // Link each online sale to the currently open office shift (if any).
+        $this->attachSalesToOpenShift($transaction);
+
         if ($transaction->mail_success || empty($transaction->email)) {
             return;
         }
@@ -205,10 +214,31 @@ class CheckoutService
         } catch (\Throwable $e) {
             Log::error('Order confirmation email failed', [
                 'transaction_id' => $transaction->id,
-                'error'          => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
+
+    /**
+     * If an office shift is currently open, link each online sale from this transaction
+     * to the shift. Preserves the original sold_at timestamp.
+     */
+    protected function attachSalesToOpenShift(OnlineTransaction $transaction): void
+    {
+        $openShift = OfficeShift::where('status', 'open')->first();
+        if (!$openShift) {
+            return;
+        }
+
+        $transaction->loadMissing('sales');
+
+        foreach ($transaction->sales as $sale) {
+            if ($sale->office_shift_id === null) {
+                $sale->update(['office_shift_id' => $openShift->id]);
+            }
+        }
+    }
+
 
     // -------------------------------------------------------------------------
     // Protected helpers
@@ -221,11 +251,11 @@ class CheckoutService
      */
     protected function buildStockDemands(array $units): array
     {
-        $productIds = array_unique(array_column(array_filter($units, fn ($u) => $u['type'] === 'product'), 'id'));
-        $eventIds   = array_unique(array_column(array_filter($units, fn ($u) => $u['type'] === 'event'), 'id'));
+        $productIds = array_unique(array_column(array_filter($units, fn($u) => $u['type'] === 'product'), 'id'));
+        $eventIds = array_unique(array_column(array_filter($units, fn($u) => $u['type'] === 'event'), 'id'));
 
         $products = Product::with('variants')->whereIn('id', $productIds)->get()->keyBy('id');
-        $events   = Event::whereIn('id', $eventIds)->get()->keyBy('id');
+        $events = Event::whereIn('id', $eventIds)->get()->keyBy('id');
 
         $demands = [];
 
@@ -239,7 +269,7 @@ class CheckoutService
             }
 
             $ticketType = $unit['ticket_type'] ?? null;
-            $options    = $unit['options'] ?? null;
+            $options = $unit['options'] ?? null;
 
             $key = $unit['type'] . '_' . $unit['id'];
             if ($unit['type'] === 'event' && $ticketType) {
@@ -253,11 +283,11 @@ class CheckoutService
 
             if (!isset($demands[$key])) {
                 $demands[$key] = [
-                    'count'       => 0,
-                    'entity'      => $entity,
-                    'type'        => $unit['type'],
+                    'count' => 0,
+                    'entity' => $entity,
+                    'type' => $unit['type'],
                     'ticket_type' => $ticketType,
-                    'options'     => $options,
+                    'options' => $options,
                 ];
             }
             $demands[$key]['count']++;
@@ -276,12 +306,12 @@ class CheckoutService
     protected function validateStockAndPrepareSales(array $allocation): array
     {
         $salesToCreate = [];
-        $stockDemands  = [];
+        $stockDemands = [];
 
         foreach ($allocation['units'] as $unit) {
-            $entity      = $unit['entity'];
+            $entity = $unit['entity'];
             $isDiscounted = isset($unit['discounted_with']);
-            $ticketType  = $isDiscounted ? 'with_card' : 'without_card';
+            $ticketType = $isDiscounted ? 'with_card' : 'without_card';
 
             if (!$entity->is_online_sellable) {
                 throw ValidationException::withMessages([
@@ -290,16 +320,16 @@ class CheckoutService
             }
 
             $salesToCreate[] = [
-                'product_id'     => $unit['type'] === 'product' ? $unit['id'] : null,
-                'event_id'       => $unit['type'] === 'event'   ? $unit['id'] : null,
-                'amount'         => $unit['final_price'] ?? $unit['regular_price'],
-                'ticket_type'    => $unit['type'] === 'event' ? $ticketType : null,
-                'item_name'      => $entity->name,
-                'code_used'      => $unit['discounted_with'] ?? null,
+                'product_id' => $unit['type'] === 'product' ? $unit['id'] : null,
+                'event_id' => $unit['type'] === 'event' ? $unit['id'] : null,
+                'amount' => $unit['final_price'] ?? $unit['regular_price'],
+                'ticket_type' => $unit['type'] === 'event' ? $ticketType : null,
+                'item_name' => $entity->name,
+                'code_used' => $unit['discounted_with'] ?? null,
                 'original_price' => $unit['regular_price'],
-                'saved_amount'   => $unit['savings'] ?? 0,
-                'is_discounted'  => $isDiscounted,
-                'options'        => $unit['options'] ?? null,
+                'saved_amount' => $unit['savings'] ?? 0,
+                'is_discounted' => $isDiscounted,
+                'options' => $unit['options'] ?? null,
             ];
 
             $key = $unit['type'] . '-' . $unit['id'];
@@ -312,11 +342,11 @@ class CheckoutService
 
             if (!isset($stockDemands[$key])) {
                 $stockDemands[$key] = [
-                    'count'       => 0,
-                    'entity'      => $entity,
-                    'type'        => $unit['type'],
+                    'count' => 0,
+                    'entity' => $entity,
+                    'type' => $unit['type'],
                     'ticket_type' => $ticketType,
-                    'options'     => $unit['options'] ?? null,
+                    'options' => $unit['options'] ?? null,
                 ];
             }
             $stockDemands[$key]['count']++;
@@ -332,7 +362,7 @@ class CheckoutService
 
         foreach ($salesToCreate as &$sale) {
             $type = $sale['product_id'] ? 'product' : 'event';
-            $id   = $sale['product_id'] ?? $sale['event_id'];
+            $id = $sale['product_id'] ?? $sale['event_id'];
 
             $key = $type . '-' . $id;
             if ($type === 'event') {
@@ -359,9 +389,9 @@ class CheckoutService
      */
     protected function validateStockDemand(array $demand): ?SellableVariant
     {
-        $entity      = $demand['entity'];
-        $count       = $demand['count'];
-        $options     = $demand['options'] ?? null;
+        $entity = $demand['entity'];
+        $count = $demand['count'];
+        $options = $demand['options'] ?? null;
         $useMemberPrice = ($demand['ticket_type'] === 'with_card');
 
         if ($entity->is_variant_based) {
@@ -406,31 +436,56 @@ class CheckoutService
      */
     protected function updateStockCounts(array $salesToCreate): void
     {
+        $variantCounts = [];
+        $eventCounts = [];
+        $productCounts = [];
+
         foreach ($salesToCreate as $saleData) {
             if (!empty($saleData['variant_id'])) {
-                $updated = SellableVariant::where('id', $saleData['variant_id'])
-                    ->whereRaw('(quantity IS NULL OR sold_count + 1 <= quantity)')
-                    ->increment('sold_count');
-
-                if (!$updated) {
-                    throw new \Exception('One or more items became sold out during processing.');
-                }
+                $variantId = $saleData['variant_id'];
+                $variantCounts[$variantId] = ($variantCounts[$variantId] ?? 0) + 1;
             }
 
             $useMemberPrice = ($saleData['ticket_type'] === 'with_card');
 
             if ($saleData['event_id']) {
-                $event   = Event::findOrFail($saleData['event_id']);
-                $updated = $event->incrementMainSoldCount($useMemberPrice);
-                if (!$updated) {
-                    throw new \Exception('Event tickets sold out during processing.');
+                $key = $saleData['event_id'] . '_' . ($useMemberPrice ? 'card' : 'no');
+                if (!isset($eventCounts[$key])) {
+                    $eventCounts[$key] = ['id' => $saleData['event_id'], 'useMemberPrice' => $useMemberPrice, 'count' => 0];
                 }
+                $eventCounts[$key]['count']++;
             } elseif ($saleData['product_id']) {
-                $product = Product::findOrFail($saleData['product_id']);
-                $updated = $product->incrementMainSoldCount($useMemberPrice);
-                if (!$updated) {
-                    throw new \Exception('Product sold out during processing.');
+                $key = $saleData['product_id'] . '_' . ($useMemberPrice ? 'card' : 'no');
+                if (!isset($productCounts[$key])) {
+                    $productCounts[$key] = ['id' => $saleData['product_id'], 'useMemberPrice' => $useMemberPrice, 'count' => 0];
                 }
+                $productCounts[$key]['count']++;
+            }
+        }
+
+        foreach ($variantCounts as $id => $count) {
+            $updated = SellableVariant::where('id', $id)
+                ->whereRaw('(quantity IS NULL OR sold_count + ? <= quantity)', [$count])
+                ->increment('sold_count', $count);
+
+            if (!$updated) {
+                throw new \Exception('One or more items became sold out during processing.');
+            }
+        }
+
+        foreach ($eventCounts as $data) {
+            $event = Event::findOrFail($data['id']);
+            $updated = $event->incrementMainSoldCount($data['useMemberPrice'], $data['count']);
+            if (!$updated) {
+                throw new \Exception('Event tickets sold out during processing.');
+            }
+        }
+
+        foreach ($productCounts as $data) {
+            $product = Product::findOrFail($data['id']);
+            $updated = $product->incrementMainSoldCount($data['useMemberPrice'], $data['count']);
+            if (!$updated) {
+                throw new \Exception('Product sold out during processing.');
             }
         }
     }
@@ -448,15 +503,15 @@ class CheckoutService
 
                 if ($sale) {
                     DiscountUsage::create([
-                        'code'                 => $saleData['code_used'],
+                        'code' => $saleData['code_used'],
                         'online_transaction_id' => $transaction->id,
-                        'online_sale_id'        => $sale->id,
-                        'product_id'            => $saleData['product_id'],
-                        'event_id'              => $saleData['event_id'],
-                        'original_price'        => $saleData['original_price'],
-                        'paid_price'            => $saleData['amount'],
-                        'saved_amount'          => $saleData['original_price'] - $saleData['amount'],
-                        'used_at'               => now(),
+                        'online_sale_id' => $sale->id,
+                        'product_id' => $saleData['product_id'],
+                        'event_id' => $saleData['event_id'],
+                        'original_price' => $saleData['original_price'],
+                        'paid_price' => $saleData['amount'],
+                        'saved_amount' => $saleData['original_price'] - $saleData['amount'],
+                        'used_at' => now(),
                     ]);
                 }
             }

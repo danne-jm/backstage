@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('events', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('name');
             $table->text('description')->nullable();
             $table->json('variants_config')->nullable();
@@ -26,7 +26,7 @@ return new class extends Migration {
             $table->decimal('price_without_card', 8, 2)->default(0);
             $table->integer('quantity')->nullable();
             $table->boolean('unlimited_quantity')->default(false);
-            $table->unsignedBigInteger('responsible_user_id')->nullable();
+            $table->foreignUlid('responsible_user_id')->nullable()->constrained('users');
             $table->text('notes')->nullable();
             $table->boolean('variable_amount')->default(false);
             $table->integer('quantity_with_card')->nullable();

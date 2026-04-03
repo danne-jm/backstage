@@ -25,18 +25,9 @@ export function RevenueCard({ activeShift, onlineSales = [] }: any) {
     const startCard = Number(activeShift?.start_card) || 0;
 
     const cashTotal = activeShift ? Number(activeShift.cash_total || 0) : 0;
-    const onlineCardTotal = Array.isArray(onlineSales)
-        ? onlineSales.reduce(
-              (sum: number, sale: any) =>
-                  sum + Number(sale.amount ?? 0),
-              0,
-          )
-        : 0;
-    const baseCardTotal = activeShift
-        ? Number(activeShift.card_total || 0)
-        : 0;
-    const cardTotal = baseCardTotal + onlineCardTotal;
-    const combinedTotal = cashTotal + cardTotal;
+    // The backend now provides integrated card and combined totals (POS + Online)
+    const cardTotal = activeShift ? Number(activeShift.card_total || 0) : 0;
+    const combinedTotal = activeShift ? Number(activeShift.total || 0) : 0;
 
     const totalCash = startCash + cashTotal;
     const totalCard = startCard + cardTotal;

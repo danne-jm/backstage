@@ -14,6 +14,10 @@ class OfficeShiftResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $onlineRevenue = (float) \App\Models\OnlineSale::where('office_shift_id', $this->id)->sum('amount');
+        $posCashTotal = (float) $this->cash_total;
+        $posCardTotal = (float) $this->card_total;
+
         return [
             'id' => $this->id,
             'status' => $this->status,
@@ -21,9 +25,12 @@ class OfficeShiftResource extends JsonResource
             'started_by' => $this->started_by,
             'ended_at' => $this->ended_at,
             'ended_by' => $this->ended_by,
-            'cash_total' => (float) $this->cash_total,
-            'card_total' => (float) $this->card_total,
-            'total' => (float) ($this->cash_total + $this->card_total),
+            'cash_total' => $posCashTotal + 0, // In case we want to add online cash in future
+            'card_total' => $posCardTotal + $onlineRevenue,
+            'total' => $posCashTotal + $posCardTotal + $onlineRevenue,
+            'pos_cash_total' => $posCashTotal,
+            'pos_card_total' => $posCardTotal,
+            'online_revenue' => $onlineRevenue,
             'start_cash' => (float) $this->start_cash,
             'start_card' => (float) $this->start_card,
             'total_cash' => (float) $this->total_cash,

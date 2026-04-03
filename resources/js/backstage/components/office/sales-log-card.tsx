@@ -10,7 +10,7 @@ import { Button } from '@backstage/components/ui/button';
 import { Alert, AlertTitle } from '@backstage/components/ui/alert';
 import { VariantSelectionModal } from '@backstage/components/office/variant-selection-modal';
 import { summarizeSales } from '@backstage/components/office/utils';
- 
+
 export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }: any) {
     // Merge and sort in-person and online sales by time descending
     const allSales = [
@@ -56,9 +56,9 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
     const salesSummaryText = summarizeSales(allSales);
 
     const cashTotal = activeShift ? Number(activeShift.cash_total || 0) : 0;
-    const onlineTotal = onlineSales.reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
-    const cardTotal = (activeShift ? Number(activeShift.card_total || 0) : 0) + onlineTotal;
-    const combinedTotal = cashTotal + cardTotal;
+    // The backend now provides the final integrated totals (POS + Online)
+    const cardTotal = activeShift ? Number(activeShift.card_total || 0) : 0;
+    const combinedTotal = activeShift ? Number(activeShift.total || 0) : 0;
 
     const formatDateTime = (dateStr: string) => {
         if (!dateStr) return '';
@@ -162,15 +162,13 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                         className="truncate text-right text-xs text-muted-foreground"
                         title={`${allSales.length} sales | €${totalSalesAmount.toFixed(
                             2,
-                        )}${
-                            salesSummaryText
-                                ? ` | ${salesSummaryText}`
-                                : ''
-                        }`}
+                        )}${salesSummaryText
+                            ? ` | ${salesSummaryText}`
+                            : ''
+                            }`}
                     >
-                        {`${allSales.length} sales${
-                            salesSummaryText ? ` | ${salesSummaryText}` : ''
-                        }`}
+                        {`${allSales.length} sales${salesSummaryText ? ` | ${salesSummaryText}` : ''
+                            }`}
                     </div>
                 </div>
                 <div className="relative overflow-x-auto">
@@ -193,24 +191,31 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                                 {allSales.map((s: any) => (
                                     <tr key={s.id} className="border-t">
                                         <td className="overflow-hidden px-1 py-3">
-                                            <div className="flex items-center gap-1.5">
-                                                <div className="truncate" title={s.name ?? ''}>
-                                                    {s.name ?? 'N/A'}
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="truncate" title={s.name ?? ''}>
+                                                        {s.name ?? 'N/A'}
+                                                    </div>
+                                                    {s.is_variant_based && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-6 w-6 p-0 shrink-0"
+                                                            disabled={!s.is_online && activeShift?.status !== 'open'}
+                                                            onClick={() => {
+                                                                setEditingVariantSale(s);
+                                                                setIsVariantModalReadOnly(!!s.is_online);
+                                                                setIsVariantModalOpen(true);
+                                                            }}
+                                                        >
+                                                            <Pencil className="h-3 w-3" />
+                                                        </Button>
+                                                    )}
                                                 </div>
-                                                {s.is_variant_based && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        className="h-6 w-6 p-0"
-                                                        disabled={!s.is_online && activeShift?.status !== 'open'}
-                                                        onClick={() => {
-                                                            setEditingVariantSale(s);
-                                                            setIsVariantModalReadOnly(!!s.is_online);
-                                                            setIsVariantModalOpen(true);
-                                                        }}
-                                                    >
-                                                        <Pencil className="h-3 w-3" />
-                                                    </Button>
+                                                {s.variant_options && (
+                                                    <div className="text-[10px] text-muted-foreground truncate" title={Object.values(s.variant_options).join(', ')}>
+                                                        {Object.values(s.variant_options).join(', ')}
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
@@ -328,19 +333,19 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                     sellable={
                         editingVariantSale
                             ? getSellableForSale(editingVariantSale) || {
-                                  name: editingVariantSale.name,
-                                  variants_config: Object.keys(
-                                      editingVariantSale.variant_options ?? {},
-                                  ).map((k) => ({
-                                      name: k,
-                                      options: [
-                                          editingVariantSale.variant_options[
-                                              k
-                                          ],
-                                      ],
-                                  })),
-                                  variants: [],
-                              }
+                                name: editingVariantSale.name,
+                                variants_config: Object.keys(
+                                    editingVariantSale.variant_options ?? {},
+                                ).map((k) => ({
+                                    name: k,
+                                    options: [
+                                        editingVariantSale.variant_options[
+                                        k
+                                        ],
+                                    ],
+                                })),
+                                variants: [],
+                            }
                             : null
                     }
                     initialOptions={editingVariantSale?.variant_options}

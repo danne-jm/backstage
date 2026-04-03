@@ -53,7 +53,7 @@ export default function Office() {
                     />
                 </div>
 
-                <PreviousShiftSalesLog sales={previousSales} />
+                <PreviousShiftSalesLog sales={previousSales} totals={lastShift} />
 
                 <div className="rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border">
                     <h3 className="mb-4 text-sm font-semibold">
@@ -123,8 +123,8 @@ export default function Office() {
                                             <td className="px-1 py-3 whitespace-nowrap">
                                                 {s.ended_at
                                                     ? formatTimestamp(
-                                                          s.ended_at,
-                                                      )
+                                                        s.ended_at,
+                                                    )
                                                     : '-'}
                                             </td>
                                             <td className="px-1 py-3">

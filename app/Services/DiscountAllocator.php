@@ -39,7 +39,7 @@ class DiscountAllocator
         foreach ($cartItems as $item) {
             $entity = $item['type'] === 'product' ? $products->get($item['id']) : $events->get($item['id']);
 
-            if (! $entity) {
+            if (!$entity) {
                 continue;
             }
 
@@ -77,11 +77,12 @@ class DiscountAllocator
                     $memberPrice = $priceWithCard;
                 }
             } elseif ($item['type'] === 'product') {
-                $productMemberPrice = (float) ($entity->member_price ?? $entity->price);
-                $productPrice = (float) $entity->price;
-                if ($productMemberPrice < $productPrice) {
+                $basePrice = (float) ($entity->price_without_card ?? $entity->price);
+                $productMemberPrice = $entity->price_with_card !== null ? (float) $entity->price_with_card : ($entity->member_price !== null ? (float) $entity->member_price : null);
+
+                if ($productMemberPrice !== null && $productMemberPrice > 0 && $productMemberPrice < $basePrice) {
                     $canDiscount = true;
-                    $savings = $productPrice - $productMemberPrice;
+                    $savings = $basePrice - $productMemberPrice;
                     $memberPrice = $productMemberPrice;
                 }
             }
@@ -96,7 +97,7 @@ class DiscountAllocator
                     'can_discount' => $canDiscount,
                     'entity' => $entity,
                     'options' => $item['options'] ?? null,
-                    'original_item_index' => $item['id'].'-'.$item['type'],
+                    'original_item_index' => $item['id'] . '-' . $item['type'],
                 ];
             }
         }
@@ -125,7 +126,7 @@ class DiscountAllocator
         $codeUsageInSession = [];
 
         foreach ($units as $index => &$unit) {
-            if (! $unit['can_discount']) {
+            if (!$unit['can_discount']) {
                 continue;
             }
 
@@ -148,7 +149,7 @@ class DiscountAllocator
                 }
 
                 // Rule 2: One code per item type in this session
-                $sessionKey = $code.'-'.$unit['type'].'-'.$unit['id'];
+                $sessionKey = $code . '-' . $unit['type'] . '-' . $unit['id'];
                 if (isset($codeUsageInSession[$sessionKey])) {
                     continue;
                 }
@@ -173,8 +174,8 @@ class DiscountAllocator
             $totalOriginal += $unit['regular_price'];
             $totalFinal += $price;
 
-            $key = $unit['type'].'-'.$unit['id'];
-            if (! isset($itemBreakdowns[$key])) {
+            $key = $unit['type'] . '-' . $unit['id'];
+            if (!isset($itemBreakdowns[$key])) {
                 $itemBreakdowns[$key] = [
                     'id' => $unit['id'],
                     'type' => $unit['type'],

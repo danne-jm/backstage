@@ -100,7 +100,7 @@ export const LastShiftSummary = forwardRef<
                     </div>
                     <div className="border-t pt-3">
                         <div className="text-xs text-muted-foreground">
-                            End of Shift Money
+                            Office Shift Revenue
                         </div>
                         <div className="mt-1 flex items-center justify-between text-sm">
                             <div className="flex items-center gap-1">
@@ -117,23 +117,19 @@ export const LastShiftSummary = forwardRef<
                                 </Button>
                             </div>
                             <span className="font-medium">
-                                €{Number(lastShift.total_cash ?? 0).toFixed(2)}
+                                €{Number(lastShift.pos_cash_total ?? 0).toFixed(2)}
                             </span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span>Card:</span>
                             <span className="font-medium">
-                                €{Number(lastShift.total_card ?? 0).toFixed(2)}
+                                €{Number(lastShift.card_total ?? 0).toFixed(2)}
                             </span>
                         </div>
                         <div className="mt-2 flex justify-between border-t pt-2 text-sm font-semibold">
                             <span>Total:</span>
                             <span>
-                                €
-                                {(
-                                    Number(lastShift.total_cash ?? 0) +
-                                    Number(lastShift.total_card ?? 0)
-                                ).toFixed(2)}
+                                €{Number(lastShift.total || 0).toFixed(2)}
                             </span>
                         </div>
                     </div>
@@ -175,7 +171,7 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.start_cash_breakdown ||
-                                                {},
+                                            {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>
@@ -220,7 +216,7 @@ export const LastShiftSummary = forwardRef<
                                         €
                                         {computeBreakdownTotal(
                                             lastShift?.end_of_shift_cash_breakdown ||
-                                                {},
+                                            {},
                                         ).toFixed(2)}
                                     </div>
                                 </div>
