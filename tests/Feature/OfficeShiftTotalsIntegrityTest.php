@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Resources\OfficeShiftResource;
 use App\Models\OfficeShift;
 use App\Models\OnlineSale;
+use App\Models\OnlineTransaction;
 use App\Models\User;
 use App\Services\OfficeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,20 @@ class OfficeShiftTotalsIntegrityTest extends TestCase
             'total_card' => 0,
         ]);
 
+        $transaction = OnlineTransaction::create([
+            'reference_id' => 'orphan-completed-1',
+            'total_amount' => 42.50,
+            'processing_fee' => 0,
+            'discount_codes' => null,
+            'payment_status' => 'completed',
+            'payment_gateway' => 'sumup',
+            'email' => 'buyer@example.com',
+            'mail_success' => false,
+            'completed_at' => now(),
+        ]);
+
         OnlineSale::create([
+            'online_transaction_id' => $transaction->id,
             'office_shift_id' => null,
             'method' => 'card',
             'amount' => 42.50,
@@ -54,5 +68,65 @@ class OfficeShiftTotalsIntegrityTest extends TestCase
         // Resource-level card_total/total include assigned online sales exactly once.
         $this->assertSame(42.5, (float) $payload['card_total']);
         $this->assertSame(42.5, (float) $payload['total']);
+    }
+
+    public function test_start_shift_ignores_pending_orphan_online_sales(): void
+    {
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+
+        $completedTx = OnlineTransaction::create([
+            'reference_id' => 'orphan-completed-2',
+            'total_amount' => 20,
+            'processing_fee' => 0,
+            'discount_codes' => null,
+            'payment_status' => 'completed',
+            'payment_gateway' => 'sumup',
+            'email' => 'completed@example.com',
+            'mail_success' => false,
+            'completed_at' => now(),
+        ]);
+
+        $pendingTx = OnlineTransaction::create([
+            'reference_id' => 'orphan-pending-1',
+            'total_amount' => 30,
+            'processing_fee' => 0,
+            'discount_codes' => null,
+            'payment_status' => 'pending',
+            'payment_gateway' => 'sumup',
+            'email' => 'pending@example.com',
+            'mail_success' => false,
+        ]);
+
+        $completedSale = OnlineSale::create([
+            'online_transaction_id' => $completedTx->id,
+            'office_shift_id' => null,
+            'method' => 'card',
+            'amount' => 20,
+            'ticket_type' => null,
+            'details' => [],
+            'sold_at' => now()->subMinutes(10),
+        ]);
+
+        $pendingSale = OnlineSale::create([
+            'online_transaction_id' => $pendingTx->id,
+            'office_shift_id' => null,
+            'method' => 'card',
+            'amount' => 30,
+            'ticket_type' => null,
+            'details' => [],
+            'sold_at' => now()->subMinutes(8),
+        ]);
+
+        $shift = app(OfficeService::class)->startShift($user);
+
+        $shift->refresh();
+        $completedSale->refresh();
+        $pendingSale->refresh();
+
+        $this->assertSame(20.0, (float) $shift->start_card);
+        $this->assertSame($shift->id, $completedSale->office_shift_id);
+        $this->assertNull($pendingSale->office_shift_id);
     }
 }

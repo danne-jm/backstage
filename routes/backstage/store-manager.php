@@ -8,5 +8,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('store-manager', 'store-manager/index')->name('store-manager');
     Route::get('store-manager/data', [StoreManagerController::class, 'data'])->name('store-manager.data');
     Route::get('store-manager/all-sales', [StoreManagerController::class, 'allSales'])->name('store-manager.all-sales');
+    Route::get('store-manager/all-sales/accounting', [StoreManagerController::class, 'accounting'])->name('store-manager.accounting');
     Route::get('sales/summary', [SalesController::class, 'summary'])->name('sales.summary');
 });

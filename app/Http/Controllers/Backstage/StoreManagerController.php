@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Backstage;
 use App\Http\Controllers\Controller;
 
+use App\Models\FinancialLedgerEntry;
 use App\Models\OfficeShift;
 use App\Models\OfficeShiftSale;
 use App\Models\OnlineSale;
@@ -12,6 +13,7 @@ use App\Models\sellables\Product;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class StoreManagerController extends Controller
@@ -172,6 +174,7 @@ class StoreManagerController extends Controller
             $onlineItems = \App\Http\Resources\OnlineSaleResource::collection(
                 OnlineSale::with(['product', 'event', 'transaction'])
                     ->whereBetween('sold_at', [$from, $to])
+                    ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
                     ->get()
             )->resolve();
 
@@ -227,6 +230,168 @@ class StoreManagerController extends Controller
             ],
             'sales' => $items->sortByDesc('sold_at')->values(),
             'storeUrl' => $storeUrl,
+        ]);
+    }
+
+    public function accounting(Request $request): \Inertia\Response
+    {
+        $fromDate = $request->query('from_date', now()->subDays(28)->format('Y-m-d'));
+        $toDate = $request->query('to_date', now()->format('Y-m-d'));
+
+        if (!Schema::hasTable('financial_ledger_entries')) {
+            return Inertia::render('store-manager/accounting', [
+                'filters' => [
+                    'from_date' => $fromDate,
+                    'to_date' => $toDate,
+                ],
+                'summary' => [
+                    'total_credit' => 0,
+                    'total_debit' => 0,
+                    'net' => 0,
+                    'entries_count' => 0,
+                ],
+                'breakdowns' => [
+                    'channels' => [],
+                    'payment_methods' => [],
+                    'entry_types' => [],
+                ],
+                'daily' => [],
+                'entries' => [],
+                'setupRequired' => true,
+            ]);
+        }
+
+        $from = Carbon::parse($fromDate)->startOfDay();
+        $to = Carbon::parse($toDate)->endOfDay();
+
+        $baseQuery = FinancialLedgerEntry::query()
+            ->whereBetween('occurred_at', [$from, $to]);
+
+        $totalCredits = (float) (clone $baseQuery)
+            ->where('direction', 'credit')
+            ->sum('amount');
+
+        $totalDebits = (float) (clone $baseQuery)
+            ->where('direction', 'debit')
+            ->sum('amount');
+
+        $entriesCount = (int) (clone $baseQuery)->count();
+
+        $byChannelRaw = (clone $baseQuery)
+            ->selectRaw('COALESCE(channel, ?) as bucket, direction, SUM(amount) as total, COUNT(*) as entry_count', ['unknown'])
+            ->groupBy('bucket', 'direction')
+            ->orderBy('bucket')
+            ->get();
+
+        $byPaymentMethodRaw = (clone $baseQuery)
+            ->selectRaw('COALESCE(payment_method, ?) as bucket, direction, SUM(amount) as total, COUNT(*) as entry_count', ['unknown'])
+            ->groupBy('bucket', 'direction')
+            ->orderBy('bucket')
+            ->get();
+
+        $byEntryTypeRaw = (clone $baseQuery)
+            ->selectRaw('entry_type as bucket, direction, SUM(amount) as total, COUNT(*) as entry_count')
+            ->groupBy('entry_type', 'direction')
+            ->orderBy('entry_type')
+            ->get();
+
+        $dailyRaw = (clone $baseQuery)
+            ->selectRaw('DATE(occurred_at) as day, direction, SUM(amount) as total')
+            ->groupBy('day', 'direction')
+            ->orderBy('day')
+            ->get();
+
+        $toBreakdown = function ($rows) {
+            return collect($rows)
+                ->groupBy('bucket')
+                ->map(function ($group, $bucket) {
+                    $credit = (float) ($group->firstWhere('direction', 'credit')->total ?? 0);
+                    $debit = (float) ($group->firstWhere('direction', 'debit')->total ?? 0);
+                    $count = (int) $group->sum('entry_count');
+
+                    return [
+                        'label' => (string) $bucket,
+                        'credit' => $credit,
+                        'debit' => $debit,
+                        'net' => $credit - $debit,
+                        'count' => $count,
+                    ];
+                })
+                ->sortByDesc('net')
+                ->values();
+        };
+
+        $channelBreakdown = $toBreakdown($byChannelRaw);
+        $paymentMethodBreakdown = $toBreakdown($byPaymentMethodRaw);
+        $entryTypeBreakdown = $toBreakdown($byEntryTypeRaw);
+
+        $daily = collect($dailyRaw)
+            ->groupBy('day')
+            ->map(function ($group, $day) {
+                $credit = (float) ($group->firstWhere('direction', 'credit')->total ?? 0);
+                $debit = (float) ($group->firstWhere('direction', 'debit')->total ?? 0);
+
+                return [
+                    'day' => $day,
+                    'credit' => $credit,
+                    'debit' => $debit,
+                    'net' => $credit - $debit,
+                ];
+            })
+            ->values();
+
+        $entries = (clone $baseQuery)
+            ->orderByDesc('occurred_at')
+            ->limit(500)
+            ->get([
+                'id',
+                'entry_type',
+                'direction',
+                'amount',
+                'currency',
+                'channel',
+                'payment_method',
+                'source_type',
+                'source_reference',
+                'idempotency_key',
+                'occurred_at',
+                'metadata',
+            ])
+            ->map(fn(FinancialLedgerEntry $e) => [
+                'id' => $e->id,
+                'entry_type' => $e->entry_type,
+                'direction' => $e->direction,
+                'amount' => (float) $e->amount,
+                'currency' => $e->currency,
+                'channel' => $e->channel,
+                'payment_method' => $e->payment_method,
+                'source_type' => $e->source_type,
+                'source_reference' => $e->source_reference,
+                'idempotency_key' => $e->idempotency_key,
+                'occurred_at' => $e->occurred_at?->toIso8601String(),
+                'metadata' => $e->metadata,
+            ])
+            ->values();
+
+        return Inertia::render('store-manager/accounting', [
+            'filters' => [
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
+            ],
+            'summary' => [
+                'total_credit' => $totalCredits,
+                'total_debit' => $totalDebits,
+                'net' => $totalCredits - $totalDebits,
+                'entries_count' => $entriesCount,
+            ],
+            'breakdowns' => [
+                'channels' => $channelBreakdown,
+                'payment_methods' => $paymentMethodBreakdown,
+                'entry_types' => $entryTypeBreakdown,
+            ],
+            'daily' => $daily,
+            'entries' => $entries,
+            'setupRequired' => false,
         ]);
     }
 }

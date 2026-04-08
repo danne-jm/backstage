@@ -14,7 +14,9 @@ class OfficeShiftResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $onlineRevenue = (float) \App\Models\OnlineSale::where('office_shift_id', $this->id)->sum('amount');
+        $onlineRevenue = (float) \App\Models\OnlineSale::where('office_shift_id', $this->id)
+            ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
+            ->sum('amount');
         $posCashTotal = (float) $this->cash_total;
         $posCardTotal = (float) $this->card_total;
 

@@ -49,9 +49,12 @@ class OfficeController extends Controller
                 ->get();
 
             // Online Sales explicitly assigned OR window fallback
-            $idsAssigned = OnlineSale::where('office_shift_id', $lastShift->id)->pluck('id');
+            $idsAssigned = OnlineSale::where('office_shift_id', $lastShift->id)
+                ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
+                ->pluck('id');
             $idsDuring = OnlineSale::where('sold_at', '>=', $lastShift->started_at)
                 ->where('sold_at', '<=', $shiftEnd)
+                ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
                 ->pluck('id');
 
             $onlineSales = OnlineSale::with(['product', 'event', 'transaction'])
@@ -152,9 +155,12 @@ class OfficeController extends Controller
         }
 
         // Show online sales either explicitly assigned to this shift OR sold within the shift window
-        $idsAssigned = \App\Models\OnlineSale::where('office_shift_id', $office->id)->pluck('id');
+        $idsAssigned = \App\Models\OnlineSale::where('office_shift_id', $office->id)
+            ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
+            ->pluck('id');
         $idsDuring = \App\Models\OnlineSale::where('sold_at', '>=', $office->started_at)
             ->where('sold_at', '<=', $shiftEnd)
+            ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
             ->pluck('id');
 
         $onlineSalesQuery = \App\Models\OnlineSale::with(['product', 'event', 'transaction'])

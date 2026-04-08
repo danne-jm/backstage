@@ -53,6 +53,7 @@ class OnlineSaleResource extends JsonResource
             'transaction_ref' => $transaction?->reference_id,
             'email' => $transaction?->email,
             'mail_success' => $transaction?->mail_success,
+            'processing_fee' => $transaction ? (float) $transaction->processing_fee : null,
         ];
     }
 }

@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, ExternalLink, MailCheck, MailX, ShoppingBag, Eye } from 'lucide-react';
+import { ExternalLink, MailCheck, MailX, ShoppingBag, Eye } from 'lucide-react';
 import React, { useState } from 'react';
 import { Badge } from '@backstage/components/ui/badge';
 import { Button } from '@backstage/components/ui/button';
@@ -26,6 +26,7 @@ interface SaleItem {
     transaction_ref?: string | null;
     email?: string | null;
     mail_success?: boolean | null;
+    processing_fee?: number | null;
 }
 
 interface Filters {
@@ -79,7 +80,7 @@ function MethodBadge({ method }: { method: string }) {
 // Build render segments for a day's items.
 // Consecutive online sales with the same online_transaction_id get a shared header.
 type Segment =
-    | { kind: 'tx'; txId: string; txRef: string; email: string; mailSuccess: boolean | null; items: SaleItem[] }
+    | { kind: 'tx'; txId: string; txRef: string; email: string; mailSuccess: boolean | null; processingFee: number; items: SaleItem[] }
     | { kind: 'row'; item: SaleItem };
 
 function buildSegments(items: SaleItem[]): Segment[] {
@@ -100,6 +101,7 @@ function buildSegments(items: SaleItem[]): Segment[] {
                 txRef: txItems[0].transaction_ref ?? txId,
                 email: txItems[0].email ?? '',
                 mailSuccess: txItems[0].mail_success ?? null,
+                processingFee: Number(txItems[0].processing_fee ?? 0),
                 items: txItems,
             });
         } else {
@@ -141,10 +143,9 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
     const totalAmount = sales.reduce((s, r) => s + r.amount, 0);
 
     const headerActions = (
-        <Link href="/store-manager">
+        <Link href="/store-manager/all-sales/accounting">
             <Button variant="outline" size="sm">
-                <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-                Store Manager
+                Accounting
             </Button>
         </Link>
     );
@@ -275,6 +276,21 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                         onViewBreakdown={() => setBreakdownSale(sale)}
                                                                     />
                                                                 ))}
+
+                                                                {seg.processingFee > 0 && (
+                                                                    <tr className="border-t border-border bg-muted/20">
+                                                                        <td className="py-2 text-xs text-muted-foreground font-mono w-[72px] shrink-0 align-middle px-4">fee</td>
+                                                                        <td className="px-2 py-2 text-xs text-muted-foreground">
+                                                                            Processing fee (paid by user)
+                                                                        </td>
+                                                                        <td className="px-2 py-2 w-[180px]">
+                                                                            <Badge variant="outline" className="text-[10px]">Online fee</Badge>
+                                                                        </td>
+                                                                        <td className="px-4 py-2 text-right w-[110px] text-xs font-semibold text-amber-700">
+                                                                            €{seg.processingFee.toFixed(2)}
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
                                                             </React.Fragment>
                                                         );
                                                     }

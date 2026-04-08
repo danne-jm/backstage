@@ -132,10 +132,13 @@ class SaleService
      */
     public function claimStrayOnlineSales(OfficeShift $shift): void
     {
-        $amount = OnlineSale::whereNull('office_shift_id')->sum('amount');
+        $query = OnlineSale::whereNull('office_shift_id')
+            ->whereHas('transaction', function ($q) {
+                $q->where('payment_status', 'completed');
+            });
 
-        if ($amount > 0) {
-            OnlineSale::whereNull('office_shift_id')->update(['office_shift_id' => $shift->id]);
+        if ($query->exists()) {
+            $query->update(['office_shift_id' => $shift->id]);
         }
     }
 

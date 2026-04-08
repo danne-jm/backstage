@@ -34,7 +34,11 @@ class OfficeService
 
             // New shift card total always starts with orphaned online sales,
             // not a carry-over from the previous office shift.
-            $orphanedCardSum = (float) \App\Models\OnlineSale::whereNull('office_shift_id')->sum('amount');
+            $orphanedCardSum = (float) \App\Models\OnlineSale::whereNull('office_shift_id')
+                ->whereHas('transaction', function ($query) {
+                    $query->where('payment_status', 'completed');
+                })
+                ->sum('amount');
 
             $shift = OfficeShift::create([
                 'started_by' => $user->id,
@@ -50,7 +54,11 @@ class OfficeService
             ]);
 
             // Claim orphans immediately so they are linked to the new shift
-            \App\Models\OnlineSale::whereNull('office_shift_id')->update(['office_shift_id' => $shift->id]);
+            \App\Models\OnlineSale::whereNull('office_shift_id')
+                ->whereHas('transaction', function ($query) {
+                    $query->where('payment_status', 'completed');
+                })
+                ->update(['office_shift_id' => $shift->id]);
 
             // Add the starter as a worker immediately
             OfficeShiftWorker::create([
