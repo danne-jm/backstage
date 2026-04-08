@@ -35,17 +35,13 @@ trait HasSellableStock
             ? $this->variants
             : $this->variants()->get();
 
-        return $variants->first(function (SellableVariant $v) use ($options): bool {
+        ksort($options);
+        $targetKey = serialize($options);
+
+        return $variants->first(function (SellableVariant $v) use ($targetKey): bool {
             $vOpts = $v->options;
-            if (count($vOpts) !== count($options)) {
-                return false;
-            }
-            foreach ($options as $k => $val) {
-                if (!isset($vOpts[$k]) || $vOpts[$k] !== $val) {
-                    return false;
-                }
-            }
-            return true;
+            ksort($vOpts);
+            return serialize($vOpts) === $targetKey;
         });
     }
 

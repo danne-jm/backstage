@@ -27,4 +27,9 @@ class OfficeShiftSale extends Model
     {
         return $this->belongsTo(\App\Models\sellables\Event::class);
     }
+
+    public function soldBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'sold_by');
+    }
 }

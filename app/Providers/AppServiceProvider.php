@@ -23,9 +23,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentGatewayInterface::class, function () {
-            return $this->app->isProduction()
-                ? $this->app->make(SumUpPaymentGateway::class)
-                : $this->app->make(DevelopmentPaymentGateway::class);
+            if (!$this->app->isProduction()) {
+                return $this->app->make(DevelopmentPaymentGateway::class);
+            }
+
+            if (!config('services.sumup.webhook_secret')) {
+                throw new \RuntimeException('SUMUP_WEBHOOK_SECRET must be configured in production.');
+            }
+
+            return $this->app->make(SumUpPaymentGateway::class);
         });
     }
 

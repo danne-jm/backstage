@@ -15,7 +15,7 @@ class OfficeShiftSaleResource extends JsonResource
     public function toArray(Request $request): array
     {
         $item_name = $this->product ? $this->product->name : ($this->event ? $this->event->name : 'Unknown Item');
-        $user = \App\Models\User::find($this->sold_by);
+        $user = $this->soldBy;
 
         return [
             'id' => $this->id,

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\CheckoutService;
+use App\Services\FinancialLedgerService;
 use App\Models\OnlineTransaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -16,8 +17,10 @@ class CleanupAbandonedTransactions extends Command
 
     protected $description = 'Fail pending transactions older than the threshold and revert their stock and discount usages.';
 
-    public function __construct(protected CheckoutService $checkoutService)
-    {
+    public function __construct(
+        protected CheckoutService $checkoutService,
+        protected FinancialLedgerService $financialLedgerService,
+    ) {
         parent::__construct();
     }
 
@@ -50,7 +53,9 @@ class CleanupAbandonedTransactions extends Command
                 DB::transaction(function () use ($transaction) {
                     $this->checkoutService->revertStockForTransaction($transaction);
                     $this->checkoutService->revertDiscountUsagesForTransaction($transaction);
-                    // Use atomic condition to avoid double-cancellation in concurrent runs
+                    // Record compensating ledger entries (no-op when no completion entry exists)
+                    $this->financialLedgerService->recordOnlineTransactionReversal($transaction, 'abandoned');
+                    // Use atomic WHERE condition to prevent double-cancellation on concurrent runs
                     OnlineTransaction::where('id', $transaction->id)
                         ->where('payment_status', 'pending')
                         ->update(['payment_status' => 'failed']);

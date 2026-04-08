@@ -43,6 +43,8 @@ return [
 
     'store' => [
         'max_quantity_per_item' => env('STORE_MAX_QTY_PER_ITEM', 50),
+        'domain' => env('STORE_DOMAIN', 'store.localhost'),
+        'app_url' => env('STORE_APP_URL'),
     ],
 
     'sumup' => [

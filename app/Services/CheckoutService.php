@@ -14,6 +14,7 @@ use App\Models\SellableVariant;
 use App\Models\sellables\Event;
 use App\Models\sellables\Product;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -137,20 +138,24 @@ class CheckoutService
 
     /**
      * Verify a payment with the gateway.
+     * The status update (inside the gateway) and ledger creation are wrapped in one
+     * DB transaction so they can never diverge — either both land or neither does.
      */
     public function verifyPayment(string $paymentId, OnlineTransaction $transaction): PaymentResult
     {
         $wasCompleted = $transaction->isCompleted();
 
-        $result = $this->paymentGateway->verifyPayment($paymentId, $transaction);
+        return DB::transaction(function () use ($paymentId, $transaction, $wasCompleted): PaymentResult {
+            $result = $this->paymentGateway->verifyPayment($paymentId, $transaction);
 
-        $transaction->refresh();
+            $transaction->refresh();
 
-        if (!$wasCompleted && $transaction->isCompleted()) {
-            $this->financialLedgerService->recordOnlineTransactionCompleted($transaction);
-        }
+            if (!$wasCompleted && $transaction->isCompleted()) {
+                $this->financialLedgerService->recordOnlineTransactionCompleted($transaction);
+            }
 
-        return $result;
+            return $result;
+        });
     }
 
     /**
@@ -243,21 +248,26 @@ class CheckoutService
     /**
      * If an office shift is currently open, link each online sale from this transaction
      * to the shift. Preserves the original sold_at timestamp.
+     *
+     * Uses a pessimistic lock on the shift row so concurrent webhook completions
+     * always resolve to the same shift and never produce partial or split assignments.
      */
     protected function attachSalesToOpenShift(OnlineTransaction $transaction): void
     {
-        $openShift = OfficeShift::where('status', 'open')->first();
-        if (!$openShift) {
-            return;
-        }
-
-        $transaction->loadMissing('sales');
-
-        foreach ($transaction->sales as $sale) {
-            if ($sale->office_shift_id === null) {
-                $sale->update(['office_shift_id' => $openShift->id]);
+        DB::transaction(function () use ($transaction): void {
+            $openShift = OfficeShift::where('status', 'open')->lockForUpdate()->first();
+            if (!$openShift) {
+                return;
             }
-        }
+
+            $transaction->loadMissing('sales');
+
+            foreach ($transaction->sales as $sale) {
+                if ($sale->office_shift_id === null) {
+                    $sale->update(['office_shift_id' => $openShift->id]);
+                }
+            }
+        });
     }
 
 
@@ -508,6 +518,15 @@ class CheckoutService
             if (!$updated) {
                 throw new \Exception('Product sold out during processing.');
             }
+        }
+
+        // Bust the shop caches so stock changes are immediately visible.
+        Cache::forget('shop_index');
+        foreach ($eventCounts as $data) {
+            Cache::forget("shop_item_event_{$data['id']}");
+        }
+        foreach ($productCounts as $data) {
+            Cache::forget("shop_item_product_{$data['id']}");
         }
     }
 

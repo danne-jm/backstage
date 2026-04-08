@@ -9,6 +9,7 @@ use App\Models\SellableVariant;
 use App\Models\sellables\Event;
 use App\Models\sellables\Product;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -132,14 +133,9 @@ class SaleService
      */
     public function claimStrayOnlineSales(OfficeShift $shift): void
     {
-        $query = OnlineSale::whereNull('office_shift_id')
-            ->whereHas('transaction', function ($q) {
-                $q->where('payment_status', 'completed');
-            });
-
-        if ($query->exists()) {
-            $query->update(['office_shift_id' => $shift->id]);
-        }
+        OnlineSale::whereNull('office_shift_id')
+            ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
+            ->update(['office_shift_id' => $shift->id]);
     }
 
     /**
@@ -219,12 +215,13 @@ class SaleService
                     $updated = Event::where('id', $eventId)
                         ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card + 1 <= quantity_with_card)')
                         ->increment('sold_count_with_card');
-                } else {
-                    $limitCol = $event->variable_amount ? 'quantity_without_card' : 'quantity';
-                    $unlimitedCol = $event->variable_amount ? 'unlimited_quantity_without_card' : 'unlimited_quantity';
-
+                } elseif ($event->variable_amount) {
                     $updated = Event::where('id', $eventId)
-                        ->whereRaw("({$unlimitedCol} = 1 OR {$limitCol} IS NULL OR sold_count_without_card + 1 <= {$limitCol})")
+                        ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card + 1 <= quantity_without_card)')
+                        ->increment('sold_count_without_card');
+                } else {
+                    $updated = Event::where('id', $eventId)
+                        ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count_without_card + 1 <= quantity)')
                         ->increment('sold_count_without_card');
                 }
 
@@ -242,6 +239,15 @@ class SaleService
             if (!$updated) {
                 throw ValidationException::withMessages(['stock' => 'Variant selection sold out.']);
             }
+        }
+
+        // Bust the shop listing and item detail caches so stock is immediately accurate.
+        Cache::forget('shop_index');
+        if ($productId) {
+            Cache::forget("shop_item_product_{$productId}");
+        }
+        if ($eventId) {
+            Cache::forget("shop_item_event_{$eventId}");
         }
 
         return ['resolved_variant' => $resolvedVariant];
@@ -281,6 +287,14 @@ class SaleService
             SellableVariant::where('id', $variantId)
                 ->where('sold_count', '>', 0)
                 ->decrement('sold_count');
+        }
+
+        Cache::forget('shop_index');
+        if ($productId) {
+            Cache::forget("shop_item_product_{$productId}");
+        }
+        if ($eventId) {
+            Cache::forget("shop_item_event_{$eventId}");
         }
     }
 
@@ -369,20 +383,13 @@ class SaleService
             return null;
         }
 
-        return $sellable->variants->first(function (SellableVariant $v) use ($options): bool {
+        ksort($options);
+        $targetKey = serialize($options);
+
+        return $sellable->variants->first(function (SellableVariant $v) use ($targetKey): bool {
             $vOpts = $v->options;
-
-            if (count($vOpts) !== count($options)) {
-                return false;
-            }
-
-            foreach ($options as $key => $val) {
-                if (!isset($vOpts[$key]) || $vOpts[$key] != $val) {
-                    return false;
-                }
-            }
-
-            return true;
+            ksort($vOpts);
+            return serialize($vOpts) === $targetKey;
         });
     }
 

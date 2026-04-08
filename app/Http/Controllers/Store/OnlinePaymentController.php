@@ -109,11 +109,11 @@ class OnlinePaymentController extends Controller
         $transaction = null;
 
         if ($reference) {
-            $transaction = OnlineTransaction::where('reference_id', $reference)->lockForUpdate()->first();
+            $transaction = OnlineTransaction::where('reference_id', $reference)->first();
         }
 
         if (!$transaction && $paymentId) {
-            $transaction = OnlineTransaction::where('external_payment_id', $paymentId)->lockForUpdate()->first();
+            $transaction = OnlineTransaction::where('external_payment_id', $paymentId)->first();
         }
 
         if (!$transaction) {
@@ -168,21 +168,15 @@ class OnlinePaymentController extends Controller
             $transaction = null;
 
             if ($externalId) {
-                $transaction = OnlineTransaction::where('external_payment_id', $externalId)
-                    ->lockForUpdate()
-                    ->first();
+                $transaction = OnlineTransaction::where('external_payment_id', $externalId)->first();
             }
 
             if (!$transaction && $checkoutId) {
-                $transaction = OnlineTransaction::where('external_payment_id', $checkoutId)
-                    ->lockForUpdate()
-                    ->first();
+                $transaction = OnlineTransaction::where('external_payment_id', $checkoutId)->first();
             }
 
             if (!$transaction && $referenceId) {
-                $transaction = OnlineTransaction::where('reference_id', $referenceId)
-                    ->lockForUpdate()
-                    ->first();
+                $transaction = OnlineTransaction::where('reference_id', $referenceId)->first();
             }
 
             if ($transaction && $transaction->isPending()) {
@@ -209,7 +203,7 @@ class OnlinePaymentController extends Controller
     public function verifyPayment(Request $request)
     {
         $reference = $request->input('reference');
-        $transaction = OnlineTransaction::where('reference_id', $reference)->lockForUpdate()->first();
+        $transaction = OnlineTransaction::where('reference_id', $reference)->first();
 
         if (!$transaction) {
             return response()->json(['error' => 'Transaction not found'], 404);

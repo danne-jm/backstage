@@ -102,16 +102,11 @@ class DiscountAllocator
             }
         }
 
-        // 3. Validate codes against ESNcard API
-        $cleanCodes = array_unique(array_filter($codes));
+        // 3. Validate codes against ESNcard API (parallel HTTP calls for uncached codes)
+        $cleanCodes = array_values(array_unique(array_filter($codes)));
         $esnService = new ESNcardService;
-        $validExternalCodes = [];
-
-        foreach ($cleanCodes as $code) {
-            if ($esnService->validate($code)) {
-                $validExternalCodes[] = $code;
-            }
-        }
+        $validationResults = $esnService->validateMany($cleanCodes);
+        $validExternalCodes = array_keys(array_filter($validationResults));
 
         // Check discount usage history for valid codes only
         // Lock rows to prevent double-spending in concurrent requests

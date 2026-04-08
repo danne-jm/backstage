@@ -10,7 +10,7 @@ class SellableVariant extends Model
 {
     use HasFactory, HasUlids;
 
-    protected $guarded = []; // Allow mass assignment for now as it handles complex logic
+    protected $fillable = ['sellable_id', 'sellable_type', 'options', 'quantity', 'sold_count'];
 
     protected $casts = [
         'options' => 'array',
@@ -37,19 +37,19 @@ class SellableVariant extends Model
     }
 
     /**
-     * Count actual sold units for this variant from real sale records.
+     * Count actual sold/reserved units for this variant from real sale records.
+     *
+     * Mirrors the semantics of the cached sold_count column: online sales are counted
+     * from the moment checkout is initiated (pending) and only removed when the
+     * transaction is explicitly failed or abandoned.  Counting only 'completed' sales
+     * would undercount during active sessions.
      */
     public function computedSoldCount(): int
     {
-        $office = \App\Models\OfficeShiftSale::whereRaw(
-            'JSON_UNQUOTE(JSON_EXTRACT(snapshot, \'$.variant_id\')) = ?',
-            [$this->id]
-        )->count();
-
-        $online = \App\Models\OnlineSale::whereRaw(
-            'JSON_UNQUOTE(JSON_EXTRACT(details, \'$.variant_id\')) = ?',
-            [$this->id]
-        )->count();
+        $office = \App\Models\OfficeShiftSale::where('snapshot_variant_id', $this->id)->count();
+        $online = \App\Models\OnlineSale::where('details_variant_id', $this->id)
+            ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
+            ->count();
 
         return $office + $online;
     }

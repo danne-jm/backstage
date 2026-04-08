@@ -14,6 +14,10 @@ class OrderConfirmation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    public int $tries = 3;
+
+    public array $backoff = [60, 300, 900];
+
     public OnlineTransaction $transaction;
 
     public function __construct(OnlineTransaction $transaction)

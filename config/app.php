@@ -123,4 +123,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'footer' => [
+        'linktree_url' => env('LINKTREE_URL'),
+        'instagram_url' => env('INSTAGRAM_URL'),
+        'facebook_url' => env('FACEBOOK_URL'),
+        'website_url' => env('WEBSITE_URL'),
+        'tiktok_url' => env('TIKTOK_URL'),
+        'copyright' => env('COPYRIGHT'),
+    ],
+
 ];

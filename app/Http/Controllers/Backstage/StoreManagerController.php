@@ -82,7 +82,10 @@ class StoreManagerController extends Controller
                 'remaining' => $e->quantity !== null ? max(0, $e->quantity - ($e->sales_count + $e->online_sales_count)) : null,
                 'remaining_with_card' => $e->quantity_with_card !== null ? max(0, $e->quantity_with_card - ($e->sold_count_with_card ?? 0)) : null,
                 'remaining_without_card' => $e->quantity_without_card !== null ? max(0, $e->quantity_without_card - ($e->sold_count_without_card ?? 0)) : null,
-                'responsibleUser' => $e->responsibleUser,
+                'responsibleUser' => $e->responsibleUser ? [
+                    'id' => $e->responsibleUser->id,
+                    'name' => trim(($e->responsibleUser->first_name ?? '') . ' ' . ($e->responsibleUser->last_name ?? '')),
+                ] : null,
                 'google_spreadsheet_id' => $e->google_spreadsheet_id,
                 'is_online_sellable' => $e->is_online_sellable,
                 'responsible_user_id' => $e->responsible_user_id,
@@ -217,8 +220,7 @@ class StoreManagerController extends Controller
         }
 
         $storeUrl = rtrim(
-            env('STORE_APP_URL', 'http://' . env('STORE_DOMAIN', 'store.localhost') . ':' .
-                (parse_url(env('APP_URL', 'http://localhost:8000'), PHP_URL_PORT) ?? 80)),
+            config('services.store.app_url', 'http://' . config('services.store.domain')),
             '/'
         );
 

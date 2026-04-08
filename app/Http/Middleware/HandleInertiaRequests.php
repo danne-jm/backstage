@@ -22,7 +22,7 @@ class HandleInertiaRequests extends Middleware
      */
     public function rootView(Request $request): string
     {
-        $storeDomain = env('STORE_DOMAIN', 'store.localhost');
+        $storeDomain = config('services.store.domain');
         $host = $request->getHost();
 
         if ($host === $storeDomain || $host === 'store.localhost') {
@@ -54,11 +54,12 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $storeDomain = env('STORE_DOMAIN', 'store.localhost');
+        $storeDomain = config('services.store.domain');
         $host = $request->getHost();
         $isStoreDomain = $host === $storeDomain || $host === 'store.localhost';
 
         if ($isStoreDomain) {
+            $footer = config('app.footer');
             return [
                 ...parent::share($request),
                 'name' => config('app.name'),
@@ -67,12 +68,12 @@ class HandleInertiaRequests extends Middleware
                     'error' => $request->session()->get('error'),
                 ],
                 'footer' => [
-                    'linktree_url' => env('LINKTREE_URL'),
-                    'instagram_url' => env('INSTAGRAM_URL'),
-                    'facebook_url' => env('FACEBOOK_URL'),
-                    'website_url' => env('WEBSITE_URL'),
-                    'tiktok_url' => env('TIKTOK_URL'),
-                    'copyright' => env('COPYRIGHT', config('app.name')),
+                    'linktree_url' => $footer['linktree_url'] ?? null,
+                    'instagram_url' => $footer['instagram_url'] ?? null,
+                    'facebook_url' => $footer['facebook_url'] ?? null,
+                    'website_url' => $footer['website_url'] ?? null,
+                    'tiktok_url' => $footer['tiktok_url'] ?? null,
+                    'copyright' => $footer['copyright'] ?? config('app.name'),
                 ],
             ];
         }

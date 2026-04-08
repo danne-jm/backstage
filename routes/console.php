@@ -10,6 +10,8 @@ Artisan::command('inspire', function () {
 
 Schedule::command('transactions:cleanup-abandoned --minutes=30')->everyFifteenMinutes();
 
-if (env('LEDGER_BACKFILL_SCHEDULED', false)) {
-    Schedule::command('ledger:backfill --chunk=500')->dailyAt('02:45');
-}
+Schedule::command('stock:reconcile')->dailyAt('03:00');
+
+// Always run the ledger backfill as a safety net.
+// It uses firstOrCreate with idempotency keys, so re-running is safe.
+Schedule::command('ledger:backfill --chunk=500')->dailyAt('02:45');

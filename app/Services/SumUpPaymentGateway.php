@@ -105,9 +105,37 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
         }
     }
 
+    /**
+     * Fetch the current status of a checkout without updating any local model.
+     * Use verifyPayment() when you have an OnlineTransaction to synchronise.
+     */
     public function getPaymentStatus(string $paymentId): PaymentResult
     {
-        return $this->verifyPayment($paymentId, new \App\Models\OnlineTransaction);
+        try {
+            $response = Http::withToken($this->apiKey)
+                ->get(self::API_BASE . "/checkouts/{$paymentId}");
+
+            if (!$response->successful()) {
+                return PaymentResult::failed('Could not fetch payment status');
+            }
+
+            $data = $response->json();
+            $status = strtolower($data['status'] ?? '');
+
+            if ($status === 'paid') {
+                return PaymentResult::success($paymentId);
+            }
+
+            if (in_array($status, ['failed', 'cancelled'])) {
+                return PaymentResult::failed('Payment ' . $status, $status);
+            }
+
+            return PaymentResult::pending($paymentId);
+        } catch (\Throwable $e) {
+            Log::error('SumUp getPaymentStatus exception', ['error' => $e->getMessage()]);
+
+            return PaymentResult::failed($e->getMessage());
+        }
     }
 
     public function handleWebhook(array $payload): PaymentResult

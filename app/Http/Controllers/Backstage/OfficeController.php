@@ -45,7 +45,7 @@ class OfficeController extends Controller
 
             // POS Sales
             $posSales = OfficeShiftSale::where('office_shift_id', $lastShift->id)
-                ->with(['product', 'event'])
+                ->with(['product', 'event', 'soldBy'])
                 ->get();
 
             // Online Sales explicitly assigned OR window fallback
@@ -125,7 +125,7 @@ class OfficeController extends Controller
 
     public function show($id)
     {
-        $office = OfficeShift::with(['workers.user', 'sales.product', 'sales.event'])->findOrFail($id);
+        $office = OfficeShift::with(['workers.user', 'sales.product', 'sales.event', 'sales.soldBy'])->findOrFail($id);
 
         $staff = User::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'email', 'role']);
         $staffNodes = $staff->map(fn($u) => [
