@@ -129,12 +129,22 @@ class SaleService
 
     /**
      * Finds stray OnlineSales with no office_shift_id and stamps them with the given shift.
+     * Only claims sales whose sold_at is on or before this shift's started_at AND for which
+     * no earlier shift already exists that could claim them (i.e. this is the earliest shift
+     * with started_at >= sale.sold_at).
      * Does NOT create OfficeShiftSale records — online sales stay in their own pipeline.
      */
     public function claimStrayOnlineSales(OfficeShift $shift): void
     {
         OnlineSale::whereNull('office_shift_id')
             ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
+            ->where('sold_at', '<=', $shift->started_at)
+            ->whereNotExists(function ($query) use ($shift) {
+                // Exclude sales where an earlier shift already qualifies to claim them.
+                $query->from('office_shifts')
+                    ->whereColumn('office_shifts.started_at', '>=', 'online_sales.sold_at')
+                    ->where('office_shifts.started_at', '<', $shift->started_at);
+            })
             ->update(['office_shift_id' => $shift->id]);
     }
 

@@ -32,17 +32,25 @@ class OfficeService
                 $startCashBreakdown = $lastShift->end_of_shift_cash_breakdown;
             }
 
-            // New shift card total always starts with orphaned online sales,
-            // not a carry-over from the previous office shift.
+            // New shift card total always starts with orphaned online sales that belong
+            // to this shift — sales whose sold_at is on or before now() and for which no
+            // earlier existing shift is eligible to claim them.
+            $shiftStartedAt = now();
+
             $orphanedCardSum = (float) \App\Models\OnlineSale::whereNull('office_shift_id')
                 ->whereHas('transaction', function ($query) {
                     $query->where('payment_status', 'completed');
+                })
+                ->where('sold_at', '<=', $shiftStartedAt)
+                ->whereNotExists(function ($query) {
+                    $query->from('office_shifts')
+                        ->whereColumn('office_shifts.started_at', '>=', 'online_sales.sold_at');
                 })
                 ->sum('amount');
 
             $shift = OfficeShift::create([
                 'started_by' => $user->id,
-                'started_at' => now(),
+                'started_at' => $shiftStartedAt,
                 'status' => 'open',
                 'cash_total' => 0,
                 'card_total' => 0,
@@ -53,12 +61,9 @@ class OfficeService
                 'total_card' => $orphanedCardSum,
             ]);
 
-            // Claim orphans immediately so they are linked to the new shift
-            \App\Models\OnlineSale::whereNull('office_shift_id')
-                ->whereHas('transaction', function ($query) {
-                    $query->where('payment_status', 'completed');
-                })
-                ->update(['office_shift_id' => $shift->id]);
+            // Claim orphans immediately — uses the same date-filtered logic so only
+            // sales belonging to this shift (none claimed by any earlier shift) are linked.
+            $this->saleService->claimStrayOnlineSales($shift);
 
             // Add the starter as a worker immediately
             OfficeShiftWorker::create([

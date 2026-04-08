@@ -140,6 +140,8 @@ class CheckoutService
      * Verify a payment with the gateway.
      * The status update (inside the gateway) and ledger creation are wrapped in one
      * DB transaction so they can never diverge — either both land or neither does.
+     * When the transaction first transitions to completed, online sales are immediately
+     * bound to the currently open office shift (if any).
      */
     public function verifyPayment(string $paymentId, OnlineTransaction $transaction): PaymentResult
     {
@@ -152,6 +154,7 @@ class CheckoutService
 
             if (!$wasCompleted && $transaction->isCompleted()) {
                 $this->financialLedgerService->recordOnlineTransactionCompleted($transaction);
+                $this->attachSalesToOpenShift($transaction);
             }
 
             return $result;
@@ -220,22 +223,26 @@ class CheckoutService
 
     /**
      * Dispatch the order confirmation email if not already sent. Idempotent.
-     * Also links each online sale to the currently open office shift (if any).
+     * In non-production environments the mail is sent synchronously so no queue
+     * worker is required. In production it is pushed to the confirmations queue.
      */
     public function dispatchConfirmationEmail(OnlineTransaction $transaction): void
     {
-        // Link each online sale to the currently open office shift (if any).
-        $this->attachSalesToOpenShift($transaction);
-
         if ($transaction->mail_success || empty($transaction->email)) {
             return;
         }
 
         try {
+            $mailable = new OrderConfirmation($transaction);
+
+            if (app()->isProduction()) {
                 Mail::to($transaction->email)->queue(
-                    (new OrderConfirmation($transaction))
-                        ->onQueue(config('mail.confirmation_queue', 'confirmations'))
+                    $mailable->onQueue(config('mail.confirmation_queue', 'confirmations'))
                 );
+            } else {
+                Mail::to($transaction->email)->sendNow($mailable);
+            }
+
             $transaction->update(['mail_success' => true]);
         } catch (\Throwable $e) {
             Log::error('Order confirmation email failed', [

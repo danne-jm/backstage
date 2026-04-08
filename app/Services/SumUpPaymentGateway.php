@@ -183,7 +183,8 @@ class SumUpPaymentGateway implements PaymentGatewayInterface
     public function isWebhookSignatureValid(string $body, string $signature): bool
     {
         if (!$this->webhookSecret) {
-            return false;
+            // No secret configured — allow through in non-production environments only.
+            return !app()->isProduction();
         }
 
         $expectedSignature = hash_hmac('sha256', $body, $this->webhookSecret);

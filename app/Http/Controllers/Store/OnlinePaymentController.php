@@ -222,6 +222,10 @@ class OnlinePaymentController extends Controller
                 $transaction
             );
 
+            if ($result->isSuccessful()) {
+                $this->checkoutService->dispatchConfirmationEmail($transaction->fresh());
+            }
+
             return response()->json([
                 'status' => $result->status,
                 'redirect_url' => $result->isSuccessful()
