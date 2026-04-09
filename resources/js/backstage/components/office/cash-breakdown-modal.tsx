@@ -8,6 +8,7 @@ interface CashBreakdownModalProps {
     title: string;
     description?: string;
     totalAmount: number;
+    expectedAmount?: number;
     breakdown?: Record<string, number>;
 }
 
@@ -85,11 +86,26 @@ export function SparseCashBreakdownModal({
     title,
     description,
     totalAmount,
+    expectedAmount,
     breakdown = {},
 }: CashBreakdownModalProps) {
     const usedDenoms = DENOMINATIONS.filter(
         (denom) => (breakdown || {})[denom.key] && (breakdown || {})[denom.key]! > 0,
     );
+
+    const DENOM_VALUES: Record<string, number> = {
+        '500e': 500, '200e': 200, '100e': 100, '50e': 50, '20e': 20,
+        '10e': 10, '5e': 5, '2e': 2, '1e': 1,
+        '50c': 0.5, '20c': 0.2, '10c': 0.1, '5c': 0.05, '2c': 0.02, '1c': 0.01,
+        'token': 0,
+    };
+    const breakdownTotal = usedDenoms.reduce(
+        (sum, d) => sum + ((breakdown || {})[d.key] || 0) * (DENOM_VALUES[d.key] ?? 0),
+        0,
+    );
+
+    const hasExpected = expectedAmount !== undefined && expectedAmount !== null;
+    const diff = hasExpected ? breakdownTotal - expectedAmount! : 0;
 
     return (
         <BaseModal
@@ -123,11 +139,31 @@ export function SparseCashBreakdownModal({
                         ))
                     )}
                 </div>
-                <div className="mt-6 flex items-center justify-between border-t border-sidebar-border/50 pt-4">
-                    <span className="text-sm font-medium">Total</span>
-                    <span className="text-lg font-bold">
-                        €{totalAmount.toFixed(2)}
-                    </span>
+                <div className="mt-6 border-t border-sidebar-border/50 pt-4 space-y-2">
+                    {hasExpected && (
+                        <>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Expected amount</span>
+                                <span className="font-medium">€{expectedAmount!.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Calculated total</span>
+                                <span className="font-medium">€{breakdownTotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm font-semibold border-t border-sidebar-border/30 pt-2 mt-2">
+                                <span>Difference / Change</span>
+                                <span className={diff > 0.005 ? 'text-green-500' : diff < -0.005 ? 'text-red-500' : ''}>
+                                    {diff >= 0 ? '+' : ''}€{diff.toFixed(2)}
+                                </span>
+                            </div>
+                        </>
+                    )}
+                    {!hasExpected && (
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Total</span>
+                            <span className="text-lg font-bold">€{totalAmount.toFixed(2)}</span>
+                        </div>
+                    )}
                 </div>
             </div>
         </BaseModal>

@@ -276,7 +276,12 @@ class CheckoutService
                 continue;
             }
 
+            // Infer ticket_type the same way validateStockAndPrepareSales does:
+            // discounted units go into the with_card pool, undiscounted into without_card.
             $ticketType = $unit['ticket_type'] ?? null;
+            if ($unit['type'] === 'event' && $ticketType === null) {
+                $ticketType = isset($unit['discounted_with']) ? 'with_card' : 'without_card';
+            }
             $options = $unit['options'] ?? null;
 
             $key = $unit['type'] . '_' . $unit['id'];

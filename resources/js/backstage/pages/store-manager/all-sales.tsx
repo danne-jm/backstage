@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ExternalLink, MailCheck, MailX, ShoppingBag, Eye } from 'lucide-react';
+import { ArrowDown, ArrowUp, ExternalLink, Eye, MailCheck, MailX, ShoppingBag } from 'lucide-react';
 import React, { useState } from 'react';
 import { SparseCashBreakdownModal } from '@backstage/components/office/cash-breakdown-modal';
 import { Badge } from '@backstage/components/ui/badge';
@@ -49,7 +49,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 function fmtTime(iso: string | null) {
     if (!iso) return '—';
-    return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function fmtDayHeading(iso: string) {
@@ -248,7 +248,7 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
 
                                                         const paymentStatusBadge = paymentStatus === 'completed'
                                                             ? (
-                                                                <Badge className="border-emerald-600/30 bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/20">
+                                                                <Badge className="border-white bg-black text-white font-bold hover:bg-black">
                                                                     Finalized
                                                                 </Badge>
                                                             )
@@ -264,13 +264,19 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                     </Badge>
                                                                 );
 
+                                                        const txTotal = seg.items.reduce((s, r) => s + r.amount, 0);
+
                                                         return (
                                                             <React.Fragment key={`tx-${seg.txId}`}>
                                                                 {/* Transaction header row */}
                                                                 <tr
-                                                                    className={`bg-muted/40 ${si > 0 ? 'border-t border-border' : ''}`}
+                                                                    className={`bg-muted/30 ${si > 0 ? 'border-t-2 border-border' : ''}`}
                                                                 >
-                                                                    <td className="px-4 py-2 text-xs text-muted-foreground font-mono w-[72px] align-middle" />
+                                                                    <td className="py-2 text-xs text-muted-foreground font-mono w-[72px] align-middle pl-4 pr-0">
+                                                                        <Badge className="border-transparent bg-blue-800 text-white hover:bg-blue-800 text-[10px] px-1.5 py-0">
+                                                                            Online
+                                                                        </Badge>
+                                                                    </td>
                                                                     <td className="px-2 py-2 align-middle overflow-hidden">
                                                                         <div className="flex flex-wrap items-center gap-2 max-w-full">
                                                                             <span className="font-mono text-xs text-muted-foreground">
@@ -279,25 +285,32 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                             {paymentStatusBadge}
                                                                             <span className="text-xs text-muted-foreground truncate shrink min-w-0">{seg.email}</span>
                                                                             {seg.mailSuccess === true && (
-                                                                                <MailCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                                                                <MailCheck className="h-3.5 w-3.5 text-white shrink-0" />
                                                                             )}
                                                                             {seg.mailSuccess === false && (
-                                                                                <MailX className="h-3.5 w-3.5 text-destructive shrink-0" />
+                                                                                <MailX className="h-3.5 w-3.5 text-white shrink-0" />
                                                                             )}
                                                                         </div>
                                                                     </td>
-                                                                    <td className="px-2 py-2 align-middle w-[180px]" />
+                                                                    <td className="px-2 py-2 align-middle w-[180px]">
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            {seg.items.length} item{seg.items.length !== 1 ? 's' : ''}
+                                                                        </span>
+                                                                    </td>
                                                                     <td className="px-4 py-2 align-middle text-right w-[110px]">
-                                                                        <a
-                                                                            href={confirmUrl}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                        >
-                                                                            <Button variant="outline" size="sm" className="h-6 gap-1 px-2 text-xs">
-                                                                                <ExternalLink className="h-3 w-3" />
-                                                                                Receipt
-                                                                            </Button>
-                                                                        </a>
+                                                                        <div className="flex items-center justify-end gap-2">
+                                                                            <span className="text-xs font-medium tabular-nums">€{txTotal.toFixed(2)}</span>
+                                                                            <a
+                                                                                href={confirmUrl}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                            >
+                                                                                <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-xs text-muted-foreground">
+                                                                                    <ExternalLink className="h-3 w-3" />
+                                                                                    Receipt
+                                                                                </Button>
+                                                                            </a>
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
 
@@ -307,24 +320,32 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                         key={sale.id}
                                                                         sale={sale}
                                                                         isFirst={idx === 0}
+                                                                        inTransaction
                                                                         onViewBreakdown={() => setBreakdownSale(sale)}
                                                                     />
                                                                 ))}
 
-                                                                <tr className="border-t border-border bg-muted/20">
-                                                                    <td className="px-4 py-1.5" colSpan={4} aria-hidden="true" />
+
+                                                                <tr className="border-t border-border bg-muted/10">
+                                                                    <td className="px-4 py-1" colSpan={4} aria-hidden="true" />
                                                                 </tr>
                                                             </React.Fragment>
                                                         );
                                                     }
 
                                                     return (
-                                                        <SaleRow
-                                                            key={seg.item.id}
-                                                            sale={seg.item}
-                                                            isFirst={si === 0}
-                                                            onViewBreakdown={() => setBreakdownSale(seg.item)}
-                                                        />
+                                                        <React.Fragment key={seg.item.id}>
+                                                            <SaleRow
+                                                                sale={seg.item}
+                                                                isFirst
+                                                                grouped
+                                                                separatorBefore={si > 0}
+                                                                onViewBreakdown={() => setBreakdownSale(seg.item)}
+                                                            />
+                                                            <tr className="border-t border-border bg-muted/10">
+                                                                <td className="px-4 py-1" colSpan={4} aria-hidden="true" />
+                                                            </tr>
+                                                        </React.Fragment>
                                                     );
                                                 })}
                                             </tbody>
@@ -344,6 +365,7 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                     onClose={() => setBreakdownSale(null)}
                     title="Sale Cash Breakdown"
                     totalAmount={breakdownSale.amount}
+                    expectedAmount={breakdownSale.expected_amount ?? undefined}
                     breakdown={breakdownSale.breakdown || {}}
                 />
             )}
@@ -351,7 +373,16 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
     );
 }
 
-function SaleRow({ sale, isFirst, onViewBreakdown }: { sale: SaleItem; isFirst: boolean; onViewBreakdown?: () => void; }) {
+function SaleRow({
+    sale, isFirst, inTransaction, grouped, separatorBefore, onViewBreakdown,
+}: {
+    sale: SaleItem;
+    isFirst: boolean;
+    inTransaction?: boolean;
+    grouped?: boolean;       // standalone group — gets muted bg + strong top separator
+    separatorBefore?: boolean; // draw border-t-2 before this row's group
+    onViewBreakdown?: () => void;
+}) {
     const variantLabel = sale.variant_options
         ? Object.entries(sale.variant_options).map(([k, v]) => `${k}: ${v}`).join(' · ')
         : null;
@@ -359,15 +390,20 @@ function SaleRow({ sale, isFirst, onViewBreakdown }: { sale: SaleItem; isFirst: 
     const amt = Number(sale.amount ?? 0);
     const exp = Number(sale.expected_amount ?? sale.amount ?? 0);
     const diff = amt - exp;
-    const colorClass = sale.method !== 'online' && diff > 0.01 ? 'text-green-500 font-medium' : sale.method !== 'online' && diff < -0.01 ? 'text-red-500 font-medium' : '';
+    const hasDiff = sale.method !== 'online' && Math.abs(diff) > 0.01;
 
     // Mirror the semantics from OfficeShiftSaleResource / SalesLogCard:
     // only non-online sales can be custom, and the backend exposes the
     // is_custom flag so we don't have to re-encode the description logic here.
     const isCustom = sale.method !== 'online' && !!sale.is_custom;
 
+    const rowClass = [
+        grouped ? 'bg-muted/30' : (!isFirst ? 'border-t border-border' : ''),
+        separatorBefore ? 'border-t-2 border-border' : '',
+    ].filter(Boolean).join(' ');
+
     return (
-        <tr className={isFirst ? '' : 'border-t border-border'}>
+        <tr className={rowClass}>
             {/* Time — fixed width, consistent left edge */}
             <td className="py-2.5 text-xs text-muted-foreground font-mono w-[72px] shrink-0 align-middle px-4">
                 {fmtTime(sale.sold_at)}
@@ -396,7 +432,7 @@ function SaleRow({ sale, isFirst, onViewBreakdown }: { sale: SaleItem; isFirst: 
             {/* ESNcard + method badge — consistently aligned start */}
             <td className="px-2 py-2.5 align-middle whitespace-nowrap w-[180px]">
                 <div className="flex items-center justify-start gap-1">
-                    <MethodBadge method={sale.method} />
+                    {!inTransaction && <MethodBadge method={sale.method} />}
                     {(sale.ticket_type === 'with_card' || !!sale.code_used) && (
                         <Badge
                             variant="outline"
@@ -416,9 +452,15 @@ function SaleRow({ sale, isFirst, onViewBreakdown }: { sale: SaleItem; isFirst: 
             {/* Amount */}
             <td className="px-4 py-2.5 align-middle text-right w-[110px]">
                 <div className="flex items-center justify-end gap-1.5">
-                    <div className={`font-semibold tabular-nums truncate ${colorClass}`}>
+                    <div className="font-semibold tabular-nums">
                         €{sale.amount.toFixed(2)}
                     </div>
+                    {hasDiff && diff > 0 && (
+                        <ArrowUp className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                    )}
+                    {hasDiff && diff < 0 && (
+                        <ArrowDown className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                    )}
                     {sale.method === 'cash' && (
                         <Button
                             size="icon"
