@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Instagram, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { SellablePlaceholder } from '@store/components/SellablePlaceholder';
 import { useState } from 'react';
 import {
     Select,
@@ -94,9 +95,7 @@ export default function ShopShow({ item }: Props) {
                                         className="h-full w-full object-contain object-center"
                                     />
                                 ) : (
-                                    <div className="flex h-full items-center justify-center text-gray-400">
-                                        <span className="text-sm">No Image</span>
-                                    </div>
+                                    <SellablePlaceholder type={item.type} />
                                 )}
                             </div>
 

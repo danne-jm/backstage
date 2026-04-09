@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { AnnouncementCarousel } from '@store/components/AnnouncementCarousel';
+import { SellablePlaceholder } from '@store/components/SellablePlaceholder';
 import type { AnnouncementSlide } from '@store/components/AnnouncementCarousel';
 import ShopLayout from '@store/layouts/shop-layout';
 import type { StoreSellable } from '@store/types';
@@ -151,9 +152,7 @@ export default function ShopHome({ sellables }: Props) {
                                             className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                                         />
                                     ) : (
-                                        <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-300">
-                                            <span className="text-sm">No Image</span>
-                                        </div>
+                                        <SellablePlaceholder type={item.type} />
                                     )}
                                 </div>
                                 <div className="mt-2 flex flex-col sm:mt-3">

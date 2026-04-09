@@ -93,25 +93,22 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
                                     {item.name}
                                 </div>
                                 {item.description && (
-                                    <div className="line-clamp-1 text-xs text-muted-foreground">
+                                    <div className="truncate text-xs text-muted-foreground">
                                         {item.description}
                                     </div>
                                 )}
                             </div>
-                            <div className="ml-2 flex flex-col items-end text-sm">
+                            <div className="ml-2 flex shrink-0 flex-col items-end text-sm">
                                 <div className="font-medium text-muted-foreground">
                                     {item.type === 'product'
                                         ? `€${Number(item.price || 0).toFixed(2)}`
                                         : `€${Number(item.price_with_card || item.price || 0).toFixed(2)} / €${Number(item.price_without_card || 0).toFixed(2)}`}
                                 </div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                    {item.type === 'event'
-                                        ? sellPeriodMessage(
-                                            item.start_sell_date,
-                                            item.end_sell_date,
-                                        )
-                                        : ''}
-                                </div>
+                                {item.type === 'event' && (
+                                    <div className="text-xs text-muted-foreground">
+                                        {sellPeriodMessage(item.start_sell_date, item.end_sell_date)}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))

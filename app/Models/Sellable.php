@@ -56,10 +56,8 @@ abstract class Sellable extends Model implements HasMedia
     public function registerMediaConversions(Media $media = null): void
     {
         $this->addMediaConversion('optimized')
-            ->width(3000)
-            ->height(3000)
             ->format('webp')
-            ->quality(92)
+            ->quality(100)
             ->nonQueued();
     }
 

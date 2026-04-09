@@ -55,8 +55,10 @@ class ImageServingController extends Controller
             abort(404);
         }
 
+        $contentType = $media->hasGeneratedConversion('optimized') ? 'image/webp' : $media->mime_type;
+
         return response()->file($path, [
-            'Content-Type' => $media->mime_type,
+            'Content-Type' => $contentType,
             'Cache-Control' => 'public, max-age=86400',
         ]);
     }

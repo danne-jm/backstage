@@ -55,9 +55,13 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
     );
     const salesSummaryText = summarizeSales(allSales);
 
-    const cashTotal = activeShift ? Number(activeShift.cash_total || 0) : 0;
-    const cardTotal = activeShift ? Number(activeShift.card_total || 0) : 0;
-    const combinedTotal = activeShift ? Number(activeShift.total || 0) : 0;
+    const cashTotal = allSales
+        .filter((s: any) => !s.is_online && String(s.method).toLowerCase() === 'cash')
+        .reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
+    const cardTotal = allSales
+        .filter((s: any) => s.is_online || String(s.method).toLowerCase() === 'card')
+        .reduce((sum: number, s: any) => sum + Number(s.amount ?? 0), 0);
+    const combinedTotal = cashTotal + cardTotal;
 
     const formatDateTime = (dateStr: string) => {
         if (!dateStr) return '';

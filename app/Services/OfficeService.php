@@ -32,21 +32,15 @@ class OfficeService
                 $startCashBreakdown = $lastShift->end_of_shift_cash_breakdown;
             }
 
-            // New shift card total always starts with orphaned online sales that belong
-            // to this shift — sales whose sold_at is on or before now() and for which no
-            // earlier existing shift is eligible to claim them.
-            $shiftStartedAt = now();
-
+            // New shift card total always starts with all unclaimed orphaned online sales.
+            // No date filtering — orphaned sales claim the first shift that becomes live.
             $orphanedCardSum = (float) \App\Models\OnlineSale::whereNull('office_shift_id')
                 ->whereHas('transaction', function ($query) {
                     $query->where('payment_status', 'completed');
                 })
-                ->where('sold_at', '<=', $shiftStartedAt)
-                ->whereNotExists(function ($query) {
-                    $query->from('office_shifts')
-                        ->whereColumn('office_shifts.started_at', '>=', 'online_sales.sold_at');
-                })
                 ->sum('amount');
+
+            $shiftStartedAt = now();
 
             $shift = OfficeShift::create([
                 'started_by' => $user->id,

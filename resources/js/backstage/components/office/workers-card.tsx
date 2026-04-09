@@ -69,39 +69,32 @@ export function WorkersCard({ workers, activeShift, staff }: any) {
                                 key={member.id}
                                 className="flex items-center justify-between py-2"
                             >
-                                <div className="flex items-center gap-3">
-                                    {/*<div className="flex items-center justify-center rounded-full bg-muted/50 p-2">
-                                        <User className="h-4 w-4" />
-                                    </div>*/}
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
                                     <div className="flex items-center justify-center rounded-full bg-muted/50 p-2">
                                         <User className="h-4 w-4" />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm font-medium">
-                                                {member.name}
-                                            </span>
-                                            {String(member.id) ===
-                                                String(
-                                                    activeShift?.started_by,
-                                                ) && (
-                                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700 whitespace-nowrap flex-shrink-0 dark:bg-green-900/40 dark:text-green-400">
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-sm font-medium whitespace-nowrap">
+                                            {member.name}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                            {member.role || 'User'}
+                                        </span>
+                                        {(String(member.id) === String(activeShift?.started_by) ||
+                                            (activeShift?.status === 'closed' && String(member.id) === String(activeShift?.ended_by))) && (
+                                            <div className="flex flex-wrap gap-1.5 mt-0.5">
+                                                {String(member.id) === String(activeShift?.started_by) && (
+                                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700 whitespace-nowrap dark:bg-green-900/40 dark:text-green-400">
                                                         Started by
                                                     </span>
                                                 )}
-                                            {activeShift?.status === 'closed' &&
-                                                String(member.id) ===
-                                                String(
-                                                    activeShift?.ended_by,
-                                                ) && (
-                                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 whitespace-nowrap flex-shrink-0 dark:bg-red-900/40 dark:text-red-400">
+                                                {activeShift?.status === 'closed' && String(member.id) === String(activeShift?.ended_by) && (
+                                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 whitespace-nowrap dark:bg-red-900/40 dark:text-red-400">
                                                         Closed by
                                                     </span>
                                                 )}
-                                        </div>
-                                        <span className="text-xs text-muted-foreground">
-                                            {member.role || 'User'}
-                                        </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">

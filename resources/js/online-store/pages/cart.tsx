@@ -13,6 +13,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useCart } from '@store/hooks/use-cart';
 import type { CartItem } from '@store/hooks/use-cart';
+import { SellablePlaceholder } from '@store/components/SellablePlaceholder';
 import ShopLayout from '@store/layouts/shop-layout';
 import type { StoreItem } from '@store/types';
 
@@ -82,6 +83,15 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
 
                 setSellablesState(nextSellables);
                 setSellablesFetchState('loaded');
+
+                // Prune entries whose sellable is no longer available (not returned by server)
+                const validKeys = new Set(nextSellables.map((s: any) => `${s.type}-${s.id}`));
+                const pruned = entries.filter((e) => validKeys.has(`${e.type}-${e.id}`));
+                if (pruned.length !== entries.length) {
+                    const STORAGE_KEY = 'shop_cart_v2';
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
+                    window.dispatchEvent(new Event('cart-updated'));
+                }
             } catch (error) {
                 console.error('Failed to fetch cart sellables', error);
                 setSellablesFetchState('error');
@@ -351,11 +361,17 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                                 {sortedCart.map((item) => (
                                     <li key={`${item.type}-${item.id}-${JSON.stringify(item.options || {})}`} className="flex py-4 sm:py-6 lg:py-10">
                                         <div className="flex-shrink-0">
-                                            <img
-                                                src={item.image || '/images/product.png'}
-                                                alt={item.name}
-                                                className="h-20 w-20 rounded-md object-contain object-center sm:h-32 sm:w-32 lg:h-48 lg:w-48"
-                                            />
+                                            {item.image ? (
+                                                <img
+                                                    src={item.image}
+                                                    alt={item.name}
+                                                    className="h-20 w-20 rounded-md object-contain object-center sm:h-32 sm:w-32 lg:h-48 lg:w-48"
+                                                />
+                                            ) : (
+                                                <div className="h-20 w-20 overflow-hidden rounded-md sm:h-32 sm:w-32 lg:h-48 lg:w-48">
+                                                    <SellablePlaceholder type={item.type} />
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="ml-3 flex flex-1 flex-col justify-between sm:ml-4 lg:ml-6">

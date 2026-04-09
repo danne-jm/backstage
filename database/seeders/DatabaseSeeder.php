@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
 
         User::updateOrCreate(['email' => 'it@esnleuven.be'], [
             'first_name' => 'Daniel',
-            'last_name' => 'J. M',
+            'last_name' => 'J. Mevorach',
             'email_verified_at' => now(),
             'password_hash' => \Illuminate\Support\Facades\Hash::make('password'),
             'remember_token' => null,
@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
 
         User::updateOrCreate(['email' => 'president@esnleuven.be'], [
             'first_name' => 'Debargha',
-            'last_name' => 'C',
+            'last_name' => 'Chakravorty',
             'email_verified_at' => now(),
             'password_hash' => \Illuminate\Support\Facades\Hash::make('password'),
             'remember_token' => null,
@@ -48,7 +48,7 @@ class DatabaseSeeder extends Seeder
 
         User::updateOrCreate(['email' => 'finance@esnleuven.be'], [
             'first_name' => 'Kaat',
-            'last_name' => 'J',
+            'last_name' => 'Janssen',
             'email_verified_at' => now(),
             'password_hash' => \Illuminate\Support\Facades\Hash::make('password'),
             'remember_token' => null,
@@ -63,7 +63,7 @@ class DatabaseSeeder extends Seeder
 
         User::updateOrCreate(['email' => 'secretary@esnleuven.be'], [
             'first_name' => 'Alberto',
-            'last_name' => 'B',
+            'last_name' => 'Binetti',
             'email_verified_at' => now(),
             'password_hash' => \Illuminate\Support\Facades\Hash::make('password'),
             'remember_token' => null,
