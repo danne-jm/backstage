@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Contracts\PaymentGatewayInterface;
 use App\Contracts\PaymentResult;
-use App\Mail\OrderConfirmation;
+use App\Jobs\SendConfirmationEmail;
 use App\Models\DiscountUsage;
 use App\Models\OfficeShift;
 use App\Models\OnlineSale;
@@ -15,7 +15,6 @@ use App\Models\sellables\Product;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -193,8 +192,8 @@ class CheckoutService
 
     /**
      * Dispatch the order confirmation email if not already sent. Idempotent.
-     * In non-production environments the mail is sent synchronously so no queue
-     * worker is required. In production it is pushed to the confirmations queue.
+     * Enqueues a SendConfirmationEmail job — mail_success stays false until
+     * the job actually sends successfully, giving accurate status in the UI.
      */
     public function dispatchConfirmationEmail(OnlineTransaction $transaction): void
     {
@@ -203,19 +202,9 @@ class CheckoutService
         }
 
         try {
-            $mailable = new OrderConfirmation($transaction);
-
-            if (app()->isProduction()) {
-                Mail::to($transaction->email)->queue(
-                    $mailable->onQueue(config('mail.confirmation_queue', 'confirmations'))
-                );
-            } else {
-                Mail::to($transaction->email)->sendNow($mailable);
-            }
-
-            $transaction->update(['mail_success' => true]);
+            SendConfirmationEmail::dispatch($transaction->id);
         } catch (\Throwable $e) {
-            Log::error('Order confirmation email failed', [
+            Log::error('Order confirmation email failed to dispatch', [
                 'transaction_id' => $transaction->id,
                 'error' => $e->getMessage(),
             ]);
