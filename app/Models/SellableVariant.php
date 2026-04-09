@@ -41,7 +41,8 @@ class SellableVariant extends Model
     {
         $office = \App\Models\OfficeShiftSale::where('snapshot_variant_id', $this->id)->count();
         $online = \App\Models\OnlineSale::where('details_variant_id', $this->id)
-            ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
+            ->where(fn($q) => $q->whereNull('online_transaction_id')
+                ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
             ->count();
 
         return $office + $online;

@@ -92,7 +92,8 @@ class Event extends Sellable
             ->count()
             + \App\Models\OnlineSale::where('event_id', $this->id)
                 ->where('ticket_type', 'with_card')
-                ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
+                ->where(fn($q) => $q->whereNull('online_transaction_id')
+                    ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
                 ->count();
     }
 
@@ -113,7 +114,8 @@ class Event extends Sellable
                     $q->where('ticket_type', '!=', 'with_card')
                         ->orWhereNull('ticket_type');
                 })
-                ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
+                ->where(fn($q) => $q->whereNull('online_transaction_id')
+                    ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
                 ->count();
     }
 

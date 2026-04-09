@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { Pencil, HelpCircle } from 'lucide-react';
+import { ArrowDown, ArrowUp, HelpCircle, Pencil } from 'lucide-react';
 import React, { useState } from 'react';
 import { BaseModal } from '@backstage/components/office/base-modal';
 import { CashBreakdownModal } from '@backstage/components/office/cash-breakdown-modal';
@@ -258,11 +258,15 @@ export function SalesLogCard({ sales, onlineSales = [], activeShift, sellables }
                                                     const amt = Number(s.amount ?? 0);
                                                     const exp = Number(s.expected_amount ?? s.amount ?? 0);
                                                     const diff = amt - exp;
-                                                    const colorClass = !s.is_online && diff > 0.01 ? 'text-green-500 font-medium' : !s.is_online && diff < -0.01 ? 'text-red-500 font-medium' : '';
+                                                    const hasDiff = !s.is_online && Math.abs(diff) > 0.01;
                                                     return (
-                                                        <div className={`truncate ${colorClass}`} title={`€${amt.toFixed(2)}`}>
-                                                            €{amt.toFixed(2)}
-                                                        </div>
+                                                        <>
+                                                            <div title={`€${amt.toFixed(2)}`}>
+                                                                €{amt.toFixed(2)}
+                                                            </div>
+                                                            {hasDiff && diff > 0 && <ArrowUp className="h-3.5 w-3.5 shrink-0 text-green-500" />}
+                                                            {hasDiff && diff < 0 && <ArrowDown className="h-3.5 w-3.5 shrink-0 text-red-500" />}
+                                                        </>
                                                     );
                                                 })()}
                                                 {!s.is_online && String(s.method).toLowerCase() === 'cash' && (
