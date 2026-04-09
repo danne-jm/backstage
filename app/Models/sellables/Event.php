@@ -16,8 +16,6 @@ class Event extends Sellable
         'price_without_card',
         'responsible_user_id',
         'notes',
-        'sold_count_with_card',
-        'sold_count_without_card',
         'attendee_filter_config'
     ];
 
@@ -27,8 +25,6 @@ class Event extends Sellable
         'end_sell_date' => 'datetime',
         'price_with_card' => 'decimal:2',
         'price_without_card' => 'decimal:2',
-        'sold_count_with_card' => 'integer',
-        'sold_count_without_card' => 'integer',
         'attendee_filter_config' => 'array',
     ];
 
@@ -41,21 +37,21 @@ class Event extends Sellable
     {
         return (bool) $this->unlimited_quantity
             || is_null($this->quantity)
-            || ($this->quantity - ($this->sold_count_without_card ?? 0)) > 0;
+            || $this->computedRemainingWithoutCard() > 0;
     }
 
     public function checkHasStockWithCard(): bool
     {
         return (bool) $this->unlimited_quantity_with_card
             || is_null($this->quantity_with_card)
-            || ($this->quantity_with_card - ($this->sold_count_with_card ?? 0)) > 0;
+            || $this->computedRemainingWithCard() > 0;
     }
 
     public function checkHasStockWithoutCard(): bool
     {
         return (bool) $this->unlimited_quantity_without_card
             || is_null($this->quantity_without_card)
-            || ($this->quantity_without_card - ($this->sold_count_without_card ?? 0)) > 0;
+            || $this->computedRemainingWithoutCard() > 0;
     }
 
     public function checkMainStock(int $qty, bool $useMemberPrice = false): void
@@ -64,7 +60,7 @@ class Event extends Sellable
             if ($this->unlimited_quantity_with_card || is_null($this->quantity_with_card)) {
                 return;
             }
-            $remaining = max(0, $this->quantity_with_card - ($this->sold_count_with_card ?? 0));
+            $remaining = max(0, $this->quantity_with_card - $this->computedSoldWithCard());
             if ($remaining < $qty) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'stock' => "Insufficient member-price tickets for {$this->name}.",
@@ -73,11 +69,10 @@ class Event extends Sellable
         } else {
             $unlimited = $this->unlimited_quantity_without_card ?? $this->unlimited_quantity;
             $qtyCol = $this->quantity_without_card ?? $this->quantity;
-            $sold = $this->sold_count_without_card ?? 0;
             if ($unlimited || is_null($qtyCol)) {
                 return;
             }
-            $remaining = max(0, $qtyCol - $sold);
+            $remaining = max(0, $qtyCol - $this->computedSoldWithoutCard());
             if ($remaining < $qty) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'stock' => "Insufficient stock for {$this->name}.",
@@ -86,34 +81,9 @@ class Event extends Sellable
         }
     }
 
-    public function incrementMainSoldCount(bool $useMemberPrice = false, int $count = 1): int
-    {
-        if ($useMemberPrice) {
-            return static::where('id', $this->id)
-                ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card + ? <= quantity_with_card)', [$count])
-                ->increment('sold_count_with_card', $count);
-        }
-
-        return static::where('id', $this->id)
-            ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card + ? <= quantity_without_card)', [$count])
-            ->increment('sold_count_without_card', $count);
-    }
-
-    public function decrementMainSoldCount(bool $useMemberPrice = false, int $count = 1): void
-    {
-        if ($useMemberPrice) {
-            static::where('id', $this->id)
-                ->where('sold_count_with_card', '>=', $count)
-                ->decrement('sold_count_with_card', $count);
-        } else {
-            static::where('id', $this->id)
-                ->where('sold_count_without_card', '>=', $count)
-                ->decrement('sold_count_without_card', $count);
-        }
-    }
-
     /**
      * Count actual with-card (member-price) sales from real records.
+     * Online sales are counted while pending or completed; failed/abandoned are excluded.
      */
     public function computedSoldWithCard(): int
     {
@@ -122,11 +92,13 @@ class Event extends Sellable
             ->count()
             + \App\Models\OnlineSale::where('event_id', $this->id)
                 ->where('ticket_type', 'with_card')
+                ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
                 ->count();
     }
 
     /**
      * Count actual without-card sales from real records.
+     * Online sales are counted while pending or completed; failed/abandoned are excluded.
      */
     public function computedSoldWithoutCard(): int
     {
@@ -141,6 +113,7 @@ class Event extends Sellable
                     $q->where('ticket_type', '!=', 'with_card')
                         ->orWhereNull('ticket_type');
                 })
+                ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
                 ->count();
     }
 

@@ -1,13 +1,12 @@
 import { router } from '@inertiajs/react';
 import { Eye, HelpCircle, Pencil } from 'lucide-react';
 import React, { useState } from 'react';
-import { BaseModal } from './base-modal';
 import { CashBreakdownModal } from '@backstage/components/office/cash-breakdown-modal';
 import { SaleCashBreakdownModal } from '@backstage/components/office/sale-cash-breakdown-modal';
 import { Button } from '@backstage/components/ui/button';
-import { Input } from '@backstage/components/ui/input';
+import { BaseModal } from './base-modal';
 
-export function RevenueCard({ activeShift, onlineSales = [] }: any) {
+export function RevenueCard({ activeShift }: any) {
     const [activeCollapsed, setActiveCollapsed] = useState(false);
     const [totalCollapsed, setTotalCollapsed] = useState(false);
     const [startCollapsed, setStartCollapsed] = useState(false);
@@ -27,8 +26,14 @@ export function RevenueCard({ activeShift, onlineSales = [] }: any) {
     const startCard = Number(activeShift?.start_card) || 0;
 
     const cashTotal = activeShift ? Number(activeShift.cash_total || 0) : 0;
-    // The backend now provides integrated card and combined totals (POS + Online)
     const cardTotal = activeShift ? Number(activeShift.card_total || 0) : 0;
+    const posCardTotal = activeShift ? Number(activeShift.pos_card_total || 0) : 0;
+    const onlineRevenue = activeShift ? Number(activeShift.online_revenue || 0) : 0;
+    const hasCardBreakdown = activeShift
+        && (activeShift.pos_card_total !== undefined || activeShift.online_revenue !== undefined);
+    const liveCardTotal = hasCardBreakdown
+        ? posCardTotal + onlineRevenue
+        : cardTotal;
     const combinedTotal = activeShift ? Number(activeShift.total || 0) : 0;
 
     const totalCash = startCash + cashTotal;
@@ -230,7 +235,7 @@ export function RevenueCard({ activeShift, onlineSales = [] }: any) {
                                     Live Card
                                 </div>
                                 <div className="text-lg font-medium">
-                                    €{cardTotal.toFixed(2)}
+                                    €{liveCardTotal.toFixed(2)}
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">

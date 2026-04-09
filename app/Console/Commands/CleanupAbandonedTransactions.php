@@ -51,7 +51,6 @@ class CleanupAbandonedTransactions extends Command
 
             try {
                 DB::transaction(function () use ($transaction) {
-                    $this->checkoutService->revertStockForTransaction($transaction);
                     $this->checkoutService->revertDiscountUsagesForTransaction($transaction);
                     // Record compensating ledger entries (no-op when no completion entry exists)
                     $this->financialLedgerService->recordOnlineTransactionReversal($transaction, 'abandoned');

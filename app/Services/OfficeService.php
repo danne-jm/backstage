@@ -224,18 +224,14 @@ class OfficeService
                 return; // No change
             }
 
-            $newVariant = \App\Models\SellableVariant::findOrFail($variantId);
+            $newVariant = \App\Models\SellableVariant::lockForUpdate()->findOrFail($variantId);
 
-            // Deduct from NEW variant count
-            if ($newVariant->quantity !== null && ($newVariant->quantity - $newVariant->sold_count) <= 0) {
+            // Check capacity on the new variant (the old sale still counts toward oldVariant,
+            // but the snapshot update below re-points it to newVariant, so we check new + 1
+            // against new capacity while the old one is freed implicitly).
+            if ($newVariant->quantity !== null && $newVariant->computedSoldCount() + 1 > $newVariant->quantity) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['stock' => "Selected variant is sold out."]);
             }
-
-            // Transactional update
-            if ($oldVariantId) {
-                \App\Models\SellableVariant::where('id', $oldVariantId)->decrement('sold_count');
-            }
-            \App\Models\SellableVariant::where('id', $variantId)->increment('sold_count');
 
             // Update snapshot
             $snapshot['variant_id'] = $newVariant->id;

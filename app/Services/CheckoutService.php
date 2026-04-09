@@ -7,13 +7,11 @@ use App\Contracts\PaymentResult;
 use App\Mail\OrderConfirmation;
 use App\Models\DiscountUsage;
 use App\Models\OfficeShift;
-use App\Models\OfficeShiftSale;
 use App\Models\OnlineSale;
 use App\Models\OnlineTransaction;
 use App\Models\SellableVariant;
 use App\Models\sellables\Event;
 use App\Models\sellables\Product;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -162,47 +160,19 @@ class CheckoutService
     }
 
     /**
-     * Handle a confirmed payment failure: revert stock and discount usages atomically,
+     * Handle a confirmed payment failure: revert discount usages atomically,
      * then mark the transaction as failed.
+     *
+     * Stock is self-healing: sold counts are computed from actual sale records,
+     * and failed transactions are excluded from those counts automatically.
      */
     public function handleTransactionFailure(OnlineTransaction $transaction): void
     {
         DB::transaction(function () use ($transaction) {
-            $this->revertStockForTransaction($transaction);
             $this->revertDiscountUsagesForTransaction($transaction);
             $this->financialLedgerService->recordOnlineTransactionReversal($transaction, 'failed');
             $transaction->update(['payment_status' => PaymentResult::STATUS_FAILED]);
         });
-    }
-
-    /**
-     * Revert all stock counts for every sale on a transaction.
-     * Safe to call on already-reverted transactions (decrements guard against going below 0).
-     */
-    public function revertStockForTransaction(OnlineTransaction $transaction): void
-    {
-        foreach ($transaction->sales as $sale) {
-            $useMemberPrice = ($sale->ticket_type === 'with_card');
-
-            // Prefer the stored variant_id; fall back to option-matching for older sales.
-            $variantId = $sale->details['variant_id'] ?? null;
-
-            if (!$variantId && !empty($sale->details['options'])) {
-                $type = $sale->product_id ? Product::class : Event::class;
-                $id = $sale->product_id ?? $sale->event_id;
-                $entity = $type::find($id);
-                if ($entity) {
-                    $variant = $entity->resolveVariantByOptions($sale->details['options']);
-                    $variantId = $variant?->id;
-                }
-            }
-
-            if ($sale->product_id) {
-                Product::find($sale->product_id)?->revertStockForUnit($useMemberPrice, $variantId);
-            } elseif ($sale->event_id) {
-                Event::find($sale->event_id)?->revertStockForUnit($useMemberPrice, $variantId);
-            }
-        }
     }
 
     /**
@@ -447,7 +417,7 @@ class CheckoutService
                 ]);
             }
 
-            if ($variant->quantity !== null && ($variant->quantity - ($variant->sold_count ?? 0)) < $count) {
+            if ($variant->quantity !== null && $variant->computedSoldCount() + $count > $variant->quantity) {
                 throw ValidationException::withMessages([
                     'stock' => "Insufficient stock for variant of {$entity->name}.",
                 ]);
@@ -468,72 +438,67 @@ class CheckoutService
     }
 
     /**
-     * Atomically increment sold counts for all sales using the HasSellableStock trait.
+     * Verify that stock is still available after OnlineSale records have been created.
      *
-     * @throws \Exception on race-condition sold-out
+     * OnlineSale rows are already committed to the DB (within the enclosing transaction),
+     * so computedSoldCount() naturally includes this request's sales. We lock each
+     * sellable/variant row to prevent concurrent checkouts from racing past capacity.
+     *
+     * @throws \Exception if any sellable is over capacity
      */
     protected function updateStockCounts(array $salesToCreate): void
     {
-        $variantCounts = [];
-        $eventCounts = [];
-        $productCounts = [];
+        $variantIds = [];
+        $eventIds = [];
+        $productIds = [];
 
         foreach ($salesToCreate as $saleData) {
             if (!empty($saleData['variant_id'])) {
-                $variantId = $saleData['variant_id'];
-                $variantCounts[$variantId] = ($variantCounts[$variantId] ?? 0) + 1;
+                $variantIds[] = $saleData['variant_id'];
             }
-
-            $useMemberPrice = ($saleData['ticket_type'] === 'with_card');
-
             if ($saleData['event_id']) {
-                $key = $saleData['event_id'] . '_' . ($useMemberPrice ? 'card' : 'no');
-                if (!isset($eventCounts[$key])) {
-                    $eventCounts[$key] = ['id' => $saleData['event_id'], 'useMemberPrice' => $useMemberPrice, 'count' => 0];
-                }
-                $eventCounts[$key]['count']++;
+                $eventIds[] = $saleData['event_id'];
             } elseif ($saleData['product_id']) {
-                $key = $saleData['product_id'] . '_' . ($useMemberPrice ? 'card' : 'no');
-                if (!isset($productCounts[$key])) {
-                    $productCounts[$key] = ['id' => $saleData['product_id'], 'useMemberPrice' => $useMemberPrice, 'count' => 0];
-                }
-                $productCounts[$key]['count']++;
+                $productIds[] = $saleData['product_id'];
             }
         }
 
-        foreach ($variantCounts as $id => $count) {
-            $updated = SellableVariant::where('id', $id)
-                ->whereRaw('(quantity IS NULL OR sold_count + ? <= quantity)', [$count])
-                ->increment('sold_count', $count);
-
-            if (!$updated) {
+        foreach (array_unique($variantIds) as $id) {
+            $variant = SellableVariant::lockForUpdate()->findOrFail($id);
+            if ($variant->quantity !== null && $variant->computedSoldCount() > $variant->quantity) {
                 throw new \Exception('One or more items became sold out during processing.');
             }
         }
 
-        foreach ($eventCounts as $data) {
-            $event = Event::findOrFail($data['id']);
-            $updated = $event->incrementMainSoldCount($data['useMemberPrice'], $data['count']);
-            if (!$updated) {
+        foreach (array_unique($eventIds) as $id) {
+            $event = Event::lockForUpdate()->findOrFail($id);
+            if (!$event->unlimited_quantity_with_card && $event->quantity_with_card !== null
+                && $event->computedSoldWithCard() > $event->quantity_with_card) {
+                throw new \Exception('Event member-price tickets sold out during processing.');
+            }
+            $qtyWithout = $event->quantity_without_card ?? $event->quantity;
+            $unlimitedWithout = $event->unlimited_quantity_without_card ?? $event->unlimited_quantity;
+            if (!$unlimitedWithout && $qtyWithout !== null
+                && $event->computedSoldWithoutCard() > $qtyWithout) {
                 throw new \Exception('Event tickets sold out during processing.');
             }
         }
 
-        foreach ($productCounts as $data) {
-            $product = Product::findOrFail($data['id']);
-            $updated = $product->incrementMainSoldCount($data['useMemberPrice'], $data['count']);
-            if (!$updated) {
+        foreach (array_unique($productIds) as $id) {
+            $product = Product::lockForUpdate()->findOrFail($id);
+            if (!$product->unlimited_quantity && $product->quantity !== null
+                && $product->computedSoldCount() > $product->quantity) {
                 throw new \Exception('Product sold out during processing.');
             }
         }
 
         // Bust the shop caches so stock changes are immediately visible.
         Cache::forget('shop_index');
-        foreach ($eventCounts as $data) {
-            Cache::forget("shop_item_event_{$data['id']}");
+        foreach (array_unique($eventIds) as $id) {
+            Cache::forget("shop_item_event_{$id}");
         }
-        foreach ($productCounts as $data) {
-            Cache::forget("shop_item_product_{$data['id']}");
+        foreach (array_unique($productIds) as $id) {
+            Cache::forget("shop_item_product_{$id}");
         }
     }
 

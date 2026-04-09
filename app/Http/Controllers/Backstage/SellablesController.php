@@ -190,34 +190,28 @@ class SellablesController extends Controller
         if ($product) {
             // Main quantity
             if (isset($validated['remaining_quantity']) && $validated['remaining_quantity'] !== null) {
-                // For Product, we use sold_count column or sales relation. Column is safer if maintained.
-                // Assuming column is maintained. If not, use relation count.
-                // Migration showed sold_count column.
-                $sold = $product->sold_count; 
-                $validated['quantity'] = $validated['remaining_quantity'] + $sold;
+                $validated['quantity'] = $validated['remaining_quantity'] + $product->computedSoldCount();
                 unset($validated['remaining_quantity']);
             }
-            
-            // Variable amount quantities
+
+            // Variable amount quantities — products don't have per-type sold counts,
+            // so fall back to filtering actual sales by ticket_type in the snapshot/details.
             if (isset($validated['remaining_quantity_with_card']) && $validated['remaining_quantity_with_card'] !== null) {
-                // Product doesn't have sold_count_with_card column in migration?
-                // Migration only showed sold_count.
-                // So for products variable pricing, we might need relation count filtered by type.
-                // Or maybe Product doesn't support variable pricing properly in backend model?
-                // Product table DOES have quantity_with_card, quantity_without_card columns.
-                // BUT NO sold_count_with_card.
-                // So we must count via relations.
-                $soldWithCard = $product->sales()->where('snapshot->ticket_type', 'with_card')->count() 
-                              + $product->onlineSales()->where('details->ticket_type', 'with_card')->count();
+                $soldWithCard = $product->sales()->where('snapshot->ticket_type', 'with_card')->count()
+                              + $product->onlineSales()
+                                    ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
+                                    ->where('details->ticket_type', 'with_card')->count();
                 $validated['quantity_with_card'] = $validated['remaining_quantity_with_card'] + $soldWithCard;
-                 unset($validated['remaining_quantity_with_card']);
+                unset($validated['remaining_quantity_with_card']);
             }
 
             if (isset($validated['remaining_quantity_without_card']) && $validated['remaining_quantity_without_card'] !== null) {
-                $soldWithoutCard = $product->sales()->where('snapshot->ticket_type', 'without_card')->count() 
-                                 + $product->onlineSales()->where('details->ticket_type', 'without_card')->count();
-                 $validated['quantity_without_card'] = $validated['remaining_quantity_without_card'] + $soldWithoutCard;
-                 unset($validated['remaining_quantity_without_card']);
+                $soldWithoutCard = $product->sales()->where('snapshot->ticket_type', 'without_card')->count()
+                                 + $product->onlineSales()
+                                       ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
+                                       ->where('details->ticket_type', 'without_card')->count();
+                $validated['quantity_without_card'] = $validated['remaining_quantity_without_card'] + $soldWithoutCard;
+                unset($validated['remaining_quantity_without_card']);
             }
         } elseif (isset($validated['remaining_quantity']) || isset($validated['remaining_quantity_with_card']) || isset($validated['remaining_quantity_without_card'])) {
             // Creation mode: Remaining = Total (Sold = 0)
@@ -283,22 +277,19 @@ class SellablesController extends Controller
         if ($event) {
             // Main quantity (Simple)
             if (isset($validated['remaining_quantity']) && $validated['remaining_quantity'] !== null) {
-                // Event simple sales calculation
-                $sold = $event->sales()->count() + $event->onlineSales()->count(); 
+                $sold = $event->computedSoldWithoutCard() + $event->computedSoldWithCard();
                 $validated['quantity'] = $validated['remaining_quantity'] + $sold;
                 unset($validated['remaining_quantity']);
             }
-            
+
             // Variable quantities
             if (isset($validated['remaining_quantity_with_card']) && $validated['remaining_quantity_with_card'] !== null) {
-                $soldWithCard = $event->sold_count_with_card;
-                $validated['quantity_with_card'] = $validated['remaining_quantity_with_card'] + $soldWithCard;
+                $validated['quantity_with_card'] = $validated['remaining_quantity_with_card'] + $event->computedSoldWithCard();
                 unset($validated['remaining_quantity_with_card']);
             }
 
             if (isset($validated['remaining_quantity_without_card']) && $validated['remaining_quantity_without_card'] !== null) {
-                $soldWithoutCard = $event->sold_count_without_card;
-                $validated['quantity_without_card'] = $validated['remaining_quantity_without_card'] + $soldWithoutCard;
+                $validated['quantity_without_card'] = $validated['remaining_quantity_without_card'] + $event->computedSoldWithoutCard();
                 unset($validated['remaining_quantity_without_card']);
             }
         } elseif (isset($validated['remaining_quantity']) || isset($validated['remaining_quantity_with_card']) || isset($validated['remaining_quantity_without_card'])) {

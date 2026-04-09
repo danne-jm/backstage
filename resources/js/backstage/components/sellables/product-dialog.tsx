@@ -131,7 +131,7 @@ export function ProductDialog({
                     ...v,
                     quantity:
                         v.quantity !== null
-                            ? Math.max(0, v.quantity - (v.sold_count || 0))
+                            ? (v.remaining ?? v.quantity)
                             : null,
                 })),
             );

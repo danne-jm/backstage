@@ -16,27 +16,19 @@ class EventResource extends JsonResource
     {
         $hasVariants = !empty($this->variants_config);
 
-        $soldWithCard = (int) ($this->sold_count_with_card ?? 0);
-        $soldWithoutCard = (int) ($this->sold_count_without_card ?? 0);
-
         // Simple (non-variable) event: single quantity pool shared across ticket types
         $qty = $this->quantity ?? null;
         $unlimited = (bool) ($this->unlimited_quantity ?? false);
-        $totalSold = $soldWithCard + $soldWithoutCard;
-        $remaining = ($unlimited || $qty === null) ? null : max(0, $qty - $totalSold);
+        $remaining = ($unlimited || $qty === null) ? null : max(0, $qty - $this->computedSoldWithCard() - $this->computedSoldWithoutCard());
 
         // Variable-amount event: separate with_card / without_card pools
         $qtyWithCard = $this->quantity_with_card ?? null;
         $unlimitedWithCard = (bool) ($this->unlimited_quantity_with_card ?? false);
-        $remainingWithCard = ($unlimitedWithCard || $qtyWithCard === null)
-            ? null
-            : max(0, $qtyWithCard - $soldWithCard);
+        $remainingWithCard = $this->computedRemainingWithCard();
 
         $qtyWithoutCard = $this->quantity_without_card ?? null;
         $unlimitedWithoutCard = (bool) ($this->unlimited_quantity_without_card ?? false);
-        $remainingWithoutCard = ($unlimitedWithoutCard || $qtyWithoutCard === null)
-            ? null
-            : max(0, $qtyWithoutCard - $soldWithoutCard);
+        $remainingWithoutCard = $this->computedRemainingWithoutCard();
 
         return [
             'id' => $this->id, // deprecated for frontend selection
@@ -52,8 +44,6 @@ class EventResource extends JsonResource
             'price_without_card' => $this->price_without_card ?? 0,
             'quantity' => $qty,
             'unlimited_quantity' => $unlimited,
-            'sold_count_with_card' => $soldWithCard,
-            'sold_count_without_card' => $soldWithoutCard,
             'responsible_user_id' => $this->responsible_user_id,
             'notes' => $this->notes,
             'variable_amount' => (bool) $this->variable_amount,
@@ -79,8 +69,7 @@ class EventResource extends JsonResource
                 'id' => $v->id,
                 'options' => $v->options,
                 'quantity' => $v->quantity,
-                'sold_count' => $v->sold_count,
-                'remaining' => ($v->quantity !== null) ? max(0, $v->quantity - $v->sold_count) : null,
+                'remaining' => $v->computedRemaining(),
             ]),
             'sales_count' => $this->sales_count,
             'online_sales_count' => $this->online_sales_count,

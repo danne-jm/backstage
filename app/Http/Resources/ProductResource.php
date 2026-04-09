@@ -14,13 +14,12 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $soldCount = (int) ($this->sold_count ?? 0);
-        $quantity  = $this->quantity ?? null;   // null means unlimited
+        $quantity  = $this->quantity ?? null;
         $unlimited = (bool) ($this->unlimited_quantity ?? false);
 
         $remaining = ($unlimited || $quantity === null)
             ? null
-            : max(0, $quantity - $soldCount);
+            : max(0, $quantity - $this->computedSoldCount());
 
         return [
             'id' => $this->id, // deprecated for frontend selection
@@ -36,15 +35,13 @@ class ProductResource extends JsonResource
             'is_variant_based' => (bool) ($this->is_variant_based || $this->variants->count() > 0),
             'unlimited_quantity' => $unlimited,
             'quantity' => $quantity,
-            'sold_count' => $soldCount,
             'remaining' => $remaining,
             'variants_config' => $this->variants_config,
             'variants' => $this->variants->map(fn($v) => [
                 'id' => $v->id,
                 'options' => $v->options,
                 'quantity' => $v->quantity,
-                'sold_count' => $v->sold_count,
-                'remaining' => ($v->quantity !== null) ? max(0, $v->quantity - $v->sold_count) : null,
+                'remaining' => $v->computedRemaining(),
             ]),
             'sales_count' => $this->sales_count,
             'online_sales_count' => $this->online_sales_count,

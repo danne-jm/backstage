@@ -83,13 +83,22 @@ abstract class Sellable extends Model implements HasMedia
 
     /**
      * Whether the main entity has any stock available.
-     * Events override this to use sold_count_without_card.
+     * Events override this with ticket-type-specific logic.
      */
     public function checkHasStock(): bool
     {
         return (bool) $this->unlimited_quantity
             || is_null($this->quantity)
-            || ($this->quantity - ($this->sold_count ?? 0)) > 0;
+            || ($this->quantity - $this->computedSoldCount()) > 0;
+    }
+
+    /**
+     * Compute sold count from actual sale records.
+     * Subclasses override this with their specific query logic.
+     */
+    public function computedSoldCount(): int
+    {
+        return 0;
     }
 
     public function variants()

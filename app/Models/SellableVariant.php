@@ -10,12 +10,11 @@ class SellableVariant extends Model
 {
     use HasFactory, HasUlids;
 
-    protected $fillable = ['sellable_id', 'sellable_type', 'options', 'quantity', 'sold_count'];
+    protected $fillable = ['sellable_id', 'sellable_type', 'options', 'quantity'];
 
     protected $casts = [
         'options' => 'array',
         'quantity' => 'integer',
-        'sold_count' => 'integer',
     ];
 
     public function sellable()
@@ -24,25 +23,19 @@ class SellableVariant extends Model
     }
 
     /**
-     * Get remaining stock for this variant.
+     * Get remaining stock for this variant, computed live from actual sale records.
      * Returns null if unlimited (quantity is null).
      */
     public function getRemainingAttribute(): ?int
     {
-        if ($this->quantity === null) {
-            return null;
-        }
-
-        return max(0, $this->quantity - ($this->sold_count ?? 0));
+        return $this->computedRemaining();
     }
 
     /**
      * Count actual sold/reserved units for this variant from real sale records.
      *
-     * Mirrors the semantics of the cached sold_count column: online sales are counted
-     * from the moment checkout is initiated (pending) and only removed when the
-     * transaction is explicitly failed or abandoned.  Counting only 'completed' sales
-     * would undercount during active sessions.
+     * Online sales are counted from the moment checkout is initiated (pending) and
+     * only excluded when the transaction is explicitly failed or abandoned.
      */
     public function computedSoldCount(): int
     {

@@ -140,7 +140,11 @@ class SaleService
     }
 
     /**
-     * Validate stock and atomically decrement the sold count on the sellable (and variant, if applicable).
+     * Verify and lock stock for the sellable (and variant, if applicable).
+     *
+     * Uses pessimistic locking (lockForUpdate) within the enclosing DB transaction.
+     * The OfficeShiftSale record is created by the caller *after* this returns, so
+     * we check existing_sold + 1 <= quantity (the new sale is not yet in the DB).
      *
      * @return array{resolved_variant: SellableVariant|null}
      *
@@ -151,7 +155,7 @@ class SaleService
         $resolvedVariant = null;
 
         if ($productId) {
-            $product = Product::find($productId);
+            $product = Product::lockForUpdate()->find($productId);
 
             if ($product) {
                 if ($product->is_variant_based) {
@@ -159,34 +163,34 @@ class SaleService
                     $options = $details['options'] ?? null;
 
                     if ($variantId) {
-                        $resolvedVariant = SellableVariant::find($variantId);
+                        $resolvedVariant = SellableVariant::lockForUpdate()->find($variantId);
                     } elseif (!empty($options)) {
                         $resolvedVariant = $this->resolveVariant($product, $options);
+                        if ($resolvedVariant) {
+                            $resolvedVariant = SellableVariant::lockForUpdate()->find($resolvedVariant->id);
+                        }
                     }
 
                     if (!$resolvedVariant) {
                         throw ValidationException::withMessages(['items' => "{$product->name} requires you to select an option."]);
                     }
 
-                    if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
+                    if ($resolvedVariant->quantity !== null && $resolvedVariant->computedSoldCount() + 1 > $resolvedVariant->quantity) {
                         throw ValidationException::withMessages(['stock' => "Selected variant for {$product->name} is sold out."]);
                     }
                 } elseif (!empty($details['options'])) {
                     throw ValidationException::withMessages(['items' => "The configuration for {$product->name} has changed. Please re-select the item."]);
                 }
 
-                $updated = Product::where('id', $productId)
-                    ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count + 1 <= quantity)')
-                    ->increment('sold_count');
-
-                if (!$updated) {
+                if (!$product->unlimited_quantity && $product->quantity !== null
+                    && $product->computedSoldCount() + 1 > $product->quantity) {
                     throw ValidationException::withMessages(['stock' => 'Product sold out.']);
                 }
             }
         }
 
         if ($eventId) {
-            $event = Event::find($eventId);
+            $event = Event::lockForUpdate()->find($eventId);
 
             if ($event) {
                 $ticketTypeKey = $ticketType ? strtolower($ticketType) : null;
@@ -196,16 +200,19 @@ class SaleService
                     $options = $details['options'] ?? null;
 
                     if ($variantId) {
-                        $resolvedVariant = SellableVariant::find($variantId);
+                        $resolvedVariant = SellableVariant::lockForUpdate()->find($variantId);
                     } elseif (!empty($options)) {
                         $resolvedVariant = $this->resolveVariant($event, $options);
+                        if ($resolvedVariant) {
+                            $resolvedVariant = SellableVariant::lockForUpdate()->find($resolvedVariant->id);
+                        }
                     }
 
                     if (!$resolvedVariant) {
                         throw ValidationException::withMessages(['items' => "{$event->name} requires you to select an option."]);
                     }
 
-                    if ($resolvedVariant->quantity !== null && ($resolvedVariant->quantity - $resolvedVariant->sold_count) <= 0) {
+                    if ($resolvedVariant->quantity !== null && $resolvedVariant->computedSoldCount() + 1 > $resolvedVariant->quantity) {
                         throw ValidationException::withMessages(['stock' => "Selected variant for {$event->name} is sold out."]);
                     }
                 } elseif (!empty($details['options'])) {
@@ -213,36 +220,26 @@ class SaleService
                 }
 
                 if ($ticketTypeKey === 'with_card') {
-                    $updated = Event::where('id', $eventId)
-                        ->whereRaw('(unlimited_quantity_with_card = 1 OR quantity_with_card IS NULL OR sold_count_with_card + 1 <= quantity_with_card)')
-                        ->increment('sold_count_with_card');
+                    if (!$event->unlimited_quantity_with_card && $event->quantity_with_card !== null
+                        && $event->computedSoldWithCard() + 1 > $event->quantity_with_card) {
+                        throw ValidationException::withMessages(['stock' => 'Event tickets sold out.']);
+                    }
                 } elseif ($event->variable_amount) {
-                    $updated = Event::where('id', $eventId)
-                        ->whereRaw('(unlimited_quantity_without_card = 1 OR quantity_without_card IS NULL OR sold_count_without_card + 1 <= quantity_without_card)')
-                        ->increment('sold_count_without_card');
+                    if (!$event->unlimited_quantity_without_card && $event->quantity_without_card !== null
+                        && $event->computedSoldWithoutCard() + 1 > $event->quantity_without_card) {
+                        throw ValidationException::withMessages(['stock' => 'Event tickets sold out.']);
+                    }
                 } else {
-                    $updated = Event::where('id', $eventId)
-                        ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count_without_card + 1 <= quantity)')
-                        ->increment('sold_count_without_card');
-                }
-
-                if (!$updated) {
-                    throw ValidationException::withMessages(['stock' => 'Event tickets sold out.']);
+                    $qty = $event->quantity;
+                    if (!$event->unlimited_quantity && $qty !== null
+                        && $event->computedSoldWithoutCard() + 1 > $qty) {
+                        throw ValidationException::withMessages(['stock' => 'Event tickets sold out.']);
+                    }
                 }
             }
         }
 
-        if ($resolvedVariant) {
-            $updated = SellableVariant::where('id', $resolvedVariant->id)
-                ->whereRaw('(quantity IS NULL OR sold_count + 1 <= quantity)')
-                ->increment('sold_count');
-
-            if (!$updated) {
-                throw ValidationException::withMessages(['stock' => 'Variant selection sold out.']);
-            }
-        }
-
-        // Bust the shop listing and item detail caches so stock is immediately accurate.
+        // Bust the shop listing and item detail caches so stock changes are visible.
         Cache::forget('shop_index');
         if ($productId) {
             Cache::forget("shop_item_product_{$productId}");
@@ -255,47 +252,19 @@ class SaleService
     }
 
     /**
-     * Restore stock for a deleted sale.
-     * Decrements the sold_count on the cellable and variant where applicable.
+     * Restore stock after a deleted office sale.
+     *
+     * With live-counted stock, deleting the OfficeShiftSale record is sufficient —
+     * the count automatically decreases. This method just busts the cache.
      */
     public function restoreStock(OfficeShiftSale $sale): void
     {
-        $productId = $sale->product_id;
-        $eventId = $sale->event_id;
-        $ticketType = $sale->snapshot['ticket_type'] ?? null;
-        $variantId = $sale->snapshot['variant_id'] ?? null;
-
-        if ($productId) {
-            Product::where('id', $productId)
-                ->where('sold_count', '>', 0)
-                ->decrement('sold_count');
-        }
-
-        if ($eventId) {
-            $ticketTypeKey = $ticketType ? strtolower($ticketType) : null;
-            if ($ticketTypeKey === 'with_card') {
-                Event::where('id', $eventId)
-                    ->where('sold_count_with_card', '>', 0)
-                    ->decrement('sold_count_with_card');
-            } else {
-                Event::where('id', $eventId)
-                    ->where('sold_count_without_card', '>', 0)
-                    ->decrement('sold_count_without_card');
-            }
-        }
-
-        if ($variantId) {
-            SellableVariant::where('id', $variantId)
-                ->where('sold_count', '>', 0)
-                ->decrement('sold_count');
-        }
-
         Cache::forget('shop_index');
-        if ($productId) {
-            Cache::forget("shop_item_product_{$productId}");
+        if ($sale->product_id) {
+            Cache::forget("shop_item_product_{$sale->product_id}");
         }
-        if ($eventId) {
-            Cache::forget("shop_item_event_{$eventId}");
+        if ($sale->event_id) {
+            Cache::forget("shop_item_event_{$sale->event_id}");
         }
     }
 

@@ -1,11 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ExternalLink, MailCheck, MailX, ShoppingBag, Eye } from 'lucide-react';
 import React, { useState } from 'react';
+import { SparseCashBreakdownModal } from '@backstage/components/office/cash-breakdown-modal';
 import { Badge } from '@backstage/components/ui/badge';
 import { Button } from '@backstage/components/ui/button';
 import AppLayout from '@backstage/layouts/app-layout';
 import type { BreadcrumbItem } from '@backstage/types';
-import { SparseCashBreakdownModal } from '@backstage/components/office/cash-breakdown-modal';
 
 interface SaleItem {
     id: string;
@@ -24,6 +24,7 @@ interface SaleItem {
     // online-only
     online_transaction_id?: string | null;
     transaction_ref?: string | null;
+    payment_status?: 'pending' | 'completed' | 'failed' | 'cancelled' | string | null;
     email?: string | null;
     mail_success?: boolean | null;
     processing_fee?: number | null;
@@ -80,7 +81,15 @@ function MethodBadge({ method }: { method: string }) {
 // Build render segments for a day's items.
 // Consecutive online sales with the same online_transaction_id get a shared header.
 type Segment =
-    | { kind: 'tx'; txId: string; txRef: string; email: string; mailSuccess: boolean | null; processingFee: number; items: SaleItem[] }
+    | {
+        kind: 'tx';
+        txId: string;
+        txRef: string;
+        paymentStatus: SaleItem['payment_status'];
+        email: string;
+        mailSuccess: boolean | null;
+        items: SaleItem[];
+    }
     | { kind: 'row'; item: SaleItem };
 
 function buildSegments(items: SaleItem[]): Segment[] {
@@ -99,9 +108,9 @@ function buildSegments(items: SaleItem[]): Segment[] {
                 kind: 'tx',
                 txId,
                 txRef: txItems[0].transaction_ref ?? txId,
+                paymentStatus: txItems[0].payment_status ?? null,
                 email: txItems[0].email ?? '',
                 mailSuccess: txItems[0].mail_success ?? null,
-                processingFee: Number(txItems[0].processing_fee ?? 0),
                 items: txItems,
             });
         } else {
@@ -149,6 +158,11 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
             </Button>
         </Link>
     );
+
+    function buildReceiptUrl(txRef: string) {
+        const encodedRef = encodeURIComponent(txRef);
+        return `${storeUrl}/confirmation?bag=${encodedRef}`;
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} headerActions={headerActions}>
@@ -229,7 +243,27 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                             <tbody>
                                                 {segments.map((seg, si) => {
                                                     if (seg.kind === 'tx') {
-                                                        const confirmUrl = `${storeUrl}/confirmation?bag=${seg.txRef}`;
+                                                        const confirmUrl = buildReceiptUrl(seg.txRef);
+                                                        const paymentStatus = (seg.paymentStatus ?? '').toLowerCase();
+
+                                                        const paymentStatusBadge = paymentStatus === 'completed'
+                                                            ? (
+                                                                <Badge className="border-emerald-600/30 bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/20">
+                                                                    Finalized
+                                                                </Badge>
+                                                            )
+                                                            : paymentStatus === 'pending'
+                                                                ? (
+                                                                    <Badge className="border-amber-600/30 bg-amber-600/20 text-amber-300 hover:bg-amber-600/20">
+                                                                        Pending
+                                                                    </Badge>
+                                                                )
+                                                                : (
+                                                                    <Badge variant="outline" className="capitalize">
+                                                                        {paymentStatus || 'Unknown'}
+                                                                    </Badge>
+                                                                );
+
                                                         return (
                                                             <React.Fragment key={`tx-${seg.txId}`}>
                                                                 {/* Transaction header row */}
@@ -242,6 +276,7 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                             <span className="font-mono text-xs text-muted-foreground">
                                                                                 {seg.txId}
                                                                             </span>
+                                                                            {paymentStatusBadge}
                                                                             <span className="text-xs text-muted-foreground truncate shrink min-w-0">{seg.email}</span>
                                                                             {seg.mailSuccess === true && (
                                                                                 <MailCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
@@ -272,25 +307,13 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
                                                                         key={sale.id}
                                                                         sale={sale}
                                                                         isFirst={idx === 0}
-                                                                        indent
                                                                         onViewBreakdown={() => setBreakdownSale(sale)}
                                                                     />
                                                                 ))}
 
-                                                                {seg.processingFee > 0 && (
-                                                                    <tr className="border-t border-border bg-muted/20">
-                                                                        <td className="py-2 text-xs text-muted-foreground font-mono w-[72px] shrink-0 align-middle px-4">fee</td>
-                                                                        <td className="px-2 py-2 text-xs text-muted-foreground">
-                                                                            Processing fee (paid by user)
-                                                                        </td>
-                                                                        <td className="px-2 py-2 w-[180px]">
-                                                                            <Badge variant="outline" className="text-[10px]">Online fee</Badge>
-                                                                        </td>
-                                                                        <td className="px-4 py-2 text-right w-[110px] text-xs font-semibold text-amber-700">
-                                                                            €{seg.processingFee.toFixed(2)}
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
+                                                                <tr className="border-t border-border bg-muted/20">
+                                                                    <td className="px-4 py-1.5" colSpan={4} aria-hidden="true" />
+                                                                </tr>
                                                             </React.Fragment>
                                                         );
                                                     }
@@ -328,7 +351,7 @@ export default function AllSales({ filters, sales, storeUrl }: AllSalesProps) {
     );
 }
 
-function SaleRow({ sale, isFirst, indent, onViewBreakdown }: { sale: SaleItem; isFirst: boolean; indent?: boolean; onViewBreakdown?: () => void; }) {
+function SaleRow({ sale, isFirst, onViewBreakdown }: { sale: SaleItem; isFirst: boolean; onViewBreakdown?: () => void; }) {
     const variantLabel = sale.variant_options
         ? Object.entries(sale.variant_options).map(([k, v]) => `${k}: ${v}`).join(' · ')
         : null;

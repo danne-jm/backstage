@@ -54,7 +54,7 @@ class StoreManagerController extends Controller
                     'id' => $v->id,
                     'options' => $v->options,
                     'quantity' => $v->quantity,
-                    'sold_count' => $v->sold_count,
+                    'sold_count' => $v->computedSoldCount(),
                 ]),
             ]);
 
@@ -80,8 +80,8 @@ class StoreManagerController extends Controller
                 'quantity_without_card' => $e->quantity_without_card,
                 'unlimited_quantity_without_card' => (bool) ($e->unlimited_quantity_without_card ?? false),
                 'remaining' => $e->quantity !== null ? max(0, $e->quantity - ($e->sales_count + $e->online_sales_count)) : null,
-                'remaining_with_card' => $e->quantity_with_card !== null ? max(0, $e->quantity_with_card - ($e->sold_count_with_card ?? 0)) : null,
-                'remaining_without_card' => $e->quantity_without_card !== null ? max(0, $e->quantity_without_card - ($e->sold_count_without_card ?? 0)) : null,
+                'remaining_with_card' => $e->computedRemainingWithCard(),
+                'remaining_without_card' => $e->computedRemainingWithoutCard(),
                 'responsibleUser' => $e->responsibleUser ? [
                     'id' => $e->responsibleUser->id,
                     'name' => trim(($e->responsibleUser->first_name ?? '') . ' ' . ($e->responsibleUser->last_name ?? '')),
@@ -98,7 +98,7 @@ class StoreManagerController extends Controller
                     'id' => $v->id,
                     'options' => $v->options,
                     'quantity' => $v->quantity,
-                    'sold_count' => $v->sold_count,
+                    'sold_count' => $v->computedSoldCount(),
                 ]),
             ]);
 
@@ -177,7 +177,7 @@ class StoreManagerController extends Controller
             $onlineItems = \App\Http\Resources\OnlineSaleResource::collection(
                 OnlineSale::with(['product', 'event', 'transaction'])
                     ->whereBetween('sold_at', [$from, $to])
-                    ->whereHas('transaction', fn ($q) => $q->where('payment_status', 'completed'))
+                    ->whereHas('transaction', fn ($q) => $q->whereIn('payment_status', ['pending', 'completed']))
                     ->get()
             )->resolve();
 
@@ -219,10 +219,16 @@ class StoreManagerController extends Controller
             $items = $items->concat($officeItems);
         }
 
-        $storeUrl = rtrim(
-            config('services.store.app_url', 'http://' . config('services.store.domain')),
-            '/'
-        );
+        $storeUrl = rtrim((string) config('services.store.app_url', ''), '/');
+
+        if ($storeUrl === '') {
+            $storeDomain = trim((string) config('services.store.domain', 'store.localhost'));
+            $storeUrl = $request->getScheme() . '://' . $storeDomain;
+
+            if ($request->getPort() && !str_contains($storeDomain, ':')) {
+                $storeUrl .= ':' . $request->getPort();
+            }
+        }
 
         return Inertia::render('store-manager/all-sales', [
             'filters' => [

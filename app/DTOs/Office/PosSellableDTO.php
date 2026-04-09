@@ -53,7 +53,7 @@ readonly class PosSellableDTO
             'unlimited_quantity' => $event->unlimited_quantity,
             'remaining_with_card' => $event->computedRemainingWithCard(),
             'remaining_without_card' => $event->computedRemainingWithoutCard(),
-            'remaining' => $event->unlimited_quantity ? null : ($event->quantity - ($event->sold_count_without_card ?? 0)),
+            'remaining' => $event->computedRemainingWithoutCard(),
             'start_sell_date' => $event->start_sell_date,
             'end_sell_date' => $event->end_sell_date,
             'has_stock' => $event->checkHasStock(),

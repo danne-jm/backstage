@@ -51,6 +51,7 @@ class OnlineSaleResource extends JsonResource
             // all-sales page to group and link receipts.
             'online_transaction_id' => $this->online_transaction_id,
             'transaction_ref' => $transaction?->reference_id,
+            'payment_status' => $transaction?->payment_status,
             'email' => $transaction?->email,
             'mail_success' => $transaction?->mail_success,
             'processing_fee' => $transaction ? (float) $transaction->processing_fee : null,

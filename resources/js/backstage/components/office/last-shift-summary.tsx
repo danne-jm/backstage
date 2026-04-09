@@ -123,13 +123,13 @@ export const LastShiftSummary = forwardRef<
                         <div className="flex justify-between text-sm">
                             <span>Card:</span>
                             <span className="font-medium">
-                                €{Number(lastShift.card_total ?? 0).toFixed(2)}
+                                €{Number(lastShift.total_card ?? 0).toFixed(2)}
                             </span>
                         </div>
                         <div className="mt-2 flex justify-between border-t pt-2 text-sm font-semibold">
                             <span>Total:</span>
                             <span>
-                                €{Number(lastShift.total || 0).toFixed(2)}
+                                €{(Number(lastShift.pos_cash_total || 0) + Number(lastShift.total_card || 0)).toFixed(2)}
                             </span>
                         </div>
                     </div>

@@ -215,6 +215,6 @@ class DiscountAllocator
             return null;
         }
 
-        return max(0, $event->quantity_with_card - ($event->sold_count_with_card ?? 0));
+        return max(0, $event->quantity_with_card - $event->computedSoldWithCard());
     }
 }

@@ -12,7 +12,7 @@ class StoreManagerAllSalesCompletedOnlyTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_all_sales_includes_only_completed_online_transactions_and_exposes_processing_fee(): void
+    public function test_all_sales_includes_pending_and_completed_online_transactions_with_status_metadata(): void
     {
         $this->withoutVite();
 
@@ -68,9 +68,13 @@ class StoreManagerAllSalesCompletedOnlyTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
-            ->has('sales', 1)
-            ->where('sales.0.online_transaction_id', $completedTx->id)
-            ->where('sales.0.processing_fee', 1.5)
+            ->has('sales', 2)
+            ->where('sales.0.online_transaction_id', $pendingTx->id)
+            ->where('sales.0.payment_status', 'pending')
+            ->where('sales.1.online_transaction_id', $completedTx->id)
+            ->where('sales.1.payment_status', 'completed')
+            ->where('sales.1.processing_fee', 1.5)
+            ->where('storeUrl', fn ($url) => str_contains((string) $url, 'store.localhost'))
         );
     }
 }

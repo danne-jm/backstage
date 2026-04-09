@@ -7,7 +7,7 @@ export interface SellableVariant {
     id?: string;
     options: Record<string, string>;
     quantity: number | null;
-    sold_count?: number;
+    remaining?: number | null;
 }
 
 export interface Product {

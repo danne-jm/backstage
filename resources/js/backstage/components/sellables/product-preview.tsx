@@ -225,71 +225,31 @@ export function ProductPreview({
                                         <span className="text-muted-foreground">
                                             Qty w/ ESNcard:
                                         </span>{' '}
-                                        {product.unlimited_quantity_with_card ||
-                                            product.quantity_with_card == null
+                                        {product.unlimited_quantity_with_card || product.quantity_with_card == null
                                             ? 'Unlimited'
-                                            : product.quantity_with_card}
-                                        {product.unlimited_quantity_with_card ||
-                                            product.quantity_with_card == null
-                                            ? false
-                                            : product.remaining_with_card !==
-                                            undefined &&
-                                            product.remaining_with_card !==
-                                            null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    |{' '}
-                                                    {
-                                                        product.remaining_with_card
-                                                    }{' '}
-                                                    remain
-                                                </span>
-                                            )}{' '}
+                                            : product.remaining_with_card != null
+                                                ? `${product.remaining_with_card} left / ${(product.quantity_with_card - product.remaining_with_card)} sold`
+                                                : product.quantity_with_card}{' '}
                                         |{' '}
                                         <span className="text-muted-foreground">
                                             w/o ESNcard:
                                         </span>{' '}
-                                        {product.unlimited_quantity_without_card ||
-                                            product.quantity_without_card == null
+                                        {product.unlimited_quantity_without_card || product.quantity_without_card == null
                                             ? 'Unlimited'
-                                            : product.quantity_without_card}
-                                        {product.unlimited_quantity_without_card ||
-                                            product.quantity_without_card == null
-                                            ? false
-                                            : product.remaining_without_card !==
-                                            undefined &&
-                                            product.remaining_without_card !==
-                                            null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    |{' '}
-                                                    {
-                                                        product.remaining_without_card
-                                                    }{' '}
-                                                    remain
-                                                </span>
-                                            )}
+                                            : product.remaining_without_card != null
+                                                ? `${product.remaining_without_card} left / ${(product.quantity_without_card - product.remaining_without_card)} sold`
+                                                : product.quantity_without_card}
                                     </>
                                 ) : (
                                     <>
                                         <span className="text-muted-foreground">
                                             Quantity:
                                         </span>{' '}
-                                        {product.unlimited_quantity ||
-                                            product.quantity == null
+                                        {product.unlimited_quantity || product.quantity == null
                                             ? 'Unlimited'
-                                            : product.quantity}
-                                        {product.unlimited_quantity ||
-                                            product.quantity == null
-                                            ? false
-                                            : product.remaining !== undefined &&
-                                            product.remaining !== null && (
-                                                <span className="text-gray-500">
-                                                    {' '}
-                                                    | {product.remaining}{' '}
-                                                    remain
-                                                </span>
-                                            )}
+                                            : product.remaining != null
+                                                ? `${product.remaining} left / ${product.quantity - product.remaining} sold`
+                                                : product.quantity}
                                     </>
                                 )}
                             </div>
@@ -425,12 +385,12 @@ export function ProductPreview({
 function VariantsMatrix({ product }: { product: Product }) {
     if (!product.variants || product.variants.length === 0) return null;
 
-    // Helper to format quantity
+    // Helper to format quantity as "X left / Y sold"
     const formatVariantQuantity = (v: any) => {
         if (v.quantity === null) return 'Unl.';
-        const sold = v.sold_count || 0;
-        const remaining = v.quantity - sold;
-        return `${remaining} / ${v.quantity}`;
+        const remaining = v.remaining ?? v.quantity;
+        const sold = v.quantity - remaining;
+        return `${remaining} left / ${sold} sold`;
     };
 
     if (!product.variants_config || product.variants_config.length === 0) {

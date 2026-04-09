@@ -13,7 +13,6 @@ class Product extends Sellable
         'price_without_card',
         'start_sell_date',
         'end_sell_date',
-        'sold_count',
         'type',
     ];
 
@@ -24,7 +23,6 @@ class Product extends Sellable
         'price_without_card' => 'decimal:2',
         'start_sell_date' => 'datetime',
         'end_sell_date' => 'datetime',
-        'sold_count' => 'integer',
     ];
 
     public function checkMainStock(int $qty, bool $useMemberPrice = false): void
@@ -33,7 +31,7 @@ class Product extends Sellable
             return;
         }
 
-        $remaining = max(0, $this->quantity - ($this->sold_count ?? 0));
+        $remaining = max(0, $this->quantity - $this->computedSoldCount());
         if ($remaining < $qty) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'stock' => "Insufficient stock for {$this->name}.",
@@ -41,27 +39,16 @@ class Product extends Sellable
         }
     }
 
-    public function incrementMainSoldCount(bool $useMemberPrice = false, int $count = 1): int
-    {
-        return static::where('id', $this->id)
-            ->whereRaw('(unlimited_quantity = 1 OR quantity IS NULL OR sold_count + ? <= quantity)', [$count])
-            ->increment('sold_count', $count);
-    }
-
-    public function decrementMainSoldCount(bool $useMemberPrice = false, int $count = 1): void
-    {
-        static::where('id', $this->id)
-            ->where('sold_count', '>=', $count)
-            ->decrement('sold_count', $count);
-    }
-
     /**
-     * Count actual sold units from real sale records (ignores the cached sold_count column).
+     * Count actual sold/reserved units from real sale records.
+     * Online sales are counted while pending or completed; failed/abandoned are excluded.
      */
     public function computedSoldCount(): int
     {
         $office = \App\Models\OfficeShiftSale::where('product_id', $this->id)->count();
-        $online = \App\Models\OnlineSale::where('product_id', $this->id)->count();
+        $online = \App\Models\OnlineSale::where('product_id', $this->id)
+            ->whereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed']))
+            ->count();
         return $office + $online;
     }
 

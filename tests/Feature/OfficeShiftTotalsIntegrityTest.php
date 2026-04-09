@@ -16,6 +16,61 @@ class OfficeShiftTotalsIntegrityTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_office_index_last_shift_and_all_shifts_include_online_sales_in_card_totals(): void
+    {
+        $this->withoutVite();
+
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+
+        $shift = OfficeShift::create([
+            'started_by' => $user->id,
+            'started_at' => now()->subHours(2),
+            'ended_at' => now()->subHour(),
+            'status' => 'closed',
+            'cash_total' => 7,
+            'card_total' => 5,
+            'start_cash' => 0,
+            'start_card' => 0,
+            'total_cash' => 7,
+            'total_card' => 5,
+        ]);
+
+        $transaction = OnlineTransaction::create([
+            'reference_id' => 'office-index-completed-1',
+            'total_amount' => 20,
+            'processing_fee' => 0,
+            'discount_codes' => null,
+            'payment_status' => 'completed',
+            'payment_gateway' => 'sumup',
+            'email' => 'buyer@example.com',
+            'mail_success' => true,
+            'completed_at' => now()->subHour(),
+        ]);
+
+        OnlineSale::create([
+            'online_transaction_id' => $transaction->id,
+            'office_shift_id' => $shift->id,
+            'method' => 'card',
+            'amount' => 20,
+            'ticket_type' => null,
+            'details' => [],
+            'sold_at' => now()->subMinutes(95),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('office'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->where('lastShift.card_total', 25.0)
+            ->where('lastShift.total', 32.0)
+            ->where('allShifts.0.card_total', 25.0)
+            ->where('allShifts.0.total', 32.0)
+        );
+    }
+
     public function test_claiming_orphan_online_sales_does_not_double_count_card_totals(): void
     {
         $user = User::factory()->create([

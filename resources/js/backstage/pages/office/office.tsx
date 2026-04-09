@@ -144,14 +144,12 @@ export default function Office() {
                                             <td className="px-1 py-3 text-right">
                                                 €
                                                 {Number(
-                                                    s.card_total || 0,
+                                                    s.total_card || 0,
                                                 ).toFixed(2)}
                                             </td>
                                             <td className="px-1 py-3 text-right font-medium">
                                                 €
-                                                {Number(s.total || 0).toFixed(
-                                                    2,
-                                                )}
+                                                {(Number(s.cash_total || 0) + Number(s.total_card || 0)).toFixed(2)}
                                             </td>
                                             <td className="px-1 py-3 text-right">
                                                 <Link href={`/office/${s.id}`}>

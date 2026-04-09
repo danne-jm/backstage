@@ -177,7 +177,7 @@ export function EventDialog({
                     // If quantity is limited, calculate remaining
                     quantity:
                         v.quantity !== null
-                            ? v.quantity - (v.sold_count || 0)
+                            ? (v.remaining ?? v.quantity)
                             : null,
                 })),
             );

@@ -76,7 +76,7 @@ class SellablesService
 
             if ($match) {
                 if ($remainingQuantity !== null) {
-                    $quantity = $remainingQuantity + ($match->sold_count ?? 0);
+                    $quantity = $remainingQuantity + $match->computedSoldCount();
                 }
                 $match->update(['quantity' => $quantity]);
                 $processedIds[] = $match->id;

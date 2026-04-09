@@ -86,11 +86,8 @@ export function EventPreview({
     const renderVariantList = () => (
         <div className="mt-1 space-y-0.5">
             {(event.variants || []).map((variant, idx) => {
-                const remaining =
-                    variant.quantity !== null &&
-                        variant.sold_count !== undefined
-                        ? variant.quantity - variant.sold_count
-                        : null;
+                const remaining = variant.remaining ?? variant.quantity;
+                const sold = variant.quantity !== null ? variant.quantity - (remaining ?? variant.quantity) : 0;
                 return (
                     <div
                         key={variant.id || idx}
@@ -103,13 +100,9 @@ export function EventPreview({
                         {' - '}
                         {variant.quantity === null
                             ? 'Unlimited'
-                            : `${variant.quantity} total`}
-                        {remaining !== null && (
-                            <span className="text-gray-500">
-                                {' '}
-                                | {remaining} remain
-                            </span>
-                        )}
+                            : remaining !== null
+                                ? `${remaining} left / ${sold} sold`
+                                : `${variant.quantity} total`}
                     </div>
                 );
             })}
@@ -341,52 +334,20 @@ export function EventPreview({
                                                 <span className="text-muted-foreground">
                                                     Qty w/ ESNcard:
                                                 </span>{' '}
-                                                {event.unlimited_quantity_with_card ||
-                                                    event.quantity_with_card == null
+                                                {event.unlimited_quantity_with_card || event.quantity_with_card == null
                                                     ? 'Unlimited'
-                                                    : event.quantity_with_card}
-                                                {event.unlimited_quantity_with_card ||
-                                                    event.quantity_with_card == null
-                                                    ? false
-                                                    : event.remaining_with_card !==
-                                                    undefined &&
-                                                    event.remaining_with_card !==
-                                                    null && (
-                                                        <span className="text-gray-500">
-                                                            {' '}
-                                                            |{' '}
-                                                            {
-                                                                event.remaining_with_card
-                                                            }{' '}
-                                                            remain
-                                                        </span>
-                                                    )}{' '}
+                                                    : event.remaining_with_card != null
+                                                        ? `${event.remaining_with_card} left / ${event.quantity_with_card! - event.remaining_with_card} sold`
+                                                        : event.quantity_with_card}{' '}
                                                 |{' '}
                                                 <span className="text-muted-foreground">
                                                     w/o ESNcard:
                                                 </span>{' '}
-                                                {event.unlimited_quantity_without_card ||
-                                                    event.quantity_without_card ==
-                                                    null
+                                                {event.unlimited_quantity_without_card || event.quantity_without_card == null
                                                     ? 'Unlimited'
-                                                    : event.quantity_without_card}
-                                                {event.unlimited_quantity_without_card ||
-                                                    event.quantity_without_card ==
-                                                    null
-                                                    ? false
-                                                    : event.remaining_without_card !==
-                                                    undefined &&
-                                                    event.remaining_without_card !==
-                                                    null && (
-                                                        <span className="text-gray-500">
-                                                            {' '}
-                                                            |{' '}
-                                                            {
-                                                                event.remaining_without_card
-                                                            }{' '}
-                                                            remain
-                                                        </span>
-                                                    )}
+                                                    : event.remaining_without_card != null
+                                                        ? `${event.remaining_without_card} left / ${event.quantity_without_card! - event.remaining_without_card} sold`
+                                                        : event.quantity_without_card}
                                             </div>
 
                                             {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
@@ -415,26 +376,11 @@ export function EventPreview({
                                                 <span className="text-muted-foreground">
                                                     Quantity:
                                                 </span>{' '}
-                                                {event.unlimited_quantity ||
-                                                    event.quantity == null
+                                                {event.unlimited_quantity || event.quantity == null
                                                     ? 'Unlimited'
-                                                    : event.quantity}
-                                                {event.unlimited_quantity ||
-                                                    event.quantity == null
-                                                    ? false
-                                                    : event.remaining !==
-                                                    undefined &&
-                                                    event.remaining !==
-                                                    null && (
-                                                        <span className="text-gray-500">
-                                                            {' '}
-                                                            |{' '}
-                                                            {
-                                                                event.remaining
-                                                            }{' '}
-                                                            remain
-                                                        </span>
-                                                    )}
+                                                    : event.remaining != null
+                                                        ? `${event.remaining} left / ${event.quantity! - event.remaining} sold`
+                                                        : event.quantity}
                                             </div>
 
                                             {/* Sell Online Checkbox - Inline with Quantity for Store Manager */}
