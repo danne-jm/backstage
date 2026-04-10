@@ -1,0 +1,329 @@
+{
+    "generated_at": "2026-04-09T18:45:02+00:00",
+    "products": [
+        {
+            "name": "Belgian Basket",
+            "id": "01kns2wq6stnm6cybpgmvhppny",
+            "description": "Step into the heart of Brussels with a curated collection of Belgium's finest chocolate artistry. This luxury hamper features a 500g Leonidas milk chocolate ballotin, filled with creamy pralines and hand-piped ganaches, alongside traditional Jules Destrooper almond cookies\r\nfor the perfect crunch. Experience 100% natural ingredients, including pure cocoa butter and non-GMO recipes that define the legendary Neuhaus standard.",
+            "price": 24,
+            "member_price": 0,
+            "price_with_card": 18,
+            "price_without_card": 24,
+            "start_sell_date": null,
+            "end_sell_date": null,
+            "variants_config": [
+                {
+                    "name": "Type",
+                    "options": [
+                        "Milk Chocolate",
+                        "Dark Chocolate",
+                        "White Chocolate"
+                    ]
+                }
+            ],
+            "is_variant_based": true,
+            "quantity": null,
+            "unlimited_quantity": true,
+            "variable_amount": false,
+            "quantity_with_card": null,
+            "unlimited_quantity_with_card": false,
+            "quantity_without_card": null,
+            "unlimited_quantity_without_card": false,
+            "is_online_sellable": true,
+            "instagram_link": "https://www.instagram.com/esnleuven/",
+            "variants": [
+                {
+                    "options": {
+                        "Type": "Milk Chocolate"
+                    },
+                    "quantity": 17
+                },
+                {
+                    "options": {
+                        "Type": "Dark Chocolate"
+                    },
+                    "quantity": 3
+                },
+                {
+                    "options": {
+                        "Type": "White Chocolate"
+                    },
+                    "quantity": 4
+                }
+            ],
+            "images": [
+                {
+                    "disk": "public",
+                    "path": "01knsryr40np9w066cmnhqwat0/geschenkmand-belgium-met-cuberdons.jpg",
+                    "file_name": "geschenkmand-belgium-met-cuberdons.jpg"
+                }
+            ]
+        },
+        {
+            "name": "ESN Hoodie",
+            "id": "01kns2jp6gb18c2894jfavyhe0",
+            "description": "Stylish branding Soft, comfortable, and durable fabric Nice colors Perfect for layering in cooler weather Ideal for casual outings or lounging",
+            "price": 36,
+            "member_price": 36,
+            "price_with_card": null,
+            "price_without_card": null,
+            "start_sell_date": null,
+            "end_sell_date": null,
+            "variants_config": [
+                {
+                    "name": "Size",
+                    "options": [
+                        "Small",
+                        "Medium",
+                        "Large"
+                    ]
+                },
+                {
+                    "name": "Colour",
+                    "options": [
+                        "Baby Pink",
+                        "Baby Blue",
+                        "Orange",
+                        "White",
+                        "Black"
+                    ]
+                }
+            ],
+            "is_variant_based": true,
+            "quantity": null,
+            "unlimited_quantity": true,
+            "variable_amount": false,
+            "quantity_with_card": null,
+            "unlimited_quantity_with_card": false,
+            "quantity_without_card": null,
+            "unlimited_quantity_without_card": false,
+            "is_online_sellable": true,
+            "instagram_link": null,
+            "variants": [
+                {
+                    "options": {
+                        "Size": "Small",
+                        "Colour": "Baby Pink"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Small",
+                        "Colour": "Baby Blue"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Small",
+                        "Colour": "Orange"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Small",
+                        "Colour": "White"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Small",
+                        "Colour": "Black"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Medium",
+                        "Colour": "Baby Pink"
+                    },
+                    "quantity": 14
+                },
+                {
+                    "options": {
+                        "Size": "Medium",
+                        "Colour": "Baby Blue"
+                    },
+                    "quantity": 4
+                },
+                {
+                    "options": {
+                        "Size": "Medium",
+                        "Colour": "Orange"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Medium",
+                        "Colour": "White"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Medium",
+                        "Colour": "Black"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Large",
+                        "Colour": "Baby Pink"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Large",
+                        "Colour": "Baby Blue"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Large",
+                        "Colour": "Orange"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Large",
+                        "Colour": "White"
+                    },
+                    "quantity": null
+                },
+                {
+                    "options": {
+                        "Size": "Large",
+                        "Colour": "Black"
+                    },
+                    "quantity": null
+                }
+            ],
+            "images": [
+                {
+                    "disk": "public",
+                    "path": "01knsryvr634e4kvn5n69ex2nc/482388271_18473461651067559_2039599777875452004_n.jpg",
+                    "file_name": "482388271_18473461651067559_2039599777875452004_n.jpg"
+                },
+                {
+                    "disk": "public",
+                    "path": "01knsryw3azjfjvcxykpvj9xfw/482504286_18473461663067559_7895706304236903759_n.jpg",
+                    "file_name": "482504286_18473461663067559_7895706304236903759_n.jpg"
+                },
+                {
+                    "disk": "public",
+                    "path": "01knsrywcwxemtv5pz56mxgft4/482381741_18473461672067559_4561940232074155230_n.jpg",
+                    "file_name": "482381741_18473461672067559_4561940232074155230_n.jpg"
+                }
+            ]
+        },
+        {
+            "name": "ESNcard",
+            "id": "01kns2jp578y4kvcdtbfbm5fdh",
+            "description": "The ESNcard, the membership card of the Erasmus Student Network (ESN), provides international students and trainees with access to ESN services and partners, offering discounts on housing, sport, food, bars, and more across Europe. It also allows participation in numerous events with various ESN sections during their time abroad.",
+            "price": 15,
+            "member_price": 15,
+            "price_with_card": null,
+            "price_without_card": null,
+            "start_sell_date": null,
+            "end_sell_date": null,
+            "variants_config": null,
+            "is_variant_based": false,
+            "quantity": 100,
+            "unlimited_quantity": false,
+            "variable_amount": false,
+            "quantity_with_card": null,
+            "unlimited_quantity_with_card": false,
+            "quantity_without_card": null,
+            "unlimited_quantity_without_card": false,
+            "is_online_sellable": true,
+            "instagram_link": null,
+            "variants": [],
+            "images": [
+                {
+                    "disk": "public",
+                    "path": "01knsrywr4jg4kn8jpw2h5vh8z/581052599_18429596506100180_169115814482506981_n.jpg",
+                    "file_name": "581052599_18429596506100180_169115814482506981_n.jpg"
+                }
+            ]
+        }
+    ],
+    "events": [
+        {
+            "name": "Enchanted Garden Gala",
+            "id": "01kns2jp9egxfwzssr8dvr8yz6",
+            "description": "The ESNcard, the membership card of the Erasmus Student Network (ESN), provides international students and trainees with access to ESN services and partners, offering discounts on housing, sport, food, bars, and more across Europe. It also allows participation in numerous events with various ESN sections during their time abroad.",
+            "event_date": "2026-04-27T00:00:00+00:00",
+            "start_sell_date": "2026-04-09T00:00:00+00:00",
+            "end_sell_date": "2026-06-09T00:00:00+00:00",
+            "google_spreadsheet_id": null,
+            "google_sheet_name": null,
+            "price_with_card": 6,
+            "price_without_card": 10,
+            "quantity": null,
+            "unlimited_quantity": true,
+            "variable_amount": false,
+            "quantity_with_card": null,
+            "unlimited_quantity_with_card": false,
+            "quantity_without_card": null,
+            "unlimited_quantity_without_card": false,
+            "is_online_sellable": true,
+            "instagram_link": null,
+            "notes": null,
+            "variants_config": null,
+            "is_variant_based": false,
+            "variants": [],
+            "images": [
+                {
+                    "disk": "public",
+                    "path": "01knsryxsx8va5jvxw9g717ab7/493041936_1192338469598191_2429668857329864669_n.jpg",
+                    "file_name": "493041936_1192338469598191_2429668857329864669_n.jpg"
+                },
+                {
+                    "disk": "public",
+                    "path": "01knsryyzqatnn10twg6wzfmc0/giveaway.jpg",
+                    "file_name": "giveaway.jpg"
+                }
+            ]
+        },
+        {
+            "name": "Horse Riding in Sint Joris Weert",
+            "id": "01kns2jp7q1p0e4c2z4a9anv7j",
+            "description": "The ESNcard, the membership card of the Erasmus Student Network (ESN), provides international students and trainees with access to ESN services and partners, offering discounts on housing, sport, food, bars, and more across Europe. It also allows participation in numerous events with various ESN sections during their time abroad.",
+            "event_date": "2026-04-22T00:00:00+00:00",
+            "start_sell_date": "2026-04-09T00:00:00+00:00",
+            "end_sell_date": "2026-04-14T00:00:00+00:00",
+            "google_spreadsheet_id": null,
+            "google_sheet_name": null,
+            "price_with_card": 30,
+            "price_without_card": 36,
+            "quantity": null,
+            "unlimited_quantity": false,
+            "variable_amount": true,
+            "quantity_with_card": 20,
+            "unlimited_quantity_with_card": false,
+            "quantity_without_card": 16,
+            "unlimited_quantity_without_card": false,
+            "is_online_sellable": true,
+            "instagram_link": null,
+            "notes": null,
+            "variants_config": null,
+            "is_variant_based": false,
+            "variants": [],
+            "images": [
+                {
+                    "disk": "public",
+                    "path": "01knsrz0ya68apna6ve4weswph/polo-tournament-horse-race-vintage-sport-poster-horse-race-polo-game-retro-poster-rider-animal-saddle-mustang-123789856.webp",
+                    "file_name": "polo-tournament-horse-race-vintage-sport-poster-horse-race-polo-game-retro-poster-rider-animal-saddle-mustang-123789856.webp"
+                }
+            ]
+        }
+    ]
+}
