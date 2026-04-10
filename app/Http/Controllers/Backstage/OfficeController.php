@@ -91,8 +91,8 @@ class OfficeController extends Controller
             return $data;
         })->values()->all();
 
-        $products = Product::with('variants')->get();
-        $events = Event::with('variants')->get();
+        $products = Product::with(['variants', 'media'])->get();
+        $events = Event::with(['variants', 'media'])->get();
 
         $sellables = collect($products)->map(fn($p) => \App\DTOs\Office\PosSellableDTO::fromProduct($p))
             ->concat(collect($events)->map(fn($e) => \App\DTOs\Office\PosSellableDTO::fromEvent($e)))
@@ -135,8 +135,8 @@ class OfficeController extends Controller
             'role' => $u->role,
         ]);
 
-        $products = Product::with('variants')->get();
-        $events = Event::with('variants')->get();
+        $products = Product::with(['variants', 'media'])->get();
+        $events = Event::with(['variants', 'media'])->get();
 
         $sellables = collect($products)->map(fn($p) => \App\DTOs\Office\PosSellableDTO::fromProduct($p))
             ->concat(collect($events)->map(fn($e) => \App\DTOs\Office\PosSellableDTO::fromEvent($e)))

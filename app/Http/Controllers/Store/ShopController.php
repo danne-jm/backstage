@@ -18,14 +18,14 @@ class ShopController extends Controller
         $now = now();
 
         $data = Cache::remember('shop_index', 30, function () use ($now) {
-            $events = Event::with('variants')->where('start_sell_date', '<=', $now)
+            $events = Event::with(['variants', 'media'])->where('start_sell_date', '<=', $now)
                 ->where('end_sell_date', '>=', $now)
                 ->where('is_online_sellable', true)
                 ->orderBy('event_date', 'asc')
                 ->get()
                 ->map(fn($e) => StoreSellableData::fromEvent($e)->toArray());
 
-            $products = Product::with('variants')->where('is_online_sellable', true)
+            $products = Product::with(['variants', 'media'])->where('is_online_sellable', true)
                 ->where(function ($q) use ($now) {
                     $q->whereNull('start_sell_date')->orWhere('start_sell_date', '<=', $now);
                 })
@@ -48,7 +48,7 @@ class ShopController extends Controller
 
         $item = Cache::remember($cacheKey, 60, function () use ($type, $id) {
             if ($type === 'event') {
-                $event = Event::with('variants')
+                $event = Event::with(['variants', 'media'])
                     ->where('id', $id)
                     ->where('is_online_sellable', true)
                     ->firstOrFail();
@@ -57,7 +57,7 @@ class ShopController extends Controller
             }
 
             if ($type === 'product') {
-                $product = Product::with('variants')
+                $product = Product::with(['variants', 'media'])
                     ->where('id', $id)
                     ->where('is_online_sellable', true)
                     ->firstOrFail();
@@ -103,7 +103,7 @@ class ShopController extends Controller
             ->unique()
             ->values();
 
-        $products = Product::with('variants')
+        $products = Product::with(['variants', 'media'])
             ->whereIn('id', $productIds)
             ->where('is_online_sellable', true)
             ->where(function ($q) use ($now) {
@@ -115,7 +115,7 @@ class ShopController extends Controller
             ->get()
             ->map(fn($p) => StoreItemData::fromProduct($p)->toArray());
 
-        $events = Event::with('variants')
+        $events = Event::with(['variants', 'media'])
             ->whereIn('id', $eventIds)
             ->where('is_online_sellable', true)
             ->where('start_sell_date', '<=', $now)

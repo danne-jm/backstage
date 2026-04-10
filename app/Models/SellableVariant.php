@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class SellableVariant extends Model
 {
@@ -39,13 +40,20 @@ class SellableVariant extends Model
      */
     public function computedSoldCount(): int
     {
-        $office = \App\Models\OfficeShiftSale::where('snapshot_variant_id', $this->id)->count();
-        $online = \App\Models\OnlineSale::where('details_variant_id', $this->id)
-            ->where(fn($q) => $q->whereNull('online_transaction_id')
-                ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
-            ->count();
+        return Cache::remember("sold_count_variant_{$this->id}", 30, function () {
+            $office = \App\Models\OfficeShiftSale::where('snapshot_variant_id', $this->id)->count();
+            $online = \App\Models\OnlineSale::where('details_variant_id', $this->id)
+                ->where(fn($q) => $q->whereNull('online_transaction_id')
+                    ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
+                ->count();
 
-        return $office + $online;
+            return $office + $online;
+        });
+    }
+
+    public static function bustSoldCountCache(string $id): void
+    {
+        Cache::forget("sold_count_variant_{$id}");
     }
 
     /**

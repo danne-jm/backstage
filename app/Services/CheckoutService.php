@@ -490,9 +490,14 @@ class CheckoutService
         Cache::forget('shop_index');
         foreach (array_unique($eventIds) as $id) {
             Cache::forget("shop_item_event_{$id}");
+            Event::bustSoldCountCache($id);
         }
         foreach (array_unique($productIds) as $id) {
             Cache::forget("shop_item_product_{$id}");
+            Product::bustSoldCountCache($id);
+        }
+        foreach (array_unique($variantIds) as $id) {
+            SellableVariant::bustSoldCountCache($id);
         }
     }
 

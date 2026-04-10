@@ -243,9 +243,14 @@ class SaleService
         Cache::forget('shop_index');
         if ($productId) {
             Cache::forget("shop_item_product_{$productId}");
+            Product::bustSoldCountCache($productId);
         }
         if ($eventId) {
             Cache::forget("shop_item_event_{$eventId}");
+            Event::bustSoldCountCache($eventId);
+        }
+        if ($resolvedVariant) {
+            SellableVariant::bustSoldCountCache($resolvedVariant->id);
         }
 
         return ['resolved_variant' => $resolvedVariant];
@@ -262,9 +267,15 @@ class SaleService
         Cache::forget('shop_index');
         if ($sale->product_id) {
             Cache::forget("shop_item_product_{$sale->product_id}");
+            Product::bustSoldCountCache($sale->product_id);
         }
         if ($sale->event_id) {
             Cache::forget("shop_item_event_{$sale->event_id}");
+            Event::bustSoldCountCache($sale->event_id);
+        }
+        $variantId = data_get($sale->snapshot, 'variant_id');
+        if ($variantId) {
+            SellableVariant::bustSoldCountCache($variantId);
         }
     }
 

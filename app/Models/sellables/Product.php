@@ -3,6 +3,7 @@
 namespace App\Models\sellables;
 
 use App\Models\Sellable;
+use Illuminate\Support\Facades\Cache;
 
 class Product extends Sellable
 {
@@ -45,12 +46,19 @@ class Product extends Sellable
      */
     public function computedSoldCount(): int
     {
-        $office = \App\Models\OfficeShiftSale::where('product_id', $this->id)->count();
-        $online = \App\Models\OnlineSale::where('product_id', $this->id)
-            ->where(fn($q) => $q->whereNull('online_transaction_id')
-                ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
-            ->count();
-        return $office + $online;
+        return Cache::remember("sold_count_product_{$this->id}", 30, function () {
+            $office = \App\Models\OfficeShiftSale::where('product_id', $this->id)->count();
+            $online = \App\Models\OnlineSale::where('product_id', $this->id)
+                ->where(fn($q) => $q->whereNull('online_transaction_id')
+                    ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
+                ->count();
+            return $office + $online;
+        });
+    }
+
+    public static function bustSoldCountCache(string $id): void
+    {
+        Cache::forget("sold_count_product_{$id}");
     }
 
     /**

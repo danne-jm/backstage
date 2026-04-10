@@ -3,6 +3,7 @@
 namespace App\Models\sellables;
 
 use App\Models\Sellable;
+use Illuminate\Support\Facades\Cache;
 
 class Event extends Sellable
 {
@@ -87,14 +88,16 @@ class Event extends Sellable
      */
     public function computedSoldWithCard(): int
     {
-        return \App\Models\OfficeShiftSale::where('event_id', $this->id)
-            ->whereJsonContains('snapshot->ticket_type', 'with_card')
-            ->count()
-            + \App\Models\OnlineSale::where('event_id', $this->id)
-                ->where('ticket_type', 'with_card')
-                ->where(fn($q) => $q->whereNull('online_transaction_id')
-                    ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
-                ->count();
+        return Cache::remember("sold_count_event_{$this->id}_with_card", 30, function () {
+            return \App\Models\OfficeShiftSale::where('event_id', $this->id)
+                ->whereJsonContains('snapshot->ticket_type', 'with_card')
+                ->count()
+                + \App\Models\OnlineSale::where('event_id', $this->id)
+                    ->where('ticket_type', 'with_card')
+                    ->where(fn($q) => $q->whereNull('online_transaction_id')
+                        ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
+                    ->count();
+        });
     }
 
     /**
@@ -103,20 +106,28 @@ class Event extends Sellable
      */
     public function computedSoldWithoutCard(): int
     {
-        return \App\Models\OfficeShiftSale::where('event_id', $this->id)
-            ->where(function ($q) {
-                $q->whereJsonDoesntContain('snapshot->ticket_type', 'with_card')
-                    ->orWhereNull('snapshot->ticket_type');
-            })
-            ->count()
-            + \App\Models\OnlineSale::where('event_id', $this->id)
+        return Cache::remember("sold_count_event_{$this->id}_without_card", 30, function () {
+            return \App\Models\OfficeShiftSale::where('event_id', $this->id)
                 ->where(function ($q) {
-                    $q->where('ticket_type', '!=', 'with_card')
-                        ->orWhereNull('ticket_type');
+                    $q->whereJsonDoesntContain('snapshot->ticket_type', 'with_card')
+                        ->orWhereNull('snapshot->ticket_type');
                 })
-                ->where(fn($q) => $q->whereNull('online_transaction_id')
-                    ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
-                ->count();
+                ->count()
+                + \App\Models\OnlineSale::where('event_id', $this->id)
+                    ->where(function ($q) {
+                        $q->where('ticket_type', '!=', 'with_card')
+                            ->orWhereNull('ticket_type');
+                    })
+                    ->where(fn($q) => $q->whereNull('online_transaction_id')
+                        ->orWhereHas('transaction', fn($q) => $q->whereIn('payment_status', ['pending', 'completed'])))
+                    ->count();
+        });
+    }
+
+    public static function bustSoldCountCache(string $id): void
+    {
+        Cache::forget("sold_count_event_{$id}_with_card");
+        Cache::forget("sold_count_event_{$id}_without_card");
     }
 
     /**

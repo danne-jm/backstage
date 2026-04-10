@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { TimePeriod } from '@backstage/components/store-manager/latest-card-sales-list';
 import type {
     BoardUser,
@@ -40,20 +40,33 @@ export function useStoreManager() {
     const [period, setPeriod] = useState<TimePeriod>('7days');
     const [onlinePage, setOnlinePage] = useState(1);
 
+    const abortRef = useRef<AbortController | null>(null);
+
     // ── Load data from the server ────────────────────────────────────────────
 
     const load = useCallback(
         async (page: number = 1, size: number = PAGE_SIZE) => {
+            // Cancel any in-flight request (handles StrictMode double-invoke and rapid period changes)
+            abortRef.current?.abort();
+            abortRef.current = new AbortController();
+            const signal = abortRef.current.signal;
+
             try {
                 setLoading(true);
+
+                // Single request — summary is now inlined in the data response
                 const res = await fetch(
                     `/store-manager/data?page=${page}&pageSize=${size}&period=${period}`,
-                    { credentials: 'same-origin' },
+                    { credentials: 'same-origin', signal },
                 );
-                if (!res.ok) return;
 
+                if (!res.ok) return;
                 const json = await res.json();
 
+                const salesData: Array<{ date: string; office_total: number; online_total: number }> =
+                    json.salesSummary || [];
+
+                // Batch all state updates together so React renders once
                 if (Array.isArray(json.products))
                     setProducts(
                         json.products.map((p: any) => ({
@@ -77,38 +90,12 @@ export function useStoreManager() {
 
                 setOnlineSellablesCount(json.onlineSellablesCount || 0);
                 setOnlineSalesTotal(Number(json.onlineSalesTotal || 0));
-
-                // Fetch sales chart summary
-                const days =
-                    period === 'month'
-                        ? 30
-                        : period === '7days'
-                          ? 7
-                          : period === '24hours'
-                            ? 1
-                            : period === 'lastShift'
-                              ? 0
-                              : 14;
-
-                const hourly = period === '24hours';
-                let summaryUrl = `/sales/summary?days=${days}${hourly ? '&hourly=true' : ''}`;
-
-                if (period === 'lastShift' && json.lastClosedShiftDate) {
-                    summaryUrl = `/sales/summary?from=${encodeURIComponent(json.lastClosedShiftDate)}`;
-                }
-
-                setSales([]);
-                const sres = await fetch(summaryUrl, {
-                    credentials: 'same-origin',
-                });
-                if (sres.ok) {
-                    const sj = await sres.json();
-                    setSales(sj.data || []);
-                }
+                setSales(salesData);
             } catch (e) {
+                if (e instanceof DOMException && e.name === 'AbortError') return;
                 console.error('Failed to load store-manager data', e);
             } finally {
-                setLoading(false);
+                if (!signal.aborted) setLoading(false);
             }
         },
         [period],
@@ -143,71 +130,65 @@ export function useStoreManager() {
         [onlineSales, officeSales],
     );
 
+    const dateKeys = useMemo(() => sales.map((s) => s.date), [sales]);
+    const isHourlyData = dateKeys.length > 0 && dateKeys[0].includes(':');
+
+    // Single O(M) pass over onlineSales to build lookup maps keyed by sellable+date.
+    // Avoids the previous O(N×D×M) nested reduce inside onlineSellableTotals/Series.
+    const onlineSalesIndex = useMemo(() => {
+        const byId: Record<string, { total: number; count: number }> = {};
+        const byIdAndDate: Record<string, Record<string, number>> = {};
+
+        for (const os of onlineSales) {
+            const sid = os.product_id ?? os.event_id;
+            if (!sid) continue;
+
+            const amount = parseFloat(String(os.amount || 0)) || 0;
+
+            if (!byId[sid]) byId[sid] = { total: 0, count: 0 };
+            byId[sid].total += amount;
+            byId[sid].count += 1;
+
+            const soldAt = os.sold_at || '';
+            let dateKey: string;
+            if (isHourlyData) {
+                const d = new Date(soldAt);
+                const y = d.getUTCFullYear();
+                const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+                const dy = String(d.getUTCDate()).padStart(2, '0');
+                const h = String(d.getUTCHours()).padStart(2, '0');
+                dateKey = `${y}-${mo}-${dy} ${h}:00:00`;
+            } else {
+                dateKey = soldAt.split('T')[0].split(' ')[0];
+            }
+
+            if (!byIdAndDate[sid]) byIdAndDate[sid] = {};
+            byIdAndDate[sid][dateKey] = (byIdAndDate[sid][dateKey] ?? 0) + amount;
+        }
+
+        return { byId, byIdAndDate };
+    }, [onlineSales, isHourlyData]);
+
     const onlineSellableTotals = useMemo(() => {
         const onlineItems = sellables.filter((s) => s.is_online_sellable);
         return onlineItems
             .map((s) => {
-                const total = onlineSales.reduce((acc, os) => {
-                    const amount = parseFloat(String(os.amount || 0)) || 0;
-                    if (s.type === 'product' && os.product_id === s.id)
-                        return acc + amount;
-                    if (s.type === 'event' && os.event_id === s.id)
-                        return acc + amount;
-                    return acc;
-                }, 0);
-                const count = onlineSales.reduce((acc, os) => {
-                    if (s.type === 'product' && os.product_id === s.id)
-                        return acc + 1;
-                    if (s.type === 'event' && os.event_id === s.id)
-                        return acc + 1;
-                    return acc;
-                }, 0);
+                const sid = String(s.id);
+                const { total = 0, count = 0 } = onlineSalesIndex.byId[sid] ?? {};
                 return { ...s, total, count };
             })
             .sort((a, b) => b.count - a.count);
-    }, [sellables, onlineSales]);
-
-    const dateKeys = useMemo(() => sales.map((s) => s.date), [sales]);
-    const isHourlyData = dateKeys.length > 0 && dateKeys[0].includes(':');
+    }, [sellables, onlineSalesIndex]);
 
     const onlineSellableSeries = useMemo(
         () =>
             onlineSellableTotals.map((s, idx) => {
-                const series = dateKeys.map((dk) => {
-                    return onlineSales.reduce((acc, os) => {
-                        const soldAt = os.sold_at || '';
-                        let matchKey: string;
-
-                        if (isHourlyData) {
-                            const d = new Date(soldAt);
-                            const y = d.getUTCFullYear();
-                            const mo = String(d.getUTCMonth() + 1).padStart(
-                                2,
-                                '0',
-                            );
-                            const dy = String(d.getUTCDate()).padStart(2, '0');
-                            const h = String(d.getUTCHours()).padStart(2, '0');
-                            matchKey = `${y}-${mo}-${dy} ${h}:00:00`;
-                        } else {
-                            matchKey = soldAt.split('T')[0].split(' ')[0];
-                        }
-
-                        if (matchKey !== dk) return acc;
-                        if (s.type === 'product' && os.product_id === s.id)
-                            return (
-                                acc + (parseFloat(String(os.amount || 0)) || 0)
-                            );
-                        if (s.type === 'event' && os.event_id === s.id)
-                            return (
-                                acc + (parseFloat(String(os.amount || 0)) || 0)
-                            );
-                        return acc;
-                    }, 0);
-                });
-
+                const sid = String(s.id);
+                const dateAmounts = onlineSalesIndex.byIdAndDate[sid] ?? {};
+                const series = dateKeys.map((dk) => dateAmounts[dk] ?? 0);
                 return { ...s, series, color: PALETTE[idx % PALETTE.length] };
             }),
-        [onlineSellableTotals, dateKeys, isHourlyData, onlineSales],
+        [onlineSellableTotals, dateKeys, onlineSalesIndex],
     );
 
     const sellableCounts = useMemo(

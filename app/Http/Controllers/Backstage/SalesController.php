@@ -50,7 +50,9 @@ class SalesController extends Controller
         }
 
         if ($hourly) {
-            $cacheKey = 'sales_summary_hourly_' . md5(json_encode([$start->toString(), $end->toString()]));
+            // Round end to the nearest minute so the cache key is stable within a 60s window
+            $cacheEnd = Carbon::now()->startOfMinute();
+            $cacheKey = 'sales_summary_hourly_' . md5(json_encode([$start->toString(), $cacheEnd->toString()]));
 
             $data = Cache::remember($cacheKey, 30, function () use ($start, $end) {
                 $hourBucketExpression = $this->hourBucketExpression('sold_at');
@@ -65,7 +67,7 @@ class SalesController extends Controller
                         'office_total' => 0.0,
                         'online_total' => 0.0,
                     ];
-                    $cursor->addHour();
+                    $cursor = $cursor->addHour();
                 }
 
                 $office = OfficeShiftSale::query()
@@ -98,7 +100,9 @@ class SalesController extends Controller
             return response()->json(['data' => $data]);
         }
 
-        $cacheKey = 'sales_summary_' . md5(json_encode([$start->toString(), $end->toString()]));
+        // Round end to the nearest hour so the cache key is stable within a 60-min window
+        $cacheEnd = Carbon::now()->startOfHour();
+        $cacheKey = 'sales_summary_' . md5(json_encode([$start->toString(), $cacheEnd->toString()]));
 
         $data = Cache::remember($cacheKey, 30, function () use ($start, $end) {
             $dates  = [];
@@ -111,7 +115,7 @@ class SalesController extends Controller
                     'office_total' => 0.0,
                     'online_total' => 0.0,
                 ];
-                $cursor->addDay();
+                $cursor = $cursor->addDay();
             }
 
             $office = OfficeShiftSale::query()

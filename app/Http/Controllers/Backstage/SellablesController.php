@@ -60,7 +60,7 @@ class SellablesController extends Controller
 
     protected function baseEventQuery()
     {
-        return Event::with(['responsibleUser', 'variants'])->withCount([
+        return Event::with(['responsibleUser', 'variants', 'media'])->withCount([
             'sales',
             'onlineSales',
             'sales as sales_with_card_count' => function ($query) {
@@ -80,7 +80,7 @@ class SellablesController extends Controller
 
     public function index(Request $request)
     {
-        $products = Product::with('variants')
+        $products = Product::with(['variants', 'media'])
             ->withCount(['sales', 'onlineSales'])
             ->orderBy('name')
             ->get();
