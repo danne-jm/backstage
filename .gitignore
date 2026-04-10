@@ -28,5 +28,4 @@ yarn-error.log
 /.zed
 
 /original-backstage-repo-to-refactor
-/dev-tools
 .env.realistic
