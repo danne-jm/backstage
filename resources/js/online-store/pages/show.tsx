@@ -48,6 +48,13 @@ export default function ShopShow({ item }: Props) {
     const isItemSoldOut = !item.has_stock;
     const isSoldOut = isVariantSoldOut || (!item.is_variant_based && isItemSoldOut) || (item.is_variant_based && isSelectionComplete && !currentVariant);
 
+    const isComingSoon = !!item.available_from;
+    const formatAvailableFrom = (iso: string) =>
+        new Date(iso).toLocaleDateString('en-GB', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+        });
+
     const [isAdded, setIsAdded] = useState(false);
 
     const handleAddToCart = () => {
@@ -254,7 +261,14 @@ export default function ShopShow({ item }: Props) {
                                 </div>
 
                                 <div className="mb-4 space-y-3 sm:mb-8 sm:space-y-4">
-                                    {isSoldOut ? (
+                                    {isComingSoon ? (
+                                        <div className="w-full border border-amber-300 bg-amber-50 px-6 py-3 text-center sm:px-8 sm:py-4">
+                                            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide sm:text-sm">Not available yet</p>
+                                            <p className="mt-1 text-sm text-amber-600 sm:text-base">
+                                                Available from {formatAvailableFrom(item.available_from!)}
+                                            </p>
+                                        </div>
+                                    ) : isSoldOut ? (
                                         <button
                                             type="button"
                                             disabled

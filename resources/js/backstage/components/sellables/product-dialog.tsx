@@ -101,8 +101,8 @@ export function ProductDialog({
             setProductPrice(editingProduct.price.toString());
             setProductPriceWithCard(editingProduct.price_with_card?.toString() ?? '');
             setProductPriceWithoutCard(editingProduct.price_without_card?.toString() ?? '');
-            setStartSellDate(editingProduct.start_sell_date?.split('T')[0] ?? '');
-            setEndSellDate(editingProduct.end_sell_date?.split('T')[0] ?? '');
+            setStartSellDate(editingProduct.start_sell_date?.slice(0, 16) ?? '');
+            setEndSellDate(editingProduct.end_sell_date?.slice(0, 16) ?? '');
             setProductDescription(editingProduct.description || '');
             setProductQuantity(
                 editingProduct.unlimited_quantity
@@ -727,24 +727,24 @@ export function ProductDialog({
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <Label htmlFor="product-start-sell-date" className="text-sm">
-                                        Release Date
+                                        Release Date &amp; Time
                                     </Label>
                                     <Input
                                         id="product-start-sell-date"
-                                        type="date"
+                                        type="datetime-local"
                                         value={startSellDate}
                                         onChange={(e) => setStartSellDate(e.target.value)}
                                         className="mt-1"
                                     />
-                                    <p className="mt-1 text-xs text-muted-foreground">When to show on store</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">When it becomes purchasable</p>
                                 </div>
                                 <div>
                                     <Label htmlFor="product-end-sell-date" className="text-sm">
-                                        End Date
+                                        End Date &amp; Time
                                     </Label>
                                     <Input
                                         id="product-end-sell-date"
-                                        type="date"
+                                        type="datetime-local"
                                         value={endSellDate}
                                         onChange={(e) => setEndSellDate(e.target.value)}
                                         className="mt-1"

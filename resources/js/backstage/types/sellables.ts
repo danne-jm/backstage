@@ -45,8 +45,8 @@ export interface Event {
     image: string | null;
     description: string | null;
     event_date: string;
-    start_sell_date: string;
-    end_sell_date: string;
+    start_sell_date: string | null;
+    end_sell_date: string | null;
     price_with_card: number;
     price_without_card: number;
     quantity: number | null;

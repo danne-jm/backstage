@@ -18,17 +18,19 @@ class ShopController extends Controller
         $now = now();
 
         $data = Cache::remember('shop_index', 30, function () use ($now) {
-            $events = Event::with(['variants', 'media'])->where('start_sell_date', '<=', $now)
-                ->where('end_sell_date', '>=', $now)
+            // Include events not yet expired; future start_sell_date shows as "coming soon".
+            $events = Event::with(['variants', 'media'])
                 ->where('is_online_sellable', true)
+                ->where(function ($q) use ($now) {
+                    $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
+                })
                 ->orderBy('event_date', 'asc')
                 ->get()
                 ->map(fn($e) => StoreSellableData::fromEvent($e)->toArray());
 
-            $products = Product::with(['variants', 'media'])->where('is_online_sellable', true)
-                ->where(function ($q) use ($now) {
-                    $q->whereNull('start_sell_date')->orWhere('start_sell_date', '<=', $now);
-                })
+            // Include products not yet expired; future start_sell_date shows as "coming soon".
+            $products = Product::with(['variants', 'media'])
+                ->where('is_online_sellable', true)
                 ->where(function ($q) use ($now) {
                     $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
                 })
@@ -107,9 +109,6 @@ class ShopController extends Controller
             ->whereIn('id', $productIds)
             ->where('is_online_sellable', true)
             ->where(function ($q) use ($now) {
-                $q->whereNull('start_sell_date')->orWhere('start_sell_date', '<=', $now);
-            })
-            ->where(function ($q) use ($now) {
                 $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
             })
             ->get()
@@ -118,8 +117,9 @@ class ShopController extends Controller
         $events = Event::with(['variants', 'media'])
             ->whereIn('id', $eventIds)
             ->where('is_online_sellable', true)
-            ->where('start_sell_date', '<=', $now)
-            ->where('end_sell_date', '>=', $now)
+            ->where(function ($q) use ($now) {
+                $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
+            })
             ->get()
             ->map(fn($e) => StoreItemData::fromEvent($e)->toArray());
 

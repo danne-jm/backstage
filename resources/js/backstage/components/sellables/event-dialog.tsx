@@ -111,8 +111,8 @@ export function EventDialog({
             setEventName(editingEvent.name);
             setEventDescription(editingEvent.description || '');
             setEventDate(editingEvent.event_date?.split('T')[0] || '');
-            setStartSellDate(editingEvent.start_sell_date?.split('T')[0] || '');
-            setEndSellDate(editingEvent.end_sell_date?.split('T')[0] || '');
+            setStartSellDate(editingEvent.start_sell_date?.slice(0, 16) || '');
+            setEndSellDate(editingEvent.end_sell_date?.slice(0, 16) || '');
 
             const priceWithCardValue =
                 editingEvent.price_with_card !== undefined &&
@@ -267,8 +267,8 @@ export function EventDialog({
         formData.append('name', eventName);
         if (eventDescription) formData.append('description', eventDescription);
         formData.append('event_date', eventDate);
-        formData.append('start_sell_date', startSellDate);
-        formData.append('end_sell_date', endSellDate);
+        if (startSellDate) formData.append('start_sell_date', startSellDate);
+        if (endSellDate) formData.append('end_sell_date', endSellDate);
 
         // Always send both prices; in single mode, they are identical
         const withCardToSend = formatToTwoDecimals(priceWithCard);
@@ -469,39 +469,6 @@ export function EventDialog({
                             className="mt-1 block w-full"
                         />
                         {errors.event_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.event_date}</p>}
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div className="min-w-0">
-                            <Label
-                                htmlFor="start-sell-date"
-                                className="text-sm"
-                            >
-                                Start Sell
-                            </Label>
-                            <Input
-                                id="start-sell-date"
-                                type="date"
-                                value={startSellDate}
-                                onChange={(e) =>
-                                    setStartSellDate(e.target.value)
-                                }
-                                className="mt-1 block w-full"
-                            />
-                            {errors.start_sell_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.start_sell_date}</p>}
-                        </div>
-                        <div className="min-w-0">
-                            <Label htmlFor="end-sell-date" className="text-sm">
-                                End Sell
-                            </Label>
-                            <Input
-                                id="end-sell-date"
-                                type="date"
-                                value={endSellDate}
-                                onChange={(e) => setEndSellDate(e.target.value)}
-                                className="mt-1 block w-full"
-                            />
-                            {errors.end_sell_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.end_sell_date}</p>}
-                        </div>
                     </div>
                     {/* Pricing Section: separate container, similar style to Stock Management */}
                     <div className="rounded-lg border bg-muted/5 px-4 py-3 space-y-4">
@@ -892,6 +859,37 @@ export function EventDialog({
                                 >
                                     Sellable Online
                                 </Label>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label htmlFor="event-start-sell-date" className="text-sm">
+                                        Sale Start
+                                    </Label>
+                                    <Input
+                                        id="event-start-sell-date"
+                                        type="datetime-local"
+                                        value={startSellDate}
+                                        onChange={(e) => setStartSellDate(e.target.value)}
+                                        className="mt-1"
+                                    />
+                                    <p className="mt-1 text-xs text-muted-foreground">When tickets become purchasable</p>
+                                    {errors.start_sell_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.start_sell_date}</p>}
+                                </div>
+                                <div>
+                                    <Label htmlFor="event-end-sell-date" className="text-sm">
+                                        Sale End
+                                    </Label>
+                                    <Input
+                                        id="event-end-sell-date"
+                                        type="datetime-local"
+                                        value={endSellDate}
+                                        onChange={(e) => setEndSellDate(e.target.value)}
+                                        className="mt-1"
+                                    />
+                                    <p className="mt-1 text-xs text-muted-foreground">Leave empty for no end</p>
+                                    {errors.end_sell_date && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.end_sell_date}</p>}
+                                </div>
                             </div>
 
                             <div>

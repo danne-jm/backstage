@@ -16,6 +16,7 @@ export interface StoreSellable {
     event_date?: string | null;
     member_price?: number | null;
     price_without_card?: number | null;
+    available_from?: string | null;
 }
 
 export interface StoreItem extends StoreSellable {

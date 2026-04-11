@@ -36,44 +36,102 @@ class Event extends Sellable
 
     public function checkHasStock(): bool
     {
-        return (bool) $this->unlimited_quantity
-            || is_null($this->quantity)
-            || $this->computedRemainingWithoutCard() > 0;
+        if ($this->unlimited_quantity) {
+            return true;
+        }
+        if (is_null($this->quantity)) {
+            return true;
+        }
+        // Split quantity configured — check the without-card pool.
+        if (!is_null($this->quantity_without_card)) {
+            return $this->computedRemainingWithoutCard() > 0;
+        }
+        // Universal quantity: all sales (any ticket type) count against one shared pool.
+        $totalSold = $this->computedSoldWithCard() + $this->computedSoldWithoutCard();
+        return ($this->quantity - $totalSold) > 0;
     }
 
     public function checkHasStockWithCard(): bool
     {
-        return (bool) $this->unlimited_quantity_with_card
-            || is_null($this->quantity_with_card)
-            || $this->computedRemainingWithCard() > 0;
+        if ($this->unlimited_quantity_with_card) {
+            return true;
+        }
+        // Split quantity configured — check the with-card pool.
+        if (!is_null($this->quantity_with_card)) {
+            return $this->computedRemainingWithCard() > 0;
+        }
+        // No with-card split: fall back to the universal pool if one is set.
+        if (!is_null($this->quantity)) {
+            $totalSold = $this->computedSoldWithCard() + $this->computedSoldWithoutCard();
+            return ($this->quantity - $totalSold) > 0;
+        }
+        return true;
     }
 
     public function checkHasStockWithoutCard(): bool
     {
-        return (bool) $this->unlimited_quantity_without_card
-            || is_null($this->quantity_without_card)
-            || $this->computedRemainingWithoutCard() > 0;
+        if ($this->unlimited_quantity_without_card) {
+            return true;
+        }
+        // Split quantity configured — check the without-card pool.
+        if (!is_null($this->quantity_without_card)) {
+            return $this->computedRemainingWithoutCard() > 0;
+        }
+        // No without-card split: fall back to the universal pool if one is set.
+        if (!is_null($this->quantity)) {
+            $totalSold = $this->computedSoldWithCard() + $this->computedSoldWithoutCard();
+            return ($this->quantity - $totalSold) > 0;
+        }
+        return true;
     }
 
     public function checkMainStock(int $qty, bool $useMemberPrice = false): void
     {
         if ($useMemberPrice) {
-            if ($this->unlimited_quantity_with_card || is_null($this->quantity_with_card)) {
+            // With-card split configured.
+            if (!is_null($this->quantity_with_card)) {
+                if ($this->unlimited_quantity_with_card) {
+                    return;
+                }
+                $remaining = max(0, $this->quantity_with_card - $this->computedSoldWithCard());
+                if ($remaining < $qty) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'stock' => "Insufficient member-price tickets for {$this->name}.",
+                    ]);
+                }
                 return;
             }
-            $remaining = max(0, $this->quantity_with_card - $this->computedSoldWithCard());
+            // No with-card split: check against universal pool.
+            if ($this->unlimited_quantity || is_null($this->quantity)) {
+                return;
+            }
+            $totalSold = $this->computedSoldWithCard() + $this->computedSoldWithoutCard();
+            $remaining = max(0, $this->quantity - $totalSold);
             if ($remaining < $qty) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'stock' => "Insufficient member-price tickets for {$this->name}.",
+                    'stock' => "Insufficient tickets for {$this->name}.",
                 ]);
             }
         } else {
-            $unlimited = $this->unlimited_quantity_without_card ?? $this->unlimited_quantity;
-            $qtyCol = $this->quantity_without_card ?? $this->quantity;
-            if ($unlimited || is_null($qtyCol)) {
+            // Without-card split configured.
+            if (!is_null($this->quantity_without_card)) {
+                if ($this->unlimited_quantity_without_card) {
+                    return;
+                }
+                $remaining = max(0, $this->quantity_without_card - $this->computedSoldWithoutCard());
+                if ($remaining < $qty) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'stock' => "Insufficient stock for {$this->name}.",
+                    ]);
+                }
                 return;
             }
-            $remaining = max(0, $qtyCol - $this->computedSoldWithoutCard());
+            // No without-card split: check against universal pool.
+            if ($this->unlimited_quantity || is_null($this->quantity)) {
+                return;
+            }
+            $totalSold = $this->computedSoldWithCard() + $this->computedSoldWithoutCard();
+            $remaining = max(0, $this->quantity - $totalSold);
             if ($remaining < $qty) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'stock' => "Insufficient stock for {$this->name}.",

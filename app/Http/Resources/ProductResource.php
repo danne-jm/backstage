@@ -19,7 +19,10 @@ class ProductResource extends JsonResource
 
         $remaining = ($unlimited || $quantity === null)
             ? null
-            : max(0, $quantity - $this->computedSoldCount());
+            : $this->computedRemaining();
+
+        $remainingWithCard    = $this->computedRemainingWithCard();
+        $remainingWithoutCard = $this->computedRemainingWithoutCard();
 
         return [
             'id' => $this->id, // deprecated for frontend selection
@@ -36,6 +39,12 @@ class ProductResource extends JsonResource
             'unlimited_quantity' => $unlimited,
             'quantity' => $quantity,
             'remaining' => $remaining,
+            'quantity_with_card' => $this->quantity_with_card,
+            'unlimited_quantity_with_card' => (bool) ($this->unlimited_quantity_with_card ?? false),
+            'remaining_with_card' => $remainingWithCard,
+            'quantity_without_card' => $this->quantity_without_card,
+            'unlimited_quantity_without_card' => (bool) ($this->unlimited_quantity_without_card ?? false),
+            'remaining_without_card' => $remainingWithoutCard,
             'variants_config' => $this->variants_config,
             'variants' => $this->variants->map(fn($v) => [
                 'id' => $v->id,

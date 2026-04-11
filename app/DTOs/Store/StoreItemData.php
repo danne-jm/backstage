@@ -27,6 +27,7 @@ readonly class StoreItemData
         public bool $has_stock_without_card,
         public ?string $instagram_link,
         public array $images,
+        public ?string $available_from,
     ) {
     }
 
@@ -46,6 +47,8 @@ readonly class StoreItemData
             ? $candidateMemberPrice
             : null;
 
+        $withCardStock = $product->checkHasStockWithCard();
+        $withoutCardStock = $product->checkHasStockWithoutCard();
         $hasStock = $product->checkHasStock();
 
         $variants = collect($product->variants ?? [])
@@ -73,10 +76,13 @@ readonly class StoreItemData
             is_variant_based: $isVariantBased,
             variants_config: $product->variants_config,
             variants: $variants,
-            has_stock_with_card: $hasStock,
-            has_stock_without_card: $hasStock,
+            has_stock_with_card: $withCardStock,
+            has_stock_without_card: $withoutCardStock,
             instagram_link: $product->instagram_link,
             images: $images,
+            available_from: ($product->start_sell_date && $product->start_sell_date->isFuture())
+                ? $product->start_sell_date->toIso8601String()
+                : null,
         );
     }
 
@@ -119,6 +125,9 @@ readonly class StoreItemData
             has_stock_without_card: $withoutCardStock,
             instagram_link: $event->instagram_link,
             images: $images,
+            available_from: ($event->start_sell_date && $event->start_sell_date->isFuture())
+                ? $event->start_sell_date->toIso8601String()
+                : null,
         );
     }
 
@@ -143,6 +152,7 @@ readonly class StoreItemData
             'has_stock_without_card' => $this->has_stock_without_card,
             'instagram_link' => $this->instagram_link,
             'images' => $this->images,
+            'available_from' => $this->available_from,
         ];
     }
 }

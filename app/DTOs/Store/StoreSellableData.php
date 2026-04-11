@@ -19,6 +19,7 @@ readonly class StoreSellableData
         public ?string $event_date,
         public ?float $member_price,
         public ?float $price_without_card,
+        public ?string $available_from,
     ) {}
 
     public static function fromProduct(Product $product): self
@@ -32,7 +33,10 @@ readonly class StoreSellableData
             ? $priceWithCard
             : null;
 
-        $hasStock = $product->checkHasStock();
+        $hasStock = $product->checkHasStockWithCard() || $product->checkHasStockWithoutCard();
+        $availableFrom = ($product->start_sell_date && $product->start_sell_date->isFuture())
+            ? $product->start_sell_date->toIso8601String()
+            : null;
 
         return new self(
             id: $product->id,
@@ -46,6 +50,7 @@ readonly class StoreSellableData
             event_date: null,
             member_price: $memberPrice,
             price_without_card: ($memberPrice !== null) ? $basePrice : null,
+            available_from: $availableFrom,
         );
     }
 
@@ -59,6 +64,10 @@ readonly class StoreSellableData
             ? ($event->checkHasStockWithCard() || $event->checkHasStockWithoutCard())
             : $event->checkHasStock();
 
+        $availableFrom = ($event->start_sell_date && $event->start_sell_date->isFuture())
+            ? $event->start_sell_date->toIso8601String()
+            : null;
+
         return new self(
             id: $event->id,
             type: 'event',
@@ -71,6 +80,7 @@ readonly class StoreSellableData
             event_date: $event->event_date?->toIso8601String(),
             member_price: ($priceWithCard > 0 && $priceWithCard < $priceWithoutCard) ? $priceWithCard : null,
             price_without_card: $isVariable ? $priceWithoutCard : null,
+            available_from: $availableFrom,
         );
     }
 
@@ -88,6 +98,7 @@ readonly class StoreSellableData
             'event_date' => $this->event_date,
             'member_price' => $this->member_price,
             'price_without_card' => $this->price_without_card,
+            'available_from' => $this->available_from,
         ];
     }
 }

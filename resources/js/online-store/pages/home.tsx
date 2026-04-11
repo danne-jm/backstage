@@ -62,6 +62,14 @@ export default function ShopHome({ sellables }: Props) {
         },
     ];
 
+    const formatAvailableFrom = (iso: string) => {
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+        });
+    };
+
     const filteredSellables = useMemo(() => {
         if (activeFilter === 'products') return sellables.filter((item) => item.type === 'product');
         if (activeFilter === 'events') return sellables.filter((item) => item.type === 'event');
@@ -163,9 +171,13 @@ export default function ShopHome({ sellables }: Props) {
                                     <p className="mt-1 text-base font-bold text-gray-900">
                                         €{Number(item.price).toFixed(2)}
                                     </p>
-                                    {!item.has_stock && (
+                                    {item.available_from ? (
+                                        <p className="text-xs font-medium text-amber-600">
+                                            Available {formatAvailableFrom(item.available_from)}
+                                        </p>
+                                    ) : !item.has_stock ? (
                                         <p className="text-xs font-medium text-red-600">Sold Out</p>
-                                    )}
+                                    ) : null}
                                 </div>
                             </Link>
                         ))}

@@ -268,15 +268,12 @@ class CheckoutService
             // Infer ticket_type the same way validateStockAndPrepareSales does:
             // discounted units go into the with_card pool, undiscounted into without_card.
             $ticketType = $unit['ticket_type'] ?? null;
-            if ($unit['type'] === 'event' && $ticketType === null) {
+            if ($ticketType === null) {
                 $ticketType = isset($unit['discounted_with']) ? 'with_card' : 'without_card';
             }
             $options = $unit['options'] ?? null;
 
-            $key = $unit['type'] . '_' . $unit['id'];
-            if ($unit['type'] === 'event' && $ticketType) {
-                $key .= '_' . $ticketType;
-            }
+            $key = $unit['type'] . '_' . $unit['id'] . '_' . $ticketType;
             if (!empty($options)) {
                 $opts = $options;
                 ksort($opts);
@@ -321,11 +318,23 @@ class CheckoutService
                 ]);
             }
 
+            if ($entity->start_sell_date && $entity->start_sell_date->isFuture()) {
+                throw ValidationException::withMessages([
+                    'items' => "{$entity->name} is not yet available for purchase.",
+                ]);
+            }
+
+            if ($entity->end_sell_date && $entity->end_sell_date->isPast()) {
+                throw ValidationException::withMessages([
+                    'items' => "{$entity->name} is no longer available for purchase.",
+                ]);
+            }
+
             $salesToCreate[] = [
                 'product_id' => $unit['type'] === 'product' ? $unit['id'] : null,
                 'event_id' => $unit['type'] === 'event' ? $unit['id'] : null,
                 'amount' => $unit['final_price'] ?? $unit['regular_price'],
-                'ticket_type' => $unit['type'] === 'event' ? $ticketType : null,
+                'ticket_type' => $ticketType,
                 'item_name' => $entity->name,
                 'code_used' => $unit['discounted_with'] ?? null,
                 'original_price' => $unit['regular_price'],
@@ -466,23 +475,56 @@ class CheckoutService
 
         foreach (array_unique($eventIds) as $id) {
             $event = Event::lockForUpdate()->findOrFail($id);
-            if (!$event->unlimited_quantity_with_card && $event->quantity_with_card !== null
-                && $event->computedSoldWithCard() > $event->quantity_with_card) {
-                throw new \Exception('Event member-price tickets sold out during processing.');
+
+            if ($event->quantity_with_card !== null) {
+                // Split with-card pool.
+                if (!$event->unlimited_quantity_with_card
+                    && $event->computedSoldWithCard() > $event->quantity_with_card) {
+                    throw new \Exception('Event member-price tickets sold out during processing.');
+                }
             }
-            $qtyWithout = $event->quantity_without_card ?? $event->quantity;
-            $unlimitedWithout = $event->unlimited_quantity_without_card ?? $event->unlimited_quantity;
-            if (!$unlimitedWithout && $qtyWithout !== null
-                && $event->computedSoldWithoutCard() > $qtyWithout) {
-                throw new \Exception('Event tickets sold out during processing.');
+
+            if ($event->quantity_without_card !== null) {
+                // Split without-card pool.
+                if (!$event->unlimited_quantity_without_card
+                    && $event->computedSoldWithoutCard() > $event->quantity_without_card) {
+                    throw new \Exception('Event tickets sold out during processing.');
+                }
+            } elseif (!is_null($event->quantity)) {
+                // Universal pool: all ticket types count together.
+                $unlimited = $event->unlimited_quantity;
+                if (!$unlimited) {
+                    $totalSold = $event->computedSoldWithCard() + $event->computedSoldWithoutCard();
+                    if ($totalSold > $event->quantity) {
+                        throw new \Exception('Event tickets sold out during processing.');
+                    }
+                }
             }
         }
 
         foreach (array_unique($productIds) as $id) {
             $product = Product::lockForUpdate()->findOrFail($id);
-            if (!$product->unlimited_quantity && $product->quantity !== null
-                && $product->computedSoldCount() > $product->quantity) {
-                throw new \Exception('Product sold out during processing.');
+
+            if ($product->quantity_with_card !== null) {
+                if (!$product->unlimited_quantity_with_card
+                    && $product->computedSoldWithCard() > $product->quantity_with_card) {
+                    throw new \Exception('Product member-price stock sold out during processing.');
+                }
+            }
+
+            if ($product->quantity_without_card !== null) {
+                if (!$product->unlimited_quantity_without_card
+                    && $product->computedSoldWithoutCard() > $product->quantity_without_card) {
+                    throw new \Exception('Product sold out during processing.');
+                }
+            } elseif (!is_null($product->quantity)) {
+                // Universal pool.
+                if (!$product->unlimited_quantity) {
+                    $totalSold = $product->computedSoldWithCard() + $product->computedSoldWithoutCard();
+                    if ($totalSold > $product->quantity) {
+                        throw new \Exception('Product sold out during processing.');
+                    }
+                }
             }
         }
 
