@@ -228,7 +228,7 @@ export default function ShopShow({ item }: Props) {
                                     </label>
                                     </>
                                     )}
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between gap-4">
                                         {!isComingSoon && (
                                         <div className="flex h-10 w-28 items-center border border-gray-300 sm:h-12 sm:w-32">
                                             <button
@@ -261,7 +261,7 @@ export default function ShopShow({ item }: Props) {
                                                 href={item.instagram_link}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center justify-center transition-opacity hover:opacity-70"
+                                                className="ml-auto flex items-center justify-center transition-opacity hover:opacity-70"
                                                 aria-label="View on Instagram"
                                             >
                                                 <Instagram className="h-7 w-7 text-black sm:h-8 sm:w-8" />
