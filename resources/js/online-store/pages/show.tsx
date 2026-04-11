@@ -221,10 +221,15 @@ export default function ShopShow({ item }: Props) {
                                 )}
 
                                 <div className="mb-4 sm:mb-8">
+                                    {!isComingSoon && (
+                                    <>
                                     <label htmlFor="quantity" className="mb-2 block text-sm font-medium text-gray-700">
                                         QUANTITY
                                     </label>
+                                    </>
+                                    )}
                                     <div className="flex items-center justify-between">
+                                        {!isComingSoon && (
                                         <div className="flex h-10 w-28 items-center border border-gray-300 sm:h-12 sm:w-32">
                                             <button
                                                 type="button"
@@ -250,6 +255,7 @@ export default function ShopShow({ item }: Props) {
                                                 <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                                             </button>
                                         </div>
+                                        )}
                                         {item.instagram_link && (
                                             <a
                                                 href={item.instagram_link}
