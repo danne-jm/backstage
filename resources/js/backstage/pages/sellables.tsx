@@ -101,6 +101,7 @@ export default function Sellables() {
                         open={productDialogOpen}
                         onOpenChange={setProductDialogOpen}
                         editingProduct={editingProduct}
+                        boardUsers={boardUsers}
                         onSuccess={() =>
                             setMessage(
                                 editingProduct

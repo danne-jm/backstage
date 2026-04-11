@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Plus, X } from 'lucide-react';
 import * as React from 'react';
 import { ImageManager } from '@backstage/components/sellables/image-manager';
 import { SellableDialogBase } from '@backstage/components/sellables/sellable-dialog-base';
@@ -56,7 +56,7 @@ export function EventDialog({
     const [priceWithoutCard, setPriceWithoutCard] = React.useState('');
     const [quantity, setQuantity] = React.useState('');
 
-    const [responsibleUserId, setResponsibleUserId] = React.useState('');
+    const [responsibleUserIds, setResponsibleUserIds] = React.useState<string[]>(['']);
     const [notes, setNotes] = React.useState('');
     const [variableAmount, setVariableAmount] = React.useState(false);
     const [quantityWithCard, setQuantityWithCard] = React.useState('');
@@ -98,6 +98,13 @@ export function EventDialog({
         }
     }, [errors]);
 
+    const toDatetimeLocal = (isoStr: string | null | undefined): string => {
+        if (!isoStr) return '';
+        const d = new Date(isoStr);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
     const formatToTwoDecimals = (value: string): string => {
         if (!value) return '';
         const normalized = value.replace(',', '.');
@@ -111,8 +118,8 @@ export function EventDialog({
             setEventName(editingEvent.name);
             setEventDescription(editingEvent.description || '');
             setEventDate(editingEvent.event_date?.split('T')[0] || '');
-            setStartSellDate(editingEvent.start_sell_date?.slice(0, 16) || '');
-            setEndSellDate(editingEvent.end_sell_date?.slice(0, 16) || '');
+            setStartSellDate(toDatetimeLocal(editingEvent.start_sell_date));
+            setEndSellDate(toDatetimeLocal(editingEvent.end_sell_date));
 
             const priceWithCardValue =
                 editingEvent.price_with_card !== undefined &&
@@ -147,10 +154,10 @@ export function EventDialog({
                     ? ''
                     : editingEvent.remaining?.toString() || '',
             );
-            setResponsibleUserId(
-                editingEvent.responsible_user_id
-                    ? editingEvent.responsible_user_id.toString()
-                    : '',
+            setResponsibleUserIds(
+                editingEvent.responsible_user_ids && editingEvent.responsible_user_ids.length > 0
+                    ? editingEvent.responsible_user_ids.map(String)
+                    : (editingEvent.responsible_user_id ? [editingEvent.responsible_user_id.toString()] : ['']),
             );
             setNotes(editingEvent.notes || '');
             setVariableAmount(editingEvent.variable_amount);
@@ -211,7 +218,7 @@ export function EventDialog({
             setPriceWithCard('');
             setPriceWithoutCard('');
             setQuantity('');
-            setResponsibleUserId('');
+            setResponsibleUserIds(['']);
             setNotes('');
             setVariableAmount(false);
             setQuantityWithCard('');
@@ -291,7 +298,9 @@ export function EventDialog({
         const unlimited = variableAmount ? false : !quantity;
         formData.append('unlimited_quantity', unlimited ? '1' : '0');
 
-        formData.append('responsible_user_id', responsibleUserId.toString());
+        const filteredUserIds = responsibleUserIds.filter(Boolean);
+        filteredUserIds.forEach((id) => formData.append('responsible_user_ids[]', id));
+        if (filteredUserIds.length > 0) formData.append('responsible_user_id', filteredUserIds[0]);
         if (notes) formData.append('notes', notes);
 
         formData.append('variable_amount', variableAmount ? '1' : '0');
@@ -603,34 +612,60 @@ export function EventDialog({
                             </div>
                         )}
                     </div>
-                    <div>
-                        <Label htmlFor="responsible-user">
-                            Responsible User
-                        </Label>
-                        <Select
-                            value={responsibleUserId}
-                            onValueChange={setResponsibleUserId}
-                        >
-                            <SelectTrigger
-                                id="responsible-user"
-                                className="mt-1"
+                    <div className="w-full">
+                        <div className="flex items-center justify-between mb-1">
+                            <Label>Responsible Users</Label>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => setResponsibleUserIds((prev) => [...prev, ''])}
                             >
-                                <SelectValue placeholder="Select board member" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {boardUsers.map((user) => (
-                                    <SelectItem
-                                        key={user.id}
-                                        value={user.id.toString()}
+                                <Plus className="h-3 w-3 mr-1" /> Add
+                            </Button>
+                        </div>
+                        <div className="space-y-2">
+                            {responsibleUserIds.map((uid, idx) => (
+                                <div key={idx} className="flex gap-2">
+                                    <Select
+                                        value={uid}
+                                        onValueChange={(val) =>
+                                            setResponsibleUserIds((prev) => {
+                                                const next = [...prev];
+                                                next[idx] = val;
+                                                return next;
+                                            })
+                                        }
                                     >
-                                        <span className="block max-w-[200px] truncate sm:max-w-full">
-                                            {user.name} ({user.email})
-                                        </span>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {errors.responsible_user_id && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.responsible_user_id}</p>}
+                                        <SelectTrigger className="flex-1">
+                                            <SelectValue placeholder="Select board member" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {boardUsers.map((user) => (
+                                                <SelectItem key={user.id} value={user.id.toString()}>
+                                                    {user.name} ({user.email})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {responsibleUserIds.length > 1 && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-9 w-9 p-0 shrink-0"
+                                            onClick={() =>
+                                                setResponsibleUserIds((prev) => prev.filter((_, i) => i !== idx))
+                                            }
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        {errors.responsible_user_ids && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.responsible_user_ids}</p>}
                     </div>
                     <div>
                         <Label htmlFor="notes" className="text-sm">

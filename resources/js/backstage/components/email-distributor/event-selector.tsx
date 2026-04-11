@@ -1,5 +1,12 @@
 import * as React from 'react';
 import { Label } from '@backstage/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@backstage/components/ui/select';
 
 /**
  * Event selector component
@@ -26,35 +33,31 @@ export function EventSelector({
     return (
         <div className="flex max-w-[320px] min-w-[220px] flex-1 flex-col space-y-2">
             <Label htmlFor="event-select">Event</Label>
-            <select
-                id="event-select"
+            <Select
                 value={selectedEventId || ''}
-                onChange={(e) => onChange(e.target.value || null)}
-                className="w-full rounded-md border p-2 bg-background text-foreground"
+                onValueChange={(val) => onChange(val || null)}
             >
-                <option value="" className="bg-white text-black">
-                    -- Select event --
-                </option>
-                {events.length === 0 ? (
-                    <option value="" disabled className="bg-white text-black">
-                        No upcoming events
-                    </option>
-                ) : (
-                    events.map((event) => {
-                        const date = event.start_date || event.event_date;
-                        return (
-                            <option
-                                key={event.id}
-                                value={event.id}
-                                className="bg-white text-black"
-                            >
-                                {event.name}
-                                {date && ` (${String(date).slice(0, 10)})`}
-                            </option>
-                        );
-                    })
-                )}
-            </select>
+                <SelectTrigger id="event-select" className="w-full">
+                    <SelectValue placeholder="-- Select event --" />
+                </SelectTrigger>
+                <SelectContent>
+                    {events.length === 0 ? (
+                        <SelectItem value="" disabled>
+                            No upcoming events
+                        </SelectItem>
+                    ) : (
+                        events.map((event) => {
+                            const date = event.start_date || event.event_date;
+                            return (
+                                <SelectItem key={event.id} value={event.id}>
+                                    {event.name}
+                                    {date && ` (${String(date).slice(0, 10)})`}
+                                </SelectItem>
+                            );
+                        })
+                    )}
+                </SelectContent>
+            </Select>
         </div>
     );
 }

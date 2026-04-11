@@ -16,6 +16,7 @@ class Event extends Sellable
         'price_with_card',
         'price_without_card',
         'responsible_user_id',
+        'responsible_user_ids',
         'notes',
         'attendee_filter_config'
     ];
@@ -27,6 +28,7 @@ class Event extends Sellable
         'price_with_card' => 'decimal:2',
         'price_without_card' => 'decimal:2',
         'attendee_filter_config' => 'array',
+        'responsible_user_ids' => 'array',
     ];
 
     public function responsibleUser()

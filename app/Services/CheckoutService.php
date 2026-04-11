@@ -39,19 +39,43 @@ class CheckoutService
         $warnings = [];
         $stockDemands = $this->buildStockDemands($allocation['units']);
 
+        // Track which entities have already produced a warning so we never show
+        // duplicates when the same sellable appears under both ticket_type keys.
+        $seenEntityKeys = [];
+
         foreach ($stockDemands as $demand) {
+            $entityKey = $demand['type'] . '_' . $demand['entity']->id;
+            // For variants each option-combination is independent; include options in the key.
+            if (!empty($demand['options'])) {
+                $opts = $demand['options'];
+                ksort($opts);
+                $entityKey .= '_' . md5(serialize($opts));
+            }
+
+            if (isset($seenEntityKeys[$entityKey])) {
+                continue;
+            }
+
             try {
                 $this->validateStockDemand($demand);
             } catch (ValidationException $e) {
+                $seenEntityKeys[$entityKey] = true;
+                $firstMessage = null;
                 foreach ($e->errors() as $messages) {
                     foreach ($messages as $message) {
-                        $warnings[] = $message;
+                        if ($firstMessage === null) {
+                            $firstMessage = $message;
+                        }
                     }
+                }
+                if ($firstMessage !== null) {
+                    $hint = $this->buildStockHint($demand);
+                    $warnings[] = $firstMessage . ($hint ? ' ' . $hint : '');
                 }
             }
         }
 
-        $allocation['warnings'] = array_values(array_unique($warnings));
+        $allocation['warnings'] = array_values($warnings);
 
         return $allocation;
     }
@@ -421,8 +445,9 @@ class CheckoutService
             }
 
             if ($variant->quantity !== null && $variant->computedSoldCount() + $count > $variant->quantity) {
+                $optionLabel = !empty($options) ? ' (' . implode(', ', array_values($options)) . ')' : '';
                 throw ValidationException::withMessages([
-                    'stock' => "Insufficient stock for variant of {$entity->name}.",
+                    'stock' => "Insufficient stock for {$entity->name}{$optionLabel}.",
                 ]);
             }
 
@@ -569,6 +594,43 @@ class CheckoutService
                 }
             }
         }
+    }
+
+    /**
+     * If a sellable has split with/without-card pools and the *other* pool still has
+     * stock, return a short hint suggesting the user try the other ticket type.
+     * Returns null when no helpful hint can be given.
+     */
+    protected function buildStockHint(array $demand): ?string
+    {
+        $entity = $demand['entity'];
+        $ticketType = $demand['ticket_type'];
+
+        // Only relevant for non-variant sellables with split quantity pools.
+        if (!empty($demand['options'])) {
+            return null;
+        }
+
+        $hasWithCard = !is_null($entity->quantity_with_card ?? null);
+        $hasWithoutCard = !is_null($entity->quantity_without_card ?? null);
+
+        if (!$hasWithCard && !$hasWithoutCard) {
+            return null;
+        }
+
+        if ($ticketType === 'with_card' && $hasWithoutCard) {
+            $remaining = $entity->computedRemainingWithoutCard();
+            if ($remaining > 0) {
+                return 'Stock may be available without an ESNcard discount.';
+            }
+        } elseif ($ticketType === 'without_card' && $hasWithCard) {
+            $remaining = $entity->computedRemainingWithCard();
+            if ($remaining > 0) {
+                return 'Stock may be available with an ESNcard discount.';
+            }
+        }
+
+        return null;
     }
 
     /**

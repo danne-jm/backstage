@@ -1,4 +1,11 @@
 import * as React from 'react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@backstage/components/ui/select';
 
 /**
  * Template selector component
@@ -25,26 +32,22 @@ export function TemplateSelector({
             <span className="text-xs text-muted-foreground">
                 Email Template:
             </span>
-            <select
-                className="h-8 w-[160px] rounded border text-xs bg-background text-foreground"
+            <Select
                 value={selectedId}
-                onChange={(e) =>
-                    onChange(e.target.value === 'none' ? 'none' : e.target.value)
-                }
+                onValueChange={(val) => onChange(val === 'none' ? 'none' : val)}
             >
-                <option value="none" className="bg-white text-black">
-                    No Template
-                </option>
-                {templates.map((template) => (
-                    <option
-                        key={template.id}
-                        value={template.id}
-                        className="bg-white text-black"
-                    >
-                        {template.name}
-                    </option>
-                ))}
-            </select>
+                <SelectTrigger className="h-8 w-[160px] text-xs">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="none">No Template</SelectItem>
+                    {templates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                            {template.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
         </div>
     );
 }

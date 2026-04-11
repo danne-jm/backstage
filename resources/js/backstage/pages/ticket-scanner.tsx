@@ -6,6 +6,13 @@ import { ScannedTicketsList } from '@backstage/components/ticket-scanner/scanned
 import { Button } from '@backstage/components/ui/button';
 import { Input } from '@backstage/components/ui/input';
 import { Label } from '@backstage/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@backstage/components/ui/select';
 import AppLayout from '@backstage/layouts/app-layout';
 import type { BreadcrumbItem } from '@backstage/types';
 import { Head, usePage } from '@inertiajs/react';
@@ -532,29 +539,29 @@ export default function TicketScanner() {
                         <div className="flex items-center gap-3">
                             <div className="flex-1">
                                 <Label className="sr-only">Event</Label>
-                                <select
+                                <Select
                                     value={String(selectedEvent ?? '')}
-                                    onChange={(e) =>
-                                        setSelectedEvent(e.target.value || null)
+                                    onValueChange={(val) =>
+                                        setSelectedEvent(val || null)
                                     }
-                                    className="w-full rounded-md border p-2 bg-background text-foreground"
                                 >
-                                    <option value="" className="bg-white text-black">
-                                        -- select event --
-                                    </option>
-                                    {filteredEvents.map((ev) => (
-                                        <option
-                                            key={ev.id}
-                                            value={ev.id}
-                                            className="bg-white text-black"
-                                        >
-                                            {ev.name}{' '}
-                                            {ev.event_date
-                                                ? `(${String(ev.event_date).slice(0, 10)})`
-                                                : ''}
-                                        </option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="-- select event --" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {filteredEvents.map((ev) => (
+                                            <SelectItem
+                                                key={ev.id}
+                                                value={String(ev.id)}
+                                            >
+                                                {ev.name}{' '}
+                                                {ev.event_date
+                                                    ? `(${String(ev.event_date).slice(0, 10)})`
+                                                    : ''}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div>
                                 <Button

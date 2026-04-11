@@ -163,11 +163,25 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
     // Stock warnings using has_stock (no numeric leaking)
     const cartWarnings = useMemo(() => {
         const warnings: string[] = [...serverWarnings];
+
+        // Items already covered by a server warning — skip frontend duplicates.
+        // Match by item name appearing anywhere in the server warning string.
+        const serverCoveredNames = new Set<string>();
+        serverWarnings.forEach((w) => {
+            cart.forEach((item) => {
+                if (w.includes(item.name)) serverCoveredNames.add(`${item.type}-${item.id}`);
+            });
+        });
+
         cart.forEach((item) => {
             const sellable = sellablesState.find(
                 (s) => String(s.id) === String(item.id) && s.type === item.type,
             );
             if (!sellable) return;
+
+            // If the server already reported an issue for this item, skip the
+            // frontend-generated warning to avoid showing duplicates.
+            if (serverCoveredNames.has(`${item.type}-${item.id}`)) return;
 
             if (sellable.is_variant_based && sellable.variants.length > 0) {
                 const variant = sellable.variants.find((v) => {

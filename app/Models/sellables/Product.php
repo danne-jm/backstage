@@ -15,6 +15,7 @@ class Product extends Sellable
         'start_sell_date',
         'end_sell_date',
         'type',
+        'responsible_user_ids',
     ];
 
     protected $casts = [
@@ -24,6 +25,7 @@ class Product extends Sellable
         'price_without_card' => 'decimal:2',
         'start_sell_date' => 'datetime',
         'end_sell_date' => 'datetime',
+        'responsible_user_ids' => 'array',
     ];
 
     public function checkHasStock(): bool

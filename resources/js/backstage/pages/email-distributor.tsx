@@ -1,6 +1,13 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Button } from '@backstage/components/ui/button';
 import { Label } from '@backstage/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@backstage/components/ui/select';
 import AppLayout from '@backstage/layouts/app-layout';
 import type { BreadcrumbItem } from '@backstage/types';
 import { EmailComposer } from '@backstage/components/email-distributor/email-composer';
@@ -168,25 +175,28 @@ export default function EmailDistributor() {
 
                             <div className="flex max-w-[320px] min-w-[220px] flex-1 flex-col space-y-2">
                                 <Label htmlFor="sample-user-select">Sample User</Label>
-                                <select
-                                    id="sample-user-select"
-                                    className="h-9 rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                                    value={selectedSampleIndex ?? 0}
-                                    onChange={(e) => setSelectedSampleIndex(Number(e.target.value))}
+                                <Select
+                                    value={String(selectedSampleIndex ?? 0)}
+                                    onValueChange={(val) => setSelectedSampleIndex(Number(val))}
                                     disabled={!attendeeData || attendeeData.length === 0}
                                 >
-                                    {!hasSpreadsheetConfigured ? (
-                                        <option value={0} className="bg-white text-black">No spreadsheet linked</option>
-                                    ) : !attendeeData || attendeeData.length === 0 ? (
-                                        <option value={0} className="bg-white text-black">No attendees found</option>
-                                    ) : (
-                                        attendeeData.map((attendee, idx) => (
-                                            <option key={idx} value={idx} className="bg-white text-black">
-                                                {getAttendeeName(attendee) || `User ${idx + 1}`}
-                                            </option>
-                                        ))
-                                    )}
-                                </select>
+                                    <SelectTrigger id="sample-user-select" className="w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {!hasSpreadsheetConfigured ? (
+                                            <SelectItem value="0">No spreadsheet linked</SelectItem>
+                                        ) : !attendeeData || attendeeData.length === 0 ? (
+                                            <SelectItem value="0">No attendees found</SelectItem>
+                                        ) : (
+                                            attendeeData.map((attendee, idx) => (
+                                                <SelectItem key={idx} value={String(idx)}>
+                                                    {getAttendeeName(attendee) || `User ${idx + 1}`}
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             {/* Action buttons */}

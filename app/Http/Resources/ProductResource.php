@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -45,6 +46,11 @@ class ProductResource extends JsonResource
             'quantity_without_card' => $this->quantity_without_card,
             'unlimited_quantity_without_card' => (bool) ($this->unlimited_quantity_without_card ?? false),
             'remaining_without_card' => $remainingWithoutCard,
+            'responsible_user_ids' => $this->responsible_user_ids ?? [],
+            'responsible_users' => User::whereIn('id', $this->responsible_user_ids ?? [])
+                ->get(['id', 'first_name', 'last_name', 'email'])
+                ->map(fn($u) => ['id' => $u->id, 'name' => trim("{$u->first_name} {$u->last_name}"), 'email' => $u->email])
+                ->values(),
             'variants_config' => $this->variants_config,
             'variants' => $this->variants->map(fn($v) => [
                 'id' => $v->id,

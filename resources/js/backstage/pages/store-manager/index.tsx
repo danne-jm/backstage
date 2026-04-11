@@ -131,6 +131,7 @@ export default function StoreManager() {
                 open={productDialogOpen}
                 onOpenChange={setProductDialogOpen}
                 editingProduct={editingProduct}
+                boardUsers={boardUsers}
                 preserveState={true}
                 onSuccess={() => {
                     reload(onlinePage, 100);

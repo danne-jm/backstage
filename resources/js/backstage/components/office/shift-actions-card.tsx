@@ -7,6 +7,13 @@ import { VariantSelectionModal } from '@backstage/components/office/variant-sele
 import { Button } from '@backstage/components/ui/button';
 import { Input } from '@backstage/components/ui/input';
 import { Alert, AlertTitle } from '@backstage/components/ui/alert';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@backstage/components/ui/select';
 
 export function ShiftActionsCard({ activeShift, sellables }: any) {
     const [submitting, setSubmitting] = useState(false);
@@ -607,10 +614,10 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                             </Link>
                         </div>
                         <div className="mt-2 grid grid-cols-1 gap-2">
-                            <select
+                            <Select
                                 value={String(saleProductId ?? '')}
-                                onChange={(e) => {
-                                    const id = e.target.value || null;
+                                onValueChange={(val) => {
+                                    const id = val || null;
                                     setSaleProductId(id);
                                     setSelectedVariantId(null);
                                     const item = sellables.find(
@@ -619,23 +626,23 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                                     );
                                     if (item) setSaleItemType(item.type);
                                 }}
-                                className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
                                 disabled={activeShift?.status !== 'open'}
                             >
-                                <option value="" className="bg-white text-black">
-                                    Select item...
-                                </option>
-                                {activeSellables.map((item: any) => (
-                                    <option
-                                        key={item.unique_id}
-                                        value={item.unique_id}
-                                        className="bg-white text-black"
-                                    >
-                                        {item.name} ({getQuantityLabel(item)})
-                                        {getDropdownPriceLabel(item)}
-                                    </option>
-                                ))}
-                            </select>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select item..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {activeSellables.map((item: any) => (
+                                        <SelectItem
+                                            key={item.unique_id}
+                                            value={item.unique_id}
+                                        >
+                                            {item.name} ({getQuantityLabel(item)})
+                                            {getDropdownPriceLabel(item)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         {saleItemType === 'event' && saleProductId && (
                             <div className="mt-2 space-y-2">
@@ -721,28 +728,29 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
                     <div className="mt-2 border-t pt-2">
                         <h4 className="text-xs font-medium">Custom sale</h4>
                         <div className="mt-2 grid grid-cols-1 gap-2">
-                            <select
+                            <Select
                                 value={customSaleItemId}
-                                onChange={(e) => {
-                                    setCustomSaleItemId(e.target.value);
+                                onValueChange={(val) => {
+                                    setCustomSaleItemId(val);
                                     setSelectedVariantId(null);
                                 }}
-                                className="w-full rounded-md border border-input bg-background text-foreground p-2 text-sm"
                                 disabled={activeShift?.status !== 'open'}
                             >
-                                <option value="custom" className="bg-white text-black">
-                                    Custom
-                                </option>
-                                {activeSellables.map((item: any) => (
-                                    <option
-                                        key={item.unique_id}
-                                        value={item.unique_id}
-                                        className="bg-white text-black"
-                                    >
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="custom">Custom</SelectItem>
+                                    {activeSellables.map((item: any) => (
+                                        <SelectItem
+                                            key={item.unique_id}
+                                            value={item.unique_id}
+                                        >
+                                            {item.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                             <div className="flex items-center gap-2">
                                 <Input
                                     type="number"

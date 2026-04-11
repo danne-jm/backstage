@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -52,6 +53,11 @@ class EventResource extends JsonResource
             'quantity_without_card' => $qtyWithoutCard,
             'unlimited_quantity_without_card' => $unlimitedWithoutCard,
             'google_spreadsheet_id' => $this->google_spreadsheet_id,
+            'responsible_user_ids' => $this->responsible_user_ids ?? [],
+            'responsible_users' => User::whereIn('id', $this->responsible_user_ids ?? [])
+                ->get(['id', 'first_name', 'last_name', 'email'])
+                ->map(fn($u) => ['id' => $u->id, 'name' => trim("{$u->first_name} {$u->last_name}"), 'email' => $u->email])
+                ->values(),
             'responsibleUser' => $this->responsibleUser ? [
                 'id' => $this->responsibleUser->id,
                 'first_name' => $this->responsibleUser->first_name,

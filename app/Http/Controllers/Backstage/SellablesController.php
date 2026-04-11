@@ -184,6 +184,8 @@ class SellablesController extends Controller
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
             'variants_stock' => ['nullable', 'array'],
             'variants_stock.*.remaining_quantity' => ['nullable', 'integer', 'min:0'],
+            'responsible_user_ids' => ['nullable', 'array'],
+            'responsible_user_ids.*' => ['exists:users,id'],
         ]);
 
         // Convert remaining quantities to total quantities if present
@@ -259,6 +261,8 @@ class SellablesController extends Controller
             'remaining_quantity' => ['nullable', 'integer', 'min:0'],
             'unlimited_quantity' => ['sometimes', 'boolean'],
             'responsible_user_id' => ['nullable', 'exists:users,id'],
+            'responsible_user_ids' => ['nullable', 'array'],
+            'responsible_user_ids.*' => ['exists:users,id'],
             'notes' => ['nullable', 'string'],
             'variable_amount' => ['required', 'boolean'],
             'quantity_with_card' => ['nullable', 'integer', 'min:0'],

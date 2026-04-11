@@ -1,5 +1,12 @@
 import * as React from 'react';
 import { Label } from '@backstage/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@backstage/components/ui/select';
 
 /**
  * Base component for field mapping dropdowns
@@ -30,25 +37,18 @@ export function BaseFieldMapper({
                     {description}
                 </p>
             )}
-            <select
-                id={`field-${label}`}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="mt-1 w-full rounded-md border p-2 bg-background text-foreground"
-            >
-                <option value="" className="bg-white text-black">
-                    {placeholder}
-                </option>
-                {options.map((option) => (
-                    <option
-                        key={option}
-                        value={option}
-                        className="bg-white text-black"
-                    >
-                        {option}
-                    </option>
-                ))}
-            </select>
+            <Select value={value} onValueChange={onChange}>
+                <SelectTrigger id={`field-${label}`} className="mt-1 w-full">
+                    <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                    {options.map((option) => (
+                        <SelectItem key={option} value={option}>
+                            {option}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
         </div>
     );
 }

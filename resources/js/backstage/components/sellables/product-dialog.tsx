@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import * as React from 'react';
 import { ImageManager } from '@backstage/components/sellables/image-manager';
 import { SellableDialogBase } from '@backstage/components/sellables/sellable-dialog-base';
@@ -14,8 +14,16 @@ import {
 
 import { Input } from '@backstage/components/ui/input';
 import { Label } from '@backstage/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@backstage/components/ui/select';
 import { Textarea } from '@backstage/components/ui/textarea';
 import type {
+    BoardUser,
     Product,
     SellableVariant,
     VariantConfigItem,
@@ -25,6 +33,7 @@ interface ProductDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editingProduct: Product | null;
+    boardUsers: BoardUser[];
     onSuccess: () => void;
     preserveState?: boolean;
 }
@@ -33,6 +42,7 @@ export function ProductDialog({
     open,
     onOpenChange,
     editingProduct,
+    boardUsers,
     onSuccess,
     preserveState = false,
 }: ProductDialogProps) {
@@ -64,6 +74,7 @@ export function ProductDialog({
     const [imagesToDelete, setImagesToDelete] = React.useState<
         (number | string)[]
     >([]);
+    const [responsibleUserIds, setResponsibleUserIds] = React.useState<string[]>(['']);
     const [instagramLink, setInstagramLink] = React.useState('');
     const [variantsConfig, setVariantsConfig] = React.useState<
         VariantConfigItem[]
@@ -85,6 +96,13 @@ export function ProductDialog({
         }
     }, [errors]);
 
+    const toDatetimeLocal = (isoStr: string | null | undefined): string => {
+        if (!isoStr) return '';
+        const d = new Date(isoStr);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
     const formatToTwoDecimals = (value: string): string => {
         if (!value) return '';
         const normalized = value.replace(',', '.');
@@ -101,8 +119,8 @@ export function ProductDialog({
             setProductPrice(editingProduct.price.toString());
             setProductPriceWithCard(editingProduct.price_with_card?.toString() ?? '');
             setProductPriceWithoutCard(editingProduct.price_without_card?.toString() ?? '');
-            setStartSellDate(editingProduct.start_sell_date?.slice(0, 16) ?? '');
-            setEndSellDate(editingProduct.end_sell_date?.slice(0, 16) ?? '');
+            setStartSellDate(toDatetimeLocal(editingProduct.start_sell_date));
+            setEndSellDate(toDatetimeLocal(editingProduct.end_sell_date));
             setProductDescription(editingProduct.description || '');
             setProductQuantity(
                 editingProduct.unlimited_quantity
@@ -119,6 +137,11 @@ export function ProductDialog({
                 editingProduct.unlimited_quantity_without_card
                     ? ''
                     : editingProduct.remaining_without_card?.toString() || '',
+            );
+            setResponsibleUserIds(
+                editingProduct.responsible_user_ids && editingProduct.responsible_user_ids.length > 0
+                    ? editingProduct.responsible_user_ids.map(String)
+                    : [''],
             );
             setIsOnlineSellable(editingProduct.is_online_sellable);
             setImagesList(editingProduct.images_list || []);
@@ -167,6 +190,7 @@ export function ProductDialog({
             setProductVariableAmount(false);
             setProductQuantityWithCard('');
             setProductQuantityWithoutCard('');
+            setResponsibleUserIds(['']);
             setIsOnlineSellable(false);
             setImagesList([]);
             setNewImages([]);
@@ -271,6 +295,8 @@ export function ProductDialog({
             );
         }
 
+        const filteredUserIds = responsibleUserIds.filter(Boolean);
+        filteredUserIds.forEach((id) => formData.append('responsible_user_ids[]', id));
         formData.append('is_online_sellable', isOnlineSellable ? '1' : '0');
         if (instagramLink) formData.append('instagram_link', instagramLink);
 
@@ -511,6 +537,63 @@ export function ProductDialog({
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Responsible Users */}
+                <div className="w-full">
+                    <div className="flex items-center justify-between mb-1">
+                        <Label>Responsible Users</Label>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => setResponsibleUserIds((prev) => [...prev, ''])}
+                        >
+                            <Plus className="h-3 w-3 mr-1" /> Add
+                        </Button>
+                    </div>
+                    <div className="space-y-2">
+                        {responsibleUserIds.map((uid, idx) => (
+                            <div key={idx} className="flex gap-2">
+                                <Select
+                                    value={uid}
+                                    onValueChange={(val) =>
+                                        setResponsibleUserIds((prev) => {
+                                            const next = [...prev];
+                                            next[idx] = val;
+                                            return next;
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger className="flex-1">
+                                        <SelectValue placeholder="Select board member" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {boardUsers.map((user) => (
+                                            <SelectItem key={user.id} value={user.id.toString()}>
+                                                {user.name} ({user.email})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {responsibleUserIds.length > 1 && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-9 w-9 p-0 shrink-0"
+                                        onClick={() =>
+                                            setResponsibleUserIds((prev) => prev.filter((_, i) => i !== idx))
+                                        }
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    {errors.responsible_user_ids && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.responsible_user_ids}</p>}
                 </div>
 
                 {/* Section 2: Sidebar Options */}
