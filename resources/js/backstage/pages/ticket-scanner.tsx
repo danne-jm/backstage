@@ -536,8 +536,8 @@ export default function TicketScanner() {
                     {/* Event selector */}
                     <div className="order-1 rounded-xl border border-sidebar-border/70 p-4 md:order-1 dark:border-sidebar-border">
                         <h4 className="mb-2 text-sm font-medium">Event</h4>
-                        <div className="flex items-center gap-3">
-                            <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="min-w-0 flex-1">
                                 <Label className="sr-only">Event</Label>
                                 <Select
                                     value={String(selectedEvent ?? '')}
@@ -563,14 +563,12 @@ export default function TicketScanner() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div>
-                                <Button
-                                    onClick={loadTickets}
-                                    className="whitespace-nowrap"
-                                >
-                                    Load
-                                </Button>
-                            </div>
+                            <Button
+                                onClick={loadTickets}
+                                className="shrink-0 whitespace-nowrap"
+                            >
+                                Load
+                            </Button>
                         </div>
 
                         {selectedEventObj && ticketsLoaded && (

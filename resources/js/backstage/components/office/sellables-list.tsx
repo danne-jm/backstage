@@ -9,60 +9,58 @@ interface SellablesListProps {
 }
 
 export function SellablesList({ sellables, className }: SellablesListProps) {
+    // Date-only comparison: office ignores time, only the calendar date matters.
+    const toDateOnly = (iso: string) => {
+        const d = new Date(iso);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    };
+    const todayOnly = () => {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    };
+
+    const isActive = (item: any) => {
+        const today = todayOnly();
+        if (item.start_sell_date && toDateOnly(item.start_sell_date) > today) return false;
+        if (item.end_sell_date && toDateOnly(item.end_sell_date) < today) return false;
+        return true;
+    };
+
     const sortedSellables = React.useMemo(() => {
         return [...sellables].sort((a, b) => {
-            const now = new Date().getTime();
-
-            // Helper to determine if an item has started selling
-            const hasStarted = (item: any) => {
-                // Products (no type or type='product') are usually always available unless logic says otherwise.
-                // Events have start_sell_date.
-                if (item.type === 'event') {
-                    if (!item.start_sell_date) return true; // No start date = started?
-                    const start = new Date(item.start_sell_date).getTime();
-                    return start <= now;
-                }
-                // For products, assume started/available
-                return true;
-            };
-
-            const startedA = hasStarted(a);
-            const startedB = hasStarted(b);
-
-            if (startedA && !startedB) return -1;
-            if (!startedA && startedB) return 1;
-
-            // Maintain order or sort by name/date as secondary?
-            return 0; // Stable sort preference
+            const activeA = isActive(a);
+            const activeB = isActive(b);
+            if (activeA && !activeB) return -1;
+            if (!activeA && activeB) return 1;
+            return 0;
         });
     }, [sellables]);
 
     const daysRemaining = (iso?: string | null) => {
         if (!iso) return 0;
-        const d = new Date(iso);
-        if (isNaN(d.getTime())) return 0;
-        const now = new Date();
+        const target = toDateOnly(iso);
+        const today = todayOnly();
         const msPerDay = 1000 * 60 * 60 * 24;
-        return Math.ceil((d.getTime() - now.getTime()) / msPerDay);
+        return Math.ceil((target - today) / msPerDay);
     };
 
     const sellPeriodMessage = (
         startIso?: string | null,
         endIso?: string | null,
     ) => {
-        const start = startIso ? new Date(startIso) : null;
-        const end = endIso ? new Date(endIso) : null;
-        const now = new Date();
+        const today = todayOnly();
+        const start = startIso ? toDateOnly(startIso) : null;
+        const end = endIso ? toDateOnly(endIso) : null;
         if (!start && !end) return 'Always available';
 
-        if (start && now.getTime() < start.getTime()) {
+        if (start && today < start) {
             const days = daysRemaining(startIso);
             return `Sale starts in ${days} ${days === 1 ? 'day' : 'days'}`;
         }
-        if (end && now.getTime() > end.getTime()) {
+        if (end && today > end) {
             return 'Sale ended';
         }
-        if (end && now.getTime() <= end.getTime()) {
+        if (end && today <= end) {
             const days = daysRemaining(endIso);
             return `Sale ends in ${days} ${days === 1 ? 'day' : 'days'}`;
         }
@@ -104,7 +102,7 @@ export function SellablesList({ sellables, className }: SellablesListProps) {
                                         ? `€${Number(item.price || 0).toFixed(2)}`
                                         : `€${Number(item.price_with_card || item.price || 0).toFixed(2)} / €${Number(item.price_without_card || 0).toFixed(2)}`}
                                 </div>
-                                {item.type === 'event' && (
+                                {(item.start_sell_date || item.end_sell_date) && (
                                     <div className="text-xs text-muted-foreground">
                                         {sellPeriodMessage(item.start_sell_date, item.end_sell_date)}
                                     </div>

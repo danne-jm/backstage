@@ -183,14 +183,16 @@ export function ShiftActionsCard({ activeShift, sellables }: any) {
     };
 
     const isSellableActive = (item: any) => {
+        // Office compares date-only; time of day is ignored unlike the online store.
+        const toDateOnly = (iso: string) => {
+            const d = new Date(iso);
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        };
         const now = new Date();
-        const start = item.start_sell_date
-            ? new Date(item.start_sell_date)
-            : null;
-        const end = item.end_sell_date ? new Date(item.end_sell_date) : null;
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-        if (start && now < start) return false;
-        if (end && now > end) return false;
+        if (item.start_sell_date && toDateOnly(item.start_sell_date) > today) return false;
+        if (item.end_sell_date && toDateOnly(item.end_sell_date) < today) return false;
         return true;
     };
 
