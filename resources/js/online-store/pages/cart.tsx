@@ -183,6 +183,9 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
             // frontend-generated warning to avoid showing duplicates.
             if (serverCoveredNames.has(`${item.type}-${item.id}`)) return;
 
+            // Stock info is withheld for coming-soon items; server handles those warnings.
+            if (sellable.available_from) return;
+
             if (sellable.is_variant_based && sellable.variants.length > 0) {
                 const variant = sellable.variants.find((v) => {
                     const vOpts = v.options || {};
@@ -204,7 +207,7 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                 } else if (!isDiscounted && !sellable.has_stock_without_card) {
                     warnings.push(`Insufficient stock for ${item.name}.`);
                 }
-            } else if (!sellable.has_stock) {
+            } else if (sellable.has_stock === false) {
                 warnings.push(`Insufficient stock for ${item.name}.`);
             }
         });

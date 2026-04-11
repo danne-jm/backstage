@@ -133,26 +133,29 @@ readonly class StoreItemData
 
     public function toArray(): array
     {
+        $comingSoon = $this->available_from !== null;
+
         return [
-            'id' => $this->id,
-            'type' => $this->type,
-            'name' => $this->name,
-            'description' => $this->description,
-            'image' => $this->image,
-            'price' => $this->price,
-            'has_stock' => $this->has_stock,
-            'is_variable' => $this->is_variable,
-            'event_date' => $this->event_date,
-            'member_price' => $this->member_price,
-            'price_without_card' => $this->price_without_card,
-            'is_variant_based' => $this->is_variant_based,
-            'variants_config' => $this->variants_config,
-            'variants' => $this->variants,
-            'has_stock_with_card' => $this->has_stock_with_card,
-            'has_stock_without_card' => $this->has_stock_without_card,
-            'instagram_link' => $this->instagram_link,
-            'images' => $this->images,
-            'available_from' => $this->available_from,
+            'id'                    => $this->id,
+            'type'                  => $this->type,
+            'name'                  => $this->name,
+            'description'           => $this->description,
+            'image'                 => $this->image,
+            'images'                => $this->images,
+            'event_date'            => $this->event_date,
+            'instagram_link'        => $this->instagram_link,
+            'available_from'        => $this->available_from,
+            // Price / stock / structure fields are withheld until the sale goes live.
+            'price'                 => $comingSoon ? null : $this->price,
+            'member_price'          => $comingSoon ? null : $this->member_price,
+            'price_without_card'    => $comingSoon ? null : $this->price_without_card,
+            'has_stock'             => $comingSoon ? null : $this->has_stock,
+            'is_variable'           => $comingSoon ? null : $this->is_variable,
+            'is_variant_based'      => $comingSoon ? null : $this->is_variant_based,
+            'variants_config'       => $comingSoon ? null : $this->variants_config,
+            'variants'              => $comingSoon ? [] : $this->variants,
+            'has_stock_with_card'   => $comingSoon ? null : $this->has_stock_with_card,
+            'has_stock_without_card'=> $comingSoon ? null : $this->has_stock_without_card,
         ];
     }
 }

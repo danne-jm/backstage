@@ -86,19 +86,22 @@ readonly class StoreSellableData
 
     public function toArray(): array
     {
+        $comingSoon = $this->available_from !== null;
+
         return [
-            'id' => $this->id,
-            'type' => $this->type,
-            'name' => $this->name,
-            'description' => $this->description,
-            'image' => $this->image,
-            'price' => $this->price,
-            'has_stock' => $this->has_stock,
-            'is_variable' => $this->is_variable,
-            'event_date' => $this->event_date,
-            'member_price' => $this->member_price,
-            'price_without_card' => $this->price_without_card,
-            'available_from' => $this->available_from,
+            'id'                => $this->id,
+            'type'              => $this->type,
+            'name'              => $this->name,
+            'description'       => $this->description,
+            'image'             => $this->image,
+            'event_date'        => $this->event_date,
+            'available_from'    => $this->available_from,
+            // Price / stock fields are withheld until the sale goes live.
+            'price'             => $comingSoon ? null : $this->price,
+            'member_price'      => $comingSoon ? null : $this->member_price,
+            'price_without_card'=> $comingSoon ? null : $this->price_without_card,
+            'has_stock'         => $comingSoon ? null : $this->has_stock,
+            'is_variable'       => $comingSoon ? null : $this->is_variable,
         ];
     }
 }

@@ -168,14 +168,16 @@ export default function ShopHome({ sellables }: Props) {
                                         <span aria-hidden="true" className="absolute inset-0" />
                                         {item.name}
                                     </h3>
+                                    {!item.available_from && (
                                     <p className="mt-1 text-base font-bold text-gray-900">
                                         €{Number(item.price).toFixed(2)}
                                     </p>
+                                    )}
                                     {item.available_from ? (
                                         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
                                             On sale {formatAvailableFrom(item.available_from)}
                                         </p>
-                                    ) : !item.has_stock ? (
+                                    ) : item.has_stock === false ? (
                                         <p className="text-xs font-medium text-red-600">Sold Out</p>
                                     ) : null}
                                 </div>

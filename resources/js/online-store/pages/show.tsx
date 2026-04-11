@@ -43,9 +43,10 @@ export default function ShopShow({ item }: Props) {
         item.variants_config.length === 0 ||
         item.variants_config.every((c) => selectedOptions[c.name]);
 
-    // Use has_stock from DTO — no numeric stock is leaked to frontend
+    // Use has_stock from DTO — no numeric stock is leaked to frontend.
+    // For coming-soon items all stock fields are null; treat as not sold out.
     const isVariantSoldOut = currentVariant ? !currentVariant.has_stock : false;
-    const isItemSoldOut = !item.has_stock;
+    const isItemSoldOut = item.has_stock === false; // null means unknown/coming-soon, not sold out
     const isSoldOut = isVariantSoldOut || (!item.is_variant_based && isItemSoldOut) || (item.is_variant_based && isSelectionComplete && !currentVariant);
 
     const isComingSoon = !!item.available_from;
@@ -136,13 +137,16 @@ export default function ShopShow({ item }: Props) {
                             </h1>
 
                             <>
+                                {!isComingSoon && (
                                 <p className="mb-4 text-2xl font-bold text-black sm:mb-8 sm:text-4xl">
                                     €{Number(item.price).toFixed(2)}
                                 </p>
+                                )}
 
-                                {item.member_price !== null &&
+                                {!isComingSoon &&
+                                    item.member_price !== null &&
                                     item.member_price !== undefined &&
-                                    item.member_price < item.price && (
+                                    item.member_price < (item.price ?? Infinity) && (
                                         <div className="mb-4 rounded-r-lg border-l-4 border-emerald-500 bg-emerald-50 p-3 sm:mb-6 sm:p-4">
                                             <div className="flex items-start">
                                                 <div className="flex-shrink-0">
@@ -171,7 +175,7 @@ export default function ShopShow({ item }: Props) {
                                         </div>
                                     )}
 
-                                {item.is_variable && !item.has_stock_without_card && (
+                                {!isComingSoon && item.is_variable && !item.has_stock_without_card && (
                                     <div className="mb-4 rounded-md bg-yellow-50 p-3 sm:mb-6 sm:p-4">
                                         <div className="flex">
                                             <div className="flex-shrink-0">
