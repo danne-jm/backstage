@@ -172,8 +172,8 @@ export default function ShopHome({ sellables }: Props) {
                                         €{Number(item.price).toFixed(2)}
                                     </p>
                                     {item.available_from ? (
-                                        <p className="text-xs font-medium text-amber-600">
-                                            Available {formatAvailableFrom(item.available_from)}
+                                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                                            On sale {formatAvailableFrom(item.available_from)}
                                         </p>
                                     ) : !item.has_stock ? (
                                         <p className="text-xs font-medium text-red-600">Sold Out</p>

@@ -81,11 +81,13 @@ export default function ShopCart({ sellables, processingFeeRate }: Props) {
                     ? response.data.sellables
                     : [];
 
-                setSellablesState(nextSellables);
+                // Only keep sellables that are currently purchasable (no future available_from).
+                const purchasable = nextSellables.filter((s: any) => !s.available_from);
+                setSellablesState(purchasable);
                 setSellablesFetchState('loaded');
 
-                // Prune entries whose sellable is no longer available (not returned by server)
-                const validKeys = new Set(nextSellables.map((s: any) => `${s.type}-${s.id}`));
+                // Prune entries that are unavailable or not yet on sale.
+                const validKeys = new Set(purchasable.map((s: any) => `${s.type}-${s.id}`));
                 const pruned = entries.filter((e) => validKeys.has(`${e.type}-${e.id}`));
                 if (pruned.length !== entries.length) {
                     const STORAGE_KEY = 'shop_cart_v2';

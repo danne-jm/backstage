@@ -262,10 +262,12 @@ export default function ShopShow({ item }: Props) {
 
                                 <div className="mb-4 space-y-3 sm:mb-8 sm:space-y-4">
                                     {isComingSoon ? (
-                                        <div className="w-full border border-amber-300 bg-amber-50 px-6 py-3 text-center sm:px-8 sm:py-4">
-                                            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide sm:text-sm">Not available yet</p>
-                                            <p className="mt-1 text-sm text-amber-600 sm:text-base">
-                                                Available from {formatAvailableFrom(item.available_from!)}
+                                        <div className="w-full border border-gray-200 bg-gray-50 px-6 py-4 text-center sm:px-8 sm:py-5">
+                                            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 sm:text-sm">
+                                                On Sale Soon
+                                            </p>
+                                            <p className="mt-2 text-sm font-medium text-gray-900 sm:text-base">
+                                                {formatAvailableFrom(item.available_from!)}
                                             </p>
                                         </div>
                                     ) : isSoldOut ? (
