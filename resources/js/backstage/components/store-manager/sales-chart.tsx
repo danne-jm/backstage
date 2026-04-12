@@ -24,6 +24,7 @@ interface CustomTooltipProps {
     active?: boolean;
     payload?: TooltipPayloadItem[];
     label?: string;
+    isHourlyData?: boolean;
 }
 
 export interface SalesChartProps {
@@ -77,7 +78,7 @@ const COLOR_PALETTE = [
 
 // ─── Custom tooltip ───────────────────────────────────────────────────────────
 
-function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, label, isHourlyData }: CustomTooltipProps) {
     if (!active || !payload || payload.length === 0) return null;
 
     const items = payload
@@ -89,7 +90,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
     return (
         <div className="pointer-events-none max-w-[200px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs">
             <div className="mb-1 text-[10px] font-medium sm:text-xs">
-                {label}
+                {formatAxisLabel(String(label ?? ''), isHourlyData ?? false)}
             </div>
             <div className="space-y-1">
                 {items.map((item) => (
@@ -117,8 +118,8 @@ function formatAxisLabel(value: string, isHourlyData: boolean): string {
 
     if (isHourlyData) {
         const d = new Date(value.replace(' ', 'T') + 'Z');
-        const hh = String(d.getUTCHours()).padStart(2, '0');
-        const mm = String(d.getUTCMinutes()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
 
         return `${hh}:${mm}`;
     }
@@ -431,8 +432,7 @@ export function SalesChart({
                                     width={50}
                                 />
                                 <Tooltip
-                                    content={<CustomTooltip />}
-                                    labelFormatter={(value) => formatAxisLabel(String(value), isHourlyData)}
+                                    content={<CustomTooltip isHourlyData={isHourlyData} />}
                                     cursor={{
                                         stroke: 'currentColor',
                                         strokeOpacity: 0.2,
