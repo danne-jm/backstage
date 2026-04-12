@@ -25,6 +25,7 @@ interface CustomTooltipProps {
     payload?: TooltipPayloadItem[];
     label?: string;
     isHourlyData?: boolean;
+    bucketSales?: Array<{ name: string; soldAt: string; amount: number; color: string }>;
 }
 
 export interface SalesChartProps {
@@ -78,37 +79,61 @@ const COLOR_PALETTE = [
 
 // ─── Custom tooltip ───────────────────────────────────────────────────────────
 
-function CustomTooltip({ active, payload, label, isHourlyData }: CustomTooltipProps) {
+function formatExactTime(soldAt: string): string {
+    const d = new Date(soldAt);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+}
+
+function CustomTooltip({ active, payload, label, isHourlyData, bucketSales }: CustomTooltipProps) {
     if (!active || !payload || payload.length === 0) return null;
 
     const items = payload
         .filter((p) => p.value !== undefined && p.value > 0)
         .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 
-    if (items.length === 0) return null;
+    if (items.length === 0 && (!bucketSales || bucketSales.length === 0)) return null;
 
     return (
-        <div className="pointer-events-none max-w-[200px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs">
+        <div className="pointer-events-none max-w-[220px] rounded-lg border border-sidebar-border bg-background p-2 shadow-lg sm:max-w-xs">
             <div className="mb-1 text-[10px] font-medium sm:text-xs">
                 {formatAxisLabel(String(label ?? ''), isHourlyData ?? false)}
             </div>
-            <div className="space-y-1">
-                {items.map((item) => (
-                    <div
-                        key={item.dataKey}
-                        className="flex items-center gap-1 text-[10px] sm:gap-2 sm:text-xs"
-                    >
-                        <span
-                            className="inline-block h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: item.color }}
-                        />
-                        <span className="min-w-0 truncate">{item.name}</span>
-                        <span className="ml-auto shrink-0 font-medium">
-                            €{Number(item.value).toFixed(2)}
-                        </span>
-                    </div>
-                ))}
-            </div>
+            {items.length > 0 && (
+                <div className="space-y-1">
+                    {items.map((item) => (
+                        <div
+                            key={item.dataKey}
+                            className="flex items-center gap-1 text-[10px] sm:gap-2 sm:text-xs"
+                        >
+                            <span
+                                className="inline-block h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: item.color }}
+                            />
+                            <span className="min-w-0 truncate">{item.name}</span>
+                            <span className="ml-auto shrink-0 font-medium">
+                                €{Number(item.value).toFixed(2)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {isHourlyData && bucketSales && bucketSales.length > 0 && (
+                <div className="mt-1.5 border-t border-sidebar-border pt-1.5 space-y-0.5">
+                    {bucketSales.map((s, i) => (
+                        <div key={i} className="flex items-center gap-1 text-[9px] sm:gap-2 sm:text-[10px] text-muted-foreground">
+                            <span
+                                className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+                                style={{ backgroundColor: s.color }}
+                            />
+                            <span className="shrink-0 tabular-nums">{formatExactTime(s.soldAt)}</span>
+                            <span className="min-w-0 truncate">{s.name}</span>
+                            <span className="ml-auto shrink-0">€{s.amount.toFixed(2)}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
@@ -286,6 +311,32 @@ export function SalesChart({
                 point[meta.name] = total;
             });
 
+            if (isHourlyData) {
+                const bucketSales: Array<{ name: string; soldAt: string; amount: number; color: string }> = [];
+                const collectBucketSales = (salesList: (OnlineSale | OfficeSale)[]) => {
+                    salesList.forEach((os) => {
+                        if (!matchDate(os.sold_at || '', dk)) return;
+                        const name = os.product?.name || os.event?.name || 'Unknown';
+                        const color = sellableColorMap.get(name) ?? COLOR_PALETTE[0];
+                        bucketSales.push({
+                            name,
+                            soldAt: os.sold_at || '',
+                            amount: parseFloat(String(os.amount || 0)) || 0,
+                            color,
+                        });
+                    });
+                };
+                if (showCard) {
+                    collectBucketSales(onlineSales);
+                    collectBucketSales(officeSales.filter((os) => os.method === 'card'));
+                }
+                if (showOffice) {
+                    collectBucketSales(officeSales.filter((os) => os.method !== 'card'));
+                }
+                bucketSales.sort((a, b) => a.soldAt.localeCompare(b.soldAt));
+                point.__bucketSales = bucketSales;
+            }
+
             return point;
         });
 
@@ -432,7 +483,10 @@ export function SalesChart({
                                     width={50}
                                 />
                                 <Tooltip
-                                    content={<CustomTooltip isHourlyData={isHourlyData} />}
+                                    content={(props) => {
+                                        const bucketSales = (props.payload?.[0]?.payload as Record<string, unknown>)?.__bucketSales as CustomTooltipProps['bucketSales'] | undefined;
+                                        return <CustomTooltip {...props} isHourlyData={isHourlyData} bucketSales={bucketSales} />;
+                                    }}
                                     cursor={{
                                         stroke: 'currentColor',
                                         strokeOpacity: 0.2,
