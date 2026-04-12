@@ -67,6 +67,7 @@ class EventResource extends JsonResource
             'remaining_with_card' => $remainingWithCard,
             'remaining_without_card' => $remainingWithoutCard,
             'is_online_sellable' => (bool) $this->is_online_sellable,
+            'hide_until_sale' => (bool) $this->hide_until_sale,
             'image' => $this->image,
             'images_list' => $this->images_list,
             'instagram_link' => $this->instagram_link,

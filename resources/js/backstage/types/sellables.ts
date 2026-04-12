@@ -32,6 +32,7 @@ export interface Product {
     remaining_with_card?: number;
     remaining_without_card?: number;
     is_online_sellable: boolean;
+    hide_until_sale?: boolean;
     responsible_user_ids?: number[];
     responsible_users?: { id: number; name: string; email: string }[];
     images_list?: { id: number | string; url: string }[];
@@ -72,6 +73,7 @@ export interface Event {
     remaining_with_card: number;
     remaining_without_card: number;
     is_online_sellable: boolean;
+    hide_until_sale?: boolean;
     images_list?: { id: number | string; url: string }[];
     instagram_link?: string | null;
     variants_config?: VariantConfigItem[] | null;

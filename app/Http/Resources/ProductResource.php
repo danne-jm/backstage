@@ -65,6 +65,7 @@ class ProductResource extends JsonResource
             'instagram_link' => $this->instagram_link,
             'variable_amount' => (bool) $this->variable_amount,
             'is_online_sellable' => (bool) $this->is_online_sellable,
+            'hide_until_sale' => (bool) $this->hide_until_sale,
             'type' => 'product',
         ];
     }

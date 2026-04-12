@@ -18,21 +18,33 @@ class ShopController extends Controller
         $now = now();
 
         $data = Cache::remember('shop_index', 30, function () use ($now) {
-            // Include events not yet expired; future start_sell_date shows as "coming soon".
+            // Include events not yet expired; future start_sell_date shows as "coming soon"
+            // unless hide_until_sale is set, in which case they are hidden until sale starts.
             $events = Event::with(['variants', 'media'])
                 ->where('is_online_sellable', true)
                 ->where(function ($q) use ($now) {
                     $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
                 })
+                ->where(function ($q) use ($now) {
+                    $q->where('hide_until_sale', false)
+                      ->orWhereNull('start_sell_date')
+                      ->orWhere('start_sell_date', '<=', $now);
+                })
                 ->orderBy('event_date', 'asc')
                 ->get()
                 ->map(fn($e) => StoreSellableData::fromEvent($e)->toArray());
 
-            // Include products not yet expired; future start_sell_date shows as "coming soon".
+            // Include products not yet expired; future start_sell_date shows as "coming soon"
+            // unless hide_until_sale is set, in which case they are hidden until sale starts.
             $products = Product::with(['variants', 'media'])
                 ->where('is_online_sellable', true)
                 ->where(function ($q) use ($now) {
                     $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
+                })
+                ->where(function ($q) use ($now) {
+                    $q->where('hide_until_sale', false)
+                      ->orWhereNull('start_sell_date')
+                      ->orWhere('start_sell_date', '<=', $now);
                 })
                 ->orderBy('name')
                 ->get()
@@ -49,10 +61,17 @@ class ShopController extends Controller
         $cacheKey = "shop_item_{$type}_{$id}";
 
         $item = Cache::remember($cacheKey, 60, function () use ($type, $id) {
+            $now = now();
+
             if ($type === 'event') {
                 $event = Event::with(['variants', 'media'])
                     ->where('id', $id)
                     ->where('is_online_sellable', true)
+                    ->where(function ($q) use ($now) {
+                        $q->where('hide_until_sale', false)
+                          ->orWhereNull('start_sell_date')
+                          ->orWhere('start_sell_date', '<=', $now);
+                    })
                     ->firstOrFail();
 
                 return StoreItemData::fromEvent($event)->toArray();
@@ -62,6 +81,11 @@ class ShopController extends Controller
                 $product = Product::with(['variants', 'media'])
                     ->where('id', $id)
                     ->where('is_online_sellable', true)
+                    ->where(function ($q) use ($now) {
+                        $q->where('hide_until_sale', false)
+                          ->orWhereNull('start_sell_date')
+                          ->orWhere('start_sell_date', '<=', $now);
+                    })
                     ->firstOrFail();
 
                 return StoreItemData::fromProduct($product)->toArray();
@@ -111,6 +135,11 @@ class ShopController extends Controller
             ->where(function ($q) use ($now) {
                 $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
             })
+            ->where(function ($q) use ($now) {
+                $q->where('hide_until_sale', false)
+                  ->orWhereNull('start_sell_date')
+                  ->orWhere('start_sell_date', '<=', $now);
+            })
             ->get()
             ->map(fn($p) => StoreItemData::fromProduct($p)->toArray());
 
@@ -119,6 +148,11 @@ class ShopController extends Controller
             ->where('is_online_sellable', true)
             ->where(function ($q) use ($now) {
                 $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now);
+            })
+            ->where(function ($q) use ($now) {
+                $q->where('hide_until_sale', false)
+                  ->orWhereNull('start_sell_date')
+                  ->orWhere('start_sell_date', '<=', $now);
             })
             ->get()
             ->map(fn($e) => StoreItemData::fromEvent($e)->toArray());

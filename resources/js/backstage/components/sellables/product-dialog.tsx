@@ -56,8 +56,7 @@ export function ProductDialog({
     const [startSellDate, setStartSellDate] = React.useState('');
     const [endSellDate, setEndSellDate] = React.useState('');
 
-    const [productVariableAmount, setProductVariableAmount] =
-        React.useState(false);
+    // productVariableAmount derived from stockMode === 'esncard'
     const [productQuantityWithCard, setProductQuantityWithCard] =
         React.useState('');
     const [productQuantityWithoutCard, setProductQuantityWithoutCard] =
@@ -80,9 +79,10 @@ export function ProductDialog({
         VariantConfigItem[]
     >([]);
     const [variants, setVariants] = React.useState<SellableVariant[]>([]);
-    const [stockMode, setStockMode] = React.useState<'simple' | 'variants'>(
+    const [stockMode, setStockMode] = React.useState<'simple' | 'esncard' | 'variants'>(
         'simple',
     );
+    const [hideUntilSale, setHideUntilSale] = React.useState(false);
     const [errors, setErrors] = React.useState<Record<string, string>>({});
 
     React.useEffect(() => {
@@ -127,7 +127,6 @@ export function ProductDialog({
                     ? ''
                     : editingProduct.remaining?.toString() || '',
             );
-            setProductVariableAmount(Boolean(editingProduct.variable_amount));
             setProductQuantityWithCard(
                 editingProduct.unlimited_quantity_with_card
                     ? ''
@@ -144,6 +143,7 @@ export function ProductDialog({
                     : [''],
             );
             setIsOnlineSellable(editingProduct.is_online_sellable);
+            setHideUntilSale(editingProduct.hide_until_sale ?? false);
             setImagesList(editingProduct.images_list || []);
             setNewImages([]);
             setImagesToDelete([]);
@@ -158,21 +158,22 @@ export function ProductDialog({
                             : null,
                 })),
             );
-            setStockMode(
-                (editingProduct.variants_config || []).length > 0
-                    ? 'variants'
-                    : 'simple',
-            );
+            if ((editingProduct.variants_config || []).length > 0) {
+                setStockMode('variants');
+            } else if (editingProduct.variable_amount) {
+                setStockMode('esncard');
+            } else {
+                setStockMode('simple');
+            }
 
             // Default Open States
             setIsOnlineSectionOpen(true);
 
-            const isSimpleStock =
-                !editingProduct.variants_config ||
-                editingProduct.variants_config.length === 0;
+            const isComplexStock =
+                (editingProduct.variants_config || []).length > 0;
             const isMobile = window.matchMedia('(max-width: 640px)').matches;
 
-            if (isMobile || isSimpleStock) {
+            if (isMobile || !isComplexStock) {
                 setIsStockSectionOpen(true);
             } else {
                 setIsStockSectionOpen(false);
@@ -187,11 +188,11 @@ export function ProductDialog({
             setEndSellDate('');
             setProductDescription('');
             setProductQuantity('');
-            setProductVariableAmount(false);
             setProductQuantityWithCard('');
             setProductQuantityWithoutCard('');
             setResponsibleUserIds(['']);
             setIsOnlineSellable(false);
+            setHideUntilSale(false);
             setImagesList([]);
             setNewImages([]);
             setImagesToDelete([]);
@@ -256,13 +257,14 @@ export function ProductDialog({
             formData.append('price_with_card', '');
             formData.append('price_without_card', '');
         }
-        if (startSellDate) formData.append('start_sell_date', startSellDate);
-        if (endSellDate) formData.append('end_sell_date', endSellDate);
+        formData.append('start_sell_date', startSellDate);
+        formData.append('end_sell_date', endSellDate);
         if (productDescription)
             formData.append('description', productDescription);
-        formData.append('variable_amount', productVariableAmount ? '1' : '0');
+        const isEsncardSplit = stockMode === 'esncard';
+        formData.append('variable_amount', isEsncardSplit ? '1' : '0');
 
-        if (stockMode === 'simple' && !productVariableAmount) {
+        if (stockMode === 'simple') {
             if (productQuantity) {
                 formData.append('remaining_quantity', productQuantity);
             }
@@ -271,7 +273,7 @@ export function ProductDialog({
             formData.append('unlimited_quantity', '0');
         }
 
-        if (stockMode === 'simple' && productVariableAmount) {
+        if (isEsncardSplit) {
             if (productQuantityWithCard) {
                 formData.append(
                     'remaining_quantity_with_card',
@@ -298,6 +300,7 @@ export function ProductDialog({
         const filteredUserIds = responsibleUserIds.filter(Boolean);
         filteredUserIds.forEach((id) => formData.append('responsible_user_ids[]', id));
         formData.append('is_online_sellable', isOnlineSellable ? '1' : '0');
+        formData.append('hide_until_sale', hideUntilSale ? '1' : '0');
         if (instagramLink) formData.append('instagram_link', instagramLink);
 
         // Append images
@@ -316,7 +319,7 @@ export function ProductDialog({
             formData.append('is_variant_based', '1');
             formData.append('quantity', '');
             formData.append('unlimited_quantity', '0');
-            formData.append('variable_amount', '0');
+            formData.set('variable_amount', '0');
             formData.append('quantity_with_card', '');
             formData.append('unlimited_quantity_with_card', '0');
             formData.append('quantity_without_card', '');
@@ -645,6 +648,15 @@ export function ProductDialog({
                                     <button
                                         type="button"
                                         role="tab"
+                                        aria-selected={stockMode === 'esncard'}
+                                        onClick={() => setStockMode('esncard')}
+                                        className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'esncard' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
+                                    >
+                                        ESNcard Split
+                                    </button>
+                                    <button
+                                        type="button"
+                                        role="tab"
                                         aria-selected={stockMode === 'variants'}
                                         onClick={() => setStockMode('variants')}
                                         className={`inline-flex h-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-all ${stockMode === 'variants' ? 'bg-background text-foreground shadow-sm' : 'hover:bg-background/50'}`}
@@ -655,98 +667,76 @@ export function ProductDialog({
                             </div>
 
                             {stockMode === 'simple' && (
-                                <div className="space-y-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                            id="product-variable-amount"
-                                            checked={!!productVariableAmount}
-                                            onCheckedChange={(checked) =>
-                                                setProductVariableAmount(
-                                                    checked === true,
+                                <div>
+                                    <Label
+                                        htmlFor="product-quantity"
+                                        className="text-sm"
+                                    >
+                                        {editingProduct ? 'Remaining Quantity' : 'Initial Quantity'}
+                                    </Label>
+                                    <Input
+                                        id="product-quantity"
+                                        type="number"
+                                        min="0"
+                                        value={productQuantity}
+                                        onChange={(e) =>
+                                            setProductQuantity(
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="mt-1"
+                                        placeholder="Leave empty for unlimited"
+                                    />
+                                    {errors.remaining_quantity && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity}</p>}
+                                </div>
+                            )}
+
+                            {stockMode === 'esncard' && (
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <Label
+                                            htmlFor="product-quantity-with-card"
+                                            className="text-sm"
+                                        >
+                                            {editingProduct ? 'Remaining With Card' : 'Initial With Card'}
+                                        </Label>
+                                        <Input
+                                            id="product-quantity-with-card"
+                                            type="number"
+                                            min="0"
+                                            value={productQuantityWithCard}
+                                            onChange={(e) =>
+                                                setProductQuantityWithCard(
+                                                    e.target.value,
                                                 )
                                             }
+                                            className="mt-1"
+                                            placeholder="Leave empty for unlimited"
                                         />
-                                        <Label
-                                            htmlFor="product-variable-amount"
-                                            className="cursor-pointer text-sm"
-                                        >
-                                            Split by ESNcard
-                                        </Label>
+                                        {errors.remaining_quantity_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity_with_card}</p>}
                                     </div>
-
-                                    {productVariableAmount ? (
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                            <div>
-                                                <Label
-                                                    htmlFor="product-quantity-with-card"
-                                                    className="text-sm"
-                                                >
-                                                    {editingProduct ? 'Remaining With Card' : 'Initial With Card'}
-                                                </Label>
-                                                <Input
-                                                    id="product-quantity-with-card"
-                                                    type="number"
-                                                    min="0"
-                                                    value={
-                                                        productQuantityWithCard
-                                                    }
-                                                    onChange={(e) =>
-                                                        setProductQuantityWithCard(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="mt-1"
-                                                />
-                                                {errors.remaining_quantity_with_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity_with_card}</p>}
-                                            </div>
-                                            <div>
-                                                <Label
-                                                    htmlFor="product-quantity-without-card"
-                                                    className="text-sm"
-                                                >
-                                                    {editingProduct ? 'Remaining Without Card' : 'Initial Without Card'}
-                                                </Label>
-                                                <Input
-                                                    id="product-quantity-without-card"
-                                                    type="number"
-                                                    min="0"
-                                                    value={
-                                                        productQuantityWithoutCard
-                                                    }
-                                                    onChange={(e) =>
-                                                        setProductQuantityWithoutCard(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="mt-1"
-                                                />
-                                                {errors.remaining_quantity_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity_without_card}</p>}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <Label
-                                                htmlFor="product-quantity"
-                                                className="text-sm"
-                                            >
-                                                {editingProduct ? 'Remaining Quantity' : 'Initial Quantity'}
-                                            </Label>
-                                            <Input
-                                                id="product-quantity"
-                                                type="number"
-                                                min="0"
-                                                value={productQuantity}
-                                                onChange={(e) =>
-                                                    setProductQuantity(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="mt-1"
-                                                placeholder="Leave empty for unlimited"
-                                            />
-                                            {errors.remaining_quantity && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity}</p>}
-                                        </div>
-                                    )}
+                                    <div>
+                                        <Label
+                                            htmlFor="product-quantity-without-card"
+                                            className="text-sm"
+                                        >
+                                            {editingProduct ? 'Remaining Without Card' : 'Initial Without Card'}
+                                        </Label>
+                                        <Input
+                                            id="product-quantity-without-card"
+                                            type="number"
+                                            min="0"
+                                            value={productQuantityWithoutCard}
+                                            onChange={(e) =>
+                                                setProductQuantityWithoutCard(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            className="mt-1"
+                                            placeholder="Leave empty for unlimited"
+                                        />
+                                        {errors.remaining_quantity_without_card && <p className="mt-1 text-xs text-destructive error-scroll-marker">{errors.remaining_quantity_without_card}</p>}
+                                    </div>
                                 </div>
                             )}
 
@@ -805,6 +795,27 @@ export function ProductDialog({
                                 >
                                     Sellable Online
                                 </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="product-hide-until-sale"
+                                    checked={!!hideUntilSale}
+                                    onCheckedChange={(checked) =>
+                                        setHideUntilSale(checked === true)
+                                    }
+                                />
+                                <div>
+                                    <Label
+                                        htmlFor="product-hide-until-sale"
+                                        className="cursor-pointer font-medium"
+                                    >
+                                        Hide until sale starts
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        When unchecked, shows as a coming soon preview before the release date. When checked, hidden completely until sale begins.
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">

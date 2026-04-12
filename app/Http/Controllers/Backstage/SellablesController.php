@@ -179,6 +179,7 @@ class SellablesController extends Controller
             'quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'remaining_quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'is_online_sellable' => ['sometimes', 'boolean'],
+            'hide_until_sale' => ['sometimes', 'boolean'],
             'is_variant_based' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
@@ -243,6 +244,13 @@ class SellablesController extends Controller
             $validated['description'] = $this->sanitizeRichText($validated['description']);
         }
 
+        // Ensure empty date strings become null so clearing a date is persisted
+        foreach (['start_sell_date', 'end_sell_date'] as $dateField) {
+            if (array_key_exists($dateField, $validated) && $validated[$dateField] === '') {
+                $validated[$dateField] = null;
+            }
+        }
+
         return $this->inventoryService->normalizeInput($validated);
     }
 
@@ -271,6 +279,7 @@ class SellablesController extends Controller
             'remaining_quantity_without_card' => ['nullable', 'integer', 'min:0'],
             'google_spreadsheet_id' => ['nullable', 'string'],
             'is_online_sellable' => ['sometimes', 'boolean'],
+            'hide_until_sale' => ['sometimes', 'boolean'],
             'is_variant_based' => ['sometimes', 'boolean'],
             'instagram_link' => ['nullable', 'string', 'max:500'],
             'images.*' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/gif,image/webp', 'max:10240'],
@@ -322,6 +331,13 @@ class SellablesController extends Controller
 
         if (array_key_exists('description', $validated)) {
             $validated['description'] = $this->sanitizeRichText($validated['description']);
+        }
+
+        // Ensure empty date strings become null so clearing a date is persisted
+        foreach (['start_sell_date', 'end_sell_date'] as $dateField) {
+            if (array_key_exists($dateField, $validated) && $validated[$dateField] === '') {
+                $validated[$dateField] = null;
+            }
         }
 
         $normalized = $this->inventoryService->normalizeInput($validated);

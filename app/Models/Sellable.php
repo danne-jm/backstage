@@ -27,6 +27,7 @@ abstract class Sellable extends Model implements HasMedia
         'quantity_without_card',
         'unlimited_quantity_without_card',
         'is_online_sellable',
+        'hide_until_sale',
         'instagram_link'
     ];
 
@@ -41,6 +42,7 @@ abstract class Sellable extends Model implements HasMedia
         'quantity_without_card' => 'integer',
         'unlimited_quantity_without_card' => 'boolean',
         'is_online_sellable' => 'boolean',
+        'hide_until_sale' => 'boolean',
     ];
 
     protected $commonAppends = ['image', 'images_list'];
