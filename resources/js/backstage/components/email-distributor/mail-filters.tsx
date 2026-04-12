@@ -61,8 +61,8 @@ export function MailFilters({
                 Filter Mails{' '}
                 <span className="text-sm text-muted-foreground">({totalMails} total)</span>
             </h2>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-                <div className="flex flex-col gap-4 md:flex-row">
+            <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex flex-wrap gap-4">
                     <Select value={eventFilter} onValueChange={setEventFilter}>
                         <SelectTrigger className="w-full md:w-[300px]">
                             <SelectValue placeholder="Filter by event..." />
@@ -103,7 +103,7 @@ export function MailFilters({
                     </Select>
                 </div>
 
-                <div className="flex flex-col gap-4 md:flex-row lg:ml-auto">
+                <div className="flex flex-wrap gap-4">
                     <Input
                         type="date"
                         value={startDateFilter}
