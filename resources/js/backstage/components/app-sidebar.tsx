@@ -39,47 +39,60 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+        permission: 'view_dashboard',
     },
     {
         title: 'Office Shifts',
         href: office(),
         icon: Building2,
+        permission: 'view_office',
     },
     {
         title: 'Sellables',
         href: sellables(),
         icon: ShoppingBag,
+        permission: 'view_sellables',
     },
     {
         title: 'Ticket Scanner',
         href: ticketScanner(),
         icon: ScanText,
+        permission: 'view_ticket_scanner',
     },
     {
         title: 'Email Distributor',
         href: emailDistributor(),
         icon: Ticket,
+        permission: 'view_mail_distributor',
     },
     {
         title: 'Inventory',
         href: inventory(),
         icon: Warehouse,
+        permission: 'view_inventory',
     },
     {
         title: 'Store Manager',
         href: storeManager(),
         icon: Store,
+        permission: 'view_store_manager',
     },
     {
         title: 'Audit Log',
         href: auditLogIndex(),
         icon: ClipboardList,
+        permission: 'view_audit_log',
     },
 ];
 
 export function AppSidebar() {
     const { auth } = usePage().props;
     const footerLinks = auth.user.footer_links ?? [];
+    const userPermissions: string[] = (auth.user.permissions as string[]) ?? [];
+
+    const visibleNavItems = mainNavItems.filter(
+        (item) => !item.permission || userPermissions.includes(item.permission),
+    );
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -96,7 +109,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={visibleNavItems} />
             </SidebarContent>
 
             <SidebarFooter>

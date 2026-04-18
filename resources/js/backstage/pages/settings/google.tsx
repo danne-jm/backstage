@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { usePermission } from '@backstage/hooks/use-permission';
 import Heading from '@backstage/components/heading';
 import { Button } from '@backstage/components/ui/button';
 import AppLayout from '@backstage/layouts/app-layout';
@@ -16,6 +17,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Google() {
     const { auth, flash } = usePage().props as any;
     const connectedEmail = auth.user.gmail_provider_email as string | null;
+    const canManageGoogle = usePermission('update_settings_google');
 
     function handleConnect() {
         window.location.href = connect.url();
@@ -49,23 +51,27 @@ export default function Google() {
                             <p className="text-sm text-green-500">
                                 Connected as {connectedEmail}
                             </p>
-                            <Button variant="destructive" onClick={handleDisconnect}>
-                                Disconnect Google
-                            </Button>
+                            {canManageGoogle && (
+                                <Button variant="destructive" onClick={handleDisconnect}>
+                                    Disconnect Google
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-3">
                             <p className="text-sm text-muted-foreground">
                                 Not connected.
                             </p>
-                            <div className="space-y-1">
-                                <Button variant="outline" onClick={handleConnect}>
-                                    Connect with Google
-                                </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                You will be asked to grant the app permission to send email on your behalf (offline access).
-                            </p>
+                            {canManageGoogle && (
+                                <div className="space-y-1">
+                                    <Button variant="outline" onClick={handleConnect}>
+                                        Connect with Google
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        You will be asked to grant the app permission to send email on your behalf (offline access).
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

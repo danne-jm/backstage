@@ -205,6 +205,7 @@ export default function EmailDistributor() {
                                     <Button onClick={generatePreview}>
                                         Generate Preview
                                     </Button>
+                                    {canSend && (
                                     <Button
                                         onClick={() => setDialogOpen(true)}
                                         disabled={
@@ -247,6 +248,7 @@ export default function EmailDistributor() {
                                             'Distribute (real)'
                                         )}
                                     </Button>
+                                    )}
                                 </div>
                             </div>
                         </div>

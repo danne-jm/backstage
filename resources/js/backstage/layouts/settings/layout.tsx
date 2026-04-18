@@ -64,9 +64,10 @@ export default function SettingsLayout({ children, wide = false }: PropsWithChil
             />
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">
-                <aside className="w-full max-w-xl lg:w-48">
+                {/* Mobile: horizontal scrollable tab strip; Desktop: vertical sidebar */}
+                <aside className="lg:w-48">
                     <nav
-                        className="flex flex-col space-y-1 space-x-0"
+                        className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-x-visible lg:pb-0"
                         aria-label="Settings"
                     >
                         {sidebarNavItems.map((item, index) => (
@@ -75,7 +76,7 @@ export default function SettingsLayout({ children, wide = false }: PropsWithChil
                                 size="sm"
                                 variant="ghost"
                                 asChild
-                                className={cn('w-full justify-start', {
+                                className={cn('shrink-0 justify-start lg:w-full', {
                                     'bg-muted': isCurrentOrParentUrl(item.href),
                                 })}
                             >
@@ -90,9 +91,9 @@ export default function SettingsLayout({ children, wide = false }: PropsWithChil
                     </nav>
                 </aside>
 
-                <Separator className="my-6 lg:hidden" />
+                <Separator className="my-4 lg:hidden" />
 
-                <div className={cn("flex-1", !wide && "md:max-w-2xl")}>
+                <div className={cn("flex-1 min-w-0", !wide && "md:max-w-2xl")}>
                     <section className={cn("space-y-12", !wide && "max-w-xl")}>
                         {children}
                     </section>

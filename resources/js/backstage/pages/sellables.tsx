@@ -1,5 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
+import { usePermissions } from '@backstage/hooks/use-permission';
 import * as React from 'react';
 import { EventDialog } from '@backstage/components/sellables/event-dialog';
 import { EventPreview } from '@backstage/components/sellables/event-preview';
@@ -75,12 +76,16 @@ export default function Sellables() {
         setEventDialogOpen(true);
     };
 
-    const canCreateProduct = true;
-    const canUpdateProduct = true;
-    const canDeleteProduct = true;
-    const canCreateEvent = true;
-    const canUpdateEvent = true;
-    const canDeleteEvent = true;
+    const perms = usePermissions(
+        'create_product', 'update_product', 'delete_product',
+        'create_event',   'update_event',   'delete_event',
+    );
+    const canCreateProduct = perms['create_product'];
+    const canUpdateProduct = perms['update_product'];
+    const canDeleteProduct = perms['delete_product'];
+    const canCreateEvent   = perms['create_event'];
+    const canUpdateEvent   = perms['update_event'];
+    const canDeleteEvent   = perms['delete_event'];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

@@ -29,3 +29,8 @@ yarn-error.log
 
 /original-backstage-repo-to-refactor
 .env.realistic
+
+# PWA generated files (built via npm run build)
+/public/sw.js
+/public/workbox-*.js
+

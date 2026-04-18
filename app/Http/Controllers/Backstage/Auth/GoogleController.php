@@ -57,6 +57,11 @@ class GoogleController extends Controller
                 'gmail_refresh_token' => $googleUser->refreshToken,
             ]);
 
+            activity('settings')
+                ->causedBy($user)
+                ->withProperties(['google_email' => $googleUser->getEmail()])
+                ->log('Google account connected');
+
             return redirect()->route('settings.google')
                 ->with('success', 'Google account connected successfully.');
         }
@@ -101,11 +106,18 @@ class GoogleController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
+        $disconnectedEmail = $user->gmail_provider_email;
+
         $user->update([
             'gmail_provider_id' => null,
             'gmail_provider_email' => null,
             'gmail_refresh_token' => null,
         ]);
+
+        activity('settings')
+            ->causedBy($user)
+            ->withProperties(['google_email' => $disconnectedEmail])
+            ->log('Google account disconnected');
 
         return redirect()->route('settings.google')
             ->with('success', 'Google account disconnected.');

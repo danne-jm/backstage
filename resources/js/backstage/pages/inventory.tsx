@@ -7,6 +7,7 @@ import { EditItemDialog } from '@backstage/components/inventory/edit-item-dialog
 import { InventoryTable } from '@backstage/components/inventory/inventory-table';
 import { Button } from '@backstage/components/ui/button';
 import { Input } from '@backstage/components/ui/input';
+import { usePermissions } from '@backstage/hooks/use-permission';
 import { useInventory } from '@backstage/hooks/use-inventory';
 import AppLayout from '@backstage/layouts/app-layout';
 import type { BreadcrumbItem } from '@backstage/types';
@@ -25,6 +26,11 @@ export default function Inventory() {
         items: { data: InventoryItem[] };
         categories: string[];
     };
+
+    const perms = usePermissions('create_item', 'update_item', 'delete_item');
+    const canCreateItem = perms['create_item'];
+    const canEditItem = perms['update_item'];
+    const canDeleteItem = perms['delete_item'];
 
     const {
         filteredItems,
@@ -83,9 +89,11 @@ export default function Inventory() {
                         </Button>
                     </div>
 
-                    <Button onClick={() => setCreateOpen(true)}>
-                        Create Item
-                    </Button>
+                    {canCreateItem && (
+                        <Button onClick={() => setCreateOpen(true)}>
+                            Create Item
+                        </Button>
+                    )}
                 </div>
 
                 {/* Table */}
@@ -98,6 +106,9 @@ export default function Inventory() {
                         onEdit={openEdit}
                         onDelete={openDelete}
                         onChangeQuantity={changeQuantity}
+                        canEdit={canEditItem}
+                        canDelete={canDeleteItem}
+                        canChangeQuantity={canEditItem}
                     />
                 </div>
             </div>

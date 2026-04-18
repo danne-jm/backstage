@@ -233,6 +233,12 @@ class OfficeController extends Controller
                 'user_id' => $validated['user_id'],
                 'role' => $validated['role'] ?? $user->role ?? 'staff',
             ]);
+
+            activity('office')
+                ->causedBy(Auth::user())
+                ->performedOn($office)
+                ->withProperties(['worker_name' => $user->first_name . ' ' . $user->last_name, 'worker_email' => $user->email, 'role' => $validated['role'] ?? $user->role ?? 'staff'])
+                ->log('worker added to shift');
         }
 
         return redirect()->route('office.show', $office->id);
@@ -242,9 +248,17 @@ class OfficeController extends Controller
     {
         $request->validate(['user_id' => 'required']);
 
+        $worker = User::find($request->user_id);
+
         OfficeShiftWorker::where('office_shift_id', $office->id)
             ->where('user_id', $request->user_id)
             ->delete();
+
+        activity('office')
+            ->causedBy(Auth::user())
+            ->performedOn($office)
+            ->withProperties(['worker_name' => $worker ? $worker->first_name . ' ' . $worker->last_name : $request->user_id, 'worker_email' => $worker?->email])
+            ->log('worker removed from shift');
 
         return redirect()->route('office.show', $office->id);
     }
@@ -269,6 +283,12 @@ class OfficeController extends Controller
 
         $this->officeService->recordSale($office, $data);
 
+        activity('office')
+            ->causedBy(Auth::user())
+            ->performedOn($office)
+            ->withProperties(['item_type' => $data['item_type'] ?? 'product', 'item_id' => $data['item_id'] ?? null, 'amount' => $data['amount'] ?? null, 'method' => $data['method'] ?? null])
+            ->log('sale recorded');
+
         return redirect()->route('office.show', $office->id);
     }
 
@@ -277,6 +297,12 @@ class OfficeController extends Controller
         $validated = $request->validate(['sale_id' => 'required']);
 
         $this->officeService->removeSale($office, $validated['sale_id']);
+
+        activity('office')
+            ->causedBy(Auth::user())
+            ->performedOn($office)
+            ->withProperties(['sale_id' => $validated['sale_id']])
+            ->log('sale removed');
 
         return redirect()->route('office.show', $office->id);
     }

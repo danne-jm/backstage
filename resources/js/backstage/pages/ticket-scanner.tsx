@@ -29,11 +29,8 @@ const initialTickets: any[] = [];
 
 export default function TicketScanner() {
     const props: any = usePage().props;
-    const permissions = props.auth?.user?.permissions || [];
-    // If permissions array has strings, check 'admin'. If permissions is complex, adapt.
-    // Assuming simple array of strings for now based on original code.
-    const canScan =
-        true; // Simplified for now, original was: permissions.includes('admin') || permissions.includes('scan_tickets');
+    const permissions: string[] = props.auth?.user?.permissions || [];
+    const canScan = permissions.includes('scan_tickets');
 
     const events: any[] = React.useMemo(
         () => (Array.isArray(props.events) ? props.events : []),

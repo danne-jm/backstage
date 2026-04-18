@@ -13,6 +13,7 @@ export type User = {
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     role: string;
+    permissions: string[];
     attributes: Record<string, unknown> | null;
     footer_links: FooterLink[] | null;
     created_at: string;

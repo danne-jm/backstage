@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Backstage\Settings;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,6 +28,11 @@ class FooterController extends Controller
         $request->user()->update([
             'footer_links' => $validated['footer_links'],
         ]);
+
+        activity('settings')
+            ->causedBy(Auth::user())
+            ->withProperties(['link_count' => count($validated['footer_links'])])
+            ->log('footer links updated');
 
         return to_route('settings.footer');
     }

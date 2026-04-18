@@ -2,6 +2,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { registerSW } from 'virtual:pwa-register';
 import '../css/app.css';
 import { initializeTheme } from '@backstage/hooks/use-appearance';
 
@@ -30,3 +31,6 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// Register service worker for backstage PWA (silently auto-updates in background)
+registerSW({ immediate: false });

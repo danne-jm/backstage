@@ -7,6 +7,7 @@ use App\Models\sellables\Event;
 use App\Services\AttendeeService;
 use App\Services\GoogleSheetsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class EventAttendeeController extends Controller
@@ -94,6 +95,12 @@ class EventAttendeeController extends Controller
                 $request->input('range'),
                 $request->input('values')
             );
+
+            activity('sellables')
+                ->causedBy(Auth::user())
+                ->performedOn($event)
+                ->withProperties(['spreadsheet_id' => $spreadsheetId, 'range' => $request->input('range')])
+                ->log('attendee sheet row updated');
 
             return response()->json(['success' => true]);
         } catch (\Throwable $e) {

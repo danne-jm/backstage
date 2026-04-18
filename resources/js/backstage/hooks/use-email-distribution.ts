@@ -1,5 +1,6 @@
 import * as React from 'react';
 import axios from 'axios';
+import { usePage } from '@inertiajs/react';
 
 /**
  * Hook for managing email distribution state and logic
@@ -14,8 +15,8 @@ export function useEmailDistribution({
     events,
     templates,
 }: UseEmailDistributionProps) {
-    // Permission check disabled - handled later
-    const canSend = true;
+    const { auth } = usePage().props;
+    const canSend = ((auth?.user?.permissions as string[]) ?? []).includes('send_mails');
 
     // Event and template selection
     const [selectedEventId, setSelectedEventId] = React.useState<string | null>(

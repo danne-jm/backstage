@@ -1,4 +1,5 @@
 import { useForm, Head, usePage } from '@inertiajs/react';
+import { usePermission } from '@backstage/hooks/use-permission';
 import { icons } from 'lucide-react';
 import Heading from '@backstage/components/heading';
 import { Button } from '@backstage/components/ui/button';
@@ -68,6 +69,7 @@ function IconPreview({ name }: { name: string }) {
 
 export default function Footer() {
     const { auth } = usePage().props;
+    const canUpdate = usePermission('update_settings_footer');
 
     const form = useForm({
         footer_links: auth.user.footer_links ?? [],
@@ -128,8 +130,9 @@ export default function Footer() {
                                     className="w-32 shrink-0"
                                     placeholder="Label"
                                     value={link.label}
+                                    readOnly={!canUpdate}
                                     onChange={(e) =>
-                                        updateLink(
+                                        canUpdate && updateLink(
                                             index,
                                             'label',
                                             e.target.value,
@@ -142,8 +145,9 @@ export default function Footer() {
                                     className="w-80 shrink-0"
                                     placeholder="https://..."
                                     value={link.url}
+                                    readOnly={!canUpdate}
                                     onChange={(e) =>
-                                        updateLink(index, 'url', e.target.value)
+                                        canUpdate && updateLink(index, 'url', e.target.value)
                                     }
                                 />
 
@@ -175,35 +179,39 @@ export default function Footer() {
                                 </Select>
 
                                 {/* Delete */}
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removeLink(index)}
-                                    aria-label="Remove link"
-                                >
-                                    <icons.Trash2 className="h-4 w-4 text-muted-foreground" />
-                                </Button>
+                                {canUpdate && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => removeLink(index)}
+                                        aria-label="Remove link"
+                                    >
+                                        <icons.Trash2 className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                )}
                             </div>
                         ))}
                     </div>
 
-                    <div className="flex items-center justify-between">
-                        <Button
-                            type="button"
-                            onClick={save}
-                            disabled={form.processing}
-                        >
-                            Save
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={addLink}
-                        >
-                            Add link
-                        </Button>
-                    </div>
+                    {canUpdate && (
+                        <div className="flex items-center justify-between">
+                            <Button
+                                type="button"
+                                onClick={save}
+                                disabled={form.processing}
+                            >
+                                Save
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={addLink}
+                            >
+                                Add link
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </SettingsLayout>
         </AppLayout>

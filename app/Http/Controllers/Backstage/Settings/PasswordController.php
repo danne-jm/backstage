@@ -7,6 +7,7 @@ use App\Http\Requests\Settings\PasswordUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
 
 class PasswordController extends Controller
 {
@@ -26,6 +27,10 @@ class PasswordController extends Controller
         $request->user()->update([
             'password_hash' => $request->password,
         ]);
+
+        activity('users')
+            ->causedBy(Auth::user())
+            ->log('password changed');
 
         return back();
     }

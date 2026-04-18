@@ -16,6 +16,9 @@ interface InventoryTableProps {
     onEdit: (item: InventoryItem) => void;
     onDelete: (item: InventoryItem) => void;
     onChangeQuantity: (item: InventoryItem, delta: number) => void;
+    canEdit?: boolean;
+    canDelete?: boolean;
+    canChangeQuantity?: boolean;
 }
 
 const TH_BASE = 'px-2 py-3 text-left text-xs font-medium uppercase sm:px-6';
@@ -29,6 +32,9 @@ export function InventoryTable({
     onEdit,
     onDelete,
     onChangeQuantity,
+    canEdit = true,
+    canDelete = true,
+    canChangeQuantity = true,
 }: InventoryTableProps) {
     if (items.length === 0) {
         return (
@@ -84,7 +90,7 @@ export function InventoryTable({
                         onSort={onSort}
                         className={TH_HIDDEN}
                     />
-                    <th className={TH_HIDDEN}>Actions</th>
+                    {(canEdit || canDelete) && <th className={TH_HIDDEN}>Actions</th>}
                 </tr>
             </thead>
 
@@ -101,59 +107,65 @@ export function InventoryTable({
                                         {item.name}
                                     </span>
                                     {/* Mobile edit button */}
-                                    <button
-                                        type="button"
-                                        aria-label={`Edit ${item.name}`}
-                                        className="ml-1 shrink-0 text-muted-foreground hover:text-foreground sm:hidden"
-                                        onClick={() => onEdit(item)}
-                                    >
-                                        <Pencil size={12} />
-                                    </button>
+                                    {canEdit && (
+                                        <button
+                                            type="button"
+                                            aria-label={`Edit ${item.name}`}
+                                            className="ml-1 shrink-0 text-muted-foreground hover:text-foreground sm:hidden"
+                                            onClick={() => onEdit(item)}
+                                        >
+                                            <Pencil size={12} />
+                                        </button>
+                                    )}
                                 </div>
                             </td>
 
                             {/* Quantity stepper */}
                             <td className="px-2 py-4 sm:px-6">
                                 <div className="flex items-center gap-1 sm:gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        aria-label={`Decrease quantity for ${item.name}`}
-                                        className="h-7 w-7 p-0 sm:h-9 sm:w-auto sm:px-3"
-                                        disabled={
-                                            item.quantity <= 0 || isProcessing
-                                        }
-                                        onClick={() =>
-                                            onChangeQuantity(item, -1)
-                                        }
-                                    >
-                                        {isProcessing ? (
-                                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4" />
-                                        ) : (
-                                            <Minus size={14} />
-                                        )}
-                                    </Button>
+                                    {canChangeQuantity && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            aria-label={`Decrease quantity for ${item.name}`}
+                                            className="h-7 w-7 p-0 sm:h-9 sm:w-auto sm:px-3"
+                                            disabled={
+                                                item.quantity <= 0 || isProcessing
+                                            }
+                                            onClick={() =>
+                                                onChangeQuantity(item, -1)
+                                            }
+                                        >
+                                            {isProcessing ? (
+                                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4" />
+                                            ) : (
+                                                <Minus size={14} />
+                                            )}
+                                        </Button>
+                                    )}
 
                                     <span className="w-8 text-center text-xs sm:w-12 sm:text-sm">
                                         {item.quantity}
                                     </span>
 
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        aria-label={`Increase quantity for ${item.name}`}
-                                        className="h-7 w-7 p-0 sm:h-9 sm:w-auto sm:px-3"
-                                        disabled={isProcessing}
-                                        onClick={() =>
-                                            onChangeQuantity(item, 1)
-                                        }
-                                    >
-                                        {isProcessing ? (
-                                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4" />
-                                        ) : (
-                                            <Plus size={14} />
-                                        )}
-                                    </Button>
+                                    {canChangeQuantity && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            aria-label={`Increase quantity for ${item.name}`}
+                                            className="h-7 w-7 p-0 sm:h-9 sm:w-auto sm:px-3"
+                                            disabled={isProcessing}
+                                            onClick={() =>
+                                                onChangeQuantity(item, 1)
+                                            }
+                                        >
+                                            {isProcessing ? (
+                                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4" />
+                                            ) : (
+                                                <Plus size={14} />
+                                            )}
+                                        </Button>
+                                    )}
                                 </div>
                             </td>
 
@@ -188,24 +200,30 @@ export function InventoryTable({
                             </td>
 
                             {/* Actions – desktop */}
-                            <td className="hidden px-6 py-4 sm:table-cell">
-                                <div className="flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => onEdit(item)}
-                                    >
-                                        Edit
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => onDelete(item)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </div>
-                            </td>
+                            {(canEdit || canDelete) && (
+                                <td className="hidden px-6 py-4 sm:table-cell">
+                                    <div className="flex gap-2">
+                                        {canEdit && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => onEdit(item)}
+                                            >
+                                                Edit
+                                            </Button>
+                                        )}
+                                        {canDelete && (
+                                            <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                onClick={() => onDelete(item)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        )}
+                                    </div>
+                                </td>
+                            )}
                         </tr>
                     );
                 })}

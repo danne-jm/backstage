@@ -1,4 +1,5 @@
 import { Head, usePage, router } from '@inertiajs/react';
+import { usePermissions } from '@backstage/hooks/use-permission';
 import Heading from '@backstage/components/heading';
 import AppLayout from '@backstage/layouts/app-layout';
 import SettingsLayout from '@backstage/layouts/settings/layout';
@@ -163,6 +164,10 @@ const permissionCategories = [
 
 export default function Users() {
     const { users: initialUsers } = usePage().props as any;
+    const userPerms = usePermissions('create_user', 'update_user', 'delete_user');
+    const canCreateUser = userPerms['create_user'];
+    const canUpdateUser = userPerms['update_user'];
+    const canDeleteUser = userPerms['delete_user'];
 
     const users = (initialUsers || []).map((u: any) => ({
         ...u,
@@ -307,7 +312,7 @@ export default function Users() {
 
     const renderUserForm = () => (
         <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                     <Label htmlFor="first-name">First Name</Label>
                     <Input
@@ -460,13 +465,15 @@ export default function Users() {
 
             <SettingsLayout wide={true}>
                 <div className="space-y-6">
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                         <Heading
                             variant="small"
                             title="User Management"
                             description="Manage users, assign job titles, set permissions and lock accounts."
                         />
-                        <Button onClick={openAddModal}>Add User</Button>
+                        {canCreateUser && (
+                            <Button onClick={openAddModal} className="shrink-0">Add User</Button>
+                        )}
                     </div>
 
                     <div className="w-full overflow-hidden rounded-md border">
@@ -475,10 +482,12 @@ export default function Users() {
                                 <thead>
                                     <tr className="border-b bg-muted/50">
                                         <th className="p-3 text-left text-sm font-medium">User</th>
-                                        <th className="p-3 text-left text-sm font-medium">Role</th>
-                                        <th className="p-3 text-left text-sm font-medium">Permissions</th>
+                                        <th className="hidden p-3 text-left text-sm font-medium sm:table-cell">Role</th>
+                                        <th className="hidden p-3 text-left text-sm font-medium md:table-cell">Permissions</th>
                                         <th className="p-3 text-left text-sm font-medium">Status</th>
-                                        <th className="p-3 text-right text-sm font-medium">Actions</th>
+                                        {(canUpdateUser || canDeleteUser) && (
+                                            <th className="p-3 text-right text-sm font-medium">Actions</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -496,14 +505,14 @@ export default function Users() {
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="p-3 text-sm">
+                                                <td className="hidden p-3 text-sm sm:table-cell">
                                                     {u.role ? (
                                                         <span className="font-medium text-muted-foreground">{u.role}</span>
                                                     ) : (
                                                         <span className="text-muted-foreground italic">—</span>
                                                     )}
                                                 </td>
-                                                <td className="p-3">
+                                                <td className="hidden p-3 md:table-cell">
                                                     <Badge variant="outline" className="block w-fit max-w-[200px] truncate">
                                                         {determineLevel(u.permissions || [])}
                                                     </Badge>
@@ -517,21 +526,27 @@ export default function Users() {
                                                         </Badge>
                                                     )}
                                                 </td>
+                                                {(canUpdateUser || canDeleteUser) && (
                                                 <td className="p-3 text-right">
                                                     <div className="flex gap-2 justify-end">
-                                                        <Button size="sm" variant="ghost" onClick={() => openEditModal(u)}>
-                                                            Edit
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="text-destructive hover:text-destructive"
-                                                            onClick={() => openDeleteModal(u)}
-                                                        >
-                                                            Delete
-                                                        </Button>
+                                                        {canUpdateUser && (
+                                                            <Button size="sm" variant="ghost" onClick={() => openEditModal(u)}>
+                                                                Edit
+                                                            </Button>
+                                                        )}
+                                                        {canDeleteUser && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="text-destructive hover:text-destructive"
+                                                                onClick={() => openDeleteModal(u)}
+                                                            >
+                                                                Delete
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </td>
+                                                )}
                                             </tr>
                                         );
                                     })}
@@ -555,7 +570,7 @@ export default function Users() {
                                 </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleSubmit} noValidate>
-                                <div className="overflow-y-auto max-h-[calc(90vh-12rem)]">
+                                <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-1">
                                     {renderUserForm()}
                                 </div>
                                 <DialogFooter className="mt-6">
@@ -578,7 +593,7 @@ export default function Users() {
                                 </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleSubmit} noValidate>
-                                <div className="overflow-y-auto max-h-[calc(90vh-12rem)]">
+                                <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-1">
                                     {renderUserForm()}
                                 </div>
                                 <DialogFooter className="mt-6">

@@ -1,6 +1,7 @@
 import { Transition } from '@headlessui/react';
 import { Form, Head, usePage } from '@inertiajs/react';
 import { Lock } from 'lucide-react';
+import { usePermission } from '@backstage/hooks/use-permission';
 import ProfileController from '@backstage/actions/App/Http/Controllers/Settings/ProfileController';
 import Heading from '@backstage/components/heading';
 import InputError from '@backstage/components/input-error';
@@ -21,6 +22,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Profile() {
     const { auth } = usePage().props;
+    const canUpdateProfile = usePermission('update_settings_profile');
 
     const permissions = auth.user.attributes
         ? Object.values(auth.user.attributes).flat().join(', ')
@@ -113,6 +115,7 @@ export default function Profile() {
                                     </div>
                                 </div>
 
+                                {canUpdateProfile && (
                                 <div className="flex items-center gap-4">
                                     <Button
                                         disabled={processing}
@@ -133,6 +136,7 @@ export default function Profile() {
                                         </p>
                                     </Transition>
                                 </div>
+                                )}
                             </>
                         )}
                     </Form>
