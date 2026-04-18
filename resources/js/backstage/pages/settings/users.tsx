@@ -40,7 +40,7 @@ const availablePermissions = [
     // /office  (overview + individual shift pages)
     { value: 'view_office',                   label: 'View Office Shifts' },
     { value: 'create_office',                 label: 'Start an Office Shift' },
-    { value: 'update_office',                 label: 'Manage Office Shift (end, reopen, record sales, workers, breakdowns)' },
+    { value: 'update_office',                 label: 'Manage Office Shift' },
     { value: 'delete_office',                 label: 'Delete Office Shift' },
 
     // /store-manager  (index, all-sales, accounting sub-pages)
@@ -121,7 +121,7 @@ const availablePermissions = [
 ];
 
 // Keys that belong to /settings/users — Board cannot have these.
-const USER_MGMT_PERMISSIONS = ['view_settings_users', 'create_user', 'update_user', 'delete_user'];
+const USER_MGMT_PERMISSIONS = ['view_settings_users', 'create_user', 'update_user', 'delete_user', 'view_audit_log'];
 
 // ---------------------------------------------------------------------------
 // Role presets
@@ -570,7 +570,7 @@ export default function Users() {
                                 </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleSubmit} noValidate>
-                                <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-1">
+                                <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-4">
                                     {renderUserForm()}
                                 </div>
                                 <DialogFooter className="mt-6">
@@ -593,7 +593,7 @@ export default function Users() {
                                 </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleSubmit} noValidate>
-                                <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-1">
+                                <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-4">
                                     {renderUserForm()}
                                 </div>
                                 <DialogFooter className="mt-6">
