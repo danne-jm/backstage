@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Building2,
+    ClipboardList,
     LayoutGrid,
     ScanText,
     ShoppingBag,
@@ -30,6 +31,7 @@ import {
     storeManager,
     office,
 } from '@backstage/routes';
+import { index as auditLogIndex } from '@backstage/routes/audit-log';
 import type { NavItem } from '@backstage/types';
 
 const mainNavItems: NavItem[] = [
@@ -67,6 +69,11 @@ const mainNavItems: NavItem[] = [
         title: 'Store Manager',
         href: storeManager(),
         icon: Store,
+    },
+    {
+        title: 'Audit Log',
+        href: auditLogIndex(),
+        icon: ClipboardList,
     },
 ];
 

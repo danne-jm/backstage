@@ -3,13 +3,18 @@
 namespace App\Providers;
 
 use App\Contracts\PaymentGatewayInterface;
+use App\Listeners\LogAuthEvents;
 use App\Services\DevelopmentPaymentGateway;
 use App\Services\SumUpPaymentGateway;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -61,6 +66,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->configureDefaults();
+
+        Event::listen(Login::class, [LogAuthEvents::class, 'handleLogin']);
+        Event::listen(Logout::class, [LogAuthEvents::class, 'handleLogout']);
+        Event::listen(Failed::class, [LogAuthEvents::class, 'handleFailed']);
     }
 
     /**

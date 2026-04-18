@@ -13,3 +13,4 @@ require __DIR__ . '/backstage/email-distributor.php';
 require __DIR__ . '/backstage/inventory.php';
 require __DIR__ . '/backstage/store-manager.php';
 require __DIR__ . '/backstage/settings.php';
+require __DIR__ . '/backstage/audit-log.php';

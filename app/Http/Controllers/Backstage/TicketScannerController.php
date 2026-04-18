@@ -40,6 +40,14 @@ class TicketScannerController extends Controller
              return response()->json(['error' => $result['error']], 404);
         }
 
+        activity('ticket_scanner')
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'event_id' => $data['event_id'],
+                'imported' => $result['created'],
+            ])
+            ->log('tickets imported');
+
         return response()->json(['created' => $result['created']], 201);
     }
 
@@ -88,6 +96,15 @@ class TicketScannerController extends Controller
 
         // Success or already scanned
         if (isset($result['valid']) && $result['valid']) {
+            activity('ticket_scanner')
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'event_id'           => $eventId,
+                    'ticket_id'          => $id,
+                    'previously_scanned' => $result['previously_scanned'],
+                ])
+                ->log('ticket scanned');
+
              return response()->json([
                 'valid' => true,
                 'ticket' => $result['ticket'],

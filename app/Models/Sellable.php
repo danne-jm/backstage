@@ -12,7 +12,16 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 abstract class Sellable extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia, HasSellableStock, HasUlids;
+    use HasFactory, InteractsWithMedia, HasSellableStock, HasUlids, \Spatie\Activitylog\Traits\LogsActivity;
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['name', 'description', 'quantity', 'unlimited_quantity', 'is_online_sellable'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('sellables');
+    }
 
     protected $commonFillable = [
         'name',

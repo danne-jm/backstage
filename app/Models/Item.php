@@ -10,7 +10,16 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Item extends Model implements HasMedia
 {
-    use HasFactory, HasUlids, InteractsWithMedia;
+    use HasFactory, HasUlids, InteractsWithMedia, \Spatie\Activitylog\Traits\LogsActivity;
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['name', 'quantity', 'category'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('inventory');
+    }
 
     protected $table = 'items';
 

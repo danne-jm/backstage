@@ -15,7 +15,6 @@ import { login as googleLogin } from '@backstage/routes/google';
 type Props = {
     status?: string;
     canResetPassword: boolean;
-    canRegister: boolean;
 };
 
 export default function Login({ status }: Props) {

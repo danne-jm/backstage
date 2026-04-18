@@ -7,7 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class OfficeShift extends Model
 {
-    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids;
+    use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids, \Spatie\Activitylog\Traits\LogsActivity;
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['started_by', 'ended_by', 'status', 'started_at', 'ended_at', 'cash_total', 'card_total'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('office');
+    }
 
     // Define the canonical list of denominations (notes first, then coins)
     public const DENOMINATIONS = [

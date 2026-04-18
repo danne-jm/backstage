@@ -1,12 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
-
 // Welcome / onboarding — no auth required
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::inertia('/', 'welcome')->name('home');
 
 // Google OAuth — public-facing login flow
 Route::get('auth/google/login', [\App\Http\Controllers\Backstage\Auth\GoogleController::class, 'redirectToLogin'])

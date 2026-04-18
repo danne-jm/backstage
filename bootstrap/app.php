@@ -40,6 +40,11 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\EnforceLockout::class,
+        ]);
+
+        $middleware->alias([
+            'permission' => \App\Http\Middleware\RequirePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -144,7 +144,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Registration is disabled — users are created exclusively via /settings/users.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

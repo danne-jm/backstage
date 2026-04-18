@@ -11,7 +11,16 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, \Illuminate\Database\Eloquent\Concerns\HasUlids;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, \Illuminate\Database\Eloquent\Concerns\HasUlids, \Spatie\Activitylog\Traits\LogsActivity;
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['first_name', 'last_name', 'email', 'role', 'is_locked', 'permissions'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('users');
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -31,6 +40,8 @@ class User extends Authenticatable
         'last_seen_at',
         'attributes',
         'footer_links',
+        'permissions',
+        'is_locked',
     ];
 
     /**
@@ -87,6 +98,19 @@ class User extends Authenticatable
             'last_seen_at' => 'datetime',
             'attributes' => 'array',
             'footer_links' => 'array',
+            'permissions' => 'array',
+            'is_locked' => 'boolean',
         ];
+    }
+
+    /**
+     * Return true if this user holds the given permission key.
+     *
+     * The permissions column is a JSON array of strings, e.g.
+     *   ["view_dashboard", "view_inventory", "create_item"]
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return in_array($permission, $this->permissions ?? [], true);
     }
 }

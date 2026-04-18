@@ -53,6 +53,16 @@ class DistributionController extends Controller
             $qrLogo
         );
 
+        activity('email_distributor')
+            ->causedBy($sender)
+            ->withProperties([
+                'recipient_count'  => count($recipients),
+                'queued'           => $result['queued'],
+                'tickets_created'  => $result['tickets_created'],
+                'dispatch_errors'  => count($result['dispatch_errors']),
+            ])
+            ->log('email distribution dispatched');
+
         return response()->json([
             'queued_count' => $result['queued'],
             'tickets_created' => $result['tickets_created'],
