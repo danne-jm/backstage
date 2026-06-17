@@ -177,10 +177,10 @@ Strictly for physical worker drawer tracking. Online sales bypass this.
 | Model                    | Purpose                       | Key Fields                                                                                          |
 | ------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------- |
 | ✅ **Ticket**               | QR-code event tickets         | `id` (ULID), `event_id`, `ticket_code`, `email`, `first/last_name`, `scan_count`, `scan_details` (JSON), `scanned_at` |
-| **Item**                 | Physical inventory items      | `id` (ULID), `name`, `quantity`, `category` (JSON), media via `spatie/media-library`                    |
-| **MailLog**              | Email send log                | `id` (ULID), `event_id`, `user_id`, `recipient_email`, `subject`, `body`, `success`, `error_message`        |
-| **DiscountUsage**        | ESNcard discount tracking     | `id` (ULID), `code`, `transaction_id`, `sale_id`, `purchasable` (morphs), `original/paid/saved amounts`     |
-| **FinancialLedgerEntry** | Double-entry accounting       | `id` (ULID), `entry_type`, `direction` (credit/debit), `amount`, `channel`, `transaction_id`, `idempotency_key` |
+| ✅ **Item**                 | Physical inventory items      | `id` (ULID), `name`, `quantity`, `category` (JSON), media via `spatie/media-library`                    |
+| ✅ **MailLog**              | Email send log                | `id` (ULID), `event_id`, `user_id`, `recipient_email`, `subject`, `body`, `success`, `error_message`        |
+| ✅ **DiscountUsage**        | ESNcard discount tracking     | `id` (ULID), `code`, `transaction_id`, `sale_id`, `purchasable` (morphs), `original/paid/saved amounts`     |
+| ✅ **FinancialLedgerEntry** | Double-entry accounting       | `id` (ULID), `entry_type`, `direction` (credit/debit), `amount`, `channel`, `transaction_id`, `idempotency_key` |
 | **OfficeShiftWorker**    | Shift staffing                | `id` (ULID), `office_shift_id`, `user_id`, `role`                                                   |
 | **Media**                | Spatie Media Library override | Overrides standard numeric ID to use ULIDs to match the rest of the application.                    |
 
@@ -441,38 +441,46 @@ Move these to ConfigMap/Secrets:
 
 ---
 
-## 8. Route Map Summary
+## 8. ✅ Route Map Summary (Implemented)
 
-### Backstage (authenticated)
+The routing has been cleanly separated into dedicated files to avoid a bloated `web.php`.
 
-| Group             | Routes                                          | Controller                                         |
-| ----------------- | ----------------------------------------------- | -------------------------------------------------- |
-| Dashboard         | GET /dashboard                                  | Inertia static                                     |
-| Office            | GET/POST/PUT/DELETE /office/\*                  | OfficeController                                   |
-| Sellables         | CRUD /sellables/products/_, /sellables/events/_ | SellablesController                                |
-| Attendees         | GET/POST /sellables/events/{id}/attendees/\*    | EventAttendeeController                            |
-| Ticket Scanner    | GET/POST /ticket-scanner/\*                     | TicketScannerController                            |
-| Email Distributor | GET /email-distributor, POST /distribute        | EmailDistributorController, DistributionController |
-| Inventory         | GET/POST/PUT/DELETE /inventory/\*               | InventoryController                                |
-| Store Manager     | GET /store-manager/\*, /sales/summary           | StoreManagerController, SalesController            |
-| Settings          | GET/PATCH/DELETE /settings/\*                   | Profile, Password, 2FA, Users, Footer controllers  |
-| Audit Log         | GET /audit-log                                  | AuditLogController                                 |
-| Google OAuth      | GET /auth/google/\*                             | GoogleController                                   |
+### `routes/backstage.php` (Authenticated Admin Panel)
 
-### Store (public)
+| Group             | Routes                                            | Controller                                         |
+| ----------------- | ------------------------------------------------- | -------------------------------------------------- |
+| Office            | `GET/POST/PATCH /office/*`                        | `OfficeController`                                 |
+| Sellables         | CRUD `/sellables/products/*`, `/sellables/events/*`| `SellablesController`                                |
+| Attendees         | `GET/POST/PATCH /sellables/events/{event}/attendees/*` | `EventAttendeeController`                            |
+| Ticket Scanner    | `GET/POST /ticket-scanner/*`                      | `TicketScannerController`                            |
+| Email Distributor | `GET /email-distributor`, `POST /distribute`      | `EmailDistributorController`                         |
+| Inventory         | CRUD `/inventory/*`                               | `InventoryController`                                |
+| Store Manager     | `GET /store-manager/*`, `/sales/summary`          | `StoreManagerController`, `SalesController`          |
+| Audit Log         | `GET /audit-log`                                  | `AuditLogController`                                 |
+| Users             | CRUD + Lock `/settings/users/*`                   | `UsersController`                                    |
+| Google OAuth      | `GET /auth/google/*`, `DELETE /auth/google/disconnect` | `GoogleController`                                 |
 
-| Route                 | Controller                    | Purpose             |
-| --------------------- | ----------------------------- | ------------------- |
-| GET /                 | ShopController::index         | Product listing     |
-| GET /item/{type}/{id} | ShopController::show          | Item detail         |
-| GET /cart             | ShopController::cart          | Cart page           |
-| POST /cart/sellables  | ShopController::cartSellables | Fetch cart items    |
-| POST /validate-cart   | OnlinePaymentController       | Discount validation |
-| POST /checkout        | OnlinePaymentController       | Initiate payment    |
-| GET /confirmation     | OnlinePaymentController       | Order confirmation  |
-| GET /payment/callback | OnlinePaymentController       | Gateway redirect    |
-| POST /payment/webhook | OnlinePaymentController       | SumUp webhook       |
-| POST /payment/verify  | OnlinePaymentController       | Frontend polling    |
+### `routes/settings.php` (Authenticated User Settings)
+
+| Group             | Routes                                            | Controller                                         |
+| ----------------- | ------------------------------------------------- | -------------------------------------------------- |
+| Profile           | `GET/PATCH/DELETE /settings/profile`              | `ProfileController`                                |
+| Security / PW     | `GET/PUT /settings/security`, `/settings/password`| `SecurityController`                               |
+
+### `routes/store.php` (Public Storefront)
+
+| Route                   | Controller                    | Purpose             |
+| ----------------------- | ----------------------------- | ------------------- |
+| `GET /`                 | `ShopController::index`         | Product listing     |
+| `GET /item/{type}/{id}` | `ShopController::show`          | Item detail         |
+| `GET /cart`             | `ShopController::cart`          | Cart page           |
+| `POST /cart/sellables`  | `ShopController::cartSellables` | Fetch cart items    |
+| `POST /validate-cart`   | `OnlinePaymentController`       | Discount validation |
+| `POST /checkout`        | `OnlinePaymentController`       | Initiate payment    |
+| `GET /confirmation`     | `OnlinePaymentController`       | Order confirmation  |
+| `GET /payment/callback` | `OnlinePaymentController`       | Gateway redirect    |
+| `POST /payment/webhook` | `OnlinePaymentController`       | SumUp webhook       |
+| `POST /payment/verify`  | `OnlinePaymentController`       | Frontend polling    |
 
 ---
 
