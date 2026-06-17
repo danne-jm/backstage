@@ -240,24 +240,22 @@ Creates idempotent double-entry records: `recordOnlineTransactionCompleted()`, `
 | `SumUpPaymentGateway`       | Production — SumUp Checkout API with HMAC webhook verification |
 | `DevelopmentPaymentGateway` | Dev — auto-completes payments immediately                      |
 
-### 3.7 Email Services
+### 3.7 ✅ Email Services (Refactored to Adapter Pattern)
 
-> **Refactor Target:** Implement the **Adapter Pattern** with interfaces (e.g., `EmailSenderInterface`) to decouple domain logic from specific implementations like Gmail or SMTP, allowing easy swapping of providers.
+> **Refactor Target:** ✅ Implemented the **Adapter Pattern** (`EmailTransportInterface`) with `SmtpEmailTransport` for automated receipts and `GmailOAuthEmailTransport` (via `google/apiclient`) for bulk distributions, heavily relying on Queued Jobs to prevent rate limiting.
 
-| Service                    | Responsibility                                                                         |
-| -------------------------- | -------------------------------------------------------------------------------------- |
-| `EmailDistributionService` | Orchestrates batch email distribution: creates tickets, embeds QR codes, queues emails |
-| `EmailQueueService`        | Prepares individual emails: QR embedding, formatting, creates Mail log, dispatches job |
-| `EmailFormattingService`   | HTML email normalization: inline CSS reset, style merging, DOMDocument manipulation    |
-| `GmailSenderService`       | Sends via Gmail API using user's OAuth refresh token                                   |
-| `EmailVerificationService` | Validates email syntax + DNS MX/A records                                              |
+| Service / Job                          | Responsibility                                                                         |
+| -------------------------------------- | -------------------------------------------------------------------------------------- |
+| `SendBulkDistributionEmailJob`         | Orchestrates batch email distribution via Gmail API on behalf of employee              |
+| `SendOrderConfirmationJob`             | Sends automated SMTP receipt to buyers                                                 |
+| `ProvisionTicketForEmailAction`        | Provisions the `Ticket` row and generates the QR code SVG via `BaconQrCode`            |
 
 ### 3.8 Other Services
 
 | Service                   | Responsibility                                                                           |
 | ------------------------- | ---------------------------------------------------------------------------------------- |
 | `SellablesService`        | Normalizes input (unlimited/quantity semantics), syncs variants                          |
-| `TicketScannerService`    | QR ticket verification (atomic scan), import, event listing                              |
+| ✅ `ScanTicketAction`    | **(Refactored)** QR ticket verification (atomic scan) with pessimistic locking to prevent double scans           |
 | `AttendeeService`         | Reads Google Sheets attendee data, validates purchases against sales, email verification |
 | `GoogleSheetsService`     | Google Sheets API wrapper (read, write, batch update, cell formatting)                   |
 | `QrCodeGenerationService` | QR code generation with optional logo overlay                                            |
@@ -357,10 +355,10 @@ From route definitions, the system uses ~30+ granular permissions:
 | **Flat JSON permissions** on User model              | ✅ Replace with **Spatie Permission**                | `spatie/laravel-permission` — gives roles, permissions, middleware, caching, Blade directives. Already using Spatie packages.  |
 | **Custom financial ledger** (FinancialLedgerService) | Keep custom but consider **ledger packages**         | `scottlaurent/accounting` or keep custom. Your idempotent firstOrCreate pattern is solid.                                      |
 | **Email formatting** (DOMDocument manipulation)      | Replace with **MJML** or **Maizzle**                 | Templated responsive email framework instead of runtime DOM manipulation.                                                      |
-| **QR code generation** (custom service)              | Use **Simple QRCode** package                        | `simplesoftwareio/simple-qrcode` — wraps BaconQrCode with Laravel integration.                                                 |
+| **QR code generation** (custom service)              | ✅ **Use BaconQrCode directly**                        | Leveraged the already-installed `bacon/bacon-qr-code` to generate SVG tickets instantly.                                                 |
 | **ESNcard validation** (raw HTTP)                    | Keep as-is                                           | No standard package exists for ESNcard API. Wrap in a proper SDK class.                                                        |
 | **Email verification** (DNS check)                   | Use **egulias/email-validator**                      | Already a Laravel transitive dep; use it directly for RFC + DNS validation.                                                    |
-| **Cache-based stock counting**                       | Migrate to **Event-Sourced Ledger** / **Atomic Ops** | Eliminate 30s cache TTL. Use an `inventory_movements` table and materialized views/Redis `DECR` for real-time accurate counts. |
+| **Cache-based stock counting**                       | ✅ **Migrated to Event-Sourced Ledger**                | Eliminated 30s cache TTL. Created `inventory_movements` table and refactored `HasStockPools` to compute exact counts. |
 | **Unstructured data passing / arrays**               | ✅ **Use strongly typed DTOs**                 | Created pure PHP readonly DTOs (`TransactionPayload`, `SaleLinePayload`) for strict typing.                       |
 
 ### 6.2 Architecture Improvements for Refactor
@@ -370,9 +368,9 @@ From route definitions, the system uses ~30+ granular permissions:
 | **DTOs & Form Requests**        | Manual readonly classes, unstructured arrays | ✅ **Migrated to pure PHP readonly DTOs** (e.g., `TransactionPayload`)     |
 | **API Resources**               | Mix of manual arrays + Resources             | Standardize on `JsonResource` / `laravel-data` everywhere                                |
 | **Service-Controller coupling** | Controllers instantiate services directly    | ✅ **Migrated to Action Pattern** (`App\Actions\Sales`, `App\Actions\Backstage`) |
-| **Stock Management**            | Live-counting with 30s Cache TTL             | **Event-Sourced Ledger** (`inventory_movements` table) + Materialized atomic counters    |
+| **Stock Management**            | Live-counting with 30s Cache TTL             | ✅ **Migrated to Event-Sourced Ledger** (`inventory_movements` table)    |
 | **Model Architecture**          | Abstract base classes (`Sellable`)           | ✅ **Composition over Inheritance**: `Purchasable` interface + Traits                    |
-| **External Integrations**       | Tightly coupled HTTP calls                   | **Adapter Pattern** with defined contracts (Interfaces)                                  |
+| **External Integrations**       | Tightly coupled HTTP calls                   | ✅ **Adapter Pattern** implemented via Interfaces (`EmailTransportInterface`)                                  |
 | **Config/secrets**              | `.env` flat file                             | For K8s: use ConfigMaps + Secrets, or Vault                                              |
 | **Media storage**               | Local disk                                   | Switch to **S3/MinIO** with `spatie/media-library` S3 disk                               |
 | **Broadcasting**                | Log driver (dev)                             | Use **Laravel Reverb** or **Soketi** for WebSocket in K8s                                |
