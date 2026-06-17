@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Store;
 
 use App\Actions\Storefront\ProcessOnlineCheckoutAction;
+use App\Contracts\PaymentGatewayInterface;
 use App\DTOs\Sales\SaleLinePayload;
 use App\DTOs\Sales\TransactionPayload;
 use App\Http\Controllers\Controller;
@@ -58,7 +59,7 @@ class OnlinePaymentController extends Controller
      *
      * POST /checkout
      */
-    public function checkout(CheckoutRequest $request, ProcessOnlineCheckoutAction $action): JsonResponse
+    public function checkout(CheckoutRequest $request, ProcessOnlineCheckoutAction $action, PaymentGatewayInterface $gateway): JsonResponse
     {
         $saleLines = collect($request->input('items'))->map(fn (array $item) => new SaleLinePayload(
             purchasableId: $item['purchasable_id'],
@@ -84,17 +85,15 @@ class OnlinePaymentController extends Controller
 
         $transaction = $action->handle($transactionPayload, $saleLines);
 
-        // TODO: Once PaymentGatewayInterface is implemented, call:
-        // $paymentResult = $gateway->createPayment($transaction);
-        // return response()->json(['checkout_url' => $paymentResult->checkoutUrl]);
-
-        // Placeholder: store transaction ID in session and send customer to confirmation
+        // Store transaction ID in session so the callback knows what to look for
         session(['pending_transaction_id' => $transaction->id]);
+
+        $paymentResult = $gateway->createPayment($transaction);
 
         return response()->json([
             'transaction_id' => $transaction->id,
-            'checkout_url' => null, // Will be populated by payment gateway
-            'status' => 'pending',
+            'checkout_url' => $paymentResult->checkoutUrl,
+            'status' => $paymentResult->status,
         ]);
     }
 
@@ -156,11 +155,13 @@ class OnlinePaymentController extends Controller
      *
      * POST /payment/webhook
      */
-    public function webhook(Request $request): \Illuminate\Http\Response
+    public function webhook(Request $request, PaymentGatewayInterface $gateway): \Illuminate\Http\Response
     {
-        // TODO: Once PaymentGatewayInterface is implemented:
-        // if (!$gateway->isWebhookSignatureValid($request)) { abort(401); }
-        // $gateway->handleWebhook($request->all());
+        if (! $gateway->isWebhookSignatureValid($request)) {
+            abort(401, 'Invalid webhook signature');
+        }
+
+        $gateway->handleWebhook($request);
 
         // For now, accept and process known event types
         $eventType = $request->input('event_type');

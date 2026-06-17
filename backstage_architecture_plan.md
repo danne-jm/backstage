@@ -225,20 +225,20 @@ Validates ESNcard codes via external API, checks usage history, allocates codes 
 - Code cannot be reused for the same purchasable model globally (checked via `DiscountUsage`).
 - Stock-aware (checks member-price stock pool availability).
 
-### 3.5 FinancialLedgerService (~220 lines) — Append-Only Ledger
+### 3.5 ✅ FinancialLedgerService (Implemented)
 
-Creates idempotent double-entry records: `recordOnlineTransactionCompleted()`, `recordOfficeSale()`, `recordOnlineTransactionReversal()`, `recordOfficeSaleRemoved()`. All use `firstOrCreate` with idempotency keys.
+Creates idempotent double-entry records: `recordOnlineTransactionCompleted()`, `recordOfficeSale()`, `recordOnlineTransactionReversal()`, `recordOfficeSaleRemoved()`. All use `firstOrCreate` with idempotency keys. Fully wired into `ProcessPosSaleAction`, `OfficeController` (voids), and `OnlinePaymentController` (webhooks).
 
-### 3.6 Payment Gateway
+### 3.6 ✅ Payment Gateway Strategy (Implemented)
 
-**Interface:** `PaymentGatewayInterface` — `createPayment()`, `verifyPayment()`, `getPaymentStatus()`, `handleWebhook()`, `refund()`, `isWebhookSignatureValid()`
+**Interface:** `PaymentGatewayInterface` — `createPayment()`, `verifyPayment()`, `handleWebhook()`, `refund()`, `isWebhookSignatureValid()`
 
 **Result DTO:** `PaymentResult` (status, paymentId, checkoutUrl, message, errorCode, metadata)
 
 | Implementation              | Purpose                                                        |
 | --------------------------- | -------------------------------------------------------------- |
-| `SumUpPaymentGateway`       | Production — SumUp Checkout API with HMAC webhook verification |
-| `DevelopmentPaymentGateway` | Dev — auto-completes payments immediately                      |
+| `SumUpPaymentGateway`       | Production — SumUp Checkout API with HMAC webhook verification **(Pending)** |
+| ✅ `DevelopmentPaymentGateway` | Dev — auto-completes payments immediately and resolves callback  |
 
 ### 3.7 ✅ Email Services (Refactored to Adapter Pattern)
 
@@ -511,3 +511,43 @@ The routing has been cleanly separated into dedicated files to avoid a bloated `
 5. **Split stock pools** — Events/products can have separate stock pools for Membership holders (`quantity_with_membership`) and regular buyers (`quantity_without_membership`), or a single universal pool.
 
 6. ✅ **Abstract Sellable** — Refactored to `Purchasable` Interface.
+
+---
+
+## 10. Next To-Dos
+
+Below is the list of outstanding backend and integration tasks required to fully complete the application prior to frontend client-side construction.
+
+### 10.1 💳 Payment Gateway Integration
+Currently, `OnlinePaymentController` uses session placeholders for testing checkout flows. We need to implement:
+- [x] **`PaymentGatewayInterface`**: Create the contract defining `createPayment()`, `verifyPayment()`, `handleWebhook()`, and `refund()`.
+- [ ] **`SumUpPaymentGateway`**: Implement the production checkout API + HMAC webhook validation.
+- [x] **`DevelopmentPaymentGateway`**: A mock gateway that immediately flags transactions as completed for local testing.
+- [x] **Controller Integration**: Replace stubs in `OnlinePaymentController` checkout and webhook handlers with dynamic gateway resolution.
+
+### 10.2 📊 Financial Ledger System
+The `FinancialLedgerEntry` model exists, but we need the orchestration layer:
+- [x] **`FinancialLedgerService`**: Create the service to write idempotent credit/debit records.
+- [x] **Action Wiring**:
+  - Trigger a ledger entry when a POS Cash or POS Card sale is recorded.
+  - Trigger an entry when an online transaction status transitions to `completed` or `refunded`.
+  - Ensure all entries use structured idempotency keys (e.g., `online_sale_completed:{id}`) to prevent double-logging.
+
+### 10.3 🔐 Granular Authorization Middleware
+`routes/backstage.php` is currently only guarded by the general `auth` middleware. We need to protect specific sections with Spatie permission rules:
+- [ ] **Add permission guards to routes**:
+  - `backstage/settings/users/*` → `permission:manage_users`
+  - `backstage/audit-log` → `permission:view_audit_log`
+  - `backstage/office/shift/*` → `permission:manage_office`
+  - `backstage/inventory/*` → `permission:manage_inventory`
+  - `backstage/sellables/*` → `permission:manage_sellables`
+
+### 10.4 ⏰ Scheduled Console Commands
+We need to create the console commands located in `app/Console/Commands/`:
+- [ ] **`transactions:cleanup-abandoned`**: Automatically runs every 15 minutes to fail stale pending transactions, release locked stock pools, and record ledger reversals.
+- [ ] **`ledger:backfill`**: Daily job to reconcile bank/cash totals and backfill missing entries.
+- [ ] **`stock:reconcile`**: Nightly task to audit the `inventory_movements` ledger against physical item records.
+
+### 10.5 🖨️ QR Code Generation Enhancement
+- [ ] **`QrCodeGenerationService`**: Extend basic SVG generation to support embedding custom logo overlays into generated ticket QR codes.
+- [ ] **`CustomQrPosterService`**: Service to dynamically overlay event info and QR codes onto promotional image assets.

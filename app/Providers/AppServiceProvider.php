@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\PaymentGatewayInterface;
+use App\Services\Storefront\Gateways\DevelopmentPaymentGateway;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +17,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(PaymentGatewayInterface::class, function ($app) {
+            // For now, always use the dev gateway as requested
+            return $app->make(DevelopmentPaymentGateway::class);
+        });
     }
 
     /**
