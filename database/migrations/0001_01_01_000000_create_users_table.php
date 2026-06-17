@@ -19,11 +19,12 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password_hash');
             $table->boolean('is_locked')->default(false);
+            $table->string('role')->default('anonymous');
+            $table->string('permission')->default('guest');
             $table->string('gmail_provider_id')->nullable();
             $table->string('gmail_provider_email')->nullable();
             $table->text('gmail_refresh_token')->nullable();
             $table->json('pinned')->nullable();
-            $table->json('footer_links')->nullable();
             $table->timestamp('last_seen_at')->nullable();
             $table->rememberToken();
             $table->timestamps();

@@ -49,8 +49,7 @@ The middleware switches the Blade root view (`backstage` vs `store`) and shared 
 | gmail_provider_id                | string     | Google OAuth ID                          |
 | gmail_provider_email             | string     | Connected Google email                   |
 | gmail_refresh_token              | string     | For Gmail/Sheets API                     |
-| pinned                           | JSON array | UI state                                 |
-| footer_links                     | JSON array | Sidebar links (defaults provided)        |
+| pinned                           | JSON array | Sidebar links (defaults provided)        |
 | last_seen_at                     | datetime   |                                          |
 | two_factor_secret/recovery_codes | encrypted  | Fortify 2FA                              |
 
@@ -370,30 +369,30 @@ From route definitions, the system uses ~30+ granular permissions:
 
 ### 6.1 Replace with Ready-Made Dependencies
 
-| Current Implementation                               | Recommendation                                               | Package/Approach                                                                                                              |
-| ---------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| **Flat JSON permissions** on User model              | Replace with **Spatie Permission**                           | `spatie/laravel-permission` — gives roles, permissions, middleware, caching, Blade directives. Already using Spatie packages. |
-| **Custom financial ledger** (FinancialLedgerService) | Keep custom but consider **ledger packages**                 | `scottlaurent/accounting` or keep custom. Your idempotent firstOrCreate pattern is solid.                                     |
-| **Email formatting** (DOMDocument manipulation)      | Replace with **MJML** or **Maizzle**                         | Templated responsive email framework instead of runtime DOM manipulation.                                                     |
-| **QR code generation** (custom service)              | Use **Simple QRCode** package                                | `simplesoftwareio/simple-qrcode` — wraps BaconQrCode with Laravel integration.                                                |
-| **ESNcard validation** (raw HTTP)                    | Keep as-is                                                   | No standard package exists for ESNcard API. Wrap in a proper SDK class.                                                       |
-| **Email verification** (DNS check)                   | Use **egulias/email-validator**                              | Already a Laravel transitive dep; use it directly for RFC + DNS validation.                                                   |
-| **Cache-based stock counting**                       | Migrate to **Event-Sourced Ledger** / **Atomic Ops**         | Eliminate 30s cache TTL. Use an `inventory_movements` table and materialized views/Redis `DECR` for real-time accurate counts. |
-| **Unstructured data passing / arrays**               | Replace with **spatie/laravel-data**                         | Strictly type inputs, validate automatically, and generate TypeScript interfaces for the React frontend.                      |
+| Current Implementation                               | Recommendation                                       | Package/Approach                                                                                                               |
+| ---------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Flat JSON permissions** on User model              | Replace with **Spatie Permission**                   | `spatie/laravel-permission` — gives roles, permissions, middleware, caching, Blade directives. Already using Spatie packages.  |
+| **Custom financial ledger** (FinancialLedgerService) | Keep custom but consider **ledger packages**         | `scottlaurent/accounting` or keep custom. Your idempotent firstOrCreate pattern is solid.                                      |
+| **Email formatting** (DOMDocument manipulation)      | Replace with **MJML** or **Maizzle**                 | Templated responsive email framework instead of runtime DOM manipulation.                                                      |
+| **QR code generation** (custom service)              | Use **Simple QRCode** package                        | `simplesoftwareio/simple-qrcode` — wraps BaconQrCode with Laravel integration.                                                 |
+| **ESNcard validation** (raw HTTP)                    | Keep as-is                                           | No standard package exists for ESNcard API. Wrap in a proper SDK class.                                                        |
+| **Email verification** (DNS check)                   | Use **egulias/email-validator**                      | Already a Laravel transitive dep; use it directly for RFC + DNS validation.                                                    |
+| **Cache-based stock counting**                       | Migrate to **Event-Sourced Ledger** / **Atomic Ops** | Eliminate 30s cache TTL. Use an `inventory_movements` table and materialized views/Redis `DECR` for real-time accurate counts. |
+| **Unstructured data passing / arrays**               | Replace with **spatie/laravel-data**                 | Strictly type inputs, validate automatically, and generate TypeScript interfaces for the React frontend.                       |
 
 ### 6.2 Architecture Improvements for Refactor
 
-| Area                            | Current                                   | Recommended                                                                         |
-| ------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------- |
-| **DTOs & Form Requests**        | Manual readonly classes, unstructured arrays | Use **spatie/laravel-data** for strict typing, validation, and TypeScript generation |
-| **API Resources**               | Mix of manual arrays + Resources          | Standardize on `JsonResource` / `laravel-data` everywhere                           |
-| **Service-Controller coupling** | Controllers instantiate services directly | Use **Action Pattern** (e.g., `lorisleiva/laravel-actions`) or proper DI with interfaces |
-| **Stock Management**            | Live-counting with 30s Cache TTL          | **Event-Sourced Ledger** (`inventory_movements` table) + Materialized atomic counters |
-| **Model Architecture**          | Abstract base classes (`Sellable`)        | **Composition over Inheritance**: `Purchasable` interface + Traits                  |
-| **External Integrations**       | Tightly coupled HTTP calls                | **Adapter Pattern** with defined contracts (Interfaces)                             |
-| **Config/secrets**              | `.env` flat file                          | For K8s: use ConfigMaps + Secrets, or Vault                                         |
-| **Media storage**               | Local disk                                | Switch to **S3/MinIO** with `spatie/media-library` S3 disk                          |
-| **Broadcasting**                | Log driver (dev)                          | Use **Laravel Reverb** or **Soketi** for WebSocket in K8s                           |
+| Area                            | Current                                      | Recommended                                                                              |
+| ------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **DTOs & Form Requests**        | Manual readonly classes, unstructured arrays | Use **spatie/laravel-data** for strict typing, validation, and TypeScript generation     |
+| **API Resources**               | Mix of manual arrays + Resources             | Standardize on `JsonResource` / `laravel-data` everywhere                                |
+| **Service-Controller coupling** | Controllers instantiate services directly    | Use **Action Pattern** (e.g., `lorisleiva/laravel-actions`) or proper DI with interfaces |
+| **Stock Management**            | Live-counting with 30s Cache TTL             | **Event-Sourced Ledger** (`inventory_movements` table) + Materialized atomic counters    |
+| **Model Architecture**          | Abstract base classes (`Sellable`)           | **Composition over Inheritance**: `Purchasable` interface + Traits                       |
+| **External Integrations**       | Tightly coupled HTTP calls                   | **Adapter Pattern** with defined contracts (Interfaces)                                  |
+| **Config/secrets**              | `.env` flat file                             | For K8s: use ConfigMaps + Secrets, or Vault                                              |
+| **Media storage**               | Local disk                                   | Switch to **S3/MinIO** with `spatie/media-library` S3 disk                               |
+| **Broadcasting**                | Log driver (dev)                             | Use **Laravel Reverb** or **Soketi** for WebSocket in K8s                                |
 
 ### 6.3 Keep As-Is (Well-Implemented)
 
