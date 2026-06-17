@@ -13,7 +13,8 @@ class ProcessOnlineCheckoutAction
 {
     public function __construct(
         protected CreateTransactionRecordAction $createTransactionRecordAction,
-        protected AttachSaleLinesAction $attachSaleLinesAction
+        protected AttachSaleLinesAction $attachSaleLinesAction,
+        protected \App\Actions\Sales\AllocateStockAction $allocateStockAction
     ) {}
 
     /**
@@ -29,12 +30,18 @@ class ProcessOnlineCheckoutAction
             // 2. Attach the cart items
             $this->attachSaleLinesAction->handle($transaction, $saleLines);
 
-            // 3. (Mock) Proceed to Payment Gateway
+            // 3. Allocate stock in the event-sourced ledger
+            $transaction->load('sales.purchasable');
+            foreach ($transaction->sales as $sale) {
+                $this->allocateStockAction->handle($sale);
+            }
+
+            // 4. (Mock) Proceed to Payment Gateway
             // $paymentGateway->charge($transaction);
             
-            // 4. (Mock) Dispatch confirmation email if successful
+            // 5. (Mock) Dispatch confirmation email if successful
 
-            return $transaction->load('sales');
+            return $transaction;
         });
     }
 }

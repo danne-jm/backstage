@@ -13,7 +13,8 @@ class ProcessPosSaleAction
 {
     public function __construct(
         protected CreateTransactionRecordAction $createTransactionRecordAction,
-        protected AttachSaleLinesAction $attachSaleLinesAction
+        protected AttachSaleLinesAction $attachSaleLinesAction,
+        protected \App\Actions\Sales\AllocateStockAction $allocateStockAction
     ) {}
 
     /**
@@ -29,10 +30,13 @@ class ProcessPosSaleAction
             // 2. Attach the individual items bought
             $this->attachSaleLinesAction->handle($transaction, $saleLines);
 
-            // Note: In a full system, you would also call an AllocateStockAction here
-            // to decrement the inventory_movements ledger.
+            // 3. Allocate stock in the event-sourced ledger
+            $transaction->load('sales.purchasable');
+            foreach ($transaction->sales as $sale) {
+                $this->allocateStockAction->handle($sale);
+            }
 
-            return $transaction->load('sales');
+            return $transaction;
         });
     }
 }
