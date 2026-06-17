@@ -20,7 +20,7 @@ class OfficeShiftTotalsIntegrityTest extends TestCase
     {
         $this->withoutVite();
 
-        $user = User::factory()->create([
+        $user = User::factory()->withAllPermissions()->create([
             'email_verified_at' => now(),
         ]);
 
@@ -64,16 +64,16 @@ class OfficeShiftTotalsIntegrityTest extends TestCase
 
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
-            ->where('lastShift.card_total', 25.0)
-            ->where('lastShift.total', 32.0)
-            ->where('allShifts.0.card_total', 25.0)
-            ->where('allShifts.0.total', 32.0)
+            ->where('lastShift.card_total', fn ($v) => (float) $v === 25.0)
+            ->where('lastShift.total', fn ($v) => (float) $v === 32.0)
+            ->where('allShifts.0.card_total', fn ($v) => (float) $v === 25.0)
+            ->where('allShifts.0.total', fn ($v) => (float) $v === 32.0)
         );
     }
 
     public function test_claiming_orphan_online_sales_does_not_double_count_card_totals(): void
     {
-        $user = User::factory()->create([
+        $user = User::factory()->withAllPermissions()->create([
             'email_verified_at' => now(),
         ]);
 
@@ -127,7 +127,7 @@ class OfficeShiftTotalsIntegrityTest extends TestCase
 
     public function test_start_shift_ignores_pending_orphan_online_sales(): void
     {
-        $user = User::factory()->create([
+        $user = User::factory()->withAllPermissions()->create([
             'email_verified_at' => now(),
         ]);
 

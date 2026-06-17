@@ -9,16 +9,15 @@ class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_screen_can_be_rendered()
+    public function test_registration_is_disabled()
     {
-        $response = $this->get(route('register'));
-
-        $response->assertOk();
+        // This application has registration disabled — no public sign-up route exists.
+        $this->assertFalse($this->app['router']->has('register'));
     }
 
-    public function test_new_users_can_register()
+    public function test_registration_endpoint_returns_not_found()
     {
-        $response = $this->post(route('register.store'), [
+        $response = $this->post('/register', [
             'first_name' => 'Test',
             'last_name' => 'User',
             'email' => 'test@example.com',
@@ -26,7 +25,7 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        // Route doesn't exist → 404
+        $response->assertNotFound();
     }
 }

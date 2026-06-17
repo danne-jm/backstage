@@ -13,7 +13,7 @@ class StoreManagerDataEventsTest extends TestCase
 
     public function test_store_manager_data_includes_past_events_in_sellables_panel(): void
     {
-        $user = User::factory()->create([
+        $user = User::factory()->withAllPermissions()->create([
             'email_verified_at' => now(),
         ]);
 

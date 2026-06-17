@@ -22,7 +22,7 @@ class TicketScannerTest extends TestCase
     {
         parent::setUp();
         
-        $this->user = User::factory()->create();
+        $this->user = User::factory()->withAllPermissions()->create();
         
         // We need to verify if Event factory exists. If not, create manually.
         // Assuming factories exist for standard models, checking existence:

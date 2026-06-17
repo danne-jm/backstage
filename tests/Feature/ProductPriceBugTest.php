@@ -11,7 +11,7 @@ class ProductPriceBugTest extends TestCase
 
     public function test_product_price_update()
     {
-        $user = User::factory()->create(['email' => 'admin@example.com']);
+        $user = User::factory()->withAllPermissions()->create(['email' => 'admin@example.com']);
         $product = Product::create([
             'name' => 'Tshirt',
             'price' => 15,

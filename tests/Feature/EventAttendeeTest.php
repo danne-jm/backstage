@@ -20,7 +20,7 @@ class EventAttendeeTest extends TestCase
     {
         parent::setUp();
         $this->withoutVite();
-        $this->user = User::factory()->create([
+        $this->user = User::factory()->withAllPermissions()->create([
             'gmail_refresh_token' => 'fake-token'
         ]);
         $this->event = Event::factory()->create([

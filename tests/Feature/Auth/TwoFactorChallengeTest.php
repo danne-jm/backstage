@@ -34,7 +34,7 @@ class TwoFactorChallengeTest extends TestCase
             'confirmPassword' => true,
         ]);
 
-        $user = User::factory()->create();
+        $user = User::factory()->withAllPermissions()->create();
 
         $user->forceFill([
             'two_factor_secret' => encrypt('test-secret'),

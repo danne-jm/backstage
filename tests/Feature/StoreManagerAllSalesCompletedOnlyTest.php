@@ -16,7 +16,7 @@ class StoreManagerAllSalesCompletedOnlyTest extends TestCase
     {
         $this->withoutVite();
 
-        $user = User::factory()->create([
+        $user = User::factory()->withAllPermissions()->create([
             'email_verified_at' => now(),
         ]);
 

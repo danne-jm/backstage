@@ -64,4 +64,41 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => now(),
         ]);
     }
+
+    /**
+     * Grant the user a specific list of permissions.
+     */
+    public function withPermissions(array $permissions): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'permissions' => $permissions,
+        ]);
+    }
+
+    /**
+     * Grant every known backstage permission — useful in feature tests that
+     * exercise endpoints rather than the permission system itself.
+     */
+    public function withAllPermissions(): static
+    {
+        return $this->withPermissions([
+            'view_dashboard',
+            'view_ticket_scanner', 'import_tickets', 'scan_tickets',
+            'view_office', 'create_office', 'update_office',
+            'view_store_manager',
+            'view_sellables',
+            'create_product', 'update_product', 'delete_product',
+            'create_event', 'update_event', 'delete_event',
+            'view_event_attendees', 'update_event_attendee_config', 'update_event_attendee',
+            'view_inventory', 'create_item', 'update_item', 'delete_item',
+            'view_settings_profile', 'update_settings_profile', 'delete_account',
+            'view_settings_password', 'update_settings_password',
+            'view_settings_appearance',
+            'view_settings_2fa',
+            'view_settings_users', 'create_user', 'update_user', 'delete_user',
+            'view_settings_google', 'view_settings_footer', 'update_settings_footer',
+            'view_audit_log',
+            'view_email_distributor', 'send_email_distribution',
+        ]);
+    }
 }
