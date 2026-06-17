@@ -217,13 +217,13 @@ Records office shift sales with full snapshot, variant resolution, stock validat
 
 **Methods:** `startShift()` (creates shift, claims orphaned online sales, adds worker), `endShift()`, `recordSale()`, `removeSale()`, `updateCashBreakdown()`, `updateSaleBreakdown()`, `updateSaleVariant()`, `syncTotals()`
 
-### 3.4 DiscountAllocator (~230 lines) — ESNcard Discount Engine
+### 3.4 ✅ DiscountAllocator (Implemented)
 
-Validates ESNcard codes via external API, checks usage history, allocates codes to cart units using FCFS strategy with rules:
+Validates ESNcard codes via external API, checks usage history, allocates codes to cart units using a greedy optimization strategy with the following rules:
 
-- One code per item-type per session
-- Code cannot be reused for same item globally
-- Stock-aware (checks member-price pool availability)
+- One code per purchasable model inside the active cart.
+- Code cannot be reused for the same purchasable model globally (checked via `DiscountUsage`).
+- Stock-aware (checks member-price stock pool availability).
 
 ### 3.5 FinancialLedgerService (~220 lines) — Append-Only Ledger
 
@@ -260,7 +260,7 @@ Creates idempotent double-entry records: `recordOnlineTransactionCompleted()`, `
 | ✅ `GoogleSheetsAdapter`     | **(Refactored GoogleSheetsService)** Clean SpreadsheetIntegrationInterface wrapper for `google/apiclient`                   |
 | `QrCodeGenerationService` | QR code generation with optional logo overlay                                            |
 | `CustomQrPosterService`   | Generates QR poster images                                                               |
-| `ESNcardService`          | Validates ESNcard numbers against external API (cached)                                  |
+| ✅ `ESNcardService`          | Validates ESNcard numbers against external API (cached, parallelized)                    |
 
 ---
 

@@ -2,11 +2,13 @@
 
 namespace App\Actions\Backstage;
 
+use App\Actions\Sales\AllocateStockAction;
 use App\Actions\Sales\AttachSaleLinesAction;
 use App\Actions\Sales\CreateTransactionRecordAction;
-use App\DTOs\Sales\TransactionPayload;
 use App\DTOs\Sales\SaleLinePayload;
+use App\DTOs\Sales\TransactionPayload;
 use App\Models\Transaction;
+use App\Services\Ledger\FinancialLedgerService;
 use Illuminate\Support\Facades\DB;
 
 class ProcessPosSaleAction
@@ -14,12 +16,11 @@ class ProcessPosSaleAction
     public function __construct(
         protected CreateTransactionRecordAction $createTransactionRecordAction,
         protected AttachSaleLinesAction $attachSaleLinesAction,
-        protected \App\Actions\Sales\AllocateStockAction $allocateStockAction
+        protected AllocateStockAction $allocateStockAction
     ) {}
 
     /**
-     * @param TransactionPayload $transactionPayload
-     * @param SaleLinePayload[] $saleLines
+     * @param  SaleLinePayload[]  $saleLines
      */
     public function handle(TransactionPayload $transactionPayload, array $saleLines): Transaction
     {
@@ -35,6 +36,9 @@ class ProcessPosSaleAction
             foreach ($transaction->sales as $sale) {
                 $this->allocateStockAction->handle($sale);
             }
+
+            // 4. Record financial ledger entry
+            app(FinancialLedgerService::class)->recordOfficeSale($transaction);
 
             return $transaction;
         });

@@ -8,6 +8,7 @@ use App\DTOs\Sales\TransactionPayload;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Store\CheckoutRequest;
 use App\Models\Transaction;
+use App\Services\Ledger\FinancialLedgerService;
 use App\Services\Storefront\DiscountAllocator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -167,10 +168,15 @@ class OnlinePaymentController extends Controller
 
         if ($eventType === 'CHECKOUT_COMPLETED' && $checkoutId) {
             $transaction = Transaction::where('external_payment_id', $checkoutId)->first();
-            $transaction?->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-            ]);
+            if ($transaction) {
+                $transaction->update([
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                ]);
+
+                // Record the sale in the financial ledger
+                app(FinancialLedgerService::class)->recordOnlineTransactionCompleted($transaction);
+            }
         }
 
         return response('OK', 200);

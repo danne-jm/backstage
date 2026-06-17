@@ -13,6 +13,7 @@ use App\Models\OfficeShift;
 use App\Models\OfficeShiftWorker;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Ledger\FinancialLedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -223,6 +224,9 @@ class OfficeController extends Controller
 
         // Soft-void the transaction
         $transaction->update(['status' => 'refunded']);
+
+        // Record the reversal in the ledger
+        app(FinancialLedgerService::class)->recordOfficeSaleRemoved($transaction);
 
         return back()->with('success', 'Sale voided successfully.');
     }
