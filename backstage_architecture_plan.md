@@ -176,13 +176,13 @@ Strictly for physical worker drawer tracking. Online sales bypass this.
 
 | Model                    | Purpose                       | Key Fields                                                                                          |
 | ------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------- |
-| **Ticket**               | QR-code event tickets         | event_id, ticket_code, email, first/last_name, scan_count, scan_details (JSON), scanned_at          |
-| **Item**                 | Physical inventory items      | name, quantity, category (JSON), image via Media Library                                            |
-| **Mail**                 | Email send log                | event_id, user_id, recipient_email, subject, body, success, error_message                           |
-| **DiscountUsage**        | ESNcard discount tracking     | code, online_transaction_id, online_sale_id, product/event_id, original/paid/saved amounts          |
-| **FinancialLedgerEntry** | Double-entry accounting       | entry_type, direction (credit/debit), amount, channel, payment_method, idempotency_key, source refs |
-| **OfficeShiftWorker**    | Shift staffing                | office_shift_id, user_id, role                                                                      |
-| **Media**                | Spatie Media Library override | Uses ULIDs                                                                                          |
+| ✅ **Ticket**               | QR-code event tickets         | `id` (ULID), `event_id`, `ticket_code`, `email`, `first/last_name`, `scan_count`, `scan_details` (JSON), `scanned_at` |
+| **Item**                 | Physical inventory items      | `id` (ULID), `name`, `quantity`, `category` (JSON), media via `spatie/media-library`                    |
+| **MailLog**              | Email send log                | `id` (ULID), `event_id`, `user_id`, `recipient_email`, `subject`, `body`, `success`, `error_message`        |
+| **DiscountUsage**        | ESNcard discount tracking     | `id` (ULID), `code`, `transaction_id`, `sale_id`, `purchasable` (morphs), `original/paid/saved amounts`     |
+| **FinancialLedgerEntry** | Double-entry accounting       | `id` (ULID), `entry_type`, `direction` (credit/debit), `amount`, `channel`, `transaction_id`, `idempotency_key` |
+| **OfficeShiftWorker**    | Shift staffing                | `id` (ULID), `office_shift_id`, `user_id`, `role`                                                   |
+| **Media**                | Spatie Media Library override | Overrides standard numeric ID to use ULIDs to match the rest of the application.                    |
 
 ---
 
@@ -254,10 +254,10 @@ Creates idempotent double-entry records: `recordOnlineTransactionCompleted()`, `
 
 | Service                   | Responsibility                                                                           |
 | ------------------------- | ---------------------------------------------------------------------------------------- |
-| `SellablesService`        | Normalizes input (unlimited/quantity semantics), syncs variants                          |
+| ✅ `SaveEventAction` / `SaveProductAction`        | **(Refactored SellablesService)** Normalizes input (unlimited/quantity semantics) using strict pure PHP DTOs.                          |
 | ✅ `ScanTicketAction`    | **(Refactored)** QR ticket verification (atomic scan) with pessimistic locking to prevent double scans           |
-| `AttendeeService`         | Reads Google Sheets attendee data, validates purchases against sales, email verification |
-| `GoogleSheetsService`     | Google Sheets API wrapper (read, write, batch update, cell formatting)                   |
+| ✅ `SyncAttendeesToSheetAction`         | **(Refactored AttendeeService)** Reads/writes Google Sheets attendee data via Adapter     |
+| ✅ `GoogleSheetsAdapter`     | **(Refactored GoogleSheetsService)** Clean SpreadsheetIntegrationInterface wrapper for `google/apiclient`                   |
 | `QrCodeGenerationService` | QR code generation with optional logo overlay                                            |
 | `CustomQrPosterService`   | Generates QR poster images                                                               |
 | `ESNcardService`          | Validates ESNcard numbers against external API (cached)                                  |
