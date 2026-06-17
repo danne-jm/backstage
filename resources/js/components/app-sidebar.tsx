@@ -15,6 +15,10 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as inventory } from '@/routes/backstage/inventory';
+import { index as sellables } from '@/routes/backstage/sellables';
+import { index as office } from '@/routes/backstage/office';
+import { root as ticketScanner } from '@/routes/backstage/ticket-scanner';
+import { index as emailDistributor } from '@/routes/backstage/email-distributor';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -24,9 +28,29 @@ const mainNavItems: NavItem[] = [
         icon: LucideIcons.LayoutGrid,
     },
     {
+        title: 'Office Shifts',
+        href: office().url,
+        icon: LucideIcons.Building2,
+    },
+    {
+        title: 'Sellables',
+        href: sellables().url,
+        icon: LucideIcons.ShoppingBag,
+    },
+    {
+        title: 'Ticket Scanner',
+        href: ticketScanner().url,
+        icon: LucideIcons.QrCode,
+    },
+    {
+        title: 'Email Distributor',
+        href: emailDistributor().url,
+        icon: LucideIcons.Mail,
+    },
+    {
         title: 'Inventory',
-        href: inventory(),
-        icon: LucideIcons.Box,
+        href: inventory().url,
+        icon: LucideIcons.Warehouse,
     },
 ];
 
