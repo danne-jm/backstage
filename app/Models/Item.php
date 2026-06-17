@@ -14,6 +14,8 @@ class Item extends Model
         'name',
         'quantity',
         'category',
+        'image_path',
+        'changed_by',
     ];
 
     protected $casts = [

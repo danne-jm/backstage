@@ -14,6 +14,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as inventory } from '@/routes/backstage/inventory';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -21,6 +22,11 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LucideIcons.LayoutGrid,
+    },
+    {
+        title: 'Inventory',
+        href: inventory(),
+        icon: LucideIcons.Box,
     },
 ];
 

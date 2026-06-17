@@ -25,7 +25,7 @@ Route::middleware('auth')->delete('auth/google/disconnect', [GoogleController::c
 
 // ─── Backstage (authenticated) ─────────────────────────────────────────────
 
-Route::middleware(['auth'])->prefix('backstage')->name('backstage.')->group(function () {
+Route::middleware(['auth'])->name('backstage.')->group(function () {
 
     // ─── Sellables ─────────────────────────────────────────────────────────
 

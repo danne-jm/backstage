@@ -17,6 +17,8 @@ class SaveItemRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:0'],
             'category' => ['nullable', 'array'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'changed_by' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

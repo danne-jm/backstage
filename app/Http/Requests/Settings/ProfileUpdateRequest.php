@@ -17,6 +17,11 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        $rules = $this->profileRules($this->user()->id);
+
+        // Email is managed by administrators, users cannot update it via profile settings.
+        unset($rules['email']);
+
+        return $rules;
     }
 }

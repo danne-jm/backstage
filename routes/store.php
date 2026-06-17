@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 // ─── Public Storefront ─────────────────────────────────────────────────────
 
-Route::prefix('/')->name('store.')->group(function () {
+Route::prefix('store')->name('store.')->group(function () {
     Route::get('/', [ShopController::class, 'index'])->name('index');
     Route::get('item/{type}/{id}', [ShopController::class, 'show'])->name('show');
     Route::get('cart', [ShopController::class, 'cart'])->name('cart');
