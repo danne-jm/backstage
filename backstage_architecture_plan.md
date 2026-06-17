@@ -120,73 +120,57 @@ Base class for `Event` and `Product`. Uses polymorphic variants.
 
 **Stock:** Migrating to `inventory_movements` ledger counting.
 
-### 2.6 OfficeShift
+### 2.6 ✅ Transaction (Unified Order)
 
-| Attribute                   | Type      | Notes                         |
-| --------------------------- | --------- | ----------------------------- |
-| id                          | ULID      |                               |
-| started_by / ended_by       | FK → User |                               |
-| started_at / ended_at       | datetime  |                               |
-| status                      | string    | `open` or `closed`            |
-| cash_total / card_total     | decimal   | Running sale totals           |
-| start_cash / start_card     | decimal   | Opening float                 |
-| total_cash / total_card     | decimal   | start + sales                 |
-| cash_breakdown              | JSON      | Denomination counts for sales |
-| start_cash_breakdown        | JSON      | Opening denomination counts   |
-| end_of_shift_cash_breakdown | JSON      | Merged final breakdown        |
-| notes                       | text      |                               |
+Replaces `OnlineTransaction` and aggregates physical POS sales.
 
-**Constants:** `DENOMINATIONS` — 16 entries from 500€ to 1c + token.
+| Attribute                       | Type     | Notes                                                         |
+| ------------------------------- | -------- | ------------------------------------------------------------- |
+| id                              | ULID     |                                                               |
+| channel                         | string   | `online`, `pos`                                               |
+| status                          | string   | `pending`, `completed`, `failed`, `refunded`                  |
+| office_shift_id                 | FK       | Nullable. Strictly for `pos` channel.                         |
+| customer_email                  | string   | Nullable (required for online)                                |
+| total_amount / discount_total   | decimal  |                                                               |
+| payment_method                  | string   | `sumup_online`, `pos_card`, `pos_cash`                        |
+| external_payment_id             | string   | Gateway reference (e.g. SumUp checkout ID)                    |
+| cash_tendered_amount            | decimal  | POS Cash: exact amount handed by customer                     |
+| cash_change_amount              | decimal  | POS Cash: exact amount handed back                            |
+| cash_tendered_breakdown         | JSON     | POS Cash: exact bills/coins handed by customer                |
+| cash_change_breakdown           | JSON     | POS Cash: exact bills/coins handed back                       |
+| completed_at                    | datetime |                                                               |
 
-**Methods:** `totalFromBreakdown(array): float`, `mergeBreakdowns(array, array): array`
+### 2.7 ✅ Sale (Order Line Item)
 
-### 2.7 OfficeShiftSale
+Replaces both `OfficeShiftSale` and `OnlineSale`. 
 
-| Attribute             | Type             | Notes                                                        |
-| --------------------- | ---------------- | ------------------------------------------------------------ |
-| office_shift_id       | FK → OfficeShift |                                                              |
-| product_id / event_id | FK (nullable)    |                                                              |
-| method                | string           | `cash` or `card`                                             |
-| amount                | decimal          |                                                              |
-| description           | text             |                                                              |
-| sold_by               | FK → User        |                                                              |
-| sold_at               | datetime         |                                                              |
-| snapshot              | JSON             | Full sale snapshot (name, price, variant, ticket_type, etc.) |
-| breakdown             | JSON             | Cash denomination breakdown                                  |
-| snapshot_variant_id   | string           | Indexed for variant stock counting                           |
+| Attribute             | Type        | Notes                                                              |
+| --------------------- | ----------- | ------------------------------------------------------------------ |
+| id                    | ULID        |                                                                    |
+| transaction_id        | FK          | → Transaction                                                      |
+| purchasable_id / type | polymorphic | → Event or Product                                                 |
+| variant_id            | FK          | Nullable → Variant                                                 |
+| unit_price / quantity | decimal/int |                                                                    |
+| subtotal              | decimal     | `unit_price * quantity`                                            |
+| ticket_type           | string      | `with_membership` or `regular`                                     |
+| snapshot              | JSON        | Immutable snapshot (name, options selected at time of sale)        |
+| discount_code_used    | string      | Nullable                                                           |
 
-### 2.8 OnlineTransaction
+### 2.8 ✅ OfficeShift (Cash Drawer Reconciliation)
 
-| Attribute                     | Type     | Notes                                         |
-| ----------------------------- | -------- | --------------------------------------------- |
-| id                            | ULID     |                                               |
-| reference_id                  | string   | Public-facing reference                       |
-| total_amount / processing_fee | decimal  |                                               |
-| discount_codes                | JSON     | Applied ESNcard codes                         |
-| external_payment_id           | string   | SumUp checkout ID                             |
-| payment_status                | string   | `pending`, `completed`, `failed`, `cancelled` |
-| payment_gateway               | string   | `sumup` or `development`                      |
-| email                         | string   | Customer email                                |
-| completed_at                  | datetime |                                               |
-| mail_success                  | boolean  | Confirmation email sent?                      |
+Strictly for physical worker drawer tracking. Online sales bypass this.
 
-**Methods:** `isPending()`, `isCompleted()`, `isFailed()`
-
-### 2.9 OnlineSale
-
-| Attribute             | Type          | Notes                              |
-| --------------------- | ------------- | ---------------------------------- |
-| id                    | ULID          |                                    |
-| online_transaction_id | FK            |                                    |
-| product_id / event_id | FK (nullable) |                                    |
-| reference_id          | string        | Per-item reference                 |
-| amount                | decimal       |                                    |
-| method                | string        |                                    |
-| ticket_type           | string        | `with_card` or `without_card`      |
-| details               | JSON          | options, code_used, variant info   |
-| details_variant_id    | string        | Indexed for variant stock counting |
-| sold_at               | datetime      |                                    |
-| office_shift_id       | FK (nullable) | Linked when claimed by POS shift   |
+| Attribute                   | Type      | Notes                                                       |
+| --------------------------- | --------- | ----------------------------------------------------------- |
+| id                          | ULID      |                                                             |
+| started_by / ended_by       | FK → User |                                                             |
+| started_at / ended_at       | datetime  |                                                             |
+| status                      | string    | `open` or `closed`                                          |
+| start_cash_breakdown        | JSON      | Opening float (exact bills/coins)                           |
+| expected_cash_total         | decimal   | Dynamically derived: `start_cash` + `tendered` - `change`   |
+| end_of_shift_cash_breakdown | JSON      | Final manually counted breakdown                            |
+| discrepancy_amount          | decimal   | Difference between expected and actual end of shift         |
+| notes                       | text      |                                                             |
 
 ### 2.10 Other Models
 
@@ -204,7 +188,7 @@ Base class for `Event` and `Product`. Uses polymorphic variants.
 
 ## 3. Service Layer
 
-### 3.1 CheckoutService (~650 lines) — Online Store Checkout
+### 3.1 ✅ CheckoutService (Refactored to Action Pattern)
 
 **Core flow:** `initiateCheckout(cart, email, codes)` →
 
@@ -223,7 +207,7 @@ Base class for `Event` and `Product`. Uses polymorphic variants.
 
 > **Refactor Target:** This service violates the Single Responsibility Principle. Migrate to the **Action Pattern** (using invokable classes or `lorisleiva/laravel-actions`). Split this into discrete actions: `CalculateCartTotalsAction`, `AllocateDiscountsAction`, `ReserveStockAction`, `CreatePendingTransactionAction`, and `ProcessPaymentAction`, coordinated by a `CheckoutOrchestrator`.
 
-### 3.2 SaleService (~400 lines) — Office POS Sales
+### 3.2 ✅ SaleService (Refactored to Action Pattern)
 
 Records office shift sales with full snapshot, variant resolution, stock validation.
 
@@ -377,15 +361,15 @@ From route definitions, the system uses ~30+ granular permissions:
 | **ESNcard validation** (raw HTTP)                    | Keep as-is                                           | No standard package exists for ESNcard API. Wrap in a proper SDK class.                                                        |
 | **Email verification** (DNS check)                   | Use **egulias/email-validator**                      | Already a Laravel transitive dep; use it directly for RFC + DNS validation.                                                    |
 | **Cache-based stock counting**                       | Migrate to **Event-Sourced Ledger** / **Atomic Ops** | Eliminate 30s cache TTL. Use an `inventory_movements` table and materialized views/Redis `DECR` for real-time accurate counts. |
-| **Unstructured data passing / arrays**               | Replace with **spatie/laravel-data**                 | Strictly type inputs, validate automatically, and generate TypeScript interfaces for the React frontend.                       |
+| **Unstructured data passing / arrays**               | ✅ **Use strongly typed DTOs**                 | Created pure PHP readonly DTOs (`TransactionPayload`, `SaleLinePayload`) for strict typing.                       |
 
 ### 6.2 Architecture Improvements for Refactor
 
 | Area                            | Current                                      | Recommended                                                                              |
 | ------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **DTOs & Form Requests**        | Manual readonly classes, unstructured arrays | Use **spatie/laravel-data** for strict typing, validation, and TypeScript generation     |
+| **DTOs & Form Requests**        | Manual readonly classes, unstructured arrays | ✅ **Migrated to pure PHP readonly DTOs** (e.g., `TransactionPayload`)     |
 | **API Resources**               | Mix of manual arrays + Resources             | Standardize on `JsonResource` / `laravel-data` everywhere                                |
-| **Service-Controller coupling** | Controllers instantiate services directly    | Use **Action Pattern** (e.g., `lorisleiva/laravel-actions`) or proper DI with interfaces |
+| **Service-Controller coupling** | Controllers instantiate services directly    | ✅ **Migrated to Action Pattern** (`App\Actions\Sales`, `App\Actions\Backstage`) |
 | **Stock Management**            | Live-counting with 30s Cache TTL             | **Event-Sourced Ledger** (`inventory_movements` table) + Materialized atomic counters    |
 | **Model Architecture**          | Abstract base classes (`Sellable`)           | ✅ **Composition over Inheritance**: `Purchasable` interface + Traits                    |
 | **External Integrations**       | Tightly coupled HTTP calls                   | **Adapter Pattern** with defined contracts (Interfaces)                                  |
@@ -502,7 +486,21 @@ Move these to ConfigMap/Secrets:
 
 3. **Idempotent ledger** — All financial entries use `firstOrCreate` with structured idempotency keys (`online_sale_completed:{id}`), making backfills and retries safe.
 
-4. **Stray online sale claiming** — Online sales made outside a shift are "orphaned." When a shift starts, `claimStrayOnlineSales()` links them to the new shift.
+4. **Decoupled Revenue Reporting & POS Live Feed** — Online sales are never tied to an `OfficeShift`. Shifts are strictly for cash drawer reconciliation. Total revenue is queried via the `FinancialLedgerEntry`. 
+   - **How to fetch the POS Feed:** To display the "shift transactions" to a worker, use a time-based query that merges their active physical sales with recent online sales:
+   ```php
+   $lastClosed = OfficeShift::where('status', 'closed')->latest('ended_at')->first();
+   $startTime = $lastClosed ? $lastClosed->ended_at : now()->startOfDay();
+
+   $transactions = Transaction::with('sales')
+       ->where(function ($q) use ($currentShift, $startTime) {
+           $q->where('office_shift_id', $currentShift->id) // Worker's physical sales
+             ->orWhere(function ($sq) use ($startTime) {
+                 $sq->where('channel', 'online')
+                    ->where('completed_at', '>=', $startTime); // Recent online sales
+             });
+       })->latest('completed_at')->get();
+   ```
 
 5. **Split stock pools** — Events/products can have separate stock pools for Membership holders (`quantity_with_membership`) and regular buyers (`quantity_without_membership`), or a single universal pool.
 
