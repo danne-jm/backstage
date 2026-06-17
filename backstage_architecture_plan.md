@@ -2,7 +2,7 @@
 
 ## 1. System Overview
 
-**Backstage** is an internal operations platform for **ESN Leuven** (Erasmus Student Network). It manages product/event sales (office POS + online store), ticket scanning, email distribution, inventory tracking, financial ledger, and user/permission management.
+**Backstage** is an internal operations platform for **ESN Leuven** (Erasmus Student Network). It manages product/event sales (office POS + online store), ticket scanning, email distribution, inventory tracking, financial ledger, and user/permission management. This organization membership discount cards are called "ESNcards". However, this project should not be tailred specifically to this organization. ESN Leuven and ESNcard are just examples of how this platform could be used. Don't hard code those exact names.
 
 ### Tech Stack
 
@@ -43,21 +43,21 @@ The middleware switches the Blade root view (`backstage` vs `store`) and shared 
 | first_name, last_name            | string     |                                          |
 | email                            | string     | Unique                                   |
 | password_hash                    | hashed     | Custom auth password name                |
-| role                             | string     | Display label (e.g. "staff")             |
-| permissions                      | JSON array | `["view_dashboard", "create_item", ...]` |
-| is_locked                        | boolean    | Blocks login when true                   |
-| gmail_provider_id                | string     | Google OAuth ID                          |
-| gmail_provider_email             | string     | Connected Google email                   |
-| gmail_refresh_token              | string     | For Gmail/Sheets API                     |
-| pinned                           | JSON array | Sidebar links (defaults provided)        |
-| last_seen_at                     | datetime   |                                          |
-| two_factor_secret/recovery_codes | encrypted  | Fortify 2FA                              |
+| role                             | string     | Cosmetic role label                        |
+| permission                       | string     | Cosmetic permission label                  |
+| is_locked                        | boolean    | Blocks login when true                     |
+| gmail_provider_id                | string     | Google OAuth ID                            |
+| gmail_provider_email             | string     | Connected Google email                     |
+| gmail_refresh_token              | string     | For Gmail/Sheets API                       |
+| pinned                           | JSON array | Sidebar links (defaults provided)          |
+| last_seen_at                     | datetime   |                                            |
+| two_factor_secret/recovery_codes | encrypted  | Fortify 2FA                                |
 
-**Traits:** `HasFactory`, `Notifiable`, `TwoFactorAuthenticatable`, `HasUlids`, `LogsActivity`
+**Traits:** `HasFactory`, `Notifiable`, `TwoFactorAuthenticatable`, `HasRoles` (Spatie), `HasUlids`, `LogsActivity`
 
-**Key method:** `hasPermission(string): bool` — checks if permission string exists in JSON array.
+> **Note:** Actual RBAC is handled relationally via `spatie/laravel-permission` (`HasRoles` trait).
 
-### 2.2 Sellable (Abstract)
+### 2.2 ✅ Sellable (Abstract) -> Refactored to `Purchasable` Interface + Traits
 
 > **Refactor Target:** Transition from Inheritance to Composition. Replace this abstract base class with a `Purchasable` interface and specific traits (`HasVariants`, `HasStockPools`, `HasESNCardPricing`) to avoid bloated God-models and logic leakage between Events and Products.
 
@@ -83,42 +83,42 @@ Base class for `Event` and `Product`. Uses polymorphic variants.
 
 **Stock logic:** `checkHasStock()`, `computedSoldCount()` — overridden by Event/Product with cache-backed live counting.
 
-### 2.3 Event (extends Sellable)
+### 2.3 ✅ Event (implements Purchasable)
 
-| Extra Attribute                 | Type     | Notes                           |
-| ------------------------------- | -------- | ------------------------------- |
-| event_date                      | datetime |                                 |
-| price_with_card / without_card  | decimal  | ESNcard member vs regular price |
-| start_sell_date / end_sell_date | datetime | Sale window                     |
-| google_spreadsheet_id           | string   | Attendee sheet link             |
-| google_sheet_name               | string   |                                 |
-| attendee_filter_config          | JSON     | Column filter rules             |
-| responsible_user_ids            | JSON     |                                 |
+| Extra Attribute                 | Type     | Notes                                   |
+| ------------------------------- | -------- | --------------------------------------- |
+| event_date                      | datetime |                                         |
+| price_with_membership / without | decimal  | Membership vs regular price             |
+| start_sell_date / end_sell_date | datetime | Sale window                             |
+| google_spreadsheet_id           | string   | Attendee sheet link                     |
+| google_sheet_name               | string   |                                         |
+| attendee_filter_config          | JSON     | Column filter rules                     |
+| responsible_user_ids            | JSON     |                                         |
 
-**Stock methods:** `computedSoldWithCard()`, `computedSoldWithoutCard()`, `computedRemainingWithCard()`, `computedRemainingWithoutCard()`, `checkHasStockWithCard()`, `checkHasStockWithoutCard()`, `checkMainStock()`. All use 30-second Cache::remember with bust methods.
+**Stock methods:** Legacy 30-second Cache logic deprecated. Replaced by `HasStockPools` trait utilizing the `inventory_movements` ledger for real-time accurate atomic counts.
 
-### 2.4 Product (extends Sellable)
+### 2.4 ✅ Product (implements Purchasable)
 
 | Extra Attribute                 | Type     | Notes        |
 | ------------------------------- | -------- | ------------ |
 | price                           | decimal  | Base price   |
-| price_with_card / without_card  | decimal  |              |
+| price_with_membership / without | decimal  |              |
 | member_price                    | decimal  | Legacy field |
 | start_sell_date / end_sell_date | datetime |              |
 | responsible_user_ids            | JSON     |              |
 
-Same stock methods as Event, adapted for product context.
+**Stock methods:** Same real-time ledger logic as Event via `HasStockPools`.
 
-### 2.5 SellableVariant
+### 2.5 ✅ Variant (formerly SellableVariant)
 
-| Attribute                   | Type        | Notes                                 |
-| --------------------------- | ----------- | ------------------------------------- |
-| id                          | ULID        |                                       |
-| sellable_id / sellable_type | polymorphic | → Event or Product                    |
-| options                     | JSON        | e.g. `{"size": "M", "color": "blue"}` |
-| quantity                    | integer     | null = unlimited                      |
+| Attribute                      | Type        | Notes                                 |
+| ------------------------------ | ----------- | ------------------------------------- |
+| id                             | ULID        |                                       |
+| purchasable_id / type          | polymorphic | → Event or Product                    |
+| options                        | JSON        | e.g. `{"size": "M", "color": "blue"}` |
+| quantity                       | integer     | null = unlimited                      |
 
-**Stock:** `computedSoldCount()` — counts OfficeShiftSale (by `snapshot_variant_id`) + OnlineSale (by `details_variant_id`), cached 30s. `computedRemaining()` derives from quantity - sold.
+**Stock:** Migrating to `inventory_movements` ledger counting.
 
 ### 2.6 OfficeShift
 
@@ -292,9 +292,8 @@ Creates idempotent double-entry records: `recordOnlineTransactionCompleted()`, `
 
 - ✅ Email/password login (rate-limited: 5/min per email+IP)
 - ✅ Password reset
-- ✅ Email verification
+- ❌ Email verification
 - ✅ Two-factor authentication (TOTP, with confirmation + password confirm)
-- ❌ Self-registration **disabled** — users created by admins only via `/settings/users`
 
 **Google OAuth (Socialite):**
 
@@ -371,7 +370,7 @@ From route definitions, the system uses ~30+ granular permissions:
 
 | Current Implementation                               | Recommendation                                       | Package/Approach                                                                                                               |
 | ---------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **Flat JSON permissions** on User model              | Replace with **Spatie Permission**                   | `spatie/laravel-permission` — gives roles, permissions, middleware, caching, Blade directives. Already using Spatie packages.  |
+| **Flat JSON permissions** on User model              | ✅ Replace with **Spatie Permission**                | `spatie/laravel-permission` — gives roles, permissions, middleware, caching, Blade directives. Already using Spatie packages.  |
 | **Custom financial ledger** (FinancialLedgerService) | Keep custom but consider **ledger packages**         | `scottlaurent/accounting` or keep custom. Your idempotent firstOrCreate pattern is solid.                                      |
 | **Email formatting** (DOMDocument manipulation)      | Replace with **MJML** or **Maizzle**                 | Templated responsive email framework instead of runtime DOM manipulation.                                                      |
 | **QR code generation** (custom service)              | Use **Simple QRCode** package                        | `simplesoftwareio/simple-qrcode` — wraps BaconQrCode with Laravel integration.                                                 |
@@ -388,7 +387,7 @@ From route definitions, the system uses ~30+ granular permissions:
 | **API Resources**               | Mix of manual arrays + Resources             | Standardize on `JsonResource` / `laravel-data` everywhere                                |
 | **Service-Controller coupling** | Controllers instantiate services directly    | Use **Action Pattern** (e.g., `lorisleiva/laravel-actions`) or proper DI with interfaces |
 | **Stock Management**            | Live-counting with 30s Cache TTL             | **Event-Sourced Ledger** (`inventory_movements` table) + Materialized atomic counters    |
-| **Model Architecture**          | Abstract base classes (`Sellable`)           | **Composition over Inheritance**: `Purchasable` interface + Traits                       |
+| **Model Architecture**          | Abstract base classes (`Sellable`)           | ✅ **Composition over Inheritance**: `Purchasable` interface + Traits                    |
 | **External Integrations**       | Tightly coupled HTTP calls                   | **Adapter Pattern** with defined contracts (Interfaces)                                  |
 | **Config/secrets**              | `.env` flat file                             | For K8s: use ConfigMaps + Secrets, or Vault                                              |
 | **Media storage**               | Local disk                                   | Switch to **S3/MinIO** with `spatie/media-library` S3 disk                               |
@@ -409,7 +408,7 @@ From route definitions, the system uses ~30+ granular permissions:
 
 ## 7. Deployment: Postgres + Redis + Kubernetes
 
-### 7.1 Database Migration (SQLite → Postgres)
+### 7.1 ✅ Database Migration (SQLite → Postgres)
 
 1. Update `config/database.php` default to `pgsql`
 2. **SQL dialect changes needed:**
@@ -419,7 +418,7 @@ From route definitions, the system uses ~30+ granular permissions:
 3. Re-run all migrations against Postgres
 4. ULIDs: work fine with Postgres `varchar` PKs
 
-### 7.2 Redis Configuration
+### 7.2 ✅ Redis Configuration
 
 ```env
 # Queue
@@ -505,6 +504,6 @@ Move these to ConfigMap/Secrets:
 
 4. **Stray online sale claiming** — Online sales made outside a shift are "orphaned." When a shift starts, `claimStrayOnlineSales()` links them to the new shift.
 
-5. **Split stock pools** — Events/products can have separate stock pools for ESNcard holders (`quantity_with_card`) and regular buyers (`quantity_without_card`), or a single universal pool.
+5. **Split stock pools** — Events/products can have separate stock pools for Membership holders (`quantity_with_membership`) and regular buyers (`quantity_without_membership`), or a single universal pool.
 
-6. **Abstract Sellable** — Product and Event share common fields/behavior via abstract base class with common fillable/casts merged in constructor.
+6. ✅ **Abstract Sellable** — Refactored to `Purchasable` Interface.
