@@ -3,21 +3,14 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Laravel\Fortify\Features;
 
 abstract class TestCase extends BaseTestCase
 {
-    protected function createUserWithPermissions(array $permissions = [], array $attributes = []): \App\Models\User
+    protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void
     {
-        $user = \App\Models\User::factory()->create($attributes);
-
-        foreach ($permissions as $permissionName) {
-            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
+        if (! Features::enabled($feature)) {
+            $this->markTestSkipped($message ?? "Fortify feature [{$feature}] is not enabled.");
         }
-
-        if (! empty($permissions)) {
-            $user->givePermissionTo($permissions);
-        }
-
-        return $user;
     }
 }

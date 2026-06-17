@@ -1,37 +1,34 @@
-import '../css/app.css';
-import './echo';
-
-import { SharedData } from '@/types';
 import { createInertiaApp } from '@inertiajs/react';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { UserPresenceProvider } from './contexts/user-presence-context';
-import { initializeTheme } from './hooks/use-appearance';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { initializeTheme } from '@/hooks/use-appearance';
+import AppLayout from '@/layouts/app-layout';
+import AuthLayout from '@/layouts/auth-layout';
+import SettingsLayout from '@/layouts/settings/layout';
 
-const appName = 'Leuven Backstage';
+const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) =>
-        resolvePageComponent(
-            `./Pages/${name}.tsx`,
-            import.meta.glob('./Pages/**/*.tsx'),
-        ),
-    setup({ el, App, props }) {
-        const root = createRoot(el);
-
-        root.render(
-            <StrictMode>
-                <UserPresenceProvider
-                    user={
-                        (props.initialPage.props as unknown as SharedData).auth
-                            .user
-                    }
-                >
-                    <App {...props} />
-                </UserPresenceProvider>
-            </StrictMode>,
+    layout: (name) => {
+        switch (true) {
+            case name === 'welcome':
+                return null;
+            case name.startsWith('auth/'):
+                return AuthLayout;
+            case name.startsWith('settings/'):
+                return [AppLayout, SettingsLayout];
+            default:
+                return AppLayout;
+        }
+    },
+    strictMode: true,
+    withApp(app) {
+        return (
+            <TooltipProvider delayDuration={0}>
+                {app}
+                <Toaster />
+            </TooltipProvider>
         );
     },
     progress: {

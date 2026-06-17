@@ -2,15 +2,13 @@
 
 namespace App\Providers;
 
-use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
-use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -22,7 +20,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        Fortify::ignoreRoutes();
+        //
     }
 
     /**
@@ -41,24 +39,6 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::createUsersUsing(CreateNewUser::class);
-
-        // Only allow login via email + password. Disable username-based login.
-        Fortify::authenticateUsing(function (Request $request) {
-            $email = $request->input(Fortify::username());
-
-            if (empty($email) || empty($request->password)) {
-                return null;
-            }
-
-            $user = User::where('email', $email)->first();
-
-            if ($user && Hash::check($request->password, $user->password_hash)) {
-                return $user;
-            }
-
-            return null;
-        });
     }
 
     /**
@@ -66,30 +46,24 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn (Request $request) => Inertia::render('Backstage/auth/login', [
+        Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::resetPasswordView(fn (Request $request) => Inertia::render('Backstage/auth/reset-password', [
+        Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
             'email' => $request->email,
             'token' => $request->route('token'),
+            'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]));
 
-        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('Backstage/auth/forgot-password', [
+        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/forgot-password', [
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::verifyEmailView(fn (Request $request) => Inertia::render('Backstage/auth/verify-email', [
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
-        Fortify::registerView(fn () => Inertia::render('Backstage/auth/register'));
-
-        Fortify::twoFactorChallengeView(fn () => Inertia::render('Backstage/auth/two-factor-challenge'));
-
-        Fortify::confirmPasswordView(fn () => Inertia::render('Backstage/auth/confirm-password'));
+        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
     }
 
     /**
@@ -107,8 +81,5 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($throttleKey);
         });
 
-        RateLimiter::for('checkout', function (Request $request) {
-            return Limit::perMinute(10)->by($request->ip());
-        });
     }
 }

@@ -11,39 +11,38 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (! Schema::hasTable('users')) {
-            Schema::create('users', function (Blueprint $table) {
-                $table->ulid('id')->primary();
-                // Split name into first_name / last_name to match the User model
-                $table->string('first_name')->nullable();
-                $table->string('last_name')->nullable();
-                $table->string('email')->unique();
-                $table->timestamp('email_verified_at')->nullable();
-                // Model uses `password_hash` column for storing the hashed password
-                $table->string('password_hash')->nullable();
-                $table->rememberToken();
-                $table->timestamps();
-            });
-        }
+        Schema::create('users', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password_hash');
+            $table->boolean('is_locked')->default(false);
+            $table->string('gmail_provider_id')->nullable();
+            $table->string('gmail_provider_email')->nullable();
+            $table->text('gmail_refresh_token')->nullable();
+            $table->json('pinned')->nullable();
+            $table->json('footer_links')->nullable();
+            $table->timestamp('last_seen_at')->nullable();
+            $table->rememberToken();
+            $table->timestamps();
+        });
 
-        if (! Schema::hasTable('password_reset_tokens')) {
-            Schema::create('password_reset_tokens', function (Blueprint $table) {
-                $table->string('email')->primary();
-                $table->string('token');
-                $table->timestamp('created_at')->nullable();
-            });
-        }
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
 
-        if (! Schema::hasTable('sessions')) {
-            Schema::create('sessions', function (Blueprint $table) {
-                $table->string('id')->primary();
-                $table->foreignUlid('user_id')->nullable()->index();
-                $table->string('ip_address', 45)->nullable();
-                $table->text('user_agent')->nullable();
-                $table->longText('payload');
-                $table->integer('last_activity')->index();
-            });
-        }
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignUlid('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
     }
 
     /**

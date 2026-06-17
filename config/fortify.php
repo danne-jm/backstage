@@ -144,9 +144,7 @@ return [
     */
 
     'features' => [
-        // Features::registration(), // Disabled: Only admins can create users via /settings/users
         Features::resetPasswords(),
-        Features::emailVerification(),
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,

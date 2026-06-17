@@ -1,0 +1,55 @@
+services:
+    pgsql:
+        image: 'postgres:15.1-alpine'
+        ports:
+            - '${FORWARD_DB_PORT:-5432}:5432'
+        environment:
+            PGPASSWORD: '${DB_PASSWORD:-secret}'
+            POSTGRES_DB: '${DB_DATABASE:-backstage}'
+            POSTGRES_USER: '${DB_USERNAME:-backstage}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+        volumes:
+            - 'backstage-pgsql:/var/lib/postgresql/data'
+        networks:
+            - backstage
+        healthcheck:
+            test:
+                - CMD
+                - pg_isready
+                - '-q'
+                - '-d'
+                - '${DB_DATABASE:-backstage}'
+                - '-U'
+                - '${DB_USERNAME:-backstage}'
+            retries: 3
+            timeout: 5s
+    redis:
+        image: 'redis:7-alpine'
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'backstage-redis:/data'
+        networks:
+            - backstage
+        healthcheck:
+            test:
+                - CMD
+                - redis-cli
+                - ping
+            retries: 3
+            timeout: 5s
+    mailpit:
+        image: 'axllent/mailpit:latest'
+        ports:
+            - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+            - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+        networks:
+            - backstage
+networks:
+    backstage:
+        driver: bridge
+volumes:
+    backstage-pgsql:
+        driver: local
+    backstage-redis:
+        driver: local

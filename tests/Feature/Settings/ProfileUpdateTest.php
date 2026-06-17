@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\User;
+
 test('profile page is displayed', function () {
-    $user = $this->createUserWithPermissions(['view_settings_profile']);
+    $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
@@ -11,7 +13,7 @@ test('profile page is displayed', function () {
 });
 
 test('profile information can be updated', function () {
-    $user = $this->createUserWithPermissions(['update_settings_profile']);
+    $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
@@ -32,7 +34,7 @@ test('profile information can be updated', function () {
 });
 
 test('email verification status is unchanged when the email address is unchanged', function () {
-    $user = $this->createUserWithPermissions(['update_settings_profile']);
+    $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
@@ -49,7 +51,7 @@ test('email verification status is unchanged when the email address is unchanged
 });
 
 test('user can delete their account', function () {
-    $user = $this->createUserWithPermissions(['delete_account']);
+    $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
@@ -66,7 +68,7 @@ test('user can delete their account', function () {
 });
 
 test('correct password must be provided to delete account', function () {
-    $user = $this->createUserWithPermissions(['delete_account', 'view_settings_profile']);
+    $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)

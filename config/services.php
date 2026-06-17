@@ -15,11 +15,11 @@ return [
     */
 
     'postmark' => [
-        'token' => env('POSTMARK_TOKEN'),
+        'key' => env('POSTMARK_API_KEY'),
     ],
 
     'resend' => [
-        'key' => env('RESEND_KEY'),
+        'key' => env('RESEND_API_KEY'),
     ],
 
     'ses' => [
@@ -33,21 +33,6 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
-    ],
-
-    'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI'),
-    ],
-
-    'sumup' => [
-        'api_key' => env('SUMUP_API_KEY'),
-        'merchant_code' => env('SUMUP_MERCHANT_CODE'),
-        'api_url' => env('SUMUP_API_URL', 'https://api.sumup.com'),
-        'return_url' => env('SUMUP_RETURN_URL', env('APP_URL').'/payment/callback'),
-        'webhook_secret' => env('SUMUP_WEBHOOK_SECRET'),
-        'processing_fee_rate' => env('SUMUP_PROCESSING_FEE_RATE', 0.02), // 2% default (update if SumUp changes their fees)
     ],
 
 ];
