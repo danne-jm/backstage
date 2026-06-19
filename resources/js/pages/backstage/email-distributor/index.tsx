@@ -11,6 +11,8 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Bold, Italic, Underline as UnderlineIcon, Strikethrough, List, ListOrdered, Link as LinkIcon, Send, Settings, Mail, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import Papa from 'papaparse';
+import { getHeaders, getRows, distribute } from '@/actions/App/Http/Controllers/Backstage/EmailDistributorController';
 
 const MenuBar = ({ editor }: { editor: any }) => {
     if (!editor) return null;
@@ -64,7 +66,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
     );
 };
 
-export default function EmailDistributor({ events, recent_logs, flash, errors }: any) {
+export default function EmailDistributor({ events, recent_logs, flash, errors, is_google_connected }: any) {
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const selectedEvent = events.find((e: any) => e.id === selectedEventId);
     
@@ -75,12 +77,14 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
 
     const { data, setData, post, processing, reset, clearErrors } = useForm({
         event_id: '',
+        custom_event_name: '',
+        custom_event_date: '',
         subject: '',
-        body: '<p>Hello {{firstName}} {{last_name}},</p><p>Thanks for registering — below are your ticket details for the event.</p><p></p><p>Event: {{event_name}}</p><p>Date: {{event_date}}</p><p>Bring: Your ESN card (if applicable)</p><p></p><p>Please bring a copy of this email (printed or on your phone).</p><p></p><p>See you there,<br>Organization Name</p>',
-        recipient_emails: '',
+        body: '<p>Hello <strong>{{firstName}} {{last_name}}</strong>,</p><p></p><p>Thanks for registering — below are your ticket details for the event.</p><p></p><ul><li><p>Event: {{event_name}}</p></li><li><p>Date: {{event_date}}</p></li><li><p>Bring: Your ESN card (if applicable)</p></li></ul><p></p><p>Please bring a copy of this email (printed or on your phone).</p><p></p><p>See you there,<br>Organization Name</p>',
         first_name_column: '',
         last_name_column: '',
         email_column: '',
+        emails: [] as {email: string; body: string}[],
     });
 
     const editor = useEditor({
@@ -103,13 +107,22 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
     });
 
     useEffect(() => {
+        if (is_google_connected === false) {
+            toast.error('Google account not connected or credentials expired. Please reconnect in settings.', { id: 'google-error' });
+        }
+    }, [is_google_connected]);
+
+    useEffect(() => {
         if (flash?.success) {
             toast.success(flash.success);
-            reset('subject', 'body', 'recipient_emails');
+            reset('subject', 'body', 'custom_event_name', 'emails');
+            setSheetHeaders([]);
+            setSheetRows([]);
+            setPreviewRowIndex(-1);
             editor?.commands.setContent('');
         }
         if (flash?.error) {
-            toast.error(flash.error);
+            toast.error(flash.error, { id: flash.error.includes('Google') ? 'google-error' : undefined });
         }
     }, [flash]);
 
@@ -128,33 +141,41 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
             try {
                 // Fetch headers and rows in parallel
                 const [headersRes, rowsRes] = await Promise.all([
-                    fetch(`/backstage/email-distributor/${value}/headers`),
-                    fetch(`/backstage/email-distributor/${value}/rows`)
+                    fetch(getHeaders.url({ event: value })),
+                    fetch(getRows.url({ event: value }))
                 ]);
                 
-                if (headersRes.ok) {
-                    const json = await headersRes.json();
-                    setSheetHeaders(json.headers || []);
-                    
-                    const hdrs = json.headers || [];
-                    const findHeader = (keywords: string[]) => 
-                        hdrs.find((h: string) => keywords.some(k => h.toLowerCase().includes(k))) || '';
-                        
-                    setData((prev) => ({
-                        ...prev,
-                        first_name_column: findHeader(['first name', 'voornaam', 'first_name']),
-                        last_name_column: findHeader(['last name', 'achternaam', 'last_name', 'surname']),
-                        email_column: findHeader(['email', 'e-mail']),
-                        event_id: value
-                    }));
+                if (!headersRes.ok) {
+                    const errorJson = await headersRes.json().catch(() => ({}));
+                    toast.error(errorJson.error || "Failed to load Google Sheet data.", { id: 'sheet-error' });
+                    return;
                 }
+
+                if (!rowsRes.ok) {
+                    const errorJson = await rowsRes.json().catch(() => ({}));
+                    toast.error(errorJson.error || "Failed to load Google Sheet rows.", { id: 'sheet-error' });
+                    return;
+                }
+
+                const headersJson = await headersRes.json();
+                setSheetHeaders(headersJson.headers || []);
                 
-                if (rowsRes.ok) {
-                    const json = await rowsRes.json();
-                    setSheetRows(json.rows || []);
-                    if (json.rows && json.rows.length > 0) {
-                        setPreviewRowIndex(0);
-                    }
+                const hdrs = headersJson.headers || [];
+                const findHeader = (keywords: string[]) => 
+                    hdrs.find((h: string) => keywords.some(k => h.toLowerCase().includes(k))) || '';
+                    
+                setData((prev) => ({
+                    ...prev,
+                    first_name_column: findHeader(['first name', 'voornaam', 'first_name']),
+                    last_name_column: findHeader(['last name', 'achternaam', 'last_name', 'surname']),
+                    email_column: findHeader(['email', 'e-mail']),
+                    event_id: value
+                }));
+                
+                const rowsJson = await rowsRes.json();
+                setSheetRows(rowsJson.rows || []);
+                if (rowsJson.rows && rowsJson.rows.length > 0) {
+                    setPreviewRowIndex(0);
                 }
             } catch (err) {
                 console.error("Failed to fetch sheet data", err);
@@ -164,15 +185,91 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
         }
     };
 
+    const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsLoadingData(true);
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                const hdrs = results.meta.fields || [];
+                setSheetHeaders(hdrs);
+                setSheetRows(results.data);
+                if (results.data.length > 0) setPreviewRowIndex(0);
+
+                const findHeader = (keywords: string[]) => 
+                    hdrs.find((h: string) => keywords.some(k => h.toLowerCase().includes(k))) || '';
+
+                setData((prev) => ({
+                    ...prev,
+                    first_name_column: findHeader(['first name', 'voornaam', 'first_name']),
+                    last_name_column: findHeader(['last name', 'achternaam', 'last_name', 'surname']),
+                    email_column: findHeader(['email', 'e-mail']),
+                }));
+                setIsLoadingData(false);
+            },
+            error: (err) => {
+                console.error("CSV parse error:", err);
+                toast.error("Failed to parse CSV file");
+                setIsLoadingData(false);
+            }
+        });
+    };
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/email-distributor/distribute');
+        
+        if (is_google_connected === false) {
+            toast.error('Google account not connected or credentials expired. Please reconnect in settings.', { id: 'google-error' });
+        }
+        
+        // Build the final emails array
+        const builtEmails = sheetRows.map((row, i) => {
+            if (!data.email_column || !row[data.email_column]) return null;
+            
+            let content = data.body;
+            // Tiptap can generate empty paragraphs which collapse in email clients. Add break tags.
+            content = content.replace(/<p><\/p>/g, '<p><br></p>');
+            content = content.replace(/<p class=".*?"><\/p>/g, '<p><br></p>');
+
+            const firstName = data.first_name_column ? (row[data.first_name_column] || '') : '';
+            const lastName = data.last_name_column ? (row[data.last_name_column] || '') : '';
+            
+            content = content.replace(/{{firstName}}/g, firstName);
+            content = content.replace(/{{first_name}}/g, firstName);
+            content = content.replace(/{{last_name}}/g, lastName);
+            content = content.replace(/{{lastName}}/g, lastName);
+
+            const evtName = selectedEvent ? selectedEvent.name : data.custom_event_name;
+            content = content.replace(/{{event_name}}/g, evtName);
+
+            const dateStr = selectedEvent?.event_date 
+                ? new Date(selectedEvent.event_date).toLocaleDateString() 
+                : (data.custom_event_date ? new Date(data.custom_event_date).toLocaleDateString() : '');
+            content = content.replace(/{{event_date}}/g, dateStr);
+
+            return {
+                email: row[data.email_column],
+                body: content
+            };
+        }).filter(Boolean);
+
+        router.post(distribute.url(), {
+            ...data,
+            emails: builtEmails
+        } as any);
     };
 
     const inputCls = "flex h-10 w-full rounded-md border border-[#2a2a2a] bg-[#0a0a0a] px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700 transition-colors";
 
     const generatePreview = () => {
         let content = data.body;
+        // Fix collapsing empty paragraphs for preview
+        content = content.replace(/<p><\/p>/g, '<p><br></p>');
+        content = content.replace(/<p class=".*?"><\/p>/g, '<p><br></p>');
+
         if (previewRowIndex >= 0 && sheetRows[previewRowIndex]) {
             const row = sheetRows[previewRowIndex];
             const firstName = data.first_name_column ? (row[data.first_name_column] || '') : '';
@@ -183,11 +280,13 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
             content = content.replace(/{{last_name}}/g, lastName);
             content = content.replace(/{{lastName}}/g, lastName);
         }
-        if (selectedEvent) {
-            content = content.replace(/{{event_name}}/g, selectedEvent.name);
-            const dateStr = selectedEvent.event_date ? new Date(selectedEvent.event_date).toLocaleDateString() : '';
-            content = content.replace(/{{event_date}}/g, dateStr);
-        }
+        const evtName = selectedEvent ? selectedEvent.name : data.custom_event_name;
+        content = content.replace(/{{event_name}}/g, evtName);
+        
+        const dateStr = selectedEvent?.event_date 
+            ? new Date(selectedEvent.event_date).toLocaleDateString() 
+            : (data.custom_event_date ? new Date(data.custom_event_date).toLocaleDateString() : '');
+        content = content.replace(/{{event_date}}/g, dateStr);
         return content;
     };
 
@@ -224,15 +323,36 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
                                     </div>
 
                                     {!selectedEventId && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Manual Recipients</label>
-                                            <Input 
-                                                placeholder="comma.separated@emails.com, ..."
-                                                value={data.recipient_emails}
-                                                onChange={(e) => setData('recipient_emails', e.target.value)}
-                                                className={inputCls}
-                                            />
-                                            {errors.recipients && <p className="text-red-500 text-xs mt-1">{errors.recipients}</p>}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Custom Event Name</label>
+                                                <Input 
+                                                    placeholder="e.g. End of Semester Party"
+                                                    value={data.custom_event_name}
+                                                    onChange={(e) => setData('custom_event_name', e.target.value)}
+                                                    className={inputCls}
+                                                />
+                                                {errors.custom_event_name && <p className="text-red-500 text-xs mt-1">{errors.custom_event_name}</p>}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Custom Event Date</label>
+                                                <Input 
+                                                    type="date"
+                                                    value={data.custom_event_date}
+                                                    onChange={(e) => setData('custom_event_date', e.target.value)}
+                                                    className={inputCls}
+                                                    style={{ colorScheme: 'dark' }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Upload CSV file</label>
+                                                <Input 
+                                                    type="file"
+                                                    accept=".csv"
+                                                    onChange={handleCsvUpload}
+                                                    className="flex h-10 w-full rounded-md border border-[#2a2a2a] bg-[#0a0a0a] px-3 py-1.5 text-sm text-zinc-200 file:bg-zinc-800 file:text-zinc-200 file:border-0 file:rounded file:px-2 file:py-1 file:text-xs file:font-medium hover:file:bg-zinc-700 cursor-pointer transition-colors"
+                                                />
+                                            </div>
                                         </div>
                                     )}
 
@@ -275,7 +395,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
                             </form>
 
                             {/* Live Preview Section */}
-                            {selectedEventId && sheetRows.length > 0 && (
+                            {sheetRows.length > 0 && (
                                 <div className="mt-8 border border-[#2a2a2a] rounded-xl bg-[#0d0d0d] p-5">
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className="font-medium text-sm text-zinc-200">Live Preview</h3>
@@ -300,7 +420,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
                                         </div>
                                     </div>
                                     <div 
-                                        className="prose prose-invert max-w-none p-4 border border-[#2a2a2a] rounded bg-[#141414] text-sm"
+                                        className="ProseMirror prose prose-invert max-w-none p-4 border border-[#2a2a2a] rounded bg-[#141414] text-sm"
                                         dangerouslySetInnerHTML={{ __html: generatePreview() }}
                                     />
                                 </div>

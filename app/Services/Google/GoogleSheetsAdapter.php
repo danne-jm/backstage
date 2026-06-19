@@ -19,7 +19,7 @@ class GoogleSheetsAdapter implements SpreadsheetIntegrationInterface
             throw new \InvalidArgumentException("User {$integrationUser->email} does not have a Google OAuth token connected.");
         }
 
-        $client = new Client();
+        $client = new Client;
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
         $client->refreshToken($integrationUser->gmail_refresh_token);
@@ -37,7 +37,7 @@ class GoogleSheetsAdapter implements SpreadsheetIntegrationInterface
         try {
             $range = "{$sheetName}!A:A"; // Append dynamically finds the end
             $valueRange = new ValueRange([
-                'values' => $rows
+                'values' => $rows,
             ]);
 
             $params = [
@@ -45,59 +45,50 @@ class GoogleSheetsAdapter implements SpreadsheetIntegrationInterface
             ];
 
             $this->service->spreadsheets_values->append($spreadsheetId, $range, $valueRange, $params);
-            
+
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to append rows to Google Sheet {$spreadsheetId}: " . $e->getMessage());
+            Log::error("Failed to append rows to Google Sheet {$spreadsheetId}: ".$e->getMessage());
+
             return false;
         }
     }
 
-    public function getHeaders(string $spreadsheetId, string $sheetName): array
+    public function getHeaders(string $spreadsheetId, ?string $sheetName = null): array
     {
-        try {
-            $range = "{$sheetName}!1:1";
-            $response = $this->service->spreadsheets_values->get($spreadsheetId, $range);
-            $values = $response->getValues();
+        $range = $sheetName ? "{$sheetName}!1:1" : '1:1';
+        $response = $this->service->spreadsheets_values->get($spreadsheetId, $range);
+        $values = $response->getValues();
 
-            if (empty($values) || empty($values[0])) {
-                return [];
-            }
-
-            return $values[0];
-        } catch (\Exception $e) {
-            Log::error("Failed to get headers from Google Sheet {$spreadsheetId}: " . $e->getMessage());
+        if (empty($values) || empty($values[0])) {
             return [];
         }
+
+        return $values[0];
     }
 
-    public function getRows(string $spreadsheetId, string $sheetName, int $limit = 50): array
+    public function getRows(string $spreadsheetId, ?string $sheetName = null, int $limit = 50): array
     {
-        try {
-            // Fetch headers and data rows in one go
-            $range = "{$sheetName}!A1:Z{$limit}";
-            $response = $this->service->spreadsheets_values->get($spreadsheetId, $range);
-            $values = $response->getValues();
+        // Fetch headers and data rows in one go
+        $range = $sheetName ? "{$sheetName}!A1:Z{$limit}" : "A1:Z{$limit}";
+        $response = $this->service->spreadsheets_values->get($spreadsheetId, $range);
+        $values = $response->getValues();
 
-            if (empty($values) || count($values) < 2) {
-                return [];
-            }
-
-            $headers = array_shift($values);
-            $rows = [];
-
-            foreach ($values as $row) {
-                $rowData = [];
-                foreach ($headers as $index => $header) {
-                    $rowData[$header] = $row[$index] ?? null;
-                }
-                $rows[] = $rowData;
-            }
-
-            return $rows;
-        } catch (\Exception $e) {
-            Log::error("Failed to get rows from Google Sheet {$spreadsheetId}: " . $e->getMessage());
+        if (empty($values) || count($values) < 2) {
             return [];
         }
+
+        $headers = array_shift($values);
+        $rows = [];
+
+        foreach ($values as $row) {
+            $rowData = [];
+            foreach ($headers as $index => $header) {
+                $rowData[$header] = $row[$index] ?? null;
+            }
+            $rows[] = $rowData;
+        }
+
+        return $rows;
     }
 }

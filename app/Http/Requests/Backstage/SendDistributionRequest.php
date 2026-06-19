@@ -16,21 +16,17 @@ class SendDistributionRequest extends FormRequest
         return [
             'subject' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
-            // One of these must be provided
             'event_id' => ['nullable', 'string', 'exists:events,id'],
-            'recipient_emails' => ['nullable', 'string'],
-            'first_name_column' => ['nullable', 'string', 'max:255'],
-            'last_name_column' => ['nullable', 'string', 'max:255'],
-            'email_column' => ['nullable', 'string', 'max:255'],
+            'custom_event_name' => ['nullable', 'string', 'max:255'],
+            'custom_event_date' => ['nullable', 'date'],
+            'emails' => ['required', 'array', 'min:1'],
+            'emails.*.email' => ['required', 'email'],
+            'emails.*.body' => ['required', 'string'],
         ];
     }
 
     public function withValidator($validator): void
     {
-        $validator->after(function ($validator) {
-            if (! $this->filled('event_id') && ! $this->filled('recipient_emails')) {
-                $validator->errors()->add('recipients', 'Provide either an event or a list of recipient emails.');
-            }
-        });
+        // Add any custom validation logic here if needed
     }
 }

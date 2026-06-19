@@ -9,6 +9,9 @@ use App\Models\Event;
 use App\Models\MailLog;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Services\Google\GoogleSheetsAdapter;
+use Google\Client;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +25,10 @@ class EmailDistributorController extends Controller
      */
     public function index(Request $request): Response
     {
+        $isGoogleConnected = $this->isGoogleConnectionValid(Auth::user());
+
         return Inertia::render('backstage/email-distributor/index', [
+            'is_google_connected' => $isGoogleConnected,
             'events' => Event::orderByDesc('event_date')
                 ->get(['id', 'name', 'event_date', 'google_spreadsheet_id', 'google_sheet_name']),
             'recent_logs' => Inertia::defer(fn () => MailLog::with('event')
@@ -41,6 +47,28 @@ class EmailDistributorController extends Controller
         ]);
     }
 
+    private function isGoogleConnectionValid(User $user): bool
+    {
+        if (empty($user->gmail_refresh_token)) {
+            return false;
+        }
+
+        try {
+            $client = new Client;
+            $client->setClientId(config('services.google.client_id'));
+            $client->setClientSecret(config('services.google.client_secret'));
+            $token = $client->fetchAccessTokenWithRefreshToken($user->gmail_refresh_token);
+
+            if (isset($token['error'])) {
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
     /**
      * Dispatch bulk distribution emails.
      *
@@ -54,47 +82,38 @@ class EmailDistributorController extends Controller
         $sender = Auth::user();
 
         $subject = $request->string('subject')->toString();
-        $htmlBody = $request->string('body')->toString();
         $eventId = $request->input('event_id');
+        $customEventName = $request->input('custom_event_name');
 
-        // Resolve recipient list
-        $recipients = collect();
+        $emails = collect($request->input('emails', []));
 
-        if ($eventId) {
-            // Target all ticket holders of the given event
-            $recipients = Ticket::where('event_id', $eventId)
-                ->whereNotNull('email')
-                ->pluck('email')
-                ->unique();
-        } elseif ($request->filled('recipient_emails')) {
-            $recipients = collect(
-                array_filter(array_map('trim', explode(',', $request->input('recipient_emails'))))
-            )->unique();
-        }
-
-        if ($recipients->isEmpty()) {
+        if ($emails->isEmpty()) {
             return back()->withErrors(['recipients' => 'No valid recipients found.']);
         }
 
+        if (! $this->isGoogleConnectionValid($sender)) {
+            return back()->with('error', 'Google account not connected or credentials expired. Please reconnect in settings.');
+        }
+
         // Dispatch one queued job per recipient
-        foreach ($recipients as $email) {
+        foreach ($emails as $emailData) {
             SendBulkDistributionEmailJob::dispatch(
                 sender: $sender,
-                recipientEmail: $email,
+                recipientEmail: $emailData['email'],
                 subject: $subject,
-                htmlBody: $htmlBody,
+                htmlBody: $emailData['body'],
             )->onQueue('distributions');
         }
 
-        return back()->with('success', "Queued {$recipients->count()} email(s) for distribution.");
+        return back()->with('success', "Queued {$emails->count()} email(s) for distribution.");
     }
 
     /**
      * Get spreadsheet headers for a given event.
      */
-    public function getHeaders(Event $event): \Illuminate\Http\JsonResponse
+    public function getHeaders(Event $event): JsonResponse
     {
-        if (!$event->google_spreadsheet_id || !$event->google_sheet_name) {
+        if (! $event->google_spreadsheet_id) {
             return response()->json(['headers' => []]);
         }
 
@@ -102,8 +121,9 @@ class EmailDistributorController extends Controller
         $user = Auth::user();
 
         try {
-            $adapter = new \App\Services\Google\GoogleSheetsAdapter($user);
+            $adapter = new GoogleSheetsAdapter($user);
             $headers = $adapter->getHeaders($event->google_spreadsheet_id, $event->google_sheet_name);
+
             return response()->json(['headers' => $headers]);
         } catch (\Exception $e) {
             return response()->json(['headers' => [], 'error' => $e->getMessage()], 400);
@@ -113,9 +133,9 @@ class EmailDistributorController extends Controller
     /**
      * Get sample rows from the spreadsheet for previewing.
      */
-    public function getRows(Event $event): \Illuminate\Http\JsonResponse
+    public function getRows(Event $event): JsonResponse
     {
-        if (!$event->google_spreadsheet_id || !$event->google_sheet_name) {
+        if (! $event->google_spreadsheet_id) {
             return response()->json(['rows' => []]);
         }
 
@@ -123,8 +143,9 @@ class EmailDistributorController extends Controller
         $user = Auth::user();
 
         try {
-            $adapter = new \App\Services\Google\GoogleSheetsAdapter($user);
+            $adapter = new GoogleSheetsAdapter($user);
             $rows = $adapter->getRows($event->google_spreadsheet_id, $event->google_sheet_name, 25);
+
             return response()->json(['rows' => $rows]);
         } catch (\Exception $e) {
             return response()->json(['rows' => [], 'error' => $e->getMessage()], 400);
