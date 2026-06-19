@@ -11,32 +11,80 @@ use App\Http\Requests\Backstage\SaveEventRequest;
 use App\Http\Requests\Backstage\SaveProductRequest;
 use App\Models\Event;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SellablesController extends Controller
 {
+    private function getResponsibleUsers(): array
+    {
+        return User::select('id', 'first_name', 'last_name')
+            ->get()
+            ->map(fn ($u) => ['id' => $u->id, 'name' => trim($u->first_name.' '.$u->last_name)])
+            ->values()
+            ->toArray();
+    }
+
     /**
      * Display a combined list of all events and products.
      */
     public function index(): Response
     {
+        $users = User::select('id', 'first_name', 'last_name')
+            ->get()
+            ->mapWithKeys(fn ($user) => [$user->id => trim($user->first_name.' '.$user->last_name)]);
+
         return Inertia::render('backstage/sellables/index', [
             'events' => Event::orderByDesc('event_date')->get()->map(fn (Event $event) => [
                 'id' => $event->id,
                 'name' => $event->name,
+                'description' => $event->description,
                 'event_date' => $event->event_date?->toIso8601String(),
+                'start_sell_date' => $event->start_sell_date?->toIso8601String(),
+                'end_sell_date' => $event->end_sell_date?->toIso8601String(),
                 'is_online_sellable' => $event->is_online_sellable,
+
                 'remaining_stock' => $event->getRemainingStock(),
+                'sold_count' => $event->getSoldCount(),
+                'remaining_stock_with_membership' => $event->getRemainingStock('with_membership'),
+                'sold_count_with_membership' => $event->getSoldCount('with_membership'),
+                'remaining_stock_without_membership' => $event->getRemainingStock('regular'),
+                'sold_count_without_membership' => $event->getSoldCount('regular'),
+
+                'price_with_membership' => $event->price_with_membership,
+                'price_without_membership' => $event->price_without_membership,
+                'is_variant_based' => $event->is_variant_based,
+                'variants_config' => $event->variants_config,
+                'responsible_users' => collect($event->responsible_user_ids)->map(fn ($id) => $users[$id] ?? null)->filter()->implode(', '),
+                'image_path' => $event->image_path ? Storage::url($event->image_path) : null,
             ]),
             'products' => Product::orderBy('name')->get()->map(fn (Product $product) => [
                 'id' => $product->id,
                 'name' => $product->name,
+                'description' => $product->description,
+                'start_sell_date' => $product->start_sell_date?->toIso8601String(),
+                'end_sell_date' => $product->end_sell_date?->toIso8601String(),
                 'price' => $product->price,
+                'price_with_membership' => $product->price_with_membership,
+                'price_without_membership' => $product->price_without_membership,
                 'is_online_sellable' => $product->is_online_sellable,
+
                 'remaining_stock' => $product->getRemainingStock(),
+                'sold_count' => $product->getSoldCount(),
+                'remaining_stock_with_membership' => $product->getRemainingStock('with_membership'),
+                'sold_count_with_membership' => $product->getSoldCount('with_membership'),
+                'remaining_stock_without_membership' => $product->getRemainingStock('regular'),
+                'sold_count_without_membership' => $product->getSoldCount('regular'),
+
+                'is_variant_based' => $product->is_variant_based,
+                'variants_config' => $product->variants_config,
+                'responsible_users' => collect($product->responsible_user_ids)->map(fn ($id) => $users[$id] ?? null)->filter()->implode(', '),
+                'image_path' => $product->image_path ? Storage::url($product->image_path) : null,
             ]),
+            'membershipCardName' => env('MEMBERSHIP_CARD_NAME', 'ESNcard'),
         ]);
     }
 
@@ -44,7 +92,9 @@ class SellablesController extends Controller
 
     public function createEvent(): Response
     {
-        return Inertia::render('backstage/sellables/events/create');
+        return Inertia::render('backstage/sellables/events/create', [
+            'users' => $this->getResponsibleUsers(),
+        ]);
     }
 
     public function storeEvent(SaveEventRequest $request, SaveEventAction $action): RedirectResponse
@@ -76,14 +126,15 @@ class SellablesController extends Controller
 
         $action->handle($payload);
 
-        return to_route('backstage.sellables.index')
-            ->with('success', 'Event created successfully.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Event created successfully.']);
+        return to_route('backstage.sellables.index');
     }
 
     public function editEvent(Event $event): Response
     {
         return Inertia::render('backstage/sellables/events/edit', [
             'event' => $event,
+            'users' => $this->getResponsibleUsers(),
         ]);
     }
 
@@ -116,23 +167,25 @@ class SellablesController extends Controller
 
         $action->handle($payload, $event);
 
-        return to_route('backstage.sellables.index')
-            ->with('success', 'Event updated successfully.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Event updated successfully.']);
+        return to_route('backstage.sellables.index');
     }
 
     public function destroyEvent(Event $event): RedirectResponse
     {
         $event->delete();
 
-        return to_route('backstage.sellables.index')
-            ->with('success', 'Event deleted successfully.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Event deleted successfully.']);
+        return to_route('backstage.sellables.index');
     }
 
     // ─── Products ─────────────────────────────────────────────────────────────
 
     public function createProduct(): Response
     {
-        return Inertia::render('backstage/sellables/products/create');
+        return Inertia::render('backstage/sellables/products/create', [
+            'users' => $this->getResponsibleUsers(),
+        ]);
     }
 
     public function storeProduct(SaveProductRequest $request, SaveProductAction $action): RedirectResponse
@@ -161,14 +214,15 @@ class SellablesController extends Controller
 
         $action->handle($payload);
 
-        return to_route('backstage.sellables.index')
-            ->with('success', 'Product created successfully.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Product created successfully.']);
+        return to_route('backstage.sellables.index');
     }
 
     public function editProduct(Product $product): Response
     {
         return Inertia::render('backstage/sellables/products/edit', [
             'product' => $product,
+            'users' => $this->getResponsibleUsers(),
         ]);
     }
 
@@ -198,15 +252,15 @@ class SellablesController extends Controller
 
         $action->handle($payload, $product);
 
-        return to_route('backstage.sellables.index')
-            ->with('success', 'Product updated successfully.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Product updated successfully.']);
+        return to_route('backstage.sellables.index');
     }
 
     public function destroyProduct(Product $product): RedirectResponse
     {
         $product->delete();
 
-        return to_route('backstage.sellables.index')
-            ->with('success', 'Product deleted successfully.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Product deleted successfully.']);
+        return to_route('backstage.sellables.index');
     }
 }

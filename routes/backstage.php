@@ -67,16 +67,9 @@ Route::middleware(['auth'])->name('backstage.')->group(function () {
     // ─── Ticket Scanner ────────────────────────────────────────────────────
 
     Route::prefix('ticket-scanner')->name('ticket-scanner.')->group(function () {
-        Route::get('/', function () {
-            $latestEvent = \App\Models\Event::latest('event_date')->first();
-            if ($latestEvent) {
-                return redirect()->route('backstage.ticket-scanner.index', $latestEvent);
-            }
-            abort(404, 'No events available for scanning.');
-        })->name('root');
-        Route::get('{event}', [TicketScannerController::class, 'index'])->name('index');
-        Route::post('{event}/scan', [TicketScannerController::class, 'scan'])->name('scan');
-        Route::post('{event}/import', [TicketScannerController::class, 'import'])->name('import');
+        Route::get('/', [TicketScannerController::class, 'index'])->name('index');
+        Route::post('scan', [TicketScannerController::class, 'scan'])->name('scan');
+        Route::post('import', [TicketScannerController::class, 'import'])->name('import');
     });
 
     // ─── Email Distributor ─────────────────────────────────────────────────

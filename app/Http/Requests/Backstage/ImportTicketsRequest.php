@@ -15,6 +15,7 @@ class ImportTicketsRequest extends FormRequest
     {
         return [
             'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
+            'event_id' => ['required', 'string', 'exists:events,id'],
         ];
     }
 

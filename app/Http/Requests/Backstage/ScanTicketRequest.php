@@ -15,6 +15,7 @@ class ScanTicketRequest extends FormRequest
     {
         return [
             'ticket_code' => ['required', 'string', 'max:50'],
+            'event_id' => ['required', 'string', 'exists:events,id'],
         ];
     }
 }

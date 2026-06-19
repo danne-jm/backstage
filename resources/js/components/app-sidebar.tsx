@@ -17,7 +17,7 @@ import { dashboard } from '@/routes';
 import { index as inventory } from '@/routes/backstage/inventory';
 import { index as sellables } from '@/routes/backstage/sellables';
 import { index as office } from '@/routes/backstage/office';
-import { root as ticketScanner } from '@/routes/backstage/ticket-scanner';
+import { index as ticketScanner } from '@/routes/backstage/ticket-scanner';
 import { index as emailDistributor } from '@/routes/backstage/email-distributor';
 import type { NavItem } from '@/types';
 

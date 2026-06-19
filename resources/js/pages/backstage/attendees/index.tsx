@@ -1,10 +1,10 @@
 import { Head } from '@inertiajs/react';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 
-export default function TicketScanner({ event, stats }: any) {
+export default function AttendeesIndex({ event }: any) {
     return (
         <>
-            <Head title={`Ticket Scanner ${event ? `- ${event.name}` : ''}`} />
+            <Head title={`Attendees - ${event?.name || 'Event'}`} />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <div className="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
@@ -25,11 +25,15 @@ export default function TicketScanner({ event, stats }: any) {
     );
 }
 
-TicketScanner.layout = {
+AttendeesIndex.layout = {
     breadcrumbs: [
         {
-            title: 'Ticket Scanner',
-            href: '/ticket-scanner',
+            title: 'Sellables',
+            href: '/sellables',
+        },
+        {
+            title: 'Manage Attendees',
+            href: '#',
         },
     ],
 };

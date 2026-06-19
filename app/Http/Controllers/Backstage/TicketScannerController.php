@@ -22,19 +22,55 @@ class TicketScannerController extends Controller
     /**
      * Display the ticket scanner interface, scoped to a specific event.
      */
-    public function index(Event $event): Response
+    public function index(\Illuminate\Http\Request $request): Response
     {
+        $availableEvents = Event::whereIn('id', Ticket::select('event_id')->distinct())
+            ->orderByDesc('event_date')
+            ->get(['id', 'name', 'event_date'])
+            ->map(fn ($e) => [
+                'id' => $e->id,
+                'name' => $e->name,
+                'event_date' => $e->event_date?->toIso8601String()
+            ]);
+
+        $eventId = $request->query('event_id');
+        $event = null;
+        
+        if ($eventId) {
+            $event = Event::find($eventId);
+        } elseif ($availableEvents->isNotEmpty()) {
+            $event = Event::find($availableEvents->first()['id']);
+        }
+
+        $tickets = [];
+        if ($event) {
+            $tickets = Ticket::where('event_id', $event->id)
+                ->orderBy('first_name')
+                ->get(['id', 'ticket_code', 'first_name', 'last_name', 'email', 'scan_count', 'scanned_at'])
+                ->map(fn ($t) => [
+                    'id' => $t->id,
+                    'ticket_code' => $t->ticket_code,
+                    'first_name' => $t->first_name,
+                    'last_name' => $t->last_name,
+                    'email' => $t->email,
+                    'scan_count' => $t->scan_count,
+                    'scanned_at' => $t->scanned_at?->toIso8601String(),
+                ]);
+        }
+
         return Inertia::render('backstage/ticket-scanner/index', [
-            'event' => [
+            'availableEvents' => $availableEvents,
+            'event' => $event ? [
                 'id' => $event->id,
                 'name' => $event->name,
                 'event_date' => $event->event_date?->toIso8601String(),
-            ],
-            'stats' => Inertia::defer(fn () => [
+            ] : null,
+            'tickets' => $tickets,
+            'stats' => Inertia::defer(fn () => $event ? [
                 'total_tickets' => Ticket::where('event_id', $event->id)->count(),
                 'scanned_count' => Ticket::where('event_id', $event->id)->where('scan_count', '>', 0)->count(),
                 'not_scanned_count' => Ticket::where('event_id', $event->id)->where('scan_count', 0)->count(),
-            ]),
+            ] : null),
         ]);
     }
 
@@ -42,10 +78,12 @@ class TicketScannerController extends Controller
      * Process a QR code scan. Returns JSON for real-time scanner feedback.
      * Uses pessimistic locking via ScanTicketAction to prevent double-scans.
      */
-    public function scan(ScanTicketRequest $request, Event $event, ScanTicketAction $action): JsonResponse
+    public function scan(ScanTicketRequest $request, ScanTicketAction $action): JsonResponse
     {
         /** @var User $user */
         $user = Auth::user();
+
+        $event = Event::findOrFail($request->input('event_id'));
 
         $result = $action->handle(
             ticketCode: $request->string('ticket_code')->toString(),
@@ -74,8 +112,9 @@ class TicketScannerController extends Controller
      *
      * A ticket record and QR code will be provisioned for each row.
      */
-    public function import(ImportTicketsRequest $request, Event $event, ProvisionTicketForEmailAction $action): RedirectResponse
+    public function import(ImportTicketsRequest $request, ProvisionTicketForEmailAction $action): RedirectResponse
     {
+        $event = Event::findOrFail($request->input('event_id'));
         $file = $request->file('csv_file');
         $handle = fopen($file->getPathname(), 'r');
 
