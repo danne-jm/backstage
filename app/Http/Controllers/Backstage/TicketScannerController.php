@@ -34,13 +34,7 @@ class TicketScannerController extends Controller
             ]);
 
         $eventId = $request->query('event_id');
-        $event = null;
-        
-        if ($eventId) {
-            $event = Event::find($eventId);
-        } elseif ($availableEvents->isNotEmpty()) {
-            $event = Event::find($availableEvents->first()['id']);
-        }
+        $event = $eventId ? Event::find($eventId) : null;
 
         $tickets = [];
         if ($event) {
@@ -63,6 +57,7 @@ class TicketScannerController extends Controller
             'event' => $event ? [
                 'id' => $event->id,
                 'name' => $event->name,
+                'description' => $event->description,
                 'event_date' => $event->event_date?->toIso8601String(),
             ] : null,
             'tickets' => $tickets,
