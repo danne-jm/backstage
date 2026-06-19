@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backstage;
 
 use App\Actions\Catalog\SaveEventAction;
 use App\Actions\Catalog\SaveProductAction;
+use App\Actions\UploadImageAction;
 use App\DTOs\Catalog\EventPayload;
 use App\DTOs\Catalog\ProductPayload;
 use App\Http\Controllers\Controller;
@@ -97,7 +98,7 @@ class SellablesController extends Controller
         ]);
     }
 
-    public function storeEvent(SaveEventRequest $request, SaveEventAction $action): RedirectResponse
+    public function storeEvent(SaveEventRequest $request, SaveEventAction $action, UploadImageAction $uploadImageAction): RedirectResponse
     {
         $payload = new EventPayload(
             name: $request->string('name')->toString(),
@@ -124,7 +125,13 @@ class SellablesController extends Controller
             responsibleUserIds: $request->input('responsible_user_ids'),
         );
 
-        $action->handle($payload);
+        $event = $action->handle($payload);
+
+        if ($request->hasFile('image')) {
+            $event->update([
+                'image_path' => $uploadImageAction->handle($request->file('image'), 'events')
+            ]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Event created successfully.']);
         return to_route('backstage.sellables.index');
@@ -132,13 +139,18 @@ class SellablesController extends Controller
 
     public function editEvent(Event $event): Response
     {
+        $eventData = $event->toArray();
+        if ($event->image_path) {
+            $eventData['image_path'] = Storage::url($event->image_path);
+        }
+
         return Inertia::render('backstage/sellables/events/edit', [
-            'event' => $event,
+            'event' => $eventData,
             'users' => $this->getResponsibleUsers(),
         ]);
     }
 
-    public function updateEvent(SaveEventRequest $request, Event $event, SaveEventAction $action): RedirectResponse
+    public function updateEvent(SaveEventRequest $request, Event $event, SaveEventAction $action, UploadImageAction $uploadImageAction): RedirectResponse
     {
         $payload = new EventPayload(
             name: $request->string('name')->toString(),
@@ -165,7 +177,18 @@ class SellablesController extends Controller
             responsibleUserIds: $request->input('responsible_user_ids'),
         );
 
-        $action->handle($payload, $event);
+        $event = $action->handle($payload, $event);
+
+        if ($request->boolean('remove_image')) {
+            if ($event->image_path && Storage::disk('public')->exists($event->image_path)) {
+                Storage::disk('public')->delete($event->image_path);
+            }
+            $event->update(['image_path' => null]);
+        } elseif ($request->hasFile('image')) {
+            $event->update([
+                'image_path' => $uploadImageAction->handle($request->file('image'), 'events', $event->image_path)
+            ]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Event updated successfully.']);
         return to_route('backstage.sellables.index');
@@ -188,7 +211,7 @@ class SellablesController extends Controller
         ]);
     }
 
-    public function storeProduct(SaveProductRequest $request, SaveProductAction $action): RedirectResponse
+    public function storeProduct(SaveProductRequest $request, SaveProductAction $action, UploadImageAction $uploadImageAction): RedirectResponse
     {
         $payload = new ProductPayload(
             name: $request->string('name')->toString(),
@@ -212,7 +235,13 @@ class SellablesController extends Controller
             responsibleUserIds: $request->input('responsible_user_ids'),
         );
 
-        $action->handle($payload);
+        $product = $action->handle($payload);
+
+        if ($request->hasFile('image')) {
+            $product->update([
+                'image_path' => $uploadImageAction->handle($request->file('image'), 'products')
+            ]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Product created successfully.']);
         return to_route('backstage.sellables.index');
@@ -220,13 +249,18 @@ class SellablesController extends Controller
 
     public function editProduct(Product $product): Response
     {
+        $productData = $product->toArray();
+        if ($product->image_path) {
+            $productData['image_path'] = Storage::url($product->image_path);
+        }
+
         return Inertia::render('backstage/sellables/products/edit', [
-            'product' => $product,
+            'product' => $productData,
             'users' => $this->getResponsibleUsers(),
         ]);
     }
 
-    public function updateProduct(SaveProductRequest $request, Product $product, SaveProductAction $action): RedirectResponse
+    public function updateProduct(SaveProductRequest $request, Product $product, SaveProductAction $action, UploadImageAction $uploadImageAction): RedirectResponse
     {
         $payload = new ProductPayload(
             name: $request->string('name')->toString(),
@@ -250,7 +284,18 @@ class SellablesController extends Controller
             responsibleUserIds: $request->input('responsible_user_ids'),
         );
 
-        $action->handle($payload, $product);
+        $product = $action->handle($payload, $product);
+
+        if ($request->boolean('remove_image')) {
+            if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
+                Storage::disk('public')->delete($product->image_path);
+            }
+            $product->update(['image_path' => null]);
+        } elseif ($request->hasFile('image')) {
+            $product->update([
+                'image_path' => $uploadImageAction->handle($request->file('image'), 'products', $product->image_path)
+            ]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Product updated successfully.']);
         return to_route('backstage.sellables.index');

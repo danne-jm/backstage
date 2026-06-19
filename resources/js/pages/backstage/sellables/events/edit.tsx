@@ -11,7 +11,7 @@ import {
     DropdownMenuCheckboxItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 
 const inputCls = 'w-full rounded-md border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-600';
 const textareaCls = `${inputCls} min-h-[90px] resize-none`;
@@ -67,6 +67,8 @@ export default function EditEvent({ users, membershipCardName, event }: Props) {
         instagram_link: event.instagram_link || '',
         notes: event.notes || '',
         responsible_user_ids: event.responsible_user_ids || [] as string[],
+        image: null as File | null,
+        remove_image: false,
     });
 
     const [pricingType, setPricingType] = useState<'single' | 'split'>(
@@ -80,6 +82,25 @@ export default function EditEvent({ users, membershipCardName, event }: Props) {
     const [attributes, setAttributes] = useState<Attribute[]>([]);
     const [optionInputs, setOptionInputs] = useState<Record<string, string>>({});
     const [variantRows, setVariantRows] = useState<VariantRow[]>([]);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(event.image_path || null);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setData((prev) => ({ ...prev, image: file, remove_image: false }));
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
+    const removeImage = () => {
+        setData((prev) => ({ ...prev, image: null, remove_image: true }));
+        setPreviewUrl(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
 
     useEffect(() => {
         if (event.is_variant_based && event.variants_config?.length > 0) {
@@ -163,8 +184,9 @@ export default function EditEvent({ users, membershipCardName, event }: Props) {
             })
             : null;
 
-        router.put(updateEventRoute(event.id).url, {
+        router.post(updateEventRoute(event.id).url, {
             ...data,
+            _method: 'PUT',
             price_with_membership: Number(data.price_with_membership || 0),
             price_without_membership: pricingType === 'single'
                 ? Number(data.price_with_membership || 0)
@@ -235,6 +257,52 @@ export default function EditEvent({ users, membershipCardName, event }: Props) {
                         <div className="py-6 border-b border-[#1f1f1f]">
                             <label htmlFor="description" className="block text-sm font-medium text-zinc-200 mb-2">Description <span className="text-zinc-500 font-normal">(optional)</span></label>
                             <textarea id="description" className={textareaCls} value={data.description} onChange={(e) => setData('description', e.target.value)} />
+                        </div>
+
+                        {/* Image Upload */}
+                        <div className="py-6 border-b border-[#1f1f1f]">
+                            <label className="block text-sm font-medium text-zinc-200 mb-3">Event Image <span className="text-zinc-500 font-normal">(optional)</span></label>
+                            <div className="flex items-center gap-4">
+                                {previewUrl ? (
+                                    <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#0f0f0f]">
+                                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                    </div>
+                                ) : (
+                                    <div className="relative w-24 h-24 rounded-lg border border-dashed border-[#2a2a2a] bg-[#0f0f0f] flex flex-col items-center justify-center text-zinc-500 text-xs">
+                                        No image
+                                    </div>
+                                )}
+                                <div className="flex flex-col gap-2 items-start">
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="bg-[#0f0f0f] border-[#2a2a2a] text-zinc-300 hover:bg-[#1a1a1a] hover:text-white transition-colors h-8 text-xs"
+                                    >
+                                        Choose File
+                                    </Button>
+                                    {previewUrl && (
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            onClick={removeImage}
+                                            className="text-red-400 hover:text-red-300 hover:bg-red-950/30 h-8 text-xs px-3"
+                                        >
+                                            Remove
+                                        </Button>
+                                    )}
+                                    <p className="text-[10px] text-zinc-500">Recommended: 1200x800px, max 5MB</p>
+                                </div>
+                            </div>
+                            <input
+                                type="file"
+                                id="image"
+                                accept="image/*"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleImageChange}
+                            />
+                            {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
                         </div>
 
                         {/* Event Date */}
@@ -492,14 +560,7 @@ export default function EditEvent({ users, membershipCardName, event }: Props) {
                             </div>
                         </div>
 
-                        {/* Event Images */}
-                        <div className="py-6 border-b border-[#1f1f1f]">
-                            <label className="block text-sm font-medium text-zinc-200 mb-3">Event Images</label>
-                            <Button type="button" variant="outline" className="bg-[#1a1a1a] border-[#2a2a2a] text-zinc-200 hover:bg-[#252525] hover:text-white h-9 px-4 text-sm">
-                                Add Images
-                            </Button>
-                            <p className="text-xs text-zinc-600 mt-2">First image = cover</p>
-                        </div>
+
 
                         {/* Instagram Link */}
                         <div className="py-6 border-b border-[#1f1f1f]">

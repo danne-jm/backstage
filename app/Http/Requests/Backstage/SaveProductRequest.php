@@ -20,6 +20,8 @@ class SaveProductRequest extends FormRequest
             'end_sell_date' => ['nullable', 'date', 'after_or_equal:start_sell_date'],
             'is_online_sellable' => ['boolean'],
             'hide_until_sale' => ['boolean'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'remove_image' => ['boolean'],
 
             // Pricing
             'price' => ['required', 'numeric', 'min:0'],

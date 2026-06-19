@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backstage;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backstage\SaveItemRequest;
+use App\Actions\UploadImageAction;
 use App\Models\Item;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -41,13 +42,16 @@ class InventoryController extends Controller
         ]);
     }
 
-    public function store(SaveItemRequest $request): RedirectResponse
+    public function store(SaveItemRequest $request, UploadImageAction $uploadImageAction): RedirectResponse
     {
         $data = $request->validated();
         $data['changed_by'] = $request->user()?->email;
 
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('inventory', 'public');
+            $data['image_path'] = $uploadImageAction->handle(
+                file: $request->file('image'),
+                directory: 'inventory'
+            );
         }
 
         Item::create($data);
@@ -56,16 +60,22 @@ class InventoryController extends Controller
             ->with('success', 'Item added to inventory.');
     }
 
-    public function update(SaveItemRequest $request, Item $item): RedirectResponse
+    public function update(SaveItemRequest $request, Item $item, UploadImageAction $uploadImageAction): RedirectResponse
     {
         $data = $request->validated();
         $data['changed_by'] = $request->user()?->email;
 
-        if ($request->hasFile('image')) {
-            if ($item->image_path) {
+        if ($request->boolean('remove_image')) {
+            if ($item->image_path && Storage::disk('public')->exists($item->image_path)) {
                 Storage::disk('public')->delete($item->image_path);
             }
-            $data['image_path'] = $request->file('image')->store('inventory', 'public');
+            $data['image_path'] = null;
+        } elseif ($request->hasFile('image')) {
+            $data['image_path'] = $uploadImageAction->handle(
+                file: $request->file('image'),
+                directory: 'inventory',
+                oldImagePath: $item->image_path
+            );
         }
 
         $item->update($data);

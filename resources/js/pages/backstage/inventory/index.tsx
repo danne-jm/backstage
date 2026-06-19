@@ -105,6 +105,7 @@ function ItemModal({
         name: item?.name || '',
         quantity: item?.quantity || 0,
         image: null as File | null,
+        remove_image: false,
         _method: item ? 'PUT' : 'POST',
     });
 
@@ -120,6 +121,7 @@ function ItemModal({
             name: data.name,
             quantity: data.quantity,
             category: tags,
+            remove_image: data.remove_image,
             _method: data._method,
         };
 
@@ -140,13 +142,13 @@ function ItemModal({
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setData('image', file);
+            setData((prev) => ({ ...prev, image: file, remove_image: false }));
             setPreviewUrl(URL.createObjectURL(file));
         }
     };
 
     const removeImage = () => {
-        setData('image', null);
+        setData((prev) => ({ ...prev, image: null, remove_image: true }));
         setPreviewUrl(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
