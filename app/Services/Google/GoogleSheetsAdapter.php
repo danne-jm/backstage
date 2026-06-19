@@ -52,4 +52,52 @@ class GoogleSheetsAdapter implements SpreadsheetIntegrationInterface
             return false;
         }
     }
+
+    public function getHeaders(string $spreadsheetId, string $sheetName): array
+    {
+        try {
+            $range = "{$sheetName}!1:1";
+            $response = $this->service->spreadsheets_values->get($spreadsheetId, $range);
+            $values = $response->getValues();
+
+            if (empty($values) || empty($values[0])) {
+                return [];
+            }
+
+            return $values[0];
+        } catch (\Exception $e) {
+            Log::error("Failed to get headers from Google Sheet {$spreadsheetId}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getRows(string $spreadsheetId, string $sheetName, int $limit = 50): array
+    {
+        try {
+            // Fetch headers and data rows in one go
+            $range = "{$sheetName}!A1:Z{$limit}";
+            $response = $this->service->spreadsheets_values->get($spreadsheetId, $range);
+            $values = $response->getValues();
+
+            if (empty($values) || count($values) < 2) {
+                return [];
+            }
+
+            $headers = array_shift($values);
+            $rows = [];
+
+            foreach ($values as $row) {
+                $rowData = [];
+                foreach ($headers as $index => $header) {
+                    $rowData[$header] = $row[$index] ?? null;
+                }
+                $rows[] = $rowData;
+            }
+
+            return $rows;
+        } catch (\Exception $e) {
+            Log::error("Failed to get rows from Google Sheet {$spreadsheetId}: " . $e->getMessage());
+            return [];
+        }
+    }
 }

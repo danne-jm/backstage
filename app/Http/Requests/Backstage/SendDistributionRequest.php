@@ -19,6 +19,9 @@ class SendDistributionRequest extends FormRequest
             // One of these must be provided
             'event_id' => ['nullable', 'string', 'exists:events,id'],
             'recipient_emails' => ['nullable', 'string'],
+            'first_name_column' => ['nullable', 'string', 'max:255'],
+            'last_name_column' => ['nullable', 'string', 'max:255'],
+            'email_column' => ['nullable', 'string', 'max:255'],
         ];
     }
 

@@ -24,7 +24,7 @@ class EmailDistributorController extends Controller
     {
         return Inertia::render('backstage/email-distributor/index', [
             'events' => Event::orderByDesc('event_date')
-                ->get(['id', 'name', 'event_date']),
+                ->get(['id', 'name', 'event_date', 'google_spreadsheet_id', 'google_sheet_name']),
             'recent_logs' => Inertia::defer(fn () => MailLog::with('event')
                 ->latest()
                 ->limit(50)
@@ -87,5 +87,47 @@ class EmailDistributorController extends Controller
         }
 
         return back()->with('success', "Queued {$recipients->count()} email(s) for distribution.");
+    }
+
+    /**
+     * Get spreadsheet headers for a given event.
+     */
+    public function getHeaders(Event $event): \Illuminate\Http\JsonResponse
+    {
+        if (!$event->google_spreadsheet_id || !$event->google_sheet_name) {
+            return response()->json(['headers' => []]);
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        try {
+            $adapter = new \App\Services\Google\GoogleSheetsAdapter($user);
+            $headers = $adapter->getHeaders($event->google_spreadsheet_id, $event->google_sheet_name);
+            return response()->json(['headers' => $headers]);
+        } catch (\Exception $e) {
+            return response()->json(['headers' => [], 'error' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Get sample rows from the spreadsheet for previewing.
+     */
+    public function getRows(Event $event): \Illuminate\Http\JsonResponse
+    {
+        if (!$event->google_spreadsheet_id || !$event->google_sheet_name) {
+            return response()->json(['rows' => []]);
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        try {
+            $adapter = new \App\Services\Google\GoogleSheetsAdapter($user);
+            $rows = $adapter->getRows($event->google_spreadsheet_id, $event->google_sheet_name, 25);
+            return response()->json(['rows' => $rows]);
+        } catch (\Exception $e) {
+            return response()->json(['rows' => [], 'error' => $e->getMessage()], 400);
+        }
     }
 }
