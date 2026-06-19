@@ -201,14 +201,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
                         
                         {/* Left Column: Header & Editor */}
                         <div className="lg:col-span-8 space-y-6">
-                            
-                            {/* Header placed inside the left column to align with mappings */}
-                            <div>
-                                <h1 className="text-2xl font-bold text-white tracking-tight mb-2">Email Distributor</h1>
-                                <p className="text-sm text-zinc-400">
-                                    Compose and distribute bulk emails to your attendees. Map spreadsheet columns to personalize content.
-                                </p>
-                            </div>
+
                             <form onSubmit={submit} className="space-y-6">
                                 <div className="space-y-4">
                                     {/* Event Selection */}
@@ -463,3 +456,12 @@ export default function EmailDistributor({ events, recent_logs, flash, errors }:
         </>
     );
 }
+
+EmailDistributor.layout = {
+    breadcrumbs: [
+        {
+            title: 'Email Distributor',
+            href: '/email-distributor',
+        },
+    ],
+};

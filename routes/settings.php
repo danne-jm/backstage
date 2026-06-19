@@ -31,3 +31,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::inertia('settings/google', 'settings/google')->name('google.edit');
 });
+
+// Google OAuth Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('auth/google/redirect', [\App\Http\Controllers\Settings\GoogleAuthController::class, 'redirect'])->name('google.redirect');
+    Route::get('auth/google/callback', [\App\Http\Controllers\Settings\GoogleAuthController::class, 'callback'])->name('google.callback');
+    Route::delete('auth/google/disconnect', [\App\Http\Controllers\Settings\GoogleAuthController::class, 'disconnect'])->name('google.disconnect');
+});
