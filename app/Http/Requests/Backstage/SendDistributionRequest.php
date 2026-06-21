@@ -22,6 +22,9 @@ class SendDistributionRequest extends FormRequest
             'emails' => ['required', 'array', 'min:1'],
             'emails.*.email' => ['required', 'email'],
             'emails.*.body' => ['required', 'string'],
+            'emails.*.first_name' => ['nullable', 'string'],
+            'emails.*.last_name' => ['nullable', 'string'],
+            'include_qr' => ['nullable', 'boolean'],
         ];
     }
 

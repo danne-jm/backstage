@@ -78,6 +78,7 @@ Route::middleware(['auth'])->name('backstage.')->group(function () {
         Route::get('/', [EmailDistributorController::class, 'index'])->name('index');
         Route::get('{event}/headers', [EmailDistributorController::class, 'getHeaders'])->name('headers');
         Route::get('{event}/rows', [EmailDistributorController::class, 'getRows'])->name('rows');
+        Route::post('sample', [EmailDistributorController::class, 'distributeSample'])->name('sample');
         Route::post('distribute', [EmailDistributorController::class, 'distribute'])->name('distribute');
     });
 

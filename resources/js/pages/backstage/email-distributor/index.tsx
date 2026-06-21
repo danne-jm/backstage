@@ -3,16 +3,18 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { Bold, Italic, Underline as UnderlineIcon, Strikethrough, List, ListOrdered, Link as LinkIcon, Send, Settings, Mail, RefreshCw } from 'lucide-react';
+import { Bold, Italic, Underline as UnderlineIcon, Strikethrough, List, ListOrdered, Link as LinkIcon, Send, Settings, Mail, RefreshCw, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
-import { getHeaders, getRows, distribute } from '@/actions/App/Http/Controllers/Backstage/EmailDistributorController';
+import { getHeaders, getRows, distribute, distributeSample } from '@/actions/App/Http/Controllers/Backstage/EmailDistributorController';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const MenuBar = ({ editor }: { editor: any }) => {
     if (!editor) return null;
@@ -74,16 +76,19 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
     const [sheetRows, setSheetRows] = useState<any[]>([]);
     const [previewRowIndex, setPreviewRowIndex] = useState<number>(-1);
     const [isLoadingData, setIsLoadingData] = useState(false);
+    const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+    const [isOutboxExpanded, setIsOutboxExpanded] = useState(false);
 
     const { data, setData, post, processing, reset, clearErrors } = useForm({
         event_id: '',
         custom_event_name: '',
         custom_event_date: '',
         subject: '',
-        body: '<p>Hello <strong>{{firstName}} {{last_name}}</strong>,</p><p></p><p>Thanks for registering — below are your ticket details for the event.</p><p></p><ul><li><p>Event: {{event_name}}</p></li><li><p>Date: {{event_date}}</p></li><li><p>Bring: Your ESN card (if applicable)</p></li></ul><p></p><p>Please bring a copy of this email (printed or on your phone).</p><p></p><p>See you there,<br>Organization Name</p>',
+        body: '<p>Hello <strong>{{firstName}} {{last_name}}</strong>,</p><p></p><p>Thanks for registering — below are your ticket details for the event.</p><ul><li><p>Event: {{event_name}}</p></li><li><p>Date: {{event_date}}</p></li><li><p>Bring: Your card (if applicable)</p></li></ul><p>Please bring a copy of this email (printed or on your phone).</p><p></p><p>See you there,<br>Organization Name</p>',
         first_name_column: '',
         last_name_column: '',
         email_column: '',
+        include_qr: false,
         emails: [] as {email: string; body: string}[],
     });
 
@@ -166,9 +171,9 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                     
                 setData((prev) => ({
                     ...prev,
-                    first_name_column: findHeader(['first name', 'voornaam', 'first_name']),
-                    last_name_column: findHeader(['last name', 'achternaam', 'last_name', 'surname']),
-                    email_column: findHeader(['email', 'e-mail']),
+                    first_name_column: findHeader(['first name', 'firstname', 'first_name', 'first-name', 'voornaam']),
+                    last_name_column: findHeader(['last name', 'lastname', 'last_name', 'last-name', 'achternaam', 'surname']),
+                    email_column: findHeader(['email', 'e-mail', 'address', 'email_address', 'email address', 'email-address']),
                     event_id: value
                 }));
                 
@@ -204,9 +209,9 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
 
                 setData((prev) => ({
                     ...prev,
-                    first_name_column: findHeader(['first name', 'voornaam', 'first_name']),
-                    last_name_column: findHeader(['last name', 'achternaam', 'last_name', 'surname']),
-                    email_column: findHeader(['email', 'e-mail']),
+                    first_name_column: findHeader(['first name', 'firstname', 'first_name', 'first-name', 'voornaam']),
+                    last_name_column: findHeader(['last name', 'lastname', 'last_name', 'last-name', 'achternaam', 'surname']),
+                    email_column: findHeader(['email', 'e-mail', 'address', 'email_address', 'email address', 'email-address']),
                 }));
                 setIsLoadingData(false);
             },
@@ -230,9 +235,14 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
             if (!data.email_column || !row[data.email_column]) return null;
             
             let content = data.body;
-            // Tiptap can generate empty paragraphs which collapse in email clients. Add break tags.
+            // Preserve intentional empty lines and prevent list item double-spacing
             content = content.replace(/<p><\/p>/g, '<p><br></p>');
-            content = content.replace(/<p class=".*?"><\/p>/g, '<p><br></p>');
+            content = content.replace(/<p class="[^"]*"><\/p>/g, '<p><br></p>');
+            content = content.replace(/<li><p(?: class="[^"]*")?>/g, '<li>');
+            content = content.replace(/<\/p><\/li>/g, '</li>');
+            // Force zero margin on remaining paragraphs to perfectly match editor's tight spacing
+            content = content.replace(/<p>/g, '<p style="margin: 0;">');
+            content = content.replace(/<p class="([^"]*)">/g, '<p class="$1" style="margin: 0;">');
 
             const firstName = data.first_name_column ? (row[data.first_name_column] || '') : '';
             const lastName = data.last_name_column ? (row[data.last_name_column] || '') : '';
@@ -252,6 +262,8 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
 
             return {
                 email: row[data.email_column],
+                first_name: firstName,
+                last_name: lastName,
                 body: content
             };
         }).filter(Boolean);
@@ -266,28 +278,61 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
 
     const generatePreview = () => {
         let content = data.body;
-        // Fix collapsing empty paragraphs for preview
+        // Preserve intentional empty lines and prevent list item double-spacing
         content = content.replace(/<p><\/p>/g, '<p><br></p>');
-        content = content.replace(/<p class=".*?"><\/p>/g, '<p><br></p>');
+        content = content.replace(/<p class="[^"]*"><\/p>/g, '<p><br></p>');
+        content = content.replace(/<li><p(?: class="[^"]*")?>/g, '<li>');
+        content = content.replace(/<\/p><\/li>/g, '</li>');
+        // Force zero margin on remaining paragraphs to perfectly match editor's tight spacing
+        content = content.replace(/<p>/g, '<p style="margin: 0;">');
+        content = content.replace(/<p class="([^"]*)">/g, '<p class="$1" style="margin: 0;">');
+
+        let firstName = 'Attendee';
+        let lastName = '';
+        let email = 'preview@example.com';
 
         if (previewRowIndex >= 0 && sheetRows[previewRowIndex]) {
             const row = sheetRows[previewRowIndex];
-            const firstName = data.first_name_column ? (row[data.first_name_column] || '') : '';
-            const lastName = data.last_name_column ? (row[data.last_name_column] || '') : '';
+            firstName = data.first_name_column ? (row[data.first_name_column] || '') : firstName;
+            lastName = data.last_name_column ? (row[data.last_name_column] || '') : lastName;
+            email = data.email_column ? (row[data.email_column] || '') : email;
             
             content = content.replace(/{{firstName}}/g, firstName);
             content = content.replace(/{{first_name}}/g, firstName);
             content = content.replace(/{{last_name}}/g, lastName);
             content = content.replace(/{{lastName}}/g, lastName);
         }
-        const evtName = selectedEvent ? selectedEvent.name : data.custom_event_name;
+        const evtName = selectedEvent ? selectedEvent.name : (data.custom_event_name || 'General Event');
         content = content.replace(/{{event_name}}/g, evtName);
         
         const dateStr = selectedEvent?.event_date 
-            ? new Date(selectedEvent.event_date).toLocaleDateString() 
-            : (data.custom_event_date ? new Date(data.custom_event_date).toLocaleDateString() : '');
+            ? new Date(selectedEvent.event_date).toLocaleDateString('en-GB').replace(/\//g, '-')
+            : (data.custom_event_date ? new Date(data.custom_event_date).toLocaleDateString('en-GB').replace(/\//g, '-') : 'Unknown-Date');
         content = content.replace(/{{event_date}}/g, dateStr);
+
+        if (data.include_qr) {
+            const safeEventName = evtName.replace(/\s+/g, '-');
+            const safeName = `${firstName} ${lastName}`.trim().replace(/\s+/g, '-');
+            const dummyFileName = `${safeEventName}_${dateStr}_to_${safeName}_via_${email}_PREV1234.png`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(dummyFileName)}`;
+            content = content.replace(/{{qr}}/g, `<img src="${qrUrl}" alt="Ticket QR Code" />`);
+        }
+
         return content;
+    };
+
+    const handleDistributeSample = () => {
+        if (is_google_connected === false) {
+            toast.error('Google account not connected or credentials expired. Please reconnect in settings.', { id: 'google-error' });
+            return;
+        }
+
+        router.post(distributeSample.url(), {
+            subject: data.subject || 'No Subject',
+            body: generatePreview()
+        } as any, {
+            preserveScroll: true
+        });
     };
 
     return (
@@ -382,6 +427,62 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                                     </div>
                                 </div>
 
+                                {/* Live Preview Collapsible */}
+                                {sheetRows.length > 0 && (
+                                    <div className="border border-[#2a2a2a] rounded-xl bg-[#0d0d0d] overflow-hidden transition-all duration-200">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
+                                            className="w-full flex items-center justify-between p-4 bg-[#141414] hover:bg-[#1a1a1a] transition-colors text-sm font-medium text-zinc-200"
+                                        >
+                                            <span>Live Preview</span>
+                                            <ChevronDown className={`w-4 h-4 text-zinc-400 transform transition-transform ${isPreviewExpanded ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        
+                                        {isPreviewExpanded && (
+                                            <div className="p-5 border-t border-[#2a2a2a]">
+                                                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <label className="text-xs text-zinc-500">Preview as:</label>
+                                                        <Select 
+                                                            value={previewRowIndex.toString()} 
+                                                            onValueChange={(val) => setPreviewRowIndex(parseInt(val))}
+                                                        >
+                                                            <SelectTrigger className={`${inputCls} h-8 text-xs bg-[#141414] w-[200px]`}>
+                                                                <SelectValue placeholder="Select user..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-[#141414] border-[#2a2a2a] text-zinc-200 max-h-[300px]">
+                                                                {sheetRows.map((row, i) => {
+                                                                    const label = data.email_column && row[data.email_column] 
+                                                                        ? row[data.email_column] 
+                                                                        : `Row ${i + 2}`;
+                                                                    return <SelectItem key={i} value={i.toString()}>{label}</SelectItem>;
+                                                                })}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    
+                                                    <Button 
+                                                        type="button" 
+                                                        variant="outline" 
+                                                        size="sm"
+                                                        className="border-[#2a2a2a] bg-[#1a1a1a] text-zinc-300 hover:text-white hover:bg-[#2a2a2a]"
+                                                        onClick={handleDistributeSample}
+                                                        disabled={processing}
+                                                    >
+                                                        <Mail className="w-4 h-4 mr-2" />
+                                                        Distribute Sample
+                                                    </Button>
+                                                </div>
+                                                <div 
+                                                    className="ProseMirror prose prose-invert max-w-none p-4 border border-[#2a2a2a] rounded bg-[#141414] text-sm"
+                                                    dangerouslySetInnerHTML={{ __html: generatePreview() }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="flex justify-end pt-4">
                                     <Button 
                                         type="submit" 
@@ -393,48 +494,64 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                                     </Button>
                                 </div>
                             </form>
-
-                            {/* Live Preview Section */}
-                            {sheetRows.length > 0 && (
-                                <div className="mt-8 border border-[#2a2a2a] rounded-xl bg-[#0d0d0d] p-5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="font-medium text-sm text-zinc-200">Live Preview</h3>
-                                        <div className="flex items-center gap-3">
-                                            <label className="text-xs text-zinc-500">Preview as:</label>
-                                            <Select 
-                                                value={previewRowIndex.toString()} 
-                                                onValueChange={(val) => setPreviewRowIndex(parseInt(val))}
-                                            >
-                                                <SelectTrigger className={`${inputCls} h-8 text-xs bg-[#141414] w-[200px]`}>
-                                                    <SelectValue placeholder="Select user..." />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-[#141414] border-[#2a2a2a] text-zinc-200 max-h-[300px]">
-                                                    {sheetRows.map((row, i) => {
-                                                        const label = data.email_column && row[data.email_column] 
-                                                            ? row[data.email_column] 
-                                                            : `Row ${i + 2}`;
-                                                        return <SelectItem key={i} value={i.toString()}>{label}</SelectItem>;
-                                                    })}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                    <div 
-                                        className="ProseMirror prose prose-invert max-w-none p-4 border border-[#2a2a2a] rounded bg-[#141414] text-sm"
-                                        dangerouslySetInnerHTML={{ __html: generatePreview() }}
-                                    />
-                                </div>
-                            )}
                         </div>
 
                         {/* Sidebar: Configuration & Logs */}
                         <div className="lg:col-span-4 space-y-6">
+
+                            {/* Recent Distribution Logs (Collapsible) */}
+                            <div className="rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] overflow-hidden transition-all duration-200">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsOutboxExpanded(!isOutboxExpanded)}
+                                    className="w-full flex items-center justify-between p-4 bg-[#141414] hover:bg-[#1a1a1a] transition-colors text-sm font-medium text-zinc-200"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Mail className="w-4 h-4 text-zinc-400" />
+                                        <span>Recent Outbox</span>
+                                    </div>
+                                    <ChevronDown className={`w-4 h-4 text-zinc-400 transform transition-transform ${isOutboxExpanded ? 'rotate-180' : ''}`} />
+                                </button>
+                                
+                                {isOutboxExpanded && (
+                                    <div className="p-5 border-t border-[#2a2a2a] bg-[#141414] flex flex-col h-[400px]">
+                                        <div className="flex items-center justify-end mb-4">
+                                            <button onClick={() => router.reload({ only: ['recent_logs'] })} className="text-zinc-500 hover:text-white transition-colors">
+                                                <RefreshCw className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                                            {!recent_logs ? (
+                                                <div className="text-center py-8 text-zinc-500 text-sm">Loading logs...</div>
+                                            ) : recent_logs.length === 0 ? (
+                                                <div className="text-center py-8 text-zinc-500 text-sm">No recent emails sent.</div>
+                                            ) : (
+                                                recent_logs.map((log: any) => (
+                                                    <div key={log.id} className="p-3 rounded-lg border border-[#2a2a2a] bg-[#0d0d0d] text-xs">
+                                                        <div className="flex items-start justify-between mb-1.5">
+                                                            <span className="font-medium text-zinc-200 truncate pr-2">{log.recipient_email}</span>
+                                                            <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider ${log.success ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/50' : 'bg-red-950 text-red-400 border border-red-900/50'}`}>
+                                                                {log.success ? 'Sent' : 'Failed'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-zinc-500 truncate mb-1">{log.subject}</p>
+                                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#1f1f1f]">
+                                                            <span className="text-[10px] text-zinc-600">{log.event_name || 'Manual Recipient'}</span>
+                                                            <span className="text-[10px] text-zinc-600">{new Date(log.sent_at).toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                             
                             {/* Field Mappings */}
                             <div className="rounded-xl border border-[#2a2a2a] bg-[#141414] p-5">
                                 <div className="flex items-center gap-2 mb-4">
                                     <Settings className="w-4 h-4 text-zinc-400" />
-                                    <h3 className="font-medium text-sm text-zinc-200">Google Sheet Mappings</h3>
+                                    <h3 className="font-medium text-sm text-zinc-200">Mail Config</h3>
                                 </div>
                                 <p className="text-xs text-zinc-500 mb-4">
                                     Define the exact column headers from the connected Google Spreadsheet so the distributor knows where to pull recipient data.
@@ -491,45 +608,92 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Recent Distribution Logs */}
-                            <div className="rounded-xl border border-[#2a2a2a] bg-[#141414] p-5 flex flex-col h-[400px]">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <Mail className="w-4 h-4 text-zinc-400" />
-                                        <h3 className="font-medium text-sm text-zinc-200">Recent Outbox</h3>
+                                    <div className="flex items-center space-x-2 pt-2 border-t border-[#2a2a2a]">
+                                        <Checkbox 
+                                            id="include_qr" 
+                                            checked={data.include_qr} 
+                                            onCheckedChange={(checked) => setData('include_qr', checked === true)}
+                                        />
+                                        <label htmlFor="include_qr" className="text-xs font-medium text-zinc-300 cursor-pointer">
+                                            Attach QR Code Tickets
+                                        </label>
                                     </div>
-                                    <button onClick={() => router.reload({ only: ['recent_logs'] })} className="text-zinc-500 hover:text-white transition-colors">
-                                        <RefreshCw className="w-3.5 h-3.5" />
-                                    </button>
-                                </div>
-                                <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                                    {!recent_logs ? (
-                                        <div className="text-center py-8 text-zinc-500 text-sm">Loading logs...</div>
-                                    ) : recent_logs.length === 0 ? (
-                                        <div className="text-center py-8 text-zinc-500 text-sm">No recent emails sent.</div>
-                                    ) : (
-                                        recent_logs.map((log: any) => (
-                                            <div key={log.id} className="p-3 rounded-lg border border-[#2a2a2a] bg-[#0d0d0d] text-xs">
-                                                <div className="flex items-start justify-between mb-1.5">
-                                                    <span className="font-medium text-zinc-200 truncate pr-2">{log.recipient_email}</span>
-                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider ${log.success ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/50' : 'bg-red-950 text-red-400 border border-red-900/50'}`}>
-                                                        {log.success ? 'Sent' : 'Failed'}
-                                                    </span>
-                                                </div>
-                                                <p className="text-zinc-500 truncate mb-1">{log.subject}</p>
-                                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#1f1f1f]">
-                                                    <span className="text-[10px] text-zinc-600">{log.event_name || 'Manual Recipient'}</span>
-                                                    <span className="text-[10px] text-zinc-600">{new Date(log.sent_at).toLocaleString()}</span>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
                                 </div>
                             </div>
 
+                            {/* Spreadsheet Data preview */}
+                            {sheetRows.length > 0 && (
+                                <div className="rounded-xl border border-[#2a2a2a] bg-[#141414] p-5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-medium text-sm text-zinc-200">Spreadsheet Data</h3>
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="outline" size="sm" className="bg-[#1a1a1a] border-[#2a2a2a] text-zinc-300 hover:text-white hover:bg-[#2a2a2a]">
+                                                    Manage Data
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="bg-[#0a0a0a] border-[#2a2a2a] text-zinc-200 max-w-[90vw] w-[90vw] h-[90vh] flex flex-col">
+                                                <DialogHeader>
+                                                    <DialogTitle>Spreadsheet Data</DialogTitle>
+                                                </DialogHeader>
+                                                <div className="overflow-auto flex-1 mt-4 rounded-lg border border-[#2a2a2a] custom-scrollbar">
+                                                    <table className="w-full text-xs text-left text-zinc-400 whitespace-nowrap">
+                                                        <thead className="bg-[#1a1a1a] text-zinc-300 sticky top-0 z-10">
+                                                            <tr>
+                                                                {sheetHeaders.map((header, i) => (
+                                                                    <th key={i} className="px-4 py-3 font-medium border-b border-[#2a2a2a] shadow-sm">{header}</th>
+                                                                ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-[#2a2a2a]">
+                                                            {sheetRows.map((row, rowIndex) => (
+                                                                <tr key={rowIndex} className="hover:bg-[#141414] transition-colors">
+                                                                    {sheetHeaders.map((header, colIndex) => (
+                                                                        <td key={colIndex} className="px-4 py-2">{row[header]}</td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
+                                    <div className="overflow-hidden rounded-lg border border-[#2a2a2a] bg-[#0d0d0d]">
+                                        <table className="w-full table-fixed text-xs text-left text-zinc-400 whitespace-nowrap">
+                                            <thead className="bg-[#1a1a1a] text-zinc-300">
+                                                <tr>
+                                                    {sheetHeaders.slice(0, 5).map((header, i) => (
+                                                        <th key={i} className="px-3 py-2 font-medium border-b border-[#2a2a2a] truncate">{header}</th>
+                                                    ))}
+                                                    {sheetHeaders.length > 5 && (
+                                                        <th className="px-3 py-2 font-medium border-b border-[#2a2a2a] w-12 text-center">...</th>
+                                                    )}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-[#2a2a2a]">
+                                                {sheetRows.slice(0, 6).map((row, rowIndex) => (
+                                                    <tr key={rowIndex} className="hover:bg-[#141414] transition-colors">
+                                                        {sheetHeaders.slice(0, 5).map((header, colIndex) => (
+                                                            <td key={colIndex} className="px-3 py-2 truncate" title={row[header]}>{row[header]}</td>
+                                                        ))}
+                                                        {sheetHeaders.length > 5 && (
+                                                            <td className="px-3 py-2 text-center text-zinc-500">...</td>
+                                                        )}
+                                                    </tr>
+                                                ))}
+                                                {sheetRows.length > 6 && (
+                                                    <tr className="bg-[#0a0a0a]">
+                                                        <td colSpan={Math.min(sheetHeaders.length, 5) + (sheetHeaders.length > 5 ? 1 : 0)} className="px-3 py-3 text-center text-zinc-500">
+                                                            ... and {sheetRows.length - 6} more rows
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
