@@ -105,3 +105,49 @@ Kustomize has an aggressive security policy preventing directory traversal. It w
 - **Stateless (Laravel/Nginx):** Your application pod stores nothing on its local hard drive. It can be scaled infinitely or destroyed instantly with zero data loss.
 - **Stateful (Postgres/Redis):** These are configured as `StatefulSet` resources with PersistentVolumeClaims (PVCs). They pin their data to a physical drive, ensuring database integrity across pod restarts.
 - **Rollout Updates:** Kubernetes uses a `RollingUpdate` strategy, spinning up new pods before killing the old ones to guarantee zero downtime. Because we use `imagePullPolicy: Always`, running `kubectl rollout restart deployment backstage-deployment` guarantees K8s will pull the freshest code from Docker Hub.
+
+## 6. Latest Architectural & CI/CD Updates
+
+As the application has matured, several architectural shifts have been implemented to harden the system for production.
+
+### Strict Static Analysis (PHPStan Level 7)
+The entire codebase is now strictly analyzed via PHPStan at **Level 7**.
+- **Why?** This prevents unpredictable runtime fatals (like "undefined property" or "calling a method on null") before the code is even executed.
+- **How it affects you:** All generic collections, properties, and closures now have explicit type hints and PHPDoc bindings (e.g. `array_map` vs `collect()->map()` where type loss occurs). The deployment pipeline will instantly fail if type safety is compromised.
+
+### Event-Sourced Ledger & Inventory
+We replaced cache-based stock counting with an **atomic event-sourced ledger** (`inventory_movements` table).
+- This prevents race conditions during high-volume ticket sales.
+- All sales, refunds, and adjustments are recorded immutably. Stock levels are calculated by dynamically summing the ledger rather than maintaining a fragile "remaining stock" column.
+
+### Decoupled Email Transports & Inline QR Codes
+- **Adapter Pattern:** Emails are now decoupled into specific transports (`SmtpEmailTransport`, `GmailOAuthEmailTransport`).
+- **QR Ticketing:** We no longer rely on external origin servers to generate and serve QR codes via HTTP URLs in emails (which frequently broke in strict clients like Outlook or Gmail). QR codes are generated dynamically on the pod and attached as **CID Inline Embeds** (MIME standard), ensuring they render safely entirely offline in the recipient's inbox.
+
+## 7. Theoretical Learnings & Troubleshooting Log
+
+Throughout the development and containerization of this application, several theoretical architectural questions and edge-cases were encountered and resolved. This serves as a historical learning log:
+
+### 1. Kustomize Variable Interpolation (The `APP_URL` OAuth Issue)
+**The Problem:** Attempting to use bash-style string interpolation (`${APP_URL}/auth/google/callback`) directly inside `kustomization.yaml` or ConfigMaps resulted in a `400: invalid_request` from Google OAuth.
+**The Learning:** Kubernetes ConfigMaps do not natively evaluate or expand shell variables unless the container's entrypoint explicitly runs an tool like `envsubst`. Furthermore, Laravel's `.env` parser interprets the injected string literally. For Google OAuth (and routing in general), it is required to provide the literal URL string to the environment, or dynamically resolve it within the PHP application (via `config('app.url')`).
+
+### 2. Database vs. Application Roles & Permissions
+**The Question:** Why define roles and permissions in both the Database (via migrations/seeders) and the Laravel Application Code?
+**The Learning:** Packages like Spatie Permissions store bindings in the database to allow *dynamic* assignment (e.g., an admin granting a user a permission via the UI without requiring a code deployment). However, the application code (middleware, policies) must *hardcode* the permission checks (e.g., `middleware('permission:view_dashboard')`) to enforce security. Seeding the database strictly synchronizes the database with the application's required logic, preventing the two from drifting and causing lockouts.
+
+### 3. Static Analysis (PHPStan) vs. Unit/Integration Tests
+**The Question:** Why do PHPStan fixes look like formatting/docblock updates rather than "real logic" test changes?
+**The Learning:** Unit and feature tests execute the application to verify *business logic*. PHPStan performs **Static Analysis**, reading the code without running it to prove structural and mathematical type safety (preventing "undefined property" or "call to member function on null" fatal errors). PHPStan Level 7 enforces strict type declarations, requiring us to replace implicit generic mapping (like `collect()->map()`) with strictly typed native arrays (`array_map()`). The `phpstan.neon` file dictates this strictness level.
+
+### 4. Linters Passing but Tests Failing
+**The Problem:** The linter passed successfully, but `php artisan test` failed.
+**The Learning:** Linters (like Laravel Pint) only enforce syntax formatting, spacing, and styling conventions. They are completely ignorant of types or logic. A perfectly linted file can still contain a broken database query or a fatal type mismatch. Tests evaluate the actual execution of the code.
+
+### 5. Middleware Ordering & Redis DDoS Exhaustion
+**The Problem:** Rate-limited (429) and blocked (403) requests were still exhausting the Redis session store during load tests on the gateway.
+**The Learning:** Middleware execution order is critical for performance and security. By splitting the context middleware into two parts—a lightweight early-stage logging/trace layer and a resource-intensive late-stage session hydration layer—we were able to drop malicious requests *before* they ever reached Redis, saving massive amounts of memory while maintaining full observability.
+
+### 6. Laravel 11 `ProhibitDestructiveCommands` in Production
+**The Problem:** Running `kubectl exec deployment/backstage-deployment -- php artisan migrate:fresh --seed --force` resulted in `WARN  This command is prohibited from running in this environment.` despite the `--force` flag.
+**The Learning:** In Laravel 11, the `AppServiceProvider` contains `DB::prohibitDestructiveCommands(app()->isProduction());`. This is an ultimate safeguard that completely disables commands like `migrate:fresh` or `db:wipe` when `APP_ENV=production`. To intentionally override this during initial cluster bootstrapping without changing your code, you must inject a temporary environment override directly into the exec call: `kubectl exec deployment/backstage-deployment -- env APP_ENV=local php artisan migrate:fresh --seed --force`.

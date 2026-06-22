@@ -3,8 +3,10 @@ resources:
   - Containerization/manifests/service.yaml
   - Containerization/manifests/postgres.yaml
   - Containerization/manifests/redis.yaml
+  - Containerization/manifests/minio.yaml
 
 secretGenerator:
   - name: backstage-secrets
     envs:
       - .env.production
+namespace: backstage
