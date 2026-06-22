@@ -226,7 +226,14 @@ class EmailDistributorController extends Controller
             $adapter = new GoogleSheetsAdapter($user);
             $rows = $adapter->getRows($event->google_spreadsheet_id, $event->google_sheet_name, 2000);
 
-            $filters = $event->attendee_filter_config ?: [];
+            $filters = $event->attendee_filter_config;
+            if (is_string($filters)) {
+                $filters = json_decode($filters, true);
+            }
+            if (! is_array($filters)) {
+                $filters = [];
+            }
+            /** @var array<int, array<string, mixed>> $filters */
 
             if (! empty($filters)) {
                 $rows = array_values(array_filter($rows, function ($row) use ($filters) {

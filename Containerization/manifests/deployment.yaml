@@ -17,6 +17,9 @@ spec:
     spec:
       containers:
         - name: backstage-app
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
           # Replace YOUR_DOCKERHUB_USERNAME with your actual Docker Hub username
           image: danieljaurellmevorachsasm2425/backstage-v2:latest
           imagePullPolicy: Always

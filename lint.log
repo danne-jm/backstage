@@ -1,0 +1,99 @@
+
+> lint
+> eslint . --fix
+
+
+/home/daniel/Desktop/Programming/backstageV2/resources/js/pages/backstage/attendees/index.tsx
+    1:16  error    'usePage' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    3:53  error    'CheckCircle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+    3:66  error    'Mail' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   72:21  error    Error: Cannot access variable before it is declared
+
+`fetchRows` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/daniel/Desktop/Programming/backstageV2/resources/js/pages/backstage/attendees/index.tsx:72:21
+  70 |                     setSheetName(firstSheet);
+  71 |                     autoSave({ google_spreadsheet_id: parsedId, google_sheet_name: firstSheet });
+> 72 |                     fetchRows(parsedId, firstSheet);
+     |                     ^^^^^^^^^ `fetchRows` accessed before it is declared
+  73 |                 }
+  74 |             }
+  75 |         } catch (e) {
+
+/home/daniel/Desktop/Programming/backstageV2/resources/js/pages/backstage/attendees/index.tsx:82:5
+   80 |     }, [event.id, sheetName]);
+   81 |
+>  82 |     const fetchRows = useCallback(async (id: string, sName: string) => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  83 |         if (!id || !sName) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  84 | return;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  99 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 100 |     }, [event.id]);
+      | ^^^^^^^^^^^^^^^^^^^^ `fetchRows` is declared here
+  101 |
+  102 |     const debouncedSpreadsheetId = useDebounce(spreadsheetId, 750);
+  103 |  react-hooks/immutability
+   80:8   warning  React Hook useCallback has missing dependencies: 'autoSave' and 'fetchRows'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/exhaustive-deps
+   82:35  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+/home/daniel/Desktop/Programming/backstageV2/resources/js/pages/backstage/attendees/index.tsx:82:35
+   80 |     }, [event.id, sheetName]);
+   81 |
+>  82 |     const fetchRows = useCallback(async (id: string, sName: string) => {
+      |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  83 |         if (!id || !sName) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  84 | return;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  99 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 100 |     }, [event.id]);
+      | ^^^^^^ Could not preserve existing memoization
+  101 |
+  102 |     const debouncedSpreadsheetId = useDebounce(spreadsheetId, 750);
+  103 |                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/preserve-manual-memoization
+  107:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel/Desktop/Programming/backstageV2/resources/js/pages/backstage/attendees/index.tsx:107:13
+  105 |     useEffect(() => {
+  106 |         if (event?.google_spreadsheet_id && sheets.length === 0 && !loadingSheets) {
+> 107 |             fetchSheets(event.google_spreadsheet_id);
+      |             ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  108 |         }
+  109 |     }, []);
+  110 |                                                                                                                                                                                                                                      react-hooks/set-state-in-effect
+  109:8   warning  React Hook useEffect has missing dependencies: 'event.google_spreadsheet_id', 'fetchSheets', 'loadingSheets', and 'sheets.length'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  116:8   warning  React Hook useEffect has missing dependencies: 'event.google_sheet_name', 'event.google_spreadsheet_id', 'fetchRows', and 'rows.length'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/exhaustive-deps
+  123:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel/Desktop/Programming/backstageV2/resources/js/pages/backstage/attendees/index.tsx:123:13
+  121 |             const parsedId = extractId(debouncedSpreadsheetId);
+  122 |             autoSave({ google_spreadsheet_id: parsedId });
+> 123 |             fetchSheets(parsedId);
+      |             ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  124 |         }
+  125 |     }, [debouncedSpreadsheetId]);
+  126 |                                                                                                                                                                                                                   react-hooks/set-state-in-effect
+  125:8   warning  React Hook useEffect has missing dependencies: 'autoSave', 'event?.google_spreadsheet_id', and 'fetchSheets'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+
+✖ 11 problems (7 errors, 4 warnings)
+

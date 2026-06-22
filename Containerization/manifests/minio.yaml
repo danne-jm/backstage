@@ -25,6 +25,9 @@ spec:
     spec:
       containers:
         - name: minio
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
           image: minio/minio:latest
           command:
             - /bin/sh

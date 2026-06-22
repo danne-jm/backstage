@@ -1,112 +1,185 @@
-import { Head, usePage } from '@inertiajs/react';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { RefreshCw, Filter, Database, Trash2, Plus, CheckCircle, Mail } from 'lucide-react';
+import { Head } from '@inertiajs/react';
 import axios from 'axios';
-import { sheets as sheetsRoute, rows as rowsRoute, updateConfig as updateConfigRoute } from '@/routes/backstage/sellables/events/attendees';
+import { RefreshCw, Filter, Database, Trash2, Plus } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import AppLayout from '@/layouts/app-layout';
+import {
+    sheets as sheetsRoute,
+    rows as rowsRoute,
+    updateConfig as updateConfigRoute,
+} from '@/routes/backstage/sellables/events/attendees';
 
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
     useEffect(() => {
         const handler = setTimeout(() => setDebouncedValue(value), delay);
+
         return () => clearTimeout(handler);
     }, [value, delay]);
+
     return debouncedValue;
 }
 
 const extractId = (input: string) => {
-    if (!input) return '';
+    if (!input) {
+        return '';
+    }
+
     const match = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
+
     return match ? match[1] : input;
 };
 
 export default function AttendeesIndex({ event }: any) {
-    const [spreadsheetId, setSpreadsheetId] = useState(event?.google_spreadsheet_id || '');
+    const [spreadsheetId, setSpreadsheetId] = useState(
+        event?.google_spreadsheet_id || '',
+    );
     const [sheetName, setSheetName] = useState(event?.google_sheet_name || '');
     const [sheets, setSheets] = useState<string[]>([]);
     const [rows, setRows] = useState<any[]>([]);
     const [loadingSheets, setLoadingSheets] = useState(false);
     const [loadingRows, setLoadingRows] = useState(false);
 
-    const [filterConfig, setFilterConfig] = useState<any[]>(event?.attendee_filter_config || []);
+    const [filterConfig, setFilterConfig] = useState<any[]>(
+        event?.attendee_filter_config || [],
+    );
     const [filterModalOpen, setFilterModalOpen] = useState(false);
     const [tempFilters, setTempFilters] = useState<any[]>([]);
 
-    const autoSave = async (payload: any) => {
-        try {
-            await axios.patch(updateConfigRoute({ event: event.id }).url, payload);
-        } catch (e) {
-            console.error("Failed to auto save config", e);
-        }
-    };
-
-    const fetchSheets = useCallback(async (idToFetch: string) => {
-        if (!idToFetch) return;
-        const parsedId = extractId(idToFetch);
-        setLoadingSheets(true);
-        try {
-            const { data } = await axios.get(sheetsRoute({ event: event.id }).url, {
-                params: { spreadsheet_id: parsedId }
-            });
-            setSheets(data.sheets || []);
-            if (data.sheets && data.sheets.length > 0) {
-                if (!sheetName || !data.sheets.includes(sheetName)) {
-                    const firstSheet = data.sheets[0];
-                    setSheetName(firstSheet);
-                    autoSave({ google_spreadsheet_id: parsedId, google_sheet_name: firstSheet });
-                    fetchRows(parsedId, firstSheet);
-                }
+    const autoSave = useCallback(
+        async (payload: any) => {
+            try {
+                await axios.patch(
+                    updateConfigRoute({ event: event.id }).url,
+                    payload,
+                );
+            } catch (e) {
+                console.error('Failed to auto save config', e);
             }
-        } catch (e) {
-            console.error("Error fetching sheets", e);
-        } finally {
-            setLoadingSheets(false);
-        }
-    }, [event.id, sheetName]);
+        },
+        [event.id],
+    );
 
-    const fetchRows = useCallback(async (id: string, sName: string) => {
-        if (!id || !sName) return;
-        const parsedId = extractId(id);
-        setLoadingRows(true);
-        try {
-            const { data } = await axios.get(rowsRoute({ event: event.id }).url, {
-                params: { spreadsheet_id: parsedId, sheet_name: sName }
-            });
-            setRows(data.rows || []);
-        } catch (e) {
-            console.error("Error fetching rows", e);
-        } finally {
-            setLoadingRows(false);
-        }
-    }, [event.id]);
+    const fetchRows = useCallback(
+        async (id: string, sName: string) => {
+            if (!id || !sName) {
+                return;
+            }
+
+            const parsedId = extractId(id);
+            setLoadingRows(true);
+
+            try {
+                const { data } = await axios.get(
+                    rowsRoute({ event: event.id }).url,
+                    {
+                        params: { spreadsheet_id: parsedId, sheet_name: sName },
+                    },
+                );
+                setRows(data.rows || []);
+            } catch (e) {
+                console.error('Error fetching rows', e);
+            } finally {
+                setLoadingRows(false);
+            }
+        },
+        [event.id],
+    );
+
+    const fetchSheets = useCallback(
+        async (idToFetch: string) => {
+            if (!idToFetch) {
+                return;
+            }
+
+            const parsedId = extractId(idToFetch);
+            setLoadingSheets(true);
+
+            try {
+                const { data } = await axios.get(
+                    sheetsRoute({ event: event.id }).url,
+                    {
+                        params: { spreadsheet_id: parsedId },
+                    },
+                );
+                setSheets(data.sheets || []);
+
+                if (data.sheets && data.sheets.length > 0) {
+                    if (!sheetName || !data.sheets.includes(sheetName)) {
+                        const firstSheet = data.sheets[0];
+                        setSheetName(firstSheet);
+                        autoSave({
+                            google_spreadsheet_id: parsedId,
+                            google_sheet_name: firstSheet,
+                        });
+                        fetchRows(parsedId, firstSheet);
+                    }
+                }
+            } catch (e) {
+                console.error('Error fetching sheets', e);
+            } finally {
+                setLoadingSheets(false);
+            }
+        },
+        [event.id, sheetName, autoSave, fetchRows],
+    );
 
     const debouncedSpreadsheetId = useDebounce(spreadsheetId, 750);
 
     // Auto load sheets if spreadsheet ID is configured but no sheets loaded yet
     useEffect(() => {
-        if (event?.google_spreadsheet_id && sheets.length === 0 && !loadingSheets) {
+        if (
+            event?.google_spreadsheet_id &&
+            sheets.length === 0 &&
+            !loadingSheets
+        ) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchSheets(event.google_spreadsheet_id);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Fetch rows when sheet name is initially set from backend
     useEffect(() => {
-        if (event?.google_spreadsheet_id && event?.google_sheet_name && rows.length === 0) {
+        if (
+            event?.google_spreadsheet_id &&
+            event?.google_sheet_name &&
+            rows.length === 0
+        ) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchRows(event.google_spreadsheet_id, event.google_sheet_name);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Handle spreadsheet ID typing
     useEffect(() => {
-        if (debouncedSpreadsheetId && debouncedSpreadsheetId !== event?.google_spreadsheet_id) {
+        if (
+            debouncedSpreadsheetId &&
+            debouncedSpreadsheetId !== event?.google_spreadsheet_id
+        ) {
             const parsedId = extractId(debouncedSpreadsheetId);
             autoSave({ google_spreadsheet_id: parsedId });
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchSheets(parsedId);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSpreadsheetId]);
 
     const handleSheetChange = (val: string) => {
@@ -118,6 +191,7 @@ export default function AttendeesIndex({ event }: any) {
 
     const handleManualRefresh = () => {
         fetchSheets(spreadsheetId);
+
         if (sheetName) {
             fetchRows(extractId(spreadsheetId), sheetName);
         }
@@ -135,23 +209,38 @@ export default function AttendeesIndex({ event }: any) {
     };
 
     const columns = useMemo(() => {
-        if (rows.length === 0) return [];
+        if (rows.length === 0) {
+            return [];
+        }
+
         return Object.keys(rows[0]);
     }, [rows]);
 
     const filteredRows = useMemo(() => {
-        if (!filterConfig || filterConfig.length === 0) return rows;
-        return rows.filter(row => {
-            return filterConfig.every(filter => {
-                if (!filter.column || !filter.operator || !filter.value) return true;
+        if (!filterConfig || filterConfig.length === 0) {
+            return rows;
+        }
+
+        return rows.filter((row) => {
+            return filterConfig.every((filter) => {
+                if (!filter.column || !filter.operator || !filter.value) {
+                    return true;
+                }
+
                 const rowVal = String(row[filter.column] || '').toLowerCase();
                 const filterVal = filter.value.toLowerCase();
+
                 switch (filter.operator) {
-                    case 'Equals': return rowVal === filterVal;
-                    case 'Not Equals': return rowVal !== filterVal;
-                    case 'Contains': return rowVal.includes(filterVal);
-                    case 'Does Not Contain': return !rowVal.includes(filterVal);
-                    default: return true;
+                    case 'Equals':
+                        return rowVal === filterVal;
+                    case 'Not Equals':
+                        return rowVal !== filterVal;
+                    case 'Contains':
+                        return rowVal.includes(filterVal);
+                    case 'Does Not Contain':
+                        return !rowVal.includes(filterVal);
+                    default:
+                        return true;
                 }
             });
         });
@@ -160,52 +249,70 @@ export default function AttendeesIndex({ event }: any) {
     return (
         <>
             <Head title={`Attendees - ${event?.name || 'Event'}`} />
-            
+
             <div className="flex h-full flex-1 flex-col gap-6 overflow-y-auto p-6">
-                
                 {/* Configuration Section */}
                 <div className="rounded-xl border border-[#1f1f1f] bg-[#0f0f0f] p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-white mb-1">Google Sheets Configuration</h2>
-                    <p className="text-sm text-zinc-400 mb-6">Paste a spreadsheet ID or full Google Sheets URL to import attendees.</p>
+                    <h2 className="mb-1 text-lg font-semibold text-white">
+                        Google Sheets Configuration
+                    </h2>
+                    <p className="mb-6 text-sm text-zinc-400">
+                        Paste a spreadsheet ID or full Google Sheets URL to
+                        import attendees.
+                    </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                    <div className="grid grid-cols-1 items-end gap-6 md:grid-cols-2">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-300">Spreadsheet URL or ID</label>
+                            <label className="text-sm font-medium text-zinc-300">
+                                Spreadsheet URL or ID
+                            </label>
                             <div className="flex items-center gap-2">
-                                <Input 
-                                    className="bg-black/50 border-[#2a2a2a] text-zinc-100 flex-1"
+                                <Input
+                                    className="flex-1 border-[#2a2a2a] bg-black/50 text-zinc-100"
                                     placeholder="https://docs.google.com/spreadsheets/d/... or ID"
                                     value={spreadsheetId}
-                                    onChange={(e) => setSpreadsheetId(e.target.value)}
+                                    onChange={(e) =>
+                                        setSpreadsheetId(e.target.value)
+                                    }
                                 />
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     size="icon"
-                                    className="border-[#2a2a2a] bg-black/50 text-zinc-400 hover:text-white shrink-0"
+                                    className="shrink-0 border-[#2a2a2a] bg-black/50 text-zinc-400 hover:text-white"
                                     onClick={handleManualRefresh}
                                     disabled={loadingSheets}
                                 >
-                                    <RefreshCw className={`h-4 w-4 ${loadingSheets ? 'animate-spin' : ''}`} />
+                                    <RefreshCw
+                                        className={`h-4 w-4 ${loadingSheets ? 'animate-spin' : ''}`}
+                                    />
                                 </Button>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-300">Sheet</label>
+                            <label className="text-sm font-medium text-zinc-300">
+                                Sheet
+                            </label>
                             {sheets.length > 0 ? (
-                                <Select value={sheetName} onValueChange={handleSheetChange}>
-                                    <SelectTrigger className="bg-black/50 border-[#2a2a2a] text-zinc-100 w-full">
+                                <Select
+                                    value={sheetName}
+                                    onValueChange={handleSheetChange}
+                                >
+                                    <SelectTrigger className="w-full border-[#2a2a2a] bg-black/50 text-zinc-100">
                                         <SelectValue placeholder="Select a sheet" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-[#0f0f0f] border-[#2a2a2a] text-zinc-100">
-                                        {sheets.map(s => (
-                                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                                    <SelectContent className="border-[#2a2a2a] bg-[#0f0f0f] text-zinc-100">
+                                        {sheets.map((s) => (
+                                            <SelectItem key={s} value={s}>
+                                                {s}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             ) : (
-                                <div className="h-10 px-3 py-2 text-sm text-zinc-500 bg-black/30 border border-[#2a2a2a] border-dashed rounded-md flex items-center">
-                                    Enter a spreadsheet and click ↻ to load sheets.
+                                <div className="flex h-10 items-center rounded-md border border-dashed border-[#2a2a2a] bg-black/30 px-3 py-2 text-sm text-zinc-500">
+                                    Enter a spreadsheet and click ↻ to load
+                                    sheets.
                                 </div>
                             )}
                         </div>
@@ -213,46 +320,76 @@ export default function AttendeesIndex({ event }: any) {
                 </div>
 
                 {/* Attendees Data Section */}
-                <div className="rounded-xl border border-[#1f1f1f] bg-[#0f0f0f] shadow-sm flex-1 flex flex-col min-h-0">
-                    <div className="p-4 border-b border-[#1f1f1f] flex items-center justify-between">
+                <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-[#1f1f1f] bg-[#0f0f0f] shadow-sm">
+                    <div className="flex items-center justify-between border-b border-[#1f1f1f] p-4">
                         <div>
-                            <h2 className="text-lg font-semibold text-white">Attendees ({filteredRows.length})</h2>
-                            <p className="text-sm text-zinc-400">Live data from Google Sheets.</p>
+                            <h2 className="text-lg font-semibold text-white">
+                                Attendees ({filteredRows.length})
+                            </h2>
+                            <p className="text-sm text-zinc-400">
+                                Live data from Google Sheets.
+                            </p>
                         </div>
                         <div className="flex items-center gap-3">
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button variant="ghost" className="text-zinc-400 hover:text-white">
-                                        <Database className="h-4 w-4 mr-2" />
+                                    <Button
+                                        variant="ghost"
+                                        className="text-zinc-400 hover:text-white"
+                                    >
+                                        <Database className="mr-2 h-4 w-4" />
                                         Full Data Source
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden flex flex-col bg-[#0f0f0f] border-[#2a2a2a] text-zinc-100">
+                                <DialogContent className="flex max-h-[85vh] max-w-6xl flex-col overflow-hidden border-[#2a2a2a] bg-[#0f0f0f] text-zinc-100">
                                     <DialogHeader>
-                                        <DialogTitle>Full Data Source</DialogTitle>
+                                        <DialogTitle>
+                                            Full Data Source
+                                        </DialogTitle>
                                     </DialogHeader>
-                                    <div className="flex-1 overflow-auto border border-[#2a2a2a] rounded-md mt-4">
+                                    <div className="mt-4 flex-1 overflow-auto rounded-md border border-[#2a2a2a]">
                                         <table className="w-full text-left text-xs whitespace-nowrap text-zinc-400">
                                             <thead className="bg-[#0f0f0f]">
                                                 <tr className="border-b border-[#2a2a2a] text-zinc-300">
-                                                    {columns.map(c => (
-                                                        <th key={c} className="px-4 py-3 font-medium">{c}</th>
+                                                    {columns.map((c) => (
+                                                        <th
+                                                            key={c}
+                                                            className="px-4 py-3 font-medium"
+                                                        >
+                                                            {c}
+                                                        </th>
                                                     ))}
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {rows.slice(0, 100).map((row, i) => (
-                                                    <tr key={i} className="border-b border-[#2a2a2a] transition-colors hover:bg-[#141414]">
-                                                        {columns.map(c => (
-                                                            <td key={`${i}-${c}`} className="px-4 py-3 text-zinc-300">
-                                                                {row[c]}
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
+                                                {rows
+                                                    .slice(0, 100)
+                                                    .map((row, i) => (
+                                                        <tr
+                                                            key={i}
+                                                            className="border-b border-[#2a2a2a] transition-colors hover:bg-[#141414]"
+                                                        >
+                                                            {columns.map(
+                                                                (c) => (
+                                                                    <td
+                                                                        key={`${i}-${c}`}
+                                                                        className="px-4 py-3 text-zinc-300"
+                                                                    >
+                                                                        {row[c]}
+                                                                    </td>
+                                                                ),
+                                                            )}
+                                                        </tr>
+                                                    ))}
                                                 {rows.length === 0 && (
                                                     <tr className="border-b border-[#2a2a2a]">
-                                                        <td colSpan={columns.length || 1} className="h-24 text-center text-zinc-500">
+                                                        <td
+                                                            colSpan={
+                                                                columns.length ||
+                                                                1
+                                                            }
+                                                            className="h-24 text-center text-zinc-500"
+                                                        >
                                                             No data available.
                                                         </td>
                                                     </tr>
@@ -260,37 +397,56 @@ export default function AttendeesIndex({ event }: any) {
                                             </tbody>
                                         </table>
                                     </div>
-                                    <p className="text-xs text-zinc-500 mt-2">Showing up to 100 rows from the raw data source.</p>
+                                    <p className="mt-2 text-xs text-zinc-500">
+                                        Showing up to 100 rows from the raw data
+                                        source.
+                                    </p>
                                 </DialogContent>
                             </Dialog>
 
-                            <div className="w-px h-6 bg-[#2a2a2a] mx-1"></div>
+                            <div className="mx-1 h-6 w-px bg-[#2a2a2a]"></div>
 
-                            <Button variant="outline" size="icon" className="border-[#2a2a2a] bg-black/50 text-zinc-400 hover:text-white" onClick={openFilterModal}>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="border-[#2a2a2a] bg-black/50 text-zinc-400 hover:text-white"
+                                onClick={openFilterModal}
+                            >
                                 <Filter className="h-4 w-4" />
                             </Button>
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-auto p-0 min-h-[400px]">
+                    <div className="min-h-[400px] flex-1 overflow-auto p-0">
                         {loadingRows ? (
-                            <div className="h-full flex items-center justify-center text-zinc-500">
-                                <RefreshCw className="h-6 w-6 animate-spin mb-2" />
+                            <div className="flex h-full items-center justify-center text-zinc-500">
+                                <RefreshCw className="mb-2 h-6 w-6 animate-spin" />
                             </div>
                         ) : filteredRows.length > 0 ? (
                             <table className="w-full text-left text-sm whitespace-nowrap text-zinc-400">
                                 <thead className="bg-[#0f0f0f]">
-                                    <tr className="border-b border-[#1f1f1f] sticky top-0 bg-[#0f0f0f] z-10 shadow-sm shadow-black/20">
-                                        {columns.map(c => (
-                                            <th key={c} className="px-4 py-3 font-medium bg-[#0f0f0f]">{c}</th>
+                                    <tr className="sticky top-0 z-10 border-b border-[#1f1f1f] bg-[#0f0f0f] shadow-sm shadow-black/20">
+                                        {columns.map((c) => (
+                                            <th
+                                                key={c}
+                                                className="bg-[#0f0f0f] px-4 py-3 font-medium"
+                                            >
+                                                {c}
+                                            </th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredRows.map((row, i) => (
-                                        <tr key={i} className="border-b border-[#1f1f1f] transition-colors hover:bg-[#1a1a1a]">
-                                            {columns.map(c => (
-                                                <td key={`${i}-${c}`} className="px-4 py-3 text-zinc-300">
+                                        <tr
+                                            key={i}
+                                            className="border-b border-[#1f1f1f] transition-colors hover:bg-[#1a1a1a]"
+                                        >
+                                            {columns.map((c) => (
+                                                <td
+                                                    key={`${i}-${c}`}
+                                                    className="px-4 py-3 text-zinc-300"
+                                                >
                                                     {row[c]}
                                                 </td>
                                             ))}
@@ -299,75 +455,96 @@ export default function AttendeesIndex({ event }: any) {
                                 </tbody>
                             </table>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-zinc-500 p-8 text-center">
+                            <div className="flex h-full flex-col items-center justify-center p-8 text-center text-zinc-500">
                                 {spreadsheetId && sheetName ? (
                                     <>
-                                        <Database className="h-10 w-10 text-zinc-700 mb-4" />
-                                        <p>No data found in the configured spreadsheet.</p>
+                                        <Database className="mb-4 h-10 w-10 text-zinc-700" />
+                                        <p>
+                                            No data found in the configured
+                                            spreadsheet.
+                                        </p>
                                     </>
                                 ) : (
                                     <>
-                                        <Database className="h-10 w-10 text-zinc-800 mb-4" />
-                                        <p>Configure a spreadsheet above to view attendees.</p>
+                                        <Database className="mb-4 h-10 w-10 text-zinc-800" />
+                                        <p>
+                                            Configure a spreadsheet above to
+                                            view attendees.
+                                        </p>
                                     </>
                                 )}
                             </div>
                         )}
                     </div>
                 </div>
-
             </div>
 
             {/* Filter Configuration Modal */}
             <Dialog open={filterModalOpen} onOpenChange={setFilterModalOpen}>
-                <DialogContent className="bg-[#0f0f0f] border-[#2a2a2a] text-zinc-100 max-w-3xl">
+                <DialogContent className="max-w-3xl border-[#2a2a2a] bg-[#0f0f0f] text-zinc-100">
                     <DialogHeader>
                         <DialogTitle>Filter Configuration</DialogTitle>
-                        <p className="text-sm text-zinc-400 mt-1">Define rules for identifying valid attendees. Changes are only applied when you click Save.</p>
+                        <p className="mt-1 text-sm text-zinc-400">
+                            Define rules for identifying valid attendees.
+                            Changes are only applied when you click Save.
+                        </p>
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
                         {tempFilters.map((filter, index) => (
-                            <div key={index} className="flex items-center gap-3">
-                                <Select 
-                                    value={filter.column} 
+                            <div
+                                key={index}
+                                className="flex items-center gap-3"
+                            >
+                                <Select
+                                    value={filter.column}
                                     onValueChange={(v) => {
                                         const newF = [...tempFilters];
                                         newF[index].column = v;
                                         setTempFilters(newF);
                                     }}
                                 >
-                                    <SelectTrigger className="w-[200px] bg-black/50 border-[#2a2a2a]">
+                                    <SelectTrigger className="w-[200px] border-[#2a2a2a] bg-black/50">
                                         <SelectValue placeholder="Select Column" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-[#0f0f0f] border-[#2a2a2a] text-zinc-100">
-                                        {columns.map(c => (
-                                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                                    <SelectContent className="border-[#2a2a2a] bg-[#0f0f0f] text-zinc-100">
+                                        {columns.map((c) => (
+                                            <SelectItem key={c} value={c}>
+                                                {c}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
 
-                                <Select 
-                                    value={filter.operator || 'Equals'} 
+                                <Select
+                                    value={filter.operator || 'Equals'}
                                     onValueChange={(v) => {
                                         const newF = [...tempFilters];
                                         newF[index].operator = v;
                                         setTempFilters(newF);
                                     }}
                                 >
-                                    <SelectTrigger className="w-[150px] bg-black/50 border-[#2a2a2a]">
+                                    <SelectTrigger className="w-[150px] border-[#2a2a2a] bg-black/50">
                                         <SelectValue placeholder="Operator" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-[#0f0f0f] border-[#2a2a2a] text-zinc-100">
-                                        <SelectItem value="Equals">Equals</SelectItem>
-                                        <SelectItem value="Not Equals">Not Equals</SelectItem>
-                                        <SelectItem value="Contains">Contains</SelectItem>
-                                        <SelectItem value="Does Not Contain">Does Not Contain</SelectItem>
+                                    <SelectContent className="border-[#2a2a2a] bg-[#0f0f0f] text-zinc-100">
+                                        <SelectItem value="Equals">
+                                            Equals
+                                        </SelectItem>
+                                        <SelectItem value="Not Equals">
+                                            Not Equals
+                                        </SelectItem>
+                                        <SelectItem value="Contains">
+                                            Contains
+                                        </SelectItem>
+                                        <SelectItem value="Does Not Contain">
+                                            Does Not Contain
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
 
-                                <Input 
-                                    className="flex-1 bg-black/50 border-[#2a2a2a] text-zinc-100"
+                                <Input
+                                    className="flex-1 border-[#2a2a2a] bg-black/50 text-zinc-100"
                                     placeholder="Value..."
                                     value={filter.value || ''}
                                     onChange={(e) => {
@@ -377,32 +554,54 @@ export default function AttendeesIndex({ event }: any) {
                                     }}
                                 />
 
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="text-red-400 hover:text-red-300 hover:bg-red-950/30"
-                                    onClick={() => setTempFilters(tempFilters.filter((_, i) => i !== index))}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-red-400 hover:bg-red-950/30 hover:text-red-300"
+                                    onClick={() =>
+                                        setTempFilters(
+                                            tempFilters.filter(
+                                                (_, i) => i !== index,
+                                            ),
+                                        )
+                                    }
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>
                         ))}
 
-                        <Button 
-                            variant="outline" 
-                            className="w-full border-[#2a2a2a] border-dashed bg-black/30 text-zinc-400 hover:text-white"
-                            onClick={() => setTempFilters([...tempFilters, { column: '', operator: 'Equals', value: '' }])}
+                        <Button
+                            variant="outline"
+                            className="w-full border-dashed border-[#2a2a2a] bg-black/30 text-zinc-400 hover:text-white"
+                            onClick={() =>
+                                setTempFilters([
+                                    ...tempFilters,
+                                    {
+                                        column: '',
+                                        operator: 'Equals',
+                                        value: '',
+                                    },
+                                ])
+                            }
                         >
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="mr-2 h-4 w-4" />
                             Add Rule
                         </Button>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-[#1f1f1f]">
-                        <Button variant="ghost" className="text-zinc-400 hover:text-white" onClick={() => setFilterModalOpen(false)}>
+                    <div className="flex justify-end gap-3 border-t border-[#1f1f1f] pt-4">
+                        <Button
+                            variant="ghost"
+                            className="text-zinc-400 hover:text-white"
+                            onClick={() => setFilterModalOpen(false)}
+                        >
                             Cancel
                         </Button>
-                        <Button className="bg-white text-black hover:bg-zinc-200" onClick={saveFilters}>
+                        <Button
+                            className="bg-white text-black hover:bg-zinc-200"
+                            onClick={saveFilters}
+                        >
                             Save Configuration
                         </Button>
                     </div>

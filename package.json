@@ -68,6 +68,7 @@
         "papaparse": "^5.5.4",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
+        "shell-quote": "^1.8.4",
         "sonner": "^2.0.0",
         "tailwind-merge": "^3.0.1",
         "tailwindcss": "^4.0.0",
