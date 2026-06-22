@@ -616,7 +616,7 @@ AttendeesIndex.layout = (page: any) => {
         <AppLayout
             breadcrumbs={[
                 { title: 'Sellables', href: '/sellables' },
-                { title: page.props.event?.name || 'Event' },
+                { title: page?.props?.event?.name || 'Event' },
                 { title: 'Attendees' },
             ]}
         >

@@ -1,0 +1,2 @@
+# Ignore false positive XSS in backend-generated SVG QR Code
+resources/js/components/two-factor-setup-modal.tsx

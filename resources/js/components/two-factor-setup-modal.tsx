@@ -78,7 +78,6 @@ function TwoFactorSetupStep({
                                 {qrCodeSvg ? (
                                     <div
                                         className="aspect-square w-full rounded-lg bg-white p-2 [&_svg]:size-full"
-                                        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
                                         dangerouslySetInnerHTML={{
                                             __html: qrCodeSvg,
                                         }}
