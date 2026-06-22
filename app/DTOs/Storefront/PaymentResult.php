@@ -4,6 +4,9 @@ namespace App\DTOs\Storefront;
 
 class PaymentResult
 {
+    /**
+     * @param array<string, mixed> $metadata
+     */
     public function __construct(
         public readonly string $status,
         public readonly ?string $paymentId = null,

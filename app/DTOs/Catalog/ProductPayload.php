@@ -6,6 +6,10 @@ use DateTimeInterface;
 
 readonly class ProductPayload
 {
+    /**
+     * @param array<string, mixed>|null $variantsConfig
+     * @param array<int>|null $responsibleUserIds
+     */
     public function __construct(
         public string $name,
         public string $description,

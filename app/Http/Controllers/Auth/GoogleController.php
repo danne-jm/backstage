@@ -18,16 +18,17 @@ class GoogleController extends Controller
      */
     public function redirect(Request $request): RedirectResponse
     {
-        /** @var GoogleProvider $provider */
-        $provider = Socialite::driver('google')
-            ->scopes([
-                'https://www.googleapis.com/auth/gmail.send',
-                'https://www.googleapis.com/auth/spreadsheets',
-            ])
-            ->with([
-                'access_type' => 'offline',
-                'prompt' => 'consent',
-            ]);
+        /** @var \Laravel\Socialite\Two\GoogleProvider $provider */
+        $provider = Socialite::driver('google');
+        
+        $provider->scopes([
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/spreadsheets',
+        ])
+        ->with([
+            'access_type' => 'offline',
+            'prompt' => 'consent',
+        ]);
 
         // Pass through intent so callback knows what to do
         $request->session()->put('google_oauth_intent', $request->input('intent', 'login'));
@@ -93,7 +94,7 @@ class GoogleController extends Controller
      */
     private function handleConnect(Request $request, \Laravel\Socialite\Contracts\User $googleUser): RedirectResponse
     {
-        /** @var User $user */
+        /** @var User|null $user */
         $user = Auth::user();
 
         if (! $user) {
