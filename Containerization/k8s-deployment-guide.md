@@ -151,3 +151,27 @@ Throughout the development and containerization of this application, several the
 ### 6. Laravel 11 `ProhibitDestructiveCommands` in Production
 **The Problem:** Running `kubectl exec deployment/backstage-deployment -- php artisan migrate:fresh --seed --force` resulted in `WARN  This command is prohibited from running in this environment.` despite the `--force` flag.
 **The Learning:** In Laravel 11, the `AppServiceProvider` contains `DB::prohibitDestructiveCommands(app()->isProduction());`. This is an ultimate safeguard that completely disables commands like `migrate:fresh` or `db:wipe` when `APP_ENV=production`. To intentionally override this during initial cluster bootstrapping without changing your code, you must inject a temporary environment override directly into the exec call: `kubectl exec deployment/backstage-deployment -- env APP_ENV=local php artisan migrate:fresh --seed --force`.
+
+### 7. PostgreSQL Persistent Volume (PVC) Corruption
+**The Problem:** Running the migration returned a fatal `SQLSTATE[XX001]: Data corrupted: 7 ERROR: could not read block 0 in file` stack trace.
+**The Learning:** PVCs strictly retain data across pod deletions. If a Postgres pod is forcefully terminated during a write, or if the PVC data format is mutated between mismatched Postgres container tags, the underlying virtual hard drive becomes corrupted. Because this data persists, simply restarting the Pod will not fix it. In a bootstrap environment, the solution is to entirely delete the PVC (`kubectl delete pvc postgres-pvc`) to force Kubernetes to provision a clean, empty volume, then recreate the StatefulSet.
+
+### 8. Ghost Pods (Deployment vs. StatefulSet)
+**The Problem:** The cluster inexplicably had two Redis pods running: `redis-0` and `redis-76bfc84fbd-lj9b6`, despite the manifest only defining 1 replica.
+**The Learning:** If you change a manifest's `kind` from `Deployment` to `StatefulSet` and re-apply, Kubernetes will *not* delete the old Deployment. It treats them as two completely separate resources. The old Deployment pods will stay running indefinitely alongside the new StatefulSet pods, causing them to fight for the same Service traffic. You must manually clean up the orphaned resource: `kubectl delete deployment redis`.
+
+### 9. Ephemeral File Uploads & MinIO Architecture
+**The Problem:** Uploading an event image succeeded, but the image URL returned a `404 Not Found` upon page refresh.
+**The Learning:** Kubernetes pods are ephemeral and distributed. If Pod A processes the upload and saves the image to its local storage, a subsequent web request routed to Pod B will result in a 404 because Pod B's hard drive is isolated. Furthermore, a pod restart completely wipes all local files. The architectural solution is to deploy **MinIO (S3)**. Pods securely stream uploads to the centralized K8s MinIO service (`http://minio:9000`), and the user's browser downloads the images securely via a public MinIO Ingress/Tunnel endpoint.
+
+### 10. Spatie Permissions Inheritance
+**The Problem:** The Inertia frontend shared props showed `permission: none` even though the user was assigned the "IT Manager" role which had full admin permissions.
+**The Learning:** In the `spatie/laravel-permission` package, calling `$user->permissions` is an Eloquent relationship that *only* fetches permissions explicitly and directly assigned to the user's ID. To correctly retrieve all permissions (including those inherited from roles), you must use the helper method `$user->getAllPermissions()`. 
+
+### 11. Kubernetes Secret `.env` Parsing (Inline Comments)
+**The Problem:** `APP_DEBUG=false # Set to false in prod` was set in `.env.production`, but Laravel was running with full debug stack traces active.
+**The Learning:** Kustomize `secretGenerator` evaluates `.env` lines strictly. The environment variable inside the container became the literal string `"false # Set to false in prod"`. In PHP, any non-empty string that isn't exactly `"false"` or `"0"` evaluates to boolean `true`. Inline comments must be completely avoided or strictly quoted in Kustomize environment files.
+
+### 12. The Rollout Restart Illusion (Ephemeral Patches)
+**The Problem:** We hot-patched a file via `kubectl cp` into a running pod, but the fix instantly disappeared.
+**The Learning:** When `kustomization.yaml` generates a Secret, changing the `.env.production` file alters the resulting Secret's cryptographic hash suffix (e.g., `backstage-secrets-h8294dm4b8`). When `kubectl apply -k .` runs, it detects the new Secret name and automatically triggers a **Rollout Restart** of the Deployment. This immediately sends a `SIGTERM` to the pods we just manually patched, and spins up fresh pods from the old `latest` Docker image. Manual container patches are entirely ephemeral and lost on rollout.

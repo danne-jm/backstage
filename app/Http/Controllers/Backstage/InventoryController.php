@@ -66,8 +66,8 @@ class InventoryController extends Controller
         $data['changed_by'] = $request->user()?->email;
 
         if ($request->boolean('remove_image')) {
-            if ($item->image_path && Storage::disk('public')->exists($item->image_path)) {
-                Storage::disk('public')->delete($item->image_path);
+            if ($item->image_path && Storage::exists($item->image_path)) {
+                Storage::delete($item->image_path);
             }
             $data['image_path'] = null;
         } elseif ($request->hasFile('image')) {

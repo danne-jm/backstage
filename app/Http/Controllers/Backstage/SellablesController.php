@@ -189,8 +189,8 @@ class SellablesController extends Controller
         $event = $action->handle($payload, $event);
 
         if ($request->boolean('remove_image')) {
-            if ($event->image_path && Storage::disk('public')->exists($event->image_path)) {
-                Storage::disk('public')->delete($event->image_path);
+            if ($event->image_path && Storage::exists($event->image_path)) {
+                Storage::delete($event->image_path);
             }
             $event->update(['image_path' => null]);
         } elseif ($request->hasFile('image')) {
@@ -299,8 +299,8 @@ class SellablesController extends Controller
         $product = $action->handle($payload, $product);
 
         if ($request->boolean('remove_image')) {
-            if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
-                Storage::disk('public')->delete($product->image_path);
+            if ($product->image_path && Storage::exists($product->image_path)) {
+                Storage::delete($product->image_path);
             }
             $product->update(['image_path' => null]);
         } elseif ($request->hasFile('image')) {

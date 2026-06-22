@@ -29,8 +29,8 @@ class UploadImageAction
         int $quality = 80
     ): string {
         // Delete old image if provided
-        if ($oldImagePath && Storage::disk('public')->exists($oldImagePath)) {
-            Storage::disk('public')->delete($oldImagePath);
+        if ($oldImagePath && Storage::exists($oldImagePath)) {
+            Storage::delete($oldImagePath);
         }
 
         // Initialize Intervention Image Manager with GD driver
@@ -52,7 +52,7 @@ class UploadImageAction
         $path = trim($directory, '/').'/'.$filename;
 
         // Store the optimized image
-        Storage::disk('public')->put($path, (string) $encoded);
+        Storage::put($path, (string) $encoded);
 
         return $path;
     }
