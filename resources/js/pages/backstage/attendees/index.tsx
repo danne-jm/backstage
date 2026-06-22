@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RefreshCw, Filter, Database, Trash2, Plus, CheckCircle, Mail } from 'lucide-react';
 import axios from 'axios';
 import { sheets as sheetsRoute, rows as rowsRoute, updateConfig as updateConfigRoute } from '@/routes/backstage/sellables/events/attendees';
@@ -233,33 +232,33 @@ export default function AttendeesIndex({ event }: any) {
                                         <DialogTitle>Full Data Source</DialogTitle>
                                     </DialogHeader>
                                     <div className="flex-1 overflow-auto border border-[#2a2a2a] rounded-md mt-4">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow className="border-[#2a2a2a] hover:bg-transparent">
+                                        <table className="w-full text-left text-xs whitespace-nowrap text-zinc-400">
+                                            <thead className="bg-[#0f0f0f]">
+                                                <tr className="border-b border-[#2a2a2a] text-zinc-300">
                                                     {columns.map(c => (
-                                                        <TableHead key={c} className="text-zinc-400 font-medium">{c}</TableHead>
+                                                        <th key={c} className="px-4 py-3 font-medium">{c}</th>
                                                     ))}
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
                                                 {rows.slice(0, 100).map((row, i) => (
-                                                    <TableRow key={i} className="border-[#2a2a2a] hover:bg-[#1a1a1a]">
+                                                    <tr key={i} className="border-b border-[#2a2a2a] transition-colors hover:bg-[#141414]">
                                                         {columns.map(c => (
-                                                            <TableCell key={`${i}-${c}`} className="text-zinc-300 py-2">
+                                                            <td key={`${i}-${c}`} className="px-4 py-3 text-zinc-300">
                                                                 {row[c]}
-                                                            </TableCell>
+                                                            </td>
                                                         ))}
-                                                    </TableRow>
+                                                    </tr>
                                                 ))}
                                                 {rows.length === 0 && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={columns.length || 1} className="h-24 text-center text-zinc-500">
+                                                    <tr className="border-b border-[#2a2a2a]">
+                                                        <td colSpan={columns.length || 1} className="h-24 text-center text-zinc-500">
                                                             No data available.
-                                                        </TableCell>
-                                                    </TableRow>
+                                                        </td>
+                                                    </tr>
                                                 )}
-                                            </TableBody>
-                                        </Table>
+                                            </tbody>
+                                        </table>
                                     </div>
                                     <p className="text-xs text-zinc-500 mt-2">Showing up to 100 rows from the raw data source.</p>
                                 </DialogContent>
@@ -279,26 +278,26 @@ export default function AttendeesIndex({ event }: any) {
                                 <RefreshCw className="h-6 w-6 animate-spin mb-2" />
                             </div>
                         ) : filteredRows.length > 0 ? (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="border-[#1f1f1f] hover:bg-transparent sticky top-0 bg-[#0f0f0f] z-10 shadow-sm shadow-black/20">
+                            <table className="w-full text-left text-sm whitespace-nowrap text-zinc-400">
+                                <thead className="bg-[#0f0f0f]">
+                                    <tr className="border-b border-[#1f1f1f] sticky top-0 bg-[#0f0f0f] z-10 shadow-sm shadow-black/20">
                                         {columns.map(c => (
-                                            <TableHead key={c} className="text-zinc-400 font-medium bg-[#0f0f0f]">{c}</TableHead>
+                                            <th key={c} className="px-4 py-3 font-medium bg-[#0f0f0f]">{c}</th>
                                         ))}
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                     {filteredRows.map((row, i) => (
-                                        <TableRow key={i} className="border-[#1f1f1f] hover:bg-[#1a1a1a]">
+                                        <tr key={i} className="border-b border-[#1f1f1f] transition-colors hover:bg-[#1a1a1a]">
                                             {columns.map(c => (
-                                                <TableCell key={`${i}-${c}`} className="text-zinc-300 py-3">
+                                                <td key={`${i}-${c}`} className="px-4 py-3 text-zinc-300">
                                                     {row[c]}
-                                                </TableCell>
+                                                </td>
                                             ))}
-                                        </TableRow>
+                                        </tr>
                                     ))}
-                                </TableBody>
-                            </Table>
+                                </tbody>
+                            </table>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-zinc-500 p-8 text-center">
                                 {spreadsheetId && sheetName ? (
