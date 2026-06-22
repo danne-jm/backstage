@@ -5,7 +5,13 @@ import { Trash2 } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { edit as editFooter } from '@/routes/footer';
 import type { Auth } from '@/types';
 
@@ -14,22 +20,44 @@ type PageProps = {
 };
 
 const COMMON_ICONS = [
-    'Mail', 'Package', 'Globe', 'ShoppingBag', 'TreePine', 'Link', 'Github', 
-    'Twitter', 'Facebook', 'Instagram', 'Youtube', 'Linkedin', 'Calendar', 
-    'Camera', 'Video', 'Music', 'File', 'Folder', 'Image', 'MessageCircle'
+    'Mail',
+    'Package',
+    'Globe',
+    'ShoppingBag',
+    'TreePine',
+    'Link',
+    'Github',
+    'Twitter',
+    'Facebook',
+    'Instagram',
+    'Youtube',
+    'Linkedin',
+    'Calendar',
+    'Camera',
+    'Video',
+    'Music',
+    'File',
+    'Folder',
+    'Image',
+    'MessageCircle',
 ];
 
 export default function Footer() {
     const { auth } = usePage<PageProps>().props;
 
     const { data, setData, patch, processing } = useForm<{ pinned: any[] }>({
-        pinned: Array.isArray(auth.user.pinned) 
-            ? auth.user.pinned 
-            : (typeof auth.user.pinned === 'string' ? JSON.parse(auth.user.pinned) : []),
+        pinned: Array.isArray(auth.user.pinned)
+            ? auth.user.pinned
+            : typeof auth.user.pinned === 'string'
+              ? JSON.parse(auth.user.pinned)
+              : [],
     });
 
     const addLink = () => {
-        setData('pinned', [...data.pinned, { title: 'New Link', url: 'https://', icon: 'Link' }]);
+        setData('pinned', [
+            ...data.pinned,
+            { title: 'New Link', url: 'https://', icon: 'Link' },
+        ]);
     };
 
     const removeLink = (index: number) => {
@@ -66,38 +94,61 @@ export default function Footer() {
 
                 <form onSubmit={submit} className="space-y-4">
                     {data.pinned.map((pin: any, index: number) => {
-                        const Icon = (LucideIcons[pin.icon as keyof typeof LucideIcons] as React.ElementType) || LucideIcons.Link;
+                        const Icon =
+                            (LucideIcons[
+                                pin.icon as keyof typeof LucideIcons
+                            ] as React.ElementType) || LucideIcons.Link;
 
                         return (
-                            <div key={index} className="flex flex-col sm:flex-row items-center gap-2">
+                            <div
+                                key={index}
+                                className="flex flex-col items-center gap-2 sm:flex-row"
+                            >
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted/50">
                                     <Icon className="h-5 w-5 text-muted-foreground" />
                                 </div>
                                 <Input
                                     value={pin.title}
-                                    onChange={(e) => updateLink(index, 'title', e.target.value)}
+                                    onChange={(e) =>
+                                        updateLink(
+                                            index,
+                                            'title',
+                                            e.target.value,
+                                        )
+                                    }
                                     placeholder="Link name"
-                                    className="flex-[1.5] w-full sm:w-auto min-w-[150px]"
+                                    className="w-full min-w-[150px] flex-[1.5] sm:w-auto"
                                 />
                                 <Input
                                     value={pin.url}
-                                    onChange={(e) => updateLink(index, 'url', e.target.value)}
+                                    onChange={(e) =>
+                                        updateLink(index, 'url', e.target.value)
+                                    }
                                     placeholder="https://..."
-                                    className="flex-[2] w-full sm:w-auto min-w-[200px]"
+                                    className="w-full min-w-[200px] flex-[2] sm:w-auto"
                                 />
                                 <Select
                                     value={pin.icon}
-                                    onValueChange={(val) => updateLink(index, 'icon', val)}
+                                    onValueChange={(val) =>
+                                        updateLink(index, 'icon', val)
+                                    }
                                 >
-                                    <SelectTrigger className="w-full sm:w-[160px] shrink-0">
+                                    <SelectTrigger className="w-full shrink-0 sm:w-[160px]">
                                         <SelectValue placeholder="Select icon" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {COMMON_ICONS.map((iconName) => {
-                                            const ItemIcon = (LucideIcons[iconName as keyof typeof LucideIcons] as React.ElementType) || LucideIcons.Link;
+                                            const ItemIcon =
+                                                (LucideIcons[
+                                                    iconName as keyof typeof LucideIcons
+                                                ] as React.ElementType) ||
+                                                LucideIcons.Link;
 
                                             return (
-                                                <SelectItem key={iconName} value={iconName}>
+                                                <SelectItem
+                                                    key={iconName}
+                                                    value={iconName}
+                                                >
                                                     <div className="flex items-center gap-2">
                                                         <ItemIcon className="h-4 w-4 text-muted-foreground" />
                                                         <span>{iconName}</span>
@@ -107,7 +158,13 @@ export default function Footer() {
                                         })}
                                     </SelectContent>
                                 </Select>
-                                <Button type="button" variant="ghost" size="icon" className="shrink-0 w-full sm:w-10" onClick={() => removeLink(index)}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-full shrink-0 sm:w-10"
+                                    onClick={() => removeLink(index)}
+                                >
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Remove link</span>
                                 </Button>
@@ -116,8 +173,14 @@ export default function Footer() {
                     })}
 
                     <div className="flex items-center gap-4 pt-4">
-                        <Button disabled={processing} type="submit">Save</Button>
-                        <Button type="button" variant="outline" onClick={addLink}>
+                        <Button disabled={processing} type="submit">
+                            Save
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={addLink}
+                        >
                             Add link
                         </Button>
                     </div>

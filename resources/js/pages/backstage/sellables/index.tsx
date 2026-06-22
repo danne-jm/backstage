@@ -31,12 +31,21 @@ const formatDate = (dateStr: string) => {
         weekday: 'short',
         day: 'numeric',
         month: 'short',
-        year: 'numeric'
+        year: 'numeric',
     });
 };
 
-const SellableRow = ({ item, type, membershipCardName, isLast }: { item: SellableItem; type: 'events' | 'products'; membershipCardName: string; isLast: boolean }) => {
-    
+const SellableRow = ({
+    item,
+    type,
+    membershipCardName,
+    isLast,
+}: {
+    item: SellableItem;
+    type: 'events' | 'products';
+    membershipCardName: string;
+    isLast: boolean;
+}) => {
     let sellPeriodText = '';
 
     if (item.start_sell_date && item.end_sell_date) {
@@ -51,176 +60,336 @@ const SellableRow = ({ item, type, membershipCardName, isLast }: { item: Sellabl
 
     const formatStock = (remaining: number | null, sold: number) => {
         if (remaining === null) {
-return `Unl. / ${sold} sold`;
-}
+            return `Unl. / ${sold} sold`;
+        }
 
         return `${remaining} left / ${sold} sold`;
     };
 
     return (
-        <div className={`p-4 flex flex-col lg:flex-row gap-6 relative ${isLast ? '' : 'border-b border-zinc-800'}`}>
+        <div
+            className={`relative flex flex-col gap-6 p-4 lg:flex-row ${isLast ? '' : 'border-b border-zinc-800'}`}
+        >
             {/* Actions Top Right */}
             <div className="absolute top-4 right-4 flex gap-4">
-                <Link href={`/sellables/${type}/${item.id}/edit`} className="text-xs font-bold text-zinc-100 hover:text-white">Edit</Link>
-                <Link href={`/sellables/${type}/${item.id}`} method="delete" as="button" type="button" className="text-xs font-bold text-zinc-100 hover:text-white">Remove</Link>
+                <Link
+                    href={`/sellables/${type}/${item.id}/edit`}
+                    className="text-xs font-bold text-zinc-100 hover:text-white"
+                >
+                    Edit
+                </Link>
+                <Link
+                    href={`/sellables/${type}/${item.id}`}
+                    method="delete"
+                    as="button"
+                    type="button"
+                    className="text-xs font-bold text-zinc-100 hover:text-white"
+                >
+                    Remove
+                </Link>
             </div>
 
             {/* Image */}
-            <div className="w-24 h-24 shrink-0 rounded-md overflow-hidden bg-[#18181b]">
+            <div className="h-24 w-24 shrink-0 overflow-hidden rounded-md bg-[#18181b]">
                 {item.image_path ? (
-                     <img src={item.image_path} alt={item.name} className="w-full h-full object-cover" />
+                    <img
+                        src={item.image_path}
+                        alt={item.name}
+                        className="h-full w-full object-cover"
+                    />
                 ) : (
-                     <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-600 uppercase font-medium bg-[#18181b]">No Image</div>
+                    <div className="flex h-full w-full items-center justify-center bg-[#18181b] text-[10px] font-medium text-zinc-600 uppercase">
+                        No Image
+                    </div>
                 )}
             </div>
-            
+
             {/* Info */}
-            <div className="flex-1 flex flex-col pr-8 lg:pr-12 min-w-0">
+            <div className="flex min-w-0 flex-1 flex-col pr-8 lg:pr-12">
                 <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-zinc-100 leading-tight">{item.name}</h3>
+                    <h3 className="text-sm leading-tight font-bold text-zinc-100">
+                        {item.name}
+                    </h3>
                     {!item.is_online_sellable && (
-                        <span className="text-[10px] font-medium bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">Office Shift Only</span>
+                        <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+                            Office Shift Only
+                        </span>
                     )}
                 </div>
-                
-                <p className="text-[13px] text-zinc-400 mt-1 leading-snug">
+
+                <p className="mt-1 text-[13px] leading-snug text-zinc-400">
                     {item.description}
                 </p>
 
                 {item.event_date && (
-                    <p className="text-[13px] text-zinc-400 mt-2">
-                        Event Date: <span className="text-zinc-100 font-medium">{formatDate(item.event_date)}</span>
+                    <p className="mt-2 text-[13px] text-zinc-400">
+                        Event Date:{' '}
+                        <span className="font-medium text-zinc-100">
+                            {formatDate(item.event_date)}
+                        </span>
                     </p>
                 )}
 
                 {sellPeriodText && (
-                    <p className="text-[13px] text-zinc-400 mt-1">
-                        Sell Period: <span className="text-zinc-100 font-medium">{sellPeriodText}</span>
+                    <p className="mt-1 text-[13px] text-zinc-400">
+                        Sell Period:{' '}
+                        <span className="font-medium text-zinc-100">
+                            {sellPeriodText}
+                        </span>
                     </p>
                 )}
-                
-                <p className="text-[13px] text-zinc-400 mt-1">
-                    Price with {membershipCardName}: <span className="text-zinc-100 font-medium">€{Number(item.price_with_membership || 0).toFixed(2)}</span> <span className="mx-0.5">|</span> without {membershipCardName}: <span className="text-zinc-100 font-medium">€{Number(item.price_without_membership || item.price || 0).toFixed(2)}</span>
+
+                <p className="mt-1 text-[13px] text-zinc-400">
+                    Price with {membershipCardName}:{' '}
+                    <span className="font-medium text-zinc-100">
+                        €{Number(item.price_with_membership || 0).toFixed(2)}
+                    </span>{' '}
+                    <span className="mx-0.5">|</span> without{' '}
+                    {membershipCardName}:{' '}
+                    <span className="font-medium text-zinc-100">
+                        €
+                        {Number(
+                            item.price_without_membership || item.price || 0,
+                        ).toFixed(2)}
+                    </span>
                 </p>
-                
-                <p className="text-[13px] text-zinc-400 mt-1">
+
+                <p className="mt-1 text-[13px] text-zinc-400">
                     {item.is_variant_based ? (
-                        <>Quantity by: <span className="text-zinc-100 font-medium">{Object.keys(item.variants_config?.[0] || { id: 0 }).filter(k => k !== 'id' && k !== 'quantity').map(k => k.replace(/_/g, ' ')).join(', ')}</span></>
+                        <>
+                            Quantity by:{' '}
+                            <span className="font-medium text-zinc-100">
+                                {Object.keys(
+                                    item.variants_config?.[0] || { id: 0 },
+                                )
+                                    .filter(
+                                        (k) => k !== 'id' && k !== 'quantity',
+                                    )
+                                    .map((k) => k.replace(/_/g, ' '))
+                                    .join(', ')}
+                            </span>
+                        </>
+                    ) : item.remaining_stock_with_membership !== null ||
+                      item.remaining_stock_without_membership !== null ? (
+                        <>
+                            Qty w/ {membershipCardName}:{' '}
+                            <span className="font-medium text-zinc-100">
+                                {formatStock(
+                                    item.remaining_stock_with_membership,
+                                    item.sold_count_with_membership,
+                                )}
+                            </span>{' '}
+                            | w/o {membershipCardName}:{' '}
+                            <span className="font-medium text-zinc-100">
+                                {formatStock(
+                                    item.remaining_stock_without_membership,
+                                    item.sold_count_without_membership,
+                                )}
+                            </span>
+                        </>
                     ) : (
-                        item.remaining_stock_with_membership !== null || item.remaining_stock_without_membership !== null ? (
-                            <>Qty w/ {membershipCardName}: <span className="text-zinc-100 font-medium">{formatStock(item.remaining_stock_with_membership, item.sold_count_with_membership)}</span> | w/o {membershipCardName}: <span className="text-zinc-100 font-medium">{formatStock(item.remaining_stock_without_membership, item.sold_count_without_membership)}</span></>
-                        ) : (
-                            <>Quantity: <span className="text-zinc-100 font-medium">{formatStock(item.remaining_stock, item.sold_count)}</span></>
-                        )
+                        <>
+                            Quantity:{' '}
+                            <span className="font-medium text-zinc-100">
+                                {formatStock(
+                                    item.remaining_stock,
+                                    item.sold_count,
+                                )}
+                            </span>
+                        </>
                     )}
                 </p>
 
                 {item.responsible_users && (
-                    <p className="text-[13px] text-zinc-400 mt-1">
-                        Responsible: <span className="text-zinc-100 font-medium">{item.responsible_users}</span>
+                    <p className="mt-1 text-[13px] text-zinc-400">
+                        Responsible:{' '}
+                        <span className="font-medium text-zinc-100">
+                            {item.responsible_users}
+                        </span>
                     </p>
                 )}
             </div>
-            
+
             {/* Variants Matrix */}
-            {item.is_variant_based && item.variants_config && item.variants_config.length > 0 && (() => {
-                const attrKeys = Object.keys(item.variants_config[0]).filter(k => k !== 'id' && k !== 'quantity');
-                const attributes = attrKeys.map(key => {
-                    const options = Array.from(new Set(item.variants_config!.map(r => String(r[key] ?? ''))));
+            {item.is_variant_based &&
+                item.variants_config &&
+                item.variants_config.length > 0 &&
+                (() => {
+                    const attrKeys = Object.keys(
+                        item.variants_config[0],
+                    ).filter((k) => k !== 'id' && k !== 'quantity');
+                    const attributes = attrKeys.map((key) => {
+                        const options = Array.from(
+                            new Set(
+                                item.variants_config!.map((r) =>
+                                    String(r[key] ?? ''),
+                                ),
+                            ),
+                        );
 
-                    return { name: key, options };
-                });
+                        return { name: key, options };
+                    });
 
-                const horizontalAttr = attributes.length > 0 
-                    ? attributes.reduce((prev, current) => (prev.options.length > current.options.length) ? prev : current) 
-                    : null;
-                
-                if (!horizontalAttr) {
-return null;
-}
+                    const horizontalAttr =
+                        attributes.length > 0
+                            ? attributes.reduce((prev, current) =>
+                                  prev.options.length > current.options.length
+                                      ? prev
+                                      : current,
+                              )
+                            : null;
 
-                const verticalAttrs = attributes.filter(a => a.name !== horizontalAttr.name);
-                
-                let verticalCombos: Record<string, string>[] = [];
-
-                if (verticalAttrs.length > 0) {
-                    const result: Record<string, string>[][] = [[]];
-
-                    for (const attr of verticalAttrs) {
-                        const newResult: Record<string, string>[][] = [];
-
-                        for (const existing of result) {
-                            for (const opt of attr.options) {
-                                newResult.push([...existing, { [attr.name]: opt }]);
-                            }
-                        }
-
-                        result.length = 0;
-                        result.push(...newResult);
+                    if (!horizontalAttr) {
+                        return null;
                     }
 
-                    verticalCombos = result.map(combos => Object.assign({}, ...combos));
-                } else {
-                    verticalCombos = [{}];
-                }
+                    const verticalAttrs = attributes.filter(
+                        (a) => a.name !== horizontalAttr.name,
+                    );
 
-                return (
-                    <div className={`shrink-0 w-full lg:w-auto lg:max-w-[66.666667%] pt-6 lg:pt-8 min-w-0 ${type === 'events' ? 'mb-10' : ''}`}>
-                        <div className="border border-zinc-800 rounded-md overflow-hidden overflow-x-auto bg-[#09090b]">
-                            <table className="w-full text-[11px] text-left">
-                                <thead className="bg-[#09090b]">
-                                    <tr className="text-zinc-100">
-                                        {verticalAttrs.map(a => (
-                                            <th key={a.name} className="py-2 px-3 font-medium capitalize border-b border-zinc-800 whitespace-nowrap border-r">{a.name.replace(/_/g, ' ')}</th>
-                                        ))}
-                                        {horizontalAttr.options.map((opt: string) => (
-                                            <th key={opt} className="py-2 px-3 font-medium capitalize border-b border-zinc-800 text-center whitespace-nowrap min-w-[80px]">{opt}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-[#09090b]">
-                                    {verticalCombos.map((vCombo, i) => (
-                                        <tr key={i} className="text-zinc-300">
-                                            {verticalAttrs.map(a => (
-                                                <td key={a.name} className={`py-2 px-3 border-r border-zinc-800 ${i !== verticalCombos.length - 1 ? 'border-b' : ''} whitespace-nowrap`}>
-                                                    {vCombo[a.name]}
-                                                </td>
+                    let verticalCombos: Record<string, string>[] = [];
+
+                    if (verticalAttrs.length > 0) {
+                        const result: Record<string, string>[][] = [[]];
+
+                        for (const attr of verticalAttrs) {
+                            const newResult: Record<string, string>[][] = [];
+
+                            for (const existing of result) {
+                                for (const opt of attr.options) {
+                                    newResult.push([
+                                        ...existing,
+                                        { [attr.name]: opt },
+                                    ]);
+                                }
+                            }
+
+                            result.length = 0;
+                            result.push(...newResult);
+                        }
+
+                        verticalCombos = result.map((combos) =>
+                            Object.assign({}, ...combos),
+                        );
+                    } else {
+                        verticalCombos = [{}];
+                    }
+
+                    return (
+                        <div
+                            className={`w-full min-w-0 shrink-0 pt-6 lg:w-auto lg:max-w-[66.666667%] lg:pt-8 ${type === 'events' ? 'mb-10' : ''}`}
+                        >
+                            <div className="overflow-hidden overflow-x-auto rounded-md border border-zinc-800 bg-[#09090b]">
+                                <table className="w-full text-left text-[11px]">
+                                    <thead className="bg-[#09090b]">
+                                        <tr className="text-zinc-100">
+                                            {verticalAttrs.map((a) => (
+                                                <th
+                                                    key={a.name}
+                                                    className="border-r border-b border-zinc-800 px-3 py-2 font-medium whitespace-nowrap capitalize"
+                                                >
+                                                    {a.name.replace(/_/g, ' ')}
+                                                </th>
                                             ))}
-                                            {horizontalAttr.options.map((opt: string) => {
-                                                const match = item.variants_config!.find((r: any) => {
-                                                    if (String(r[horizontalAttr.name] ?? '') !== opt) {
-return false;
-}
-
-                                                    for (const va of verticalAttrs) {
-                                                        if (String(r[va.name] ?? '') !== vCombo[va.name]) {
-return false;
-}
-                                                    }
-
-                                                    return true;
-                                                });
-
-                                                return (
-                                                    <td key={opt} className={`py-2 px-3 text-center ${i !== verticalCombos.length - 1 ? 'border-b border-zinc-800' : ''}`}>
-                                                        {match ? (match.quantity != null ? match.quantity : 'Unl.') : '-'}
-                                                    </td>
-                                                );
-                                            })}
+                                            {horizontalAttr.options.map(
+                                                (opt: string) => (
+                                                    <th
+                                                        key={opt}
+                                                        className="min-w-[80px] border-b border-zinc-800 px-3 py-2 text-center font-medium whitespace-nowrap capitalize"
+                                                    >
+                                                        {opt}
+                                                    </th>
+                                                ),
+                                            )}
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="bg-[#09090b]">
+                                        {verticalCombos.map((vCombo, i) => (
+                                            <tr
+                                                key={i}
+                                                className="text-zinc-300"
+                                            >
+                                                {verticalAttrs.map((a) => (
+                                                    <td
+                                                        key={a.name}
+                                                        className={`border-r border-zinc-800 px-3 py-2 ${i !== verticalCombos.length - 1 ? 'border-b' : ''} whitespace-nowrap`}
+                                                    >
+                                                        {vCombo[a.name]}
+                                                    </td>
+                                                ))}
+                                                {horizontalAttr.options.map(
+                                                    (opt: string) => {
+                                                        const match =
+                                                            item.variants_config!.find(
+                                                                (r: any) => {
+                                                                    if (
+                                                                        String(
+                                                                            r[
+                                                                                horizontalAttr
+                                                                                    .name
+                                                                            ] ??
+                                                                                '',
+                                                                        ) !==
+                                                                        opt
+                                                                    ) {
+                                                                        return false;
+                                                                    }
+
+                                                                    for (const va of verticalAttrs) {
+                                                                        if (
+                                                                            String(
+                                                                                r[
+                                                                                    va
+                                                                                        .name
+                                                                                ] ??
+                                                                                    '',
+                                                                            ) !==
+                                                                            vCombo[
+                                                                                va
+                                                                                    .name
+                                                                            ]
+                                                                        ) {
+                                                                            return false;
+                                                                        }
+                                                                    }
+
+                                                                    return true;
+                                                                },
+                                                            );
+
+                                                        return (
+                                                            <td
+                                                                key={opt}
+                                                                className={`px-3 py-2 text-center ${i !== verticalCombos.length - 1 ? 'border-b border-zinc-800' : ''}`}
+                                                            >
+                                                                {match
+                                                                    ? match.quantity !=
+                                                                      null
+                                                                        ? match.quantity
+                                                                        : 'Unl.'
+                                                                    : '-'}
+                                                            </td>
+                                                        );
+                                                    },
+                                                )}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                );
-            })()}
+                    );
+                })()}
 
             {/* Manage Attendees Button */}
             {type === 'events' && (
-                <div className="absolute bottom-4 right-4">
+                <div className="absolute right-4 bottom-4">
                     <Link href={`/sellables/events/${item.id}/attendees`}>
-                        <Button variant="secondary" size="sm" className="bg-zinc-800 text-zinc-100 hover:bg-zinc-700 h-7 text-xs px-3 gap-1.5 font-medium border border-zinc-700">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-7 gap-1.5 border border-zinc-700 bg-zinc-800 px-3 text-xs font-medium text-zinc-100 hover:bg-zinc-700"
+                        >
                             Manage Attendees
                             <ExternalLink className="h-3 w-3" />
                         </Button>
@@ -231,74 +400,98 @@ return false;
     );
 };
 
-export default function Sellables({ events, products, membershipCardName }: any) {
+export default function Sellables({
+    events,
+    products,
+    membershipCardName,
+}: any) {
     return (
         <>
             <Head title="Sellables" />
-            
+
             <div className="flex h-full flex-1 flex-col overflow-y-auto">
-                <div className="w-full mx-auto p-6 space-y-12">
-                    
+                <div className="mx-auto w-full space-y-12 p-6">
                     {/* Products Section */}
                     <section>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-2xl font-bold text-white tracking-tight">Products</h2>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-2xl font-bold tracking-tight text-white">
+                                Products
+                            </h2>
                             <Link href="/sellables/products/create">
-                                <Button variant="secondary" size="sm" className="bg-white text-black hover:bg-zinc-200 font-medium h-8 px-4 text-xs">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-8 bg-white px-4 text-xs font-medium text-black hover:bg-zinc-200"
+                                >
                                     Add Product
                                 </Button>
                             </Link>
                         </div>
-                        
+
                         {products && products.length > 0 ? (
-                            <div className="border border-zinc-800 rounded-xl overflow-hidden bg-[#09090b]">
-                                {products.map((product: SellableItem, index: number) => (
-                                    <SellableRow 
-                                        key={product.id} 
-                                        item={product} 
-                                        type="products" 
-                                        membershipCardName={membershipCardName}
-                                        isLast={index === products.length - 1}
-                                    />
-                                ))}
+                            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-[#09090b]">
+                                {products.map(
+                                    (product: SellableItem, index: number) => (
+                                        <SellableRow
+                                            key={product.id}
+                                            item={product}
+                                            type="products"
+                                            membershipCardName={
+                                                membershipCardName
+                                            }
+                                            isLast={
+                                                index === products.length - 1
+                                            }
+                                        />
+                                    ),
+                                )}
                             </div>
                         ) : (
-                            <div className="p-8 text-center rounded-xl border border-dashed border-zinc-800 text-zinc-500">
+                            <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500">
                                 No products have been added yet.
                             </div>
                         )}
                     </section>
-                    
+
                     {/* Events Section */}
                     <section>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-2xl font-bold text-white tracking-tight">Events</h2>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-2xl font-bold tracking-tight text-white">
+                                Events
+                            </h2>
                             <Link href="/sellables/events/create">
-                                <Button variant="secondary" size="sm" className="bg-white text-black hover:bg-zinc-200 font-medium h-8 px-4 text-xs">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-8 bg-white px-4 text-xs font-medium text-black hover:bg-zinc-200"
+                                >
                                     Add Event
                                 </Button>
                             </Link>
                         </div>
-                        
+
                         {events && events.length > 0 ? (
-                            <div className="border border-zinc-800 rounded-xl overflow-hidden bg-[#09090b]">
-                                {events.map((event: SellableItem, index: number) => (
-                                    <SellableRow 
-                                        key={event.id} 
-                                        item={event} 
-                                        type="events" 
-                                        membershipCardName={membershipCardName}
-                                        isLast={index === events.length - 1}
-                                    />
-                                ))}
+                            <div className="overflow-hidden rounded-xl border border-zinc-800 bg-[#09090b]">
+                                {events.map(
+                                    (event: SellableItem, index: number) => (
+                                        <SellableRow
+                                            key={event.id}
+                                            item={event}
+                                            type="events"
+                                            membershipCardName={
+                                                membershipCardName
+                                            }
+                                            isLast={index === events.length - 1}
+                                        />
+                                    ),
+                                )}
                             </div>
                         ) : (
-                            <div className="p-8 text-center rounded-xl border border-dashed border-zinc-800 text-zinc-500">
+                            <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500">
                                 No events have been added yet.
                             </div>
                         )}
                     </section>
-                    
                 </div>
             </div>
         </>

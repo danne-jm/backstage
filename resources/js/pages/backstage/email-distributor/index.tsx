@@ -6,64 +6,94 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, Underline as UnderlineIcon, Strikethrough, List, ListOrdered, Link as LinkIcon, Send, Settings, Mail, RefreshCw, ChevronDown } from 'lucide-react';
+import {
+    Bold,
+    Italic,
+    Underline as UnderlineIcon,
+    Strikethrough,
+    List,
+    ListOrdered,
+    Link as LinkIcon,
+    Send,
+    Settings,
+    Mail,
+    RefreshCw,
+    ChevronDown,
+} from 'lucide-react';
 import Papa from 'papaparse';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { getHeaders, getRows, distribute, distributeSample } from '@/actions/App/Http/Controllers/Backstage/EmailDistributorController';
+import {
+    getHeaders,
+    getRows,
+    distribute,
+    distributeSample,
+} from '@/actions/App/Http/Controllers/Backstage/EmailDistributorController';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 const MenuBar = ({ editor }: { editor: any }) => {
     if (!editor) {
-return null;
-}
+        return null;
+    }
 
     return (
-        <div className="flex flex-wrap items-center gap-1 border-b border-[#2a2a2a] bg-[#141414] p-2 rounded-t-xl">
+        <div className="flex flex-wrap items-center gap-1 rounded-t-xl border-b border-[#2a2a2a] bg-[#141414] p-2">
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleBold().run()}
-                className={`p-2 rounded-md ${editor.isActive('bold') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
+                className={`rounded-md p-2 ${editor.isActive('bold') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
             >
                 <Bold className="h-4 w-4" />
             </button>
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={`p-2 rounded-md ${editor.isActive('italic') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
+                className={`rounded-md p-2 ${editor.isActive('italic') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
             >
                 <Italic className="h-4 w-4" />
             </button>
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleUnderline().run()}
-                className={`p-2 rounded-md ${editor.isActive('underline') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
+                className={`rounded-md p-2 ${editor.isActive('underline') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
             >
                 <UnderlineIcon className="h-4 w-4" />
             </button>
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleStrike().run()}
-                className={`p-2 rounded-md ${editor.isActive('strike') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
+                className={`rounded-md p-2 ${editor.isActive('strike') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
             >
                 <Strikethrough className="h-4 w-4" />
             </button>
-            <div className="w-[1px] h-6 bg-[#2a2a2a] mx-1" />
+            <div className="mx-1 h-6 w-[1px] bg-[#2a2a2a]" />
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
-                className={`p-2 rounded-md ${editor.isActive('bulletList') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
+                className={`rounded-md p-2 ${editor.isActive('bulletList') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
             >
                 <List className="h-4 w-4" />
             </button>
             <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                className={`p-2 rounded-md ${editor.isActive('orderedList') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
+                className={`rounded-md p-2 ${editor.isActive('orderedList') ? 'bg-[#2a2a2a] text-white' : 'text-zinc-400 hover:bg-[#202020] hover:text-zinc-200'}`}
             >
                 <ListOrdered className="h-4 w-4" />
             </button>
@@ -71,10 +101,16 @@ return null;
     );
 };
 
-export default function EmailDistributor({ events, recent_logs, flash, errors, is_google_connected }: any) {
+export default function EmailDistributor({
+    events,
+    recent_logs,
+    flash,
+    errors,
+    is_google_connected,
+}: any) {
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const selectedEvent = events.find((e: any) => e.id === selectedEventId);
-    
+
     const [sheetHeaders, setSheetHeaders] = useState<string[]>([]);
     const [sheetRows, setSheetRows] = useState<any[]>([]);
     const [previewRowIndex, setPreviewRowIndex] = useState<number>(-1);
@@ -92,7 +128,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
         last_name_column: '',
         email_column: '',
         include_qr: false,
-        emails: [] as {email: string; body: string}[],
+        emails: [] as { email: string; body: string }[],
     });
 
     const editor = useEditor({
@@ -116,7 +152,10 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
 
     useEffect(() => {
         if (is_google_connected === false) {
-            toast.error('Google account not connected or credentials expired. Please reconnect in settings.', { id: 'google-error' });
+            toast.error(
+                'Google account not connected or credentials expired. Please reconnect in settings.',
+                { id: 'google-error' },
+            );
         }
     }, [is_google_connected]);
 
@@ -131,7 +170,9 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
         }
 
         if (flash?.error) {
-            toast.error(flash.error, { id: flash.error.includes('Google') ? 'google-error' : undefined });
+            toast.error(flash.error, {
+                id: flash.error.includes('Google') ? 'google-error' : undefined,
+            });
         }
     }, [flash]);
 
@@ -145,45 +186,73 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
         } else {
             setSelectedEventId(value);
             setData('event_id', value);
-            
+
             setIsLoadingData(true);
 
             try {
                 // Fetch headers and rows in parallel
                 const [headersRes, rowsRes] = await Promise.all([
                     fetch(getHeaders.url({ event: value })),
-                    fetch(getRows.url({ event: value }))
+                    fetch(getRows.url({ event: value })),
                 ]);
-                
+
                 if (!headersRes.ok) {
                     const errorJson = await headersRes.json().catch(() => ({}));
-                    toast.error(errorJson.error || "Failed to load Google Sheet data.", { id: 'sheet-error' });
+                    toast.error(
+                        errorJson.error || 'Failed to load Google Sheet data.',
+                        { id: 'sheet-error' },
+                    );
 
                     return;
                 }
 
                 if (!rowsRes.ok) {
                     const errorJson = await rowsRes.json().catch(() => ({}));
-                    toast.error(errorJson.error || "Failed to load Google Sheet rows.", { id: 'sheet-error' });
+                    toast.error(
+                        errorJson.error || 'Failed to load Google Sheet rows.',
+                        { id: 'sheet-error' },
+                    );
 
                     return;
                 }
 
                 const headersJson = await headersRes.json();
                 setSheetHeaders(headersJson.headers || []);
-                
+
                 const hdrs = headersJson.headers || [];
-                const findHeader = (keywords: string[]) => 
-                    hdrs.find((h: string) => keywords.some(k => h.toLowerCase().includes(k))) || '';
-                    
+                const findHeader = (keywords: string[]) =>
+                    hdrs.find((h: string) =>
+                        keywords.some((k) => h.toLowerCase().includes(k)),
+                    ) || '';
+
                 setData((prev) => ({
                     ...prev,
-                    first_name_column: findHeader(['first name', 'firstname', 'first_name', 'first-name', 'voornaam']),
-                    last_name_column: findHeader(['last name', 'lastname', 'last_name', 'last-name', 'achternaam', 'surname']),
-                    email_column: findHeader(['email', 'e-mail', 'address', 'email_address', 'email address', 'email-address']),
-                    event_id: value
+                    first_name_column: findHeader([
+                        'first name',
+                        'firstname',
+                        'first_name',
+                        'first-name',
+                        'voornaam',
+                    ]),
+                    last_name_column: findHeader([
+                        'last name',
+                        'lastname',
+                        'last_name',
+                        'last-name',
+                        'achternaam',
+                        'surname',
+                    ]),
+                    email_column: findHeader([
+                        'email',
+                        'e-mail',
+                        'address',
+                        'email_address',
+                        'email address',
+                        'email-address',
+                    ]),
+                    event_id: value,
                 }));
-                
+
                 const rowsJson = await rowsRes.json();
                 setSheetRows(rowsJson.rows || []);
 
@@ -191,7 +260,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                     setPreviewRowIndex(0);
                 }
             } catch (err) {
-                console.error("Failed to fetch sheet data", err);
+                console.error('Failed to fetch sheet data', err);
             } finally {
                 setIsLoadingData(false);
             }
@@ -202,8 +271,8 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
         const file = e.target.files?.[0];
 
         if (!file) {
-return;
-}
+            return;
+        }
 
         setIsLoadingData(true);
         Papa.parse(file, {
@@ -215,82 +284,127 @@ return;
                 setSheetRows(results.data);
 
                 if (results.data.length > 0) {
-setPreviewRowIndex(0);
-}
+                    setPreviewRowIndex(0);
+                }
 
-                const findHeader = (keywords: string[]) => 
-                    hdrs.find((h: string) => keywords.some(k => h.toLowerCase().includes(k))) || '';
+                const findHeader = (keywords: string[]) =>
+                    hdrs.find((h: string) =>
+                        keywords.some((k) => h.toLowerCase().includes(k)),
+                    ) || '';
 
                 setData((prev) => ({
                     ...prev,
-                    first_name_column: findHeader(['first name', 'firstname', 'first_name', 'first-name', 'voornaam']),
-                    last_name_column: findHeader(['last name', 'lastname', 'last_name', 'last-name', 'achternaam', 'surname']),
-                    email_column: findHeader(['email', 'e-mail', 'address', 'email_address', 'email address', 'email-address']),
+                    first_name_column: findHeader([
+                        'first name',
+                        'firstname',
+                        'first_name',
+                        'first-name',
+                        'voornaam',
+                    ]),
+                    last_name_column: findHeader([
+                        'last name',
+                        'lastname',
+                        'last_name',
+                        'last-name',
+                        'achternaam',
+                        'surname',
+                    ]),
+                    email_column: findHeader([
+                        'email',
+                        'e-mail',
+                        'address',
+                        'email_address',
+                        'email address',
+                        'email-address',
+                    ]),
                 }));
                 setIsLoadingData(false);
             },
             error: (err) => {
-                console.error("CSV parse error:", err);
-                toast.error("Failed to parse CSV file");
+                console.error('CSV parse error:', err);
+                toast.error('Failed to parse CSV file');
                 setIsLoadingData(false);
-            }
+            },
         });
     };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (is_google_connected === false) {
-            toast.error('Google account not connected or credentials expired. Please reconnect in settings.', { id: 'google-error' });
+            toast.error(
+                'Google account not connected or credentials expired. Please reconnect in settings.',
+                { id: 'google-error' },
+            );
         }
-        
+
         // Build the final emails array
-        const builtEmails = sheetRows.map((row, i) => {
-            if (!data.email_column || !row[data.email_column]) {
-return null;
-}
-            
-            let content = data.body;
-            // Preserve intentional empty lines and prevent list item double-spacing
-            content = content.replace(/<p><\/p>/g, '<p><br></p>');
-            content = content.replace(/<p class="[^"]*"><\/p>/g, '<p><br></p>');
-            content = content.replace(/<li><p(?: class="[^"]*")?>/g, '<li>');
-            content = content.replace(/<\/p><\/li>/g, '</li>');
-            // Force zero margin on remaining paragraphs to perfectly match editor's tight spacing
-            content = content.replace(/<p>/g, '<p style="margin: 0;">');
-            content = content.replace(/<p class="([^"]*)">/g, '<p class="$1" style="margin: 0;">');
+        const builtEmails = sheetRows
+            .map((row, i) => {
+                if (!data.email_column || !row[data.email_column]) {
+                    return null;
+                }
 
-            const firstName = data.first_name_column ? (row[data.first_name_column] || '') : '';
-            const lastName = data.last_name_column ? (row[data.last_name_column] || '') : '';
-            
-            content = content.replace(/{{firstName}}/g, firstName);
-            content = content.replace(/{{first_name}}/g, firstName);
-            content = content.replace(/{{last_name}}/g, lastName);
-            content = content.replace(/{{lastName}}/g, lastName);
+                let content = data.body;
+                // Preserve intentional empty lines and prevent list item double-spacing
+                content = content.replace(/<p><\/p>/g, '<p><br></p>');
+                content = content.replace(
+                    /<p class="[^"]*"><\/p>/g,
+                    '<p><br></p>',
+                );
+                content = content.replace(
+                    /<li><p(?: class="[^"]*")?>/g,
+                    '<li>',
+                );
+                content = content.replace(/<\/p><\/li>/g, '</li>');
+                // Force zero margin on remaining paragraphs to perfectly match editor's tight spacing
+                content = content.replace(/<p>/g, '<p style="margin: 0;">');
+                content = content.replace(
+                    /<p class="([^"]*)">/g,
+                    '<p class="$1" style="margin: 0;">',
+                );
 
-            const evtName = selectedEvent ? selectedEvent.name : data.custom_event_name;
-            content = content.replace(/{{event_name}}/g, evtName);
+                const firstName = data.first_name_column
+                    ? row[data.first_name_column] || ''
+                    : '';
+                const lastName = data.last_name_column
+                    ? row[data.last_name_column] || ''
+                    : '';
 
-            const dateStr = selectedEvent?.event_date 
-                ? new Date(selectedEvent.event_date).toLocaleDateString() 
-                : (data.custom_event_date ? new Date(data.custom_event_date).toLocaleDateString() : '');
-            content = content.replace(/{{event_date}}/g, dateStr);
+                content = content.replace(/{{firstName}}/g, firstName);
+                content = content.replace(/{{first_name}}/g, firstName);
+                content = content.replace(/{{last_name}}/g, lastName);
+                content = content.replace(/{{lastName}}/g, lastName);
 
-            return {
-                email: row[data.email_column],
-                first_name: firstName,
-                last_name: lastName,
-                body: content
-            };
-        }).filter(Boolean);
+                const evtName = selectedEvent
+                    ? selectedEvent.name
+                    : data.custom_event_name;
+                content = content.replace(/{{event_name}}/g, evtName);
+
+                const dateStr = selectedEvent?.event_date
+                    ? new Date(selectedEvent.event_date).toLocaleDateString()
+                    : data.custom_event_date
+                      ? new Date(data.custom_event_date).toLocaleDateString()
+                      : '';
+                content = content.replace(/{{event_date}}/g, dateStr);
+
+                return {
+                    email: row[data.email_column],
+                    first_name: firstName,
+                    last_name: lastName,
+                    body: content,
+                };
+            })
+            .filter(Boolean);
 
         router.post(distribute.url(), {
             ...data,
-            emails: builtEmails
+            emails: builtEmails,
         } as any);
     };
 
-    const inputCls = "flex h-10 w-full rounded-md border border-[#2a2a2a] bg-[#0a0a0a] px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700 transition-colors";
+    const inputCls =
+        'flex h-10 w-full rounded-md border border-[#2a2a2a] bg-[#0a0a0a] px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700 transition-colors';
 
     const generatePreview = () => {
         let content = data.body;
@@ -301,7 +415,10 @@ return null;
         content = content.replace(/<\/p><\/li>/g, '</li>');
         // Force zero margin on remaining paragraphs to perfectly match editor's tight spacing
         content = content.replace(/<p>/g, '<p style="margin: 0;">');
-        content = content.replace(/<p class="([^"]*)">/g, '<p class="$1" style="margin: 0;">');
+        content = content.replace(
+            /<p class="([^"]*)">/g,
+            '<p class="$1" style="margin: 0;">',
+        );
 
         let firstName = 'Attendee';
         let lastName = '';
@@ -309,30 +426,47 @@ return null;
 
         if (previewRowIndex >= 0 && sheetRows[previewRowIndex]) {
             const row = sheetRows[previewRowIndex];
-            firstName = data.first_name_column ? (row[data.first_name_column] || '') : firstName;
-            lastName = data.last_name_column ? (row[data.last_name_column] || '') : lastName;
-            email = data.email_column ? (row[data.email_column] || '') : email;
-            
+            firstName = data.first_name_column
+                ? row[data.first_name_column] || ''
+                : firstName;
+            lastName = data.last_name_column
+                ? row[data.last_name_column] || ''
+                : lastName;
+            email = data.email_column ? row[data.email_column] || '' : email;
+
             content = content.replace(/{{firstName}}/g, firstName);
             content = content.replace(/{{first_name}}/g, firstName);
             content = content.replace(/{{last_name}}/g, lastName);
             content = content.replace(/{{lastName}}/g, lastName);
         }
 
-        const evtName = selectedEvent ? selectedEvent.name : (data.custom_event_name || 'General Event');
+        const evtName = selectedEvent
+            ? selectedEvent.name
+            : data.custom_event_name || 'General Event';
         content = content.replace(/{{event_name}}/g, evtName);
-        
-        const dateStr = selectedEvent?.event_date 
-            ? new Date(selectedEvent.event_date).toLocaleDateString('en-GB').replace(/\//g, '-')
-            : (data.custom_event_date ? new Date(data.custom_event_date).toLocaleDateString('en-GB').replace(/\//g, '-') : 'Unknown-Date');
+
+        const dateStr = selectedEvent?.event_date
+            ? new Date(selectedEvent.event_date)
+                  .toLocaleDateString('en-GB')
+                  .replace(/\//g, '-')
+            : data.custom_event_date
+              ? new Date(data.custom_event_date)
+                    .toLocaleDateString('en-GB')
+                    .replace(/\//g, '-')
+              : 'Unknown-Date';
         content = content.replace(/{{event_date}}/g, dateStr);
 
         if (data.include_qr) {
             const safeEventName = evtName.replace(/\s+/g, '-');
-            const safeName = `${firstName} ${lastName}`.trim().replace(/\s+/g, '-');
+            const safeName = `${firstName} ${lastName}`
+                .trim()
+                .replace(/\s+/g, '-');
             const dummyFileName = `${safeEventName}_${dateStr}_to_${safeName}_via_${email}_PREV1234.png`;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(dummyFileName)}`;
-            content = content.replace(/{{qr}}/g, `<img src="${qrUrl}" alt="Ticket QR Code" />`);
+            content = content.replace(
+                /{{qr}}/g,
+                `<img src="${qrUrl}" alt="Ticket QR Code" />`,
+            );
         }
 
         return content;
@@ -340,80 +474,130 @@ return null;
 
     const handleDistributeSample = () => {
         if (is_google_connected === false) {
-            toast.error('Google account not connected or credentials expired. Please reconnect in settings.', { id: 'google-error' });
+            toast.error(
+                'Google account not connected or credentials expired. Please reconnect in settings.',
+                { id: 'google-error' },
+            );
 
             return;
         }
 
-        router.post(distributeSample.url(), {
-            subject: data.subject || 'No Subject',
-            body: generatePreview()
-        } as any, {
-            preserveScroll: true
-        });
+        router.post(
+            distributeSample.url(),
+            {
+                subject: data.subject || 'No Subject',
+                body: generatePreview(),
+            } as any,
+            {
+                preserveScroll: true,
+            },
+        );
     };
 
     return (
         <>
             <Head title="Email Distributor" />
-            <div className="flex flex-col h-full bg-[#0a0a0a] text-zinc-100 overflow-y-auto">
+            <div className="flex h-full flex-col overflow-y-auto bg-[#0a0a0a] text-zinc-100">
                 {/* Main Content */}
-                <div className="flex-1 p-6 w-full">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        
+                <div className="w-full flex-1 p-6">
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
                         {/* Left Column: Header & Editor */}
-                        <div className="lg:col-span-8 space-y-6">
-
+                        <div className="space-y-6 lg:col-span-8">
                             <form onSubmit={submit} className="space-y-6">
                                 <div className="space-y-4">
                                     {/* Event Selection */}
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Target Event</label>
-                                        <Select value={selectedEventId || ''} onValueChange={handleEventChange}>
-                                            <SelectTrigger className="w-full bg-[#141414] border-[#2a2a2a] text-zinc-200">
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-300">
+                                            Target Event
+                                        </label>
+                                        <Select
+                                            value={selectedEventId || ''}
+                                            onValueChange={handleEventChange}
+                                        >
+                                            <SelectTrigger className="w-full border-[#2a2a2a] bg-[#141414] text-zinc-200">
                                                 <SelectValue placeholder="Select an event to load attendees..." />
                                             </SelectTrigger>
-                                            <SelectContent className="bg-[#141414] border-[#2a2a2a] text-zinc-200">
-                                                <SelectItem value="clear" className="text-zinc-500">No event selected</SelectItem>
+                                            <SelectContent className="border-[#2a2a2a] bg-[#141414] text-zinc-200">
+                                                <SelectItem
+                                                    value="clear"
+                                                    className="text-zinc-500"
+                                                >
+                                                    No event selected
+                                                </SelectItem>
                                                 {events.map((e: any) => (
-                                                    <SelectItem key={e.id} value={e.id}>
+                                                    <SelectItem
+                                                        key={e.id}
+                                                        value={e.id}
+                                                    >
                                                         {e.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        {errors.event_id && <p className="text-red-500 text-xs mt-1">{errors.event_id}</p>}
+                                        {errors.event_id && (
+                                            <p className="mt-1 text-xs text-red-500">
+                                                {errors.event_id}
+                                            </p>
+                                        )}
                                     </div>
 
                                     {!selectedEventId && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                             <div>
-                                                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Custom Event Name</label>
-                                                <Input 
+                                                <label className="mb-1.5 block text-sm font-medium text-zinc-300">
+                                                    Custom Event Name
+                                                </label>
+                                                <Input
                                                     placeholder="e.g. End of Semester Party"
-                                                    value={data.custom_event_name}
-                                                    onChange={(e) => setData('custom_event_name', e.target.value)}
+                                                    value={
+                                                        data.custom_event_name
+                                                    }
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'custom_event_name',
+                                                            e.target.value,
+                                                        )
+                                                    }
                                                     className={inputCls}
                                                 />
-                                                {errors.custom_event_name && <p className="text-red-500 text-xs mt-1">{errors.custom_event_name}</p>}
+                                                {errors.custom_event_name && (
+                                                    <p className="mt-1 text-xs text-red-500">
+                                                        {
+                                                            errors.custom_event_name
+                                                        }
+                                                    </p>
+                                                )}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Custom Event Date</label>
-                                                <Input 
+                                                <label className="mb-1.5 block text-sm font-medium text-zinc-300">
+                                                    Custom Event Date
+                                                </label>
+                                                <Input
                                                     type="date"
-                                                    value={data.custom_event_date}
-                                                    onChange={(e) => setData('custom_event_date', e.target.value)}
+                                                    value={
+                                                        data.custom_event_date
+                                                    }
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'custom_event_date',
+                                                            e.target.value,
+                                                        )
+                                                    }
                                                     className={inputCls}
-                                                    style={{ colorScheme: 'dark' }}
+                                                    style={{
+                                                        colorScheme: 'dark',
+                                                    }}
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Upload CSV file</label>
-                                                <Input 
+                                                <label className="mb-1.5 block text-sm font-medium text-zinc-300">
+                                                    Upload CSV file
+                                                </label>
+                                                <Input
                                                     type="file"
                                                     accept=".csv"
                                                     onChange={handleCsvUpload}
-                                                    className="flex h-10 w-full rounded-md border border-[#2a2a2a] bg-[#0a0a0a] px-3 py-1.5 text-sm text-zinc-200 file:bg-zinc-800 file:text-zinc-200 file:border-0 file:rounded file:px-2 file:py-1 file:text-xs file:font-medium hover:file:bg-zinc-700 cursor-pointer transition-colors"
+                                                    className="flex h-10 w-full cursor-pointer rounded-md border border-[#2a2a2a] bg-[#0a0a0a] px-3 py-1.5 text-sm text-zinc-200 transition-colors file:rounded file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-xs file:font-medium file:text-zinc-200 hover:file:bg-zinc-700"
                                                 />
                                             </div>
                                         </div>
@@ -421,81 +605,150 @@ return null;
 
                                     {/* Subject */}
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Subject Line</label>
-                                        <Input 
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-300">
+                                            Subject Line
+                                        </label>
+                                        <Input
                                             placeholder="Important update regarding your event..."
                                             value={data.subject}
-                                            onChange={(e) => setData('subject', e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'subject',
+                                                    e.target.value,
+                                                )
+                                            }
                                             className={inputCls}
                                         />
-                                        {errors.subject && <p className="text-red-500 text-xs mt-1">{errors.subject}</p>}
+                                        {errors.subject && (
+                                            <p className="mt-1 text-xs text-red-500">
+                                                {errors.subject}
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Rich Text Editor */}
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email Body</label>
-                                        <div className="border border-[#2a2a2a] rounded-xl bg-[#0d0d0d] overflow-hidden">
+                                        <label className="mb-1.5 block text-sm font-medium text-zinc-300">
+                                            Email Body
+                                        </label>
+                                        <div className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#0d0d0d]">
                                             <MenuBar editor={editor} />
-                                            <EditorContent editor={editor} className="min-h-[300px]" />
+                                            <EditorContent
+                                                editor={editor}
+                                                className="min-h-[300px]"
+                                            />
                                         </div>
-                                        {errors.body && <p className="text-red-500 text-xs mt-1">{errors.body}</p>}
-                                        <p className="text-xs text-zinc-500 mt-2">
-                                            Tip: You can use variables like {'{first_name}'} and {'{last_name}'} in your email body to personalize the message.
+                                        {errors.body && (
+                                            <p className="mt-1 text-xs text-red-500">
+                                                {errors.body}
+                                            </p>
+                                        )}
+                                        <p className="mt-2 text-xs text-zinc-500">
+                                            Tip: You can use variables like{' '}
+                                            {'{first_name}'} and {'{last_name}'}{' '}
+                                            in your email body to personalize
+                                            the message.
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* Live Preview Collapsible */}
                                 {sheetRows.length > 0 && (
-                                    <div className="border border-[#2a2a2a] rounded-xl bg-[#0d0d0d] overflow-hidden transition-all duration-200">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
-                                            className="w-full flex items-center justify-between p-4 bg-[#141414] hover:bg-[#1a1a1a] transition-colors text-sm font-medium text-zinc-200"
+                                    <div className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] transition-all duration-200">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setIsPreviewExpanded(
+                                                    !isPreviewExpanded,
+                                                )
+                                            }
+                                            className="flex w-full items-center justify-between bg-[#141414] p-4 text-sm font-medium text-zinc-200 transition-colors hover:bg-[#1a1a1a]"
                                         >
                                             <span>Live Preview</span>
-                                            <ChevronDown className={`w-4 h-4 text-zinc-400 transform transition-transform ${isPreviewExpanded ? 'rotate-180' : ''}`} />
+                                            <ChevronDown
+                                                className={`h-4 w-4 transform text-zinc-400 transition-transform ${isPreviewExpanded ? 'rotate-180' : ''}`}
+                                            />
                                         </button>
-                                        
+
                                         {isPreviewExpanded && (
-                                            <div className="p-5 border-t border-[#2a2a2a]">
-                                                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                                            <div className="border-t border-[#2a2a2a] p-5">
+                                                <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
                                                     <div className="flex items-center gap-3">
-                                                        <label className="text-xs text-zinc-500">Preview as:</label>
-                                                        <Select 
-                                                            value={previewRowIndex.toString()} 
-                                                            onValueChange={(val) => setPreviewRowIndex(parseInt(val))}
+                                                        <label className="text-xs text-zinc-500">
+                                                            Preview as:
+                                                        </label>
+                                                        <Select
+                                                            value={previewRowIndex.toString()}
+                                                            onValueChange={(
+                                                                val,
+                                                            ) =>
+                                                                setPreviewRowIndex(
+                                                                    parseInt(
+                                                                        val,
+                                                                    ),
+                                                                )
+                                                            }
                                                         >
-                                                            <SelectTrigger className={`${inputCls} h-8 text-xs bg-[#141414] w-[200px]`}>
+                                                            <SelectTrigger
+                                                                className={`${inputCls} h-8 w-[200px] bg-[#141414] text-xs`}
+                                                            >
                                                                 <SelectValue placeholder="Select user..." />
                                                             </SelectTrigger>
-                                                            <SelectContent className="bg-[#141414] border-[#2a2a2a] text-zinc-200 max-h-[300px]">
-                                                                {sheetRows.map((row, i) => {
-                                                                    const label = data.email_column && row[data.email_column] 
-                                                                        ? row[data.email_column] 
-                                                                        : `Row ${i + 2}`;
+                                                            <SelectContent className="max-h-[300px] border-[#2a2a2a] bg-[#141414] text-zinc-200">
+                                                                {sheetRows.map(
+                                                                    (
+                                                                        row,
+                                                                        i,
+                                                                    ) => {
+                                                                        const label =
+                                                                            data.email_column &&
+                                                                            row[
+                                                                                data
+                                                                                    .email_column
+                                                                            ]
+                                                                                ? row[
+                                                                                      data
+                                                                                          .email_column
+                                                                                  ]
+                                                                                : `Row ${i + 2}`;
 
-                                                                    return <SelectItem key={i} value={i.toString()}>{label}</SelectItem>;
-                                                                })}
+                                                                        return (
+                                                                            <SelectItem
+                                                                                key={
+                                                                                    i
+                                                                                }
+                                                                                value={i.toString()}
+                                                                            >
+                                                                                {
+                                                                                    label
+                                                                                }
+                                                                            </SelectItem>
+                                                                        );
+                                                                    },
+                                                                )}
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
-                                                    
-                                                    <Button 
-                                                        type="button" 
-                                                        variant="outline" 
+
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
                                                         size="sm"
-                                                        className="border-[#2a2a2a] bg-[#1a1a1a] text-zinc-300 hover:text-white hover:bg-[#2a2a2a]"
-                                                        onClick={handleDistributeSample}
+                                                        className="border-[#2a2a2a] bg-[#1a1a1a] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+                                                        onClick={
+                                                            handleDistributeSample
+                                                        }
                                                         disabled={processing}
                                                     >
-                                                        <Mail className="w-4 h-4 mr-2" />
+                                                        <Mail className="mr-2 h-4 w-4" />
                                                         Distribute Sample
                                                     </Button>
                                                 </div>
-                                                <div 
-                                                    className="ProseMirror prose prose-invert max-w-none p-4 border border-[#2a2a2a] rounded bg-[#141414] text-sm"
-                                                    dangerouslySetInnerHTML={{ __html: generatePreview() }}
+                                                <div
+                                                    className="ProseMirror prose prose-invert max-w-none rounded border border-[#2a2a2a] bg-[#141414] p-4 text-sm"
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: generatePreview(),
+                                                    }}
                                                 />
                                             </div>
                                         )}
@@ -503,60 +756,96 @@ return null;
                                 )}
 
                                 <div className="flex justify-end pt-4">
-                                    <Button 
-                                        type="submit" 
+                                    <Button
+                                        type="submit"
                                         disabled={processing}
                                         className="bg-white text-black hover:bg-zinc-200"
                                     >
-                                        <Send className="w-4 h-4 mr-2" />
-                                        {processing ? 'Queuing...' : 'Distribute Emails'}
+                                        <Send className="mr-2 h-4 w-4" />
+                                        {processing
+                                            ? 'Queuing...'
+                                            : 'Distribute Emails'}
                                     </Button>
                                 </div>
                             </form>
                         </div>
 
                         {/* Sidebar: Configuration & Logs */}
-                        <div className="lg:col-span-4 space-y-6">
-
+                        <div className="space-y-6 lg:col-span-4">
                             {/* Recent Distribution Logs (Collapsible) */}
-                            <div className="rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] overflow-hidden transition-all duration-200">
-                                <button 
-                                    type="button" 
-                                    onClick={() => setIsOutboxExpanded(!isOutboxExpanded)}
-                                    className="w-full flex items-center justify-between p-4 bg-[#141414] hover:bg-[#1a1a1a] transition-colors text-sm font-medium text-zinc-200"
+                            <div className="overflow-hidden rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] transition-all duration-200">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setIsOutboxExpanded(!isOutboxExpanded)
+                                    }
+                                    className="flex w-full items-center justify-between bg-[#141414] p-4 text-sm font-medium text-zinc-200 transition-colors hover:bg-[#1a1a1a]"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <Mail className="w-4 h-4 text-zinc-400" />
+                                        <Mail className="h-4 w-4 text-zinc-400" />
                                         <span>Recent Outbox</span>
                                     </div>
-                                    <ChevronDown className={`w-4 h-4 text-zinc-400 transform transition-transform ${isOutboxExpanded ? 'rotate-180' : ''}`} />
+                                    <ChevronDown
+                                        className={`h-4 w-4 transform text-zinc-400 transition-transform ${isOutboxExpanded ? 'rotate-180' : ''}`}
+                                    />
                                 </button>
-                                
+
                                 {isOutboxExpanded && (
-                                    <div className="p-5 border-t border-[#2a2a2a] bg-[#141414] flex flex-col h-[400px]">
-                                        <div className="flex items-center justify-end mb-4">
-                                            <button onClick={() => router.reload({ only: ['recent_logs'] })} className="text-zinc-500 hover:text-white transition-colors">
-                                                <RefreshCw className="w-3.5 h-3.5" />
+                                    <div className="flex h-[400px] flex-col border-t border-[#2a2a2a] bg-[#141414] p-5">
+                                        <div className="mb-4 flex items-center justify-end">
+                                            <button
+                                                onClick={() =>
+                                                    router.reload({
+                                                        only: ['recent_logs'],
+                                                    })
+                                                }
+                                                className="text-zinc-500 transition-colors hover:text-white"
+                                            >
+                                                <RefreshCw className="h-3.5 w-3.5" />
                                             </button>
                                         </div>
-                                        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                                        <div className="custom-scrollbar flex-1 space-y-3 overflow-y-auto pr-2">
                                             {!recent_logs ? (
-                                                <div className="text-center py-8 text-zinc-500 text-sm">Loading logs...</div>
+                                                <div className="py-8 text-center text-sm text-zinc-500">
+                                                    Loading logs...
+                                                </div>
                                             ) : recent_logs.length === 0 ? (
-                                                <div className="text-center py-8 text-zinc-500 text-sm">No recent emails sent.</div>
+                                                <div className="py-8 text-center text-sm text-zinc-500">
+                                                    No recent emails sent.
+                                                </div>
                                             ) : (
                                                 recent_logs.map((log: any) => (
-                                                    <div key={log.id} className="p-3 rounded-lg border border-[#2a2a2a] bg-[#0d0d0d] text-xs">
-                                                        <div className="flex items-start justify-between mb-1.5">
-                                                            <span className="font-medium text-zinc-200 truncate pr-2">{log.recipient_email}</span>
-                                                            <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider ${log.success ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/50' : 'bg-red-950 text-red-400 border border-red-900/50'}`}>
-                                                                {log.success ? 'Sent' : 'Failed'}
+                                                    <div
+                                                        key={log.id}
+                                                        className="rounded-lg border border-[#2a2a2a] bg-[#0d0d0d] p-3 text-xs"
+                                                    >
+                                                        <div className="mb-1.5 flex items-start justify-between">
+                                                            <span className="truncate pr-2 font-medium text-zinc-200">
+                                                                {
+                                                                    log.recipient_email
+                                                                }
+                                                            </span>
+                                                            <span
+                                                                className={`rounded px-1.5 py-0.5 text-[10px] tracking-wider uppercase ${log.success ? 'border border-emerald-900/50 bg-emerald-950 text-emerald-400' : 'border border-red-900/50 bg-red-950 text-red-400'}`}
+                                                            >
+                                                                {log.success
+                                                                    ? 'Sent'
+                                                                    : 'Failed'}
                                                             </span>
                                                         </div>
-                                                        <p className="text-zinc-500 truncate mb-1">{log.subject}</p>
-                                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#1f1f1f]">
-                                                            <span className="text-[10px] text-zinc-600">{log.event_name || 'Manual Recipient'}</span>
-                                                            <span className="text-[10px] text-zinc-600">{new Date(log.sent_at).toLocaleString()}</span>
+                                                        <p className="mb-1 truncate text-zinc-500">
+                                                            {log.subject}
+                                                        </p>
+                                                        <div className="mt-2 flex items-center justify-between border-t border-[#1f1f1f] pt-2">
+                                                            <span className="text-[10px] text-zinc-600">
+                                                                {log.event_name ||
+                                                                    'Manual Recipient'}
+                                                            </span>
+                                                            <span className="text-[10px] text-zinc-600">
+                                                                {new Date(
+                                                                    log.sent_at,
+                                                                ).toLocaleString()}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 ))
@@ -565,75 +854,151 @@ return null;
                                     </div>
                                 )}
                             </div>
-                            
+
                             {/* Field Mappings */}
                             <div className="rounded-xl border border-[#2a2a2a] bg-[#141414] p-5">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Settings className="w-4 h-4 text-zinc-400" />
-                                    <h3 className="font-medium text-sm text-zinc-200">Mail Config</h3>
+                                <div className="mb-4 flex items-center gap-2">
+                                    <Settings className="h-4 w-4 text-zinc-400" />
+                                    <h3 className="text-sm font-medium text-zinc-200">
+                                        Mail Config
+                                    </h3>
                                 </div>
-                                <p className="text-xs text-zinc-500 mb-4">
-                                    Define the exact column headers from the connected Google Spreadsheet so the distributor knows where to pull recipient data.
+                                <p className="mb-4 text-xs text-zinc-500">
+                                    Define the exact column headers from the
+                                    connected Google Spreadsheet so the
+                                    distributor knows where to pull recipient
+                                    data.
                                 </p>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">First Name Header</label>
-                                        <Select 
-                                            value={data.first_name_column || ''} 
-                                            onValueChange={(val) => setData('first_name_column', val)}
-                                            disabled={sheetHeaders.length === 0 || isLoadingData}
+                                        <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                                            First Name Header
+                                        </label>
+                                        <Select
+                                            value={data.first_name_column || ''}
+                                            onValueChange={(val) =>
+                                                setData(
+                                                    'first_name_column',
+                                                    val,
+                                                )
+                                            }
+                                            disabled={
+                                                sheetHeaders.length === 0 ||
+                                                isLoadingData
+                                            }
                                         >
-                                            <SelectTrigger className={`${inputCls} h-8 text-xs bg-[#0d0d0d]`}>
-                                                <SelectValue placeholder={isLoadingData ? "Loading..." : "Select column..."} />
+                                            <SelectTrigger
+                                                className={`${inputCls} h-8 bg-[#0d0d0d] text-xs`}
+                                            >
+                                                <SelectValue
+                                                    placeholder={
+                                                        isLoadingData
+                                                            ? 'Loading...'
+                                                            : 'Select column...'
+                                                    }
+                                                />
                                             </SelectTrigger>
-                                            <SelectContent className="bg-[#141414] border-[#2a2a2a] text-zinc-200">
-                                                {sheetHeaders.map(h => (
-                                                    <SelectItem key={h} value={h}>{h}</SelectItem>
+                                            <SelectContent className="border-[#2a2a2a] bg-[#141414] text-zinc-200">
+                                                {sheetHeaders.map((h) => (
+                                                    <SelectItem
+                                                        key={h}
+                                                        value={h}
+                                                    >
+                                                        {h}
+                                                    </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">Last Name Header</label>
-                                        <Select 
-                                            value={data.last_name_column || ''} 
-                                            onValueChange={(val) => setData('last_name_column', val)}
-                                            disabled={sheetHeaders.length === 0 || isLoadingData}
+                                        <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                                            Last Name Header
+                                        </label>
+                                        <Select
+                                            value={data.last_name_column || ''}
+                                            onValueChange={(val) =>
+                                                setData('last_name_column', val)
+                                            }
+                                            disabled={
+                                                sheetHeaders.length === 0 ||
+                                                isLoadingData
+                                            }
                                         >
-                                            <SelectTrigger className={`${inputCls} h-8 text-xs bg-[#0d0d0d]`}>
-                                                <SelectValue placeholder={isLoadingData ? "Loading..." : "Select column..."} />
+                                            <SelectTrigger
+                                                className={`${inputCls} h-8 bg-[#0d0d0d] text-xs`}
+                                            >
+                                                <SelectValue
+                                                    placeholder={
+                                                        isLoadingData
+                                                            ? 'Loading...'
+                                                            : 'Select column...'
+                                                    }
+                                                />
                                             </SelectTrigger>
-                                            <SelectContent className="bg-[#141414] border-[#2a2a2a] text-zinc-200">
-                                                {sheetHeaders.map(h => (
-                                                    <SelectItem key={h} value={h}>{h}</SelectItem>
+                                            <SelectContent className="border-[#2a2a2a] bg-[#141414] text-zinc-200">
+                                                {sheetHeaders.map((h) => (
+                                                    <SelectItem
+                                                        key={h}
+                                                        value={h}
+                                                    >
+                                                        {h}
+                                                    </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">Email Address Header</label>
-                                        <Select 
-                                            value={data.email_column || ''} 
-                                            onValueChange={(val) => setData('email_column', val)}
-                                            disabled={sheetHeaders.length === 0 || isLoadingData}
+                                        <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                                            Email Address Header
+                                        </label>
+                                        <Select
+                                            value={data.email_column || ''}
+                                            onValueChange={(val) =>
+                                                setData('email_column', val)
+                                            }
+                                            disabled={
+                                                sheetHeaders.length === 0 ||
+                                                isLoadingData
+                                            }
                                         >
-                                            <SelectTrigger className={`${inputCls} h-8 text-xs bg-[#0d0d0d]`}>
-                                                <SelectValue placeholder={isLoadingData ? "Loading..." : "Select column..."} />
+                                            <SelectTrigger
+                                                className={`${inputCls} h-8 bg-[#0d0d0d] text-xs`}
+                                            >
+                                                <SelectValue
+                                                    placeholder={
+                                                        isLoadingData
+                                                            ? 'Loading...'
+                                                            : 'Select column...'
+                                                    }
+                                                />
                                             </SelectTrigger>
-                                            <SelectContent className="bg-[#141414] border-[#2a2a2a] text-zinc-200">
-                                                {sheetHeaders.map(h => (
-                                                    <SelectItem key={h} value={h}>{h}</SelectItem>
+                                            <SelectContent className="border-[#2a2a2a] bg-[#141414] text-zinc-200">
+                                                {sheetHeaders.map((h) => (
+                                                    <SelectItem
+                                                        key={h}
+                                                        value={h}
+                                                    >
+                                                        {h}
+                                                    </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="flex items-center space-x-2 pt-2 border-t border-[#2a2a2a]">
-                                        <Checkbox 
-                                            id="include_qr" 
-                                            checked={data.include_qr} 
-                                            onCheckedChange={(checked) => setData('include_qr', checked === true)}
+                                    <div className="flex items-center space-x-2 border-t border-[#2a2a2a] pt-2">
+                                        <Checkbox
+                                            id="include_qr"
+                                            checked={data.include_qr}
+                                            onCheckedChange={(checked) =>
+                                                setData(
+                                                    'include_qr',
+                                                    checked === true,
+                                                )
+                                            }
                                         />
-                                        <label htmlFor="include_qr" className="text-xs font-medium text-zinc-300 cursor-pointer">
+                                        <label
+                                            htmlFor="include_qr"
+                                            className="cursor-pointer text-xs font-medium text-zinc-300"
+                                        >
                                             Attach QR Code Tickets
                                         </label>
                                     </div>
@@ -643,35 +1008,83 @@ return null;
                             {/* Spreadsheet Data preview */}
                             {sheetRows.length > 0 && (
                                 <div className="rounded-xl border border-[#2a2a2a] bg-[#141414] p-5">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="font-medium text-sm text-zinc-200">Spreadsheet Data</h3>
+                                    <div className="mb-4 flex items-center justify-between">
+                                        <h3 className="text-sm font-medium text-zinc-200">
+                                            Spreadsheet Data
+                                        </h3>
                                         <Dialog>
                                             <DialogTrigger asChild>
-                                                <Button variant="outline" size="sm" className="bg-[#1a1a1a] border-[#2a2a2a] text-zinc-300 hover:text-white hover:bg-[#2a2a2a]">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="border-[#2a2a2a] bg-[#1a1a1a] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+                                                >
                                                     Manage Data
                                                 </Button>
                                             </DialogTrigger>
-                                            <DialogContent className="bg-[#0a0a0a] border-[#2a2a2a] text-zinc-200 max-w-[90vw] w-[90vw] h-[90vh] flex flex-col">
+                                            <DialogContent className="flex h-[90vh] w-[90vw] max-w-[90vw] flex-col border-[#2a2a2a] bg-[#0a0a0a] text-zinc-200">
                                                 <DialogHeader>
-                                                    <DialogTitle>Spreadsheet Data</DialogTitle>
+                                                    <DialogTitle>
+                                                        Spreadsheet Data
+                                                    </DialogTitle>
                                                 </DialogHeader>
-                                                <div className="overflow-auto flex-1 mt-4 rounded-lg border border-[#2a2a2a] custom-scrollbar">
-                                                    <table className="w-full text-xs text-left text-zinc-400 whitespace-nowrap">
-                                                        <thead className="bg-[#1a1a1a] text-zinc-300 sticky top-0 z-10">
+                                                <div className="custom-scrollbar mt-4 flex-1 overflow-auto rounded-lg border border-[#2a2a2a]">
+                                                    <table className="w-full text-left text-xs whitespace-nowrap text-zinc-400">
+                                                        <thead className="sticky top-0 z-10 bg-[#1a1a1a] text-zinc-300">
                                                             <tr>
-                                                                {sheetHeaders.map((header, i) => (
-                                                                    <th key={i} className="px-4 py-3 font-medium border-b border-[#2a2a2a] shadow-sm">{header}</th>
-                                                                ))}
+                                                                {sheetHeaders.map(
+                                                                    (
+                                                                        header,
+                                                                        i,
+                                                                    ) => (
+                                                                        <th
+                                                                            key={
+                                                                                i
+                                                                            }
+                                                                            className="border-b border-[#2a2a2a] px-4 py-3 font-medium shadow-sm"
+                                                                        >
+                                                                            {
+                                                                                header
+                                                                            }
+                                                                        </th>
+                                                                    ),
+                                                                )}
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-[#2a2a2a]">
-                                                            {sheetRows.map((row, rowIndex) => (
-                                                                <tr key={rowIndex} className="hover:bg-[#141414] transition-colors">
-                                                                    {sheetHeaders.map((header, colIndex) => (
-                                                                        <td key={colIndex} className="px-4 py-2">{row[header]}</td>
-                                                                    ))}
-                                                                </tr>
-                                                            ))}
+                                                            {sheetRows.map(
+                                                                (
+                                                                    row,
+                                                                    rowIndex,
+                                                                ) => (
+                                                                    <tr
+                                                                        key={
+                                                                            rowIndex
+                                                                        }
+                                                                        className="transition-colors hover:bg-[#141414]"
+                                                                    >
+                                                                        {sheetHeaders.map(
+                                                                            (
+                                                                                header,
+                                                                                colIndex,
+                                                                            ) => (
+                                                                                <td
+                                                                                    key={
+                                                                                        colIndex
+                                                                                    }
+                                                                                    className="px-4 py-2"
+                                                                                >
+                                                                                    {
+                                                                                        row[
+                                                                                            header
+                                                                                        ]
+                                                                                    }
+                                                                                </td>
+                                                                            ),
+                                                                        )}
+                                                                    </tr>
+                                                                ),
+                                                            )}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -679,32 +1092,88 @@ return null;
                                         </Dialog>
                                     </div>
                                     <div className="overflow-hidden rounded-lg border border-[#2a2a2a] bg-[#0d0d0d]">
-                                        <table className="w-full table-fixed text-xs text-left text-zinc-400 whitespace-nowrap">
+                                        <table className="w-full table-fixed text-left text-xs whitespace-nowrap text-zinc-400">
                                             <thead className="bg-[#1a1a1a] text-zinc-300">
                                                 <tr>
-                                                    {sheetHeaders.slice(0, 5).map((header, i) => (
-                                                        <th key={i} className="px-3 py-2 font-medium border-b border-[#2a2a2a] truncate">{header}</th>
-                                                    ))}
-                                                    {sheetHeaders.length > 5 && (
-                                                        <th className="px-3 py-2 font-medium border-b border-[#2a2a2a] w-12 text-center">...</th>
+                                                    {sheetHeaders
+                                                        .slice(0, 5)
+                                                        .map((header, i) => (
+                                                            <th
+                                                                key={i}
+                                                                className="truncate border-b border-[#2a2a2a] px-3 py-2 font-medium"
+                                                            >
+                                                                {header}
+                                                            </th>
+                                                        ))}
+                                                    {sheetHeaders.length >
+                                                        5 && (
+                                                        <th className="w-12 border-b border-[#2a2a2a] px-3 py-2 text-center font-medium">
+                                                            ...
+                                                        </th>
                                                     )}
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-[#2a2a2a]">
-                                                {sheetRows.slice(0, 6).map((row, rowIndex) => (
-                                                    <tr key={rowIndex} className="hover:bg-[#141414] transition-colors">
-                                                        {sheetHeaders.slice(0, 5).map((header, colIndex) => (
-                                                            <td key={colIndex} className="px-3 py-2 truncate" title={row[header]}>{row[header]}</td>
-                                                        ))}
-                                                        {sheetHeaders.length > 5 && (
-                                                            <td className="px-3 py-2 text-center text-zinc-500">...</td>
-                                                        )}
-                                                    </tr>
-                                                ))}
+                                                {sheetRows
+                                                    .slice(0, 6)
+                                                    .map((row, rowIndex) => (
+                                                        <tr
+                                                            key={rowIndex}
+                                                            className="transition-colors hover:bg-[#141414]"
+                                                        >
+                                                            {sheetHeaders
+                                                                .slice(0, 5)
+                                                                .map(
+                                                                    (
+                                                                        header,
+                                                                        colIndex,
+                                                                    ) => (
+                                                                        <td
+                                                                            key={
+                                                                                colIndex
+                                                                            }
+                                                                            className="truncate px-3 py-2"
+                                                                            title={
+                                                                                row[
+                                                                                    header
+                                                                                ]
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                row[
+                                                                                    header
+                                                                                ]
+                                                                            }
+                                                                        </td>
+                                                                    ),
+                                                                )}
+                                                            {sheetHeaders.length >
+                                                                5 && (
+                                                                <td className="px-3 py-2 text-center text-zinc-500">
+                                                                    ...
+                                                                </td>
+                                                            )}
+                                                        </tr>
+                                                    ))}
                                                 {sheetRows.length > 6 && (
                                                     <tr className="bg-[#0a0a0a]">
-                                                        <td colSpan={Math.min(sheetHeaders.length, 5) + (sheetHeaders.length > 5 ? 1 : 0)} className="px-3 py-3 text-center text-zinc-500">
-                                                            ... and {sheetRows.length - 6} more rows
+                                                        <td
+                                                            colSpan={
+                                                                Math.min(
+                                                                    sheetHeaders.length,
+                                                                    5,
+                                                                ) +
+                                                                (sheetHeaders.length >
+                                                                5
+                                                                    ? 1
+                                                                    : 0)
+                                                            }
+                                                            className="px-3 py-3 text-center text-zinc-500"
+                                                        >
+                                                            ... and{' '}
+                                                            {sheetRows.length -
+                                                                6}{' '}
+                                                            more rows
                                                         </td>
                                                     </tr>
                                                 )}
@@ -717,8 +1186,10 @@ return null;
                     </div>
                 </div>
             </div>
-            
-            <style dangerouslySetInnerHTML={{__html: `
+
+            <style
+                dangerouslySetInnerHTML={{
+                    __html: `
                 .ProseMirror p.is-editor-empty:first-child::before {
                     color: #52525b;
                     content: attr(data-placeholder);
@@ -755,7 +1226,9 @@ return null;
                     background: #2a2a2a;
                     border-radius: 4px;
                 }
-            `}} />
+            `,
+                }}
+            />
         </>
     );
 }

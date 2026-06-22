@@ -42,8 +42,6 @@ class UserFactory extends Factory
                 ['title' => 'Linktree', 'url' => 'https://linktr.ee/esnleuven', 'icon' => 'TreePine'],
             ],
             'is_locked' => false,
-            'role' => 'anonymous',
-            'permission' => 'guest',
         ];
     }
 

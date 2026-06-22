@@ -5,6 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property string $id
+ * @property string $channel
+ * @property string $status
+ * @property string|null $office_shift_id
+ * @property string|null $customer_email
+ * @property string $total_amount
+ * @property string $discount_total
+ * @property string|null $payment_method
+ * @property string|null $external_payment_id
+ * @property string|null $cash_tendered_amount
+ * @property string|null $cash_change_amount
+ * @property array|null $cash_tendered_breakdown
+ * @property array|null $cash_change_breakdown
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Database\Eloquent\Collection<int, \App\Models\Sale> $sales
+ */
 class Transaction extends Model
 {
     use HasFactory, \Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -35,12 +54,12 @@ class Transaction extends Model
         'completed_at' => 'datetime',
     ];
 
-    public function officeShift()
+    public function officeShift(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(OfficeShift::class);
     }
 
-    public function sales()
+    public function sales(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Sale::class);
     }

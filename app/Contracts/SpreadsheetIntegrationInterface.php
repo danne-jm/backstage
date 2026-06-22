@@ -9,7 +9,7 @@ interface SpreadsheetIntegrationInterface
      *
      * @param string $spreadsheetId The ID of the spreadsheet
      * @param string $sheetName The name of the specific sheet/tab
-     * @param array $values A 1D array representing the row values
+     * @param array<int, mixed> $values A 1D array representing the row values
      * @return bool
      */
     public function appendRow(string $spreadsheetId, string $sheetName, array $values): bool;
@@ -19,7 +19,7 @@ interface SpreadsheetIntegrationInterface
      *
      * @param string $spreadsheetId The ID of the spreadsheet
      * @param string $sheetName The name of the specific sheet/tab
-     * @param array $rows A 2D array representing multiple rows
+     * @param array<int, array<int, mixed>> $rows A 2D array representing multiple rows
      * @return bool
      */
     public function appendRows(string $spreadsheetId, string $sheetName, array $rows): bool;

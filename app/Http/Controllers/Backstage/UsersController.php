@@ -22,7 +22,7 @@ class UsersController extends Controller
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
-                'role' => $user->role,
+                'role' => $user->roles->first()?->name ?? 'member',
                 'is_locked' => $user->is_locked,
                 'last_seen_at' => $user->last_seen_at?->toIso8601String(),
                 'gmail_connected' => ! empty($user->gmail_provider_email),
@@ -38,9 +38,9 @@ class UsersController extends Controller
             'last_name' => $request->input('last_name'),
             'email' => $request->input('email'),
             'password_hash' => Hash::make($request->input('password')),
-            'role' => $request->input('role', 'member'),
         ]);
 
+        $user->syncRoles([$request->input('role', 'member')]);
         $user->syncPermissions($request->input('permissions', []));
 
         return to_route('backstage.settings.users.index')
@@ -53,13 +53,13 @@ class UsersController extends Controller
             'first_name' => $request->input('first_name'),
             'last_name' => $request->input('last_name'),
             'email' => $request->input('email'),
-            'role' => $request->input('role', $user->role),
         ]);
 
         if ($request->filled('password')) {
             $user->update(['password_hash' => Hash::make($request->input('password'))]);
         }
 
+        $user->syncRoles([$request->input('role', 'member')]);
         $user->syncPermissions($request->input('permissions', []));
 
         return to_route('backstage.settings.users.index')

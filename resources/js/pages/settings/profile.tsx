@@ -82,11 +82,13 @@ export default function Profile() {
                                 <div className="relative">
                                     <Input
                                         id="role"
-                                        className="mt-1 block w-full pr-10 bg-muted/30 text-muted-foreground border-muted-foreground/20"
-                                        defaultValue={String(auth.user.role || 'Member')}
+                                        className="mt-1 block w-full border-muted-foreground/20 bg-muted/30 pr-10 text-muted-foreground"
+                                        defaultValue={String(
+                                            auth.user.role || 'Member',
+                                        )}
                                         disabled
                                     />
-                                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-50" />
+                                    <Lock className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground opacity-50" />
                                 </div>
                             </div>
 
@@ -96,11 +98,13 @@ export default function Profile() {
                                 <div className="relative">
                                     <Input
                                         id="permission"
-                                        className="mt-1 block w-full pr-10 bg-muted/30 text-muted-foreground border-muted-foreground/20"
-                                        defaultValue={String(auth.user.permission || 'none')}
+                                        className="mt-1 block w-full border-muted-foreground/20 bg-muted/30 pr-10 text-muted-foreground"
+                                        defaultValue={String(
+                                            auth.user.permission || 'none',
+                                        )}
                                         disabled
                                     />
-                                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-50" />
+                                    <Lock className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground opacity-50" />
                                 </div>
                             </div>
 
@@ -111,14 +115,14 @@ export default function Profile() {
                                     <Input
                                         id="email"
                                         type="email"
-                                        className="mt-1 block w-full pr-10 bg-muted/30 text-muted-foreground border-muted-foreground/20"
+                                        className="mt-1 block w-full border-muted-foreground/20 bg-muted/30 pr-10 text-muted-foreground"
                                         defaultValue={auth.user.email}
                                         name="email"
                                         disabled
                                         autoComplete="username"
                                         placeholder="Email address"
                                     />
-                                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground opacity-50" />
+                                    <Lock className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground opacity-50" />
                                 </div>
 
                                 <InputError

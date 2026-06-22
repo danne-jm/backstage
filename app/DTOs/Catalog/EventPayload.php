@@ -6,6 +6,11 @@ use DateTimeInterface;
 
 readonly class EventPayload
 {
+    /**
+     * @param array<string, mixed>|null $variantsConfig
+     * @param array<string, mixed>|null $attendeeFilterConfig
+     * @param array<int>|null $responsibleUserIds
+     */
     public function __construct(
         public string $name,
         public string $description,

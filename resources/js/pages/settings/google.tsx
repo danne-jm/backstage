@@ -35,13 +35,20 @@ export default function GoogleSettings() {
                     description="Connect your Google Workspace account to enable automatic email distribution and sheet syncing."
                 />
 
-                <div className="rounded-lg border p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-col items-start justify-between gap-4 rounded-lg border p-6 sm:flex-row sm:items-center">
                     <div>
-                        <h3 className="text-base font-medium">Google Account Status</h3>
+                        <h3 className="text-base font-medium">
+                            Google Account Status
+                        </h3>
                         {isConnected ? (
                             <div className="mt-1 flex items-center text-sm text-emerald-600 dark:text-emerald-400">
                                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                                <span>Connected as <strong className="font-semibold">{providerEmail}</strong></span>
+                                <span>
+                                    Connected as{' '}
+                                    <strong className="font-semibold">
+                                        {providerEmail}
+                                    </strong>
+                                </span>
                             </div>
                         ) : (
                             <div className="mt-1 flex items-center text-sm text-amber-600 dark:text-amber-400">
@@ -53,9 +60,9 @@ export default function GoogleSettings() {
 
                     <div>
                         {isConnected ? (
-                            <Button 
-                                variant="destructive" 
-                                onClick={disconnectGoogle} 
+                            <Button
+                                variant="destructive"
+                                onClick={disconnectGoogle}
                                 disabled={processing}
                             >
                                 Disconnect

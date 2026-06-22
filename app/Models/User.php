@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['first_name', 'last_name', 'email', 'password_hash', 'is_locked', 'role', 'permission', 'gmail_provider_id', 'gmail_provider_email', 'gmail_refresh_token', 'pinned', 'last_seen_at'])]
+#[Fillable(['first_name', 'last_name', 'email', 'password_hash', 'is_locked', 'gmail_provider_id', 'gmail_provider_email', 'gmail_refresh_token', 'pinned', 'last_seen_at'])]
 #[Hidden(['password_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'gmail_refresh_token'])]
 class User extends Authenticatable
 {
@@ -28,8 +28,6 @@ class User extends Authenticatable
      */
     protected $attributes = [
         'is_locked' => false,
-        'role' => 'anonymous',
-        'permission' => 'guest',
         'pinned' => '[{"title":"Gmail","url":"https://mail.google.com","icon":"Mail"},{"title":"Google Drive","url":"https://drive.google.com","icon":"Package"},{"title":"ESN Leuven Website","url":"https://esnleuven.be","icon":"Globe"},{"title":"ESN Leuven Store","url":"https://store.esnleuven.be","icon":"ShoppingBag"},{"title":"Linktree","url":"https://linktr.ee/esnleuven","icon":"TreePine"}]',
     ];
 

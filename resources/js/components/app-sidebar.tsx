@@ -57,11 +57,13 @@ const mainNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth } = usePage<{ auth: any }>().props;
     const userPinned = auth?.user?.pinned || [];
-    
+
     const dynamicFooterItems: NavItem[] = userPinned.map((pin: any) => ({
         title: pin.title,
         href: pin.url,
-        icon: LucideIcons[pin.icon as keyof typeof LucideIcons] || LucideIcons.Link,
+        icon:
+            LucideIcons[pin.icon as keyof typeof LucideIcons] ||
+            LucideIcons.Link,
     }));
 
     return (

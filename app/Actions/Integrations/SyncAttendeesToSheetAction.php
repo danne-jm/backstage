@@ -34,13 +34,14 @@ class SyncAttendeesToSheetAction
 
         // 4. Format the row data
         // For example: Timestamp, Purchaser Email, Ticket Type, Variant, Status
+        /** @var \App\Models\Transaction $transaction */
         $transaction = $sale->transaction;
         
         $rowData = [
             $sale->created_at->toIso8601String(),
             $transaction->customer_email ?? 'POS Sale',
             $sale->ticket_type ?? 'Standard',
-            $sale->variant?->name ?? 'N/A',
+            $sale->variant->name ?? 'N/A',
             $transaction->status,
         ];
 

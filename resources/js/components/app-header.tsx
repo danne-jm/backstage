@@ -222,7 +222,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             alt={`${auth.user?.first_name} ${auth.user?.last_name}`}
                                         />
                                         <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                            {getInitials(`${auth.user?.first_name ?? ''} ${auth.user?.last_name ?? ''}`)}
+                                            {getInitials(
+                                                `${auth.user?.first_name ?? ''} ${auth.user?.last_name ?? ''}`,
+                                            )}
                                         </AvatarFallback>
                                     </Avatar>
                                 </Button>
