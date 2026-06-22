@@ -55,10 +55,11 @@ class SellablesController extends Controller
 
                     'remaining_stock' => $event->getRemainingStock(),
                     'sold_count' => $event->getSoldCount(),
-                    'remaining_stock_with_membership' => $event->getRemainingStock('with_membership'),
-                    'sold_count_with_membership' => $event->getSoldCount('with_membership'),
-                    'remaining_stock_without_membership' => $event->getRemainingStock('regular'),
-                    'sold_count_without_membership' => $event->getSoldCount('regular'),
+                    'is_split_pool' => $event->isSplitPool(),
+                    'remaining_stock_with_membership' => $event->isSplitPool() ? $event->getRemainingStock('with_membership') : null,
+                    'sold_count_with_membership' => $event->isSplitPool() ? $event->getSoldCount('with_membership') : 0,
+                    'remaining_stock_without_membership' => $event->isSplitPool() ? $event->getRemainingStock('regular') : null,
+                    'sold_count_without_membership' => $event->isSplitPool() ? $event->getSoldCount('regular') : 0,
 
                     'price_with_membership' => $event->price_with_membership,
                     'price_without_membership' => $event->price_without_membership,
@@ -82,10 +83,11 @@ class SellablesController extends Controller
 
                     'remaining_stock' => $product->getRemainingStock(),
                     'sold_count' => $product->getSoldCount(),
-                    'remaining_stock_with_membership' => $product->getRemainingStock('with_membership'),
-                    'sold_count_with_membership' => $product->getSoldCount('with_membership'),
-                    'remaining_stock_without_membership' => $product->getRemainingStock('regular'),
-                    'sold_count_without_membership' => $product->getSoldCount('regular'),
+                    'is_split_pool' => $product->isSplitPool(),
+                    'remaining_stock_with_membership' => $product->isSplitPool() ? $product->getRemainingStock('with_membership') : null,
+                    'sold_count_with_membership' => $product->isSplitPool() ? $product->getSoldCount('with_membership') : 0,
+                    'remaining_stock_without_membership' => $product->isSplitPool() ? $product->getRemainingStock('regular') : null,
+                    'sold_count_without_membership' => $product->isSplitPool() ? $product->getSoldCount('regular') : 0,
 
                     'is_variant_based' => $product->is_variant_based,
                     'variants_config' => $product->variants_config,

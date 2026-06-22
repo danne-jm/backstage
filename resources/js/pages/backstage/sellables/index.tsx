@@ -13,6 +13,7 @@ interface SellableItem {
     is_online_sellable: boolean;
     remaining_stock: number | null;
     sold_count: number;
+    is_split_pool: boolean;
     remaining_stock_with_membership: number | null;
     sold_count_with_membership: number;
     remaining_stock_without_membership: number | null;
@@ -169,8 +170,7 @@ const SellableRow = ({
                                     .join(', ')}
                             </span>
                         </>
-                    ) : item.remaining_stock_with_membership !== null ||
-                      item.remaining_stock_without_membership !== null ? (
+                    ) : item.is_split_pool ? (
                         <>
                             Qty w/ {membershipCardName}:{' '}
                             <span className="font-medium text-zinc-100">

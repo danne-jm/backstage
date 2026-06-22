@@ -184,6 +184,14 @@ export default function EmailDistributor({
             setSheetRows([]);
             setPreviewRowIndex(-1);
         } else {
+            const ev = events.find((e: any) => e.id === value);
+            if (ev && !ev.google_spreadsheet_id) {
+                toast.error(
+                    'This event does not have a linked spreadsheet ID. Please link one in Sellables.',
+                    { id: 'sheet-error' },
+                );
+            }
+
             setSelectedEventId(value);
             setData('event_id', value);
 

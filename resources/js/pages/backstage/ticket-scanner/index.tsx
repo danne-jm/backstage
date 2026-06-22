@@ -46,39 +46,50 @@ export default function TicketScanner({
             }
 
             if (!scannerRef.current.isScanning) {
-                scannerRef.current
-                    .start(
-                        { facingMode: 'environment' },
-                        { fps: 10, qrbox: { width: 250, height: 250 } },
-                        (decodedText) => {
-                            handleScan(decodedText);
-                        },
-                        (errorMessage) => {
-                            // ignore background scanning errors
-                        },
-                    )
-                    .catch((err) => {
-                        console.error('Camera failed to start:', err);
-                        toast.error('Could not access camera.');
-                        setIsScanning(false);
-                    });
+                try {
+                    scannerRef.current
+                        .start(
+                            { facingMode: 'environment' },
+                            { fps: 10, qrbox: { width: 250, height: 250 } },
+                            (decodedText) => {
+                                handleScan(decodedText);
+                            },
+                            (errorMessage) => {
+                                // ignore background scanning errors
+                            },
+                        )
+                        .catch((err) => {
+                            console.error('Camera failed to start:', err);
+                            toast.error('Could not access camera.');
+                            setIsScanning(false);
+                        });
+                } catch (err) {
+                    console.error('Sync error starting camera:', err);
+                    setIsScanning(false);
+                }
             }
         } else {
             if (scannerRef.current && scannerRef.current.isScanning) {
-                scannerRef.current
-                    .stop()
-                    .then(() => {
-                        scannerRef.current?.clear();
-                    })
-                    .catch((err) =>
-                        console.error('Error stopping scanner', err),
-                    );
+                try {
+                    scannerRef.current
+                        .stop()
+                        .then(() => {
+                            scannerRef.current?.clear();
+                        })
+                        .catch((err) =>
+                            console.error('Error stopping scanner', err),
+                        );
+                } catch (err) {
+                    console.error('Sync error stopping camera:', err);
+                }
             }
         }
 
         return () => {
             if (scannerRef.current && scannerRef.current.isScanning) {
-                scannerRef.current.stop().catch(() => {});
+                try {
+                    scannerRef.current.stop().catch(() => {});
+                } catch (err) {}
             }
         };
     }, [isScanning]);

@@ -6,13 +6,23 @@ use App\Models\InventoryMovement;
 
 trait HasStockPools
 {
+    public function isSplitPool(): bool
+    {
+        return $this->quantity_with_membership !== null
+            || $this->quantity_without_membership !== null
+            || $this->unlimited_quantity_with_membership
+            || $this->unlimited_quantity_without_membership;
+    }
+
     public function hasUnlimitedQuantity(?string $ticketType = null): bool
     {
-        if ($ticketType === 'with_membership' && isset($this->unlimited_quantity_with_membership)) {
-            return $this->unlimited_quantity_with_membership;
-        }
-        if ($ticketType === 'regular' && isset($this->unlimited_quantity_without_membership)) {
-            return $this->unlimited_quantity_without_membership;
+        if ($this->isSplitPool()) {
+            if ($ticketType === 'with_membership') {
+                return $this->unlimited_quantity_with_membership;
+            }
+            if ($ticketType === 'regular') {
+                return $this->unlimited_quantity_without_membership;
+            }
         }
 
         return $this->unlimited_quantity ?? false;
@@ -24,6 +34,13 @@ trait HasStockPools
             return null;
         }
 
+        if (! $this->isSplitPool()) {
+            // For simple (shared) quantity, all ticket types draw from the same global pool.
+            $baseQuantity = $this->quantity ?? 0;
+
+            return max(0, $baseQuantity - $this->getSoldCount(null));
+        }
+
         $baseQuantity = $this->getBaseQuantity($ticketType);
 
         return max(0, $baseQuantity - $this->getSoldCount($ticketType));
@@ -31,11 +48,13 @@ trait HasStockPools
 
     public function getBaseQuantity(?string $ticketType = null): int
     {
-        if ($ticketType === 'with_membership' && isset($this->quantity_with_membership)) {
-            return $this->quantity_with_membership;
-        }
-        if ($ticketType === 'regular' && isset($this->quantity_without_membership)) {
-            return $this->quantity_without_membership;
+        if ($this->isSplitPool()) {
+            if ($ticketType === 'with_membership') {
+                return $this->quantity_with_membership ?? 0;
+            }
+            if ($ticketType === 'regular') {
+                return $this->quantity_without_membership ?? 0;
+            }
         }
 
         return $this->quantity ?? 0;
