@@ -175,3 +175,7 @@ Throughout the development and containerization of this application, several the
 ### 12. The Rollout Restart Illusion (Ephemeral Patches)
 **The Problem:** We hot-patched a file via `kubectl cp` into a running pod, but the fix instantly disappeared.
 **The Learning:** When `kustomization.yaml` generates a Secret, changing the `.env.production` file alters the resulting Secret's cryptographic hash suffix (e.g., `backstage-secrets-h8294dm4b8`). When `kubectl apply -k .` runs, it detects the new Secret name and automatically triggers a **Rollout Restart** of the Deployment. This immediately sends a `SIGTERM` to the pods we just manually patched, and spins up fresh pods from the old `latest` Docker image. Manual container patches are entirely ephemeral and lost on rollout.
+
+### 13. Hardcoded Laravel Storage Disks (Split-Brain Uploads)
+**The Problem:** Uploading an image seemed to work perfectly, and Laravel generated a beautifully formatted S3 URL, but the file itself returned a `404 Not Found` from MinIO.
+**The Learning:** The `UploadImageAction.php` class had `Storage::disk('public')->put(...)` hardcoded. This forced Laravel to save the file to the Pod's ephemeral local hard drive, completely ignoring the `.env` settings. However, when generating the URL, `Storage::url()` cleanly respected `FILESYSTEM_DISK=s3`, causing a split-brain scenario where the upload went local but the URL pointed to S3. To be cloud-native, always omit hardcoded disks (`Storage::put(...)`) so the framework inherently obeys the environment-injected storage configuration.
