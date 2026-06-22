@@ -1,0 +1,10 @@
+resources:
+  - Containerization/manifests/deployment.yaml
+  - Containerization/manifests/service.yaml
+  - Containerization/manifests/postgres.yaml
+  - Containerization/manifests/redis.yaml
+
+secretGenerator:
+  - name: backstage-secrets
+    envs:
+      - .env.production

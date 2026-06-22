@@ -1,9 +1,9 @@
 import { Head, usePage, useForm } from '@inertiajs/react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { edit as editGoogle } from '@/routes/google';
 import type { Auth } from '@/types';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 type PageProps = {
     auth: Auth;

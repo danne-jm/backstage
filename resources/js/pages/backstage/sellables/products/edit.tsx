@@ -1,17 +1,17 @@
 import { Head, Link, useForm, router } from '@inertiajs/react';
-import { update as updateProductRoute } from '@/routes/backstage/sellables/products';
-import { index as sellablesRoute } from '@/routes/backstage/sellables';
+import { ChevronUp, Plus, Trash2, X, ChevronDown } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { ChevronUp, Plus, Trash2, X, ChevronDown } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuCheckboxItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { index as sellablesRoute } from '@/routes/backstage/sellables';
+import { update as updateProductRoute } from '@/routes/backstage/sellables/products';
 
 const inputCls = 'w-full rounded-md border border-[#2a2a2a] bg-[#0f0f0f] px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-600';
 const textareaCls = `${inputCls} min-h-[90px] resize-none`;
@@ -20,18 +20,25 @@ type Attribute = { id: string; name: string; options: string[] };
 type VariantRow = Record<string, string> & { quantity: string };
 
 function cartesian(attributes: Attribute[]): VariantRow[] {
-    if (!attributes.length || attributes.some(a => !a.options.length)) return [];
+    if (!attributes.length || attributes.some(a => !a.options.length)) {
+return [];
+}
+
     const result: Record<string, string>[][] = [[]];
+
     for (const attr of attributes) {
         const newResult: Record<string, string>[][] = [];
+
         for (const existing of result) {
             for (const opt of attr.options) {
                 newResult.push([...existing, { [attr.name || attr.id]: opt }]);
             }
         }
+
         result.length = 0;
         result.push(...newResult);
     }
+
     return result.map(combos => ({
         ...Object.assign({}, ...combos),
         quantity: '',
@@ -86,6 +93,7 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             setData((prev) => ({ ...prev, image: file, remove_image: false }));
             setPreviewUrl(URL.createObjectURL(file));
@@ -95,6 +103,7 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
     const removeImage = () => {
         setData((prev) => ({ ...prev, image: null, remove_image: true }));
         setPreviewUrl(null);
+
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -105,12 +114,17 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
             const keys = Object.keys(product.variants_config[0]).filter(k => k !== 'id' && k !== 'quantity');
             const attrs: Attribute[] = keys.map(k => {
                 const options = Array.from(new Set(product.variants_config.map((r: any) => String(r[k] ?? ''))));
+
                 return { id: crypto.randomUUID(), name: k, options: options as string[] };
             });
             setAttributes(attrs);
             setVariantRows(product.variants_config.map((r: any) => {
                 const row: Record<string, string> = { quantity: r.quantity?.toString() || '' };
-                for (const k of keys) row[k] = String(r[k] ?? '');
+
+                for (const k of keys) {
+row[k] = String(r[k] ?? '');
+}
+
                 return row as VariantRow;
             }));
         }
@@ -135,7 +149,11 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
 
     const addOption = (id: string) => {
         const val = optionInputs[id]?.trim();
-        if (!val) return;
+
+        if (!val) {
+return;
+}
+
         const next = attributes.map(a =>
             a.id === id && !a.options.includes(val) ? { ...a, options: [...a.options, val] } : a
         );
@@ -176,8 +194,13 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
         const variantsConfig = isVariants
             ? variantRows.map(row => {
                 const cfg: Record<string, any> = {};
-                for (const k of attrKeys) cfg[k] = row[k];
+
+                for (const k of attrKeys) {
+cfg[k] = row[k];
+}
+
                 cfg.quantity = row.quantity === '' ? null : Number(row.quantity);
+
                 return cfg;
             })
             : null;
@@ -210,18 +233,23 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
     const verticalAttrs = horizontalAttr ? validAttrs.filter(a => a.id !== horizontalAttr.id) : [];
     
     let verticalCombos: Record<string, string>[] = [];
+
     if (verticalAttrs.length > 0) {
         const result: Record<string, string>[][] = [[]];
+
         for (const attr of verticalAttrs) {
             const newResult: Record<string, string>[][] = [];
+
             for (const existing of result) {
                 for (const opt of attr.options) {
                     newResult.push([...existing, { [attr.name]: opt }]);
                 }
             }
+
             result.length = 0;
             result.push(...newResult);
         }
+
         verticalCombos = result.map(combos => Object.assign({}, ...combos));
     } else if (horizontalAttr) {
         verticalCombos = [{}];
@@ -309,17 +337,17 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
                                 <span className="text-sm font-medium text-zinc-200">Pricing</span>
                                 <ToggleGroup type="single" value={pricingType} onValueChange={(v) => v && setPricingType(v as 'single' | 'split')} className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-md p-0.5 gap-0">
                                     <ToggleGroupItem value="single" className="text-xs h-7 px-3 rounded-sm data-[state=on]:bg-[#2a2a2a] data-[state=on]:text-zinc-100 text-zinc-500">Single Price</ToggleGroupItem>
-                                    <ToggleGroupItem value="split" className="text-xs h-7 px-3 rounded-sm data-[state=on]:bg-[#2a2a2a] data-[state=on]:text-zinc-100 text-zinc-500">ESNcard Pricing</ToggleGroupItem>
+                                    <ToggleGroupItem value="split" className="text-xs h-7 px-3 rounded-sm data-[state=on]:bg-[#2a2a2a] data-[state=on]:text-zinc-100 text-zinc-500">{import.meta.env.VITE_MEMBERSHIP_CARD_NAME} Pricing</ToggleGroupItem>
                                 </ToggleGroup>
                             </div>
                             <div className={`grid gap-4 ${pricingType === 'split' ? 'grid-cols-2' : 'grid-cols-1 max-w-xs'}`}>
                                 <div>
-                                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">{pricingType === 'split' ? 'Price w/ ESNcard (€)' : 'Price (€)'}</label>
+                                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">{pricingType === 'split' ? `Price w/ ${import.meta.env.VITE_MEMBERSHIP_CARD_NAME} (€)` : 'Price (€)'}</label>
                                     <input type="number" step="0.01" className={inputCls} value={data.price_with_membership} onChange={(e) => setData('price_with_membership', e.target.value)} />
                                 </div>
                                 {pricingType === 'split' && (
                                     <div>
-                                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">Price w/o ESNcard (€)</label>
+                                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">Price w/o {import.meta.env.VITE_MEMBERSHIP_CARD_NAME} (€)</label>
                                         <input type="number" step="0.01" className={inputCls} value={data.price_without_membership} onChange={(e) => setData('price_without_membership', e.target.value)} />
                                     </div>
                                 )}
@@ -368,7 +396,7 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
                                     <span className="text-sm text-zinc-400">Type</span>
                                     <ToggleGroup type="single" value={stockType} onValueChange={(v) => v && setStockType(v as 'simple' | 'split' | 'variants')} className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-md p-0.5 gap-0">
                                         <ToggleGroupItem value="simple" className="text-xs h-7 px-3 rounded-sm data-[state=on]:bg-[#2a2a2a] data-[state=on]:text-zinc-100 text-zinc-500">Simple</ToggleGroupItem>
-                                        <ToggleGroupItem value="split" className="text-xs h-7 px-3 rounded-sm data-[state=on]:bg-[#2a2a2a] data-[state=on]:text-zinc-100 text-zinc-500">ESNcard Split</ToggleGroupItem>
+                                        <ToggleGroupItem value="split" className="text-xs h-7 px-3 rounded-sm data-[state=on]:bg-[#2a2a2a] data-[state=on]:text-zinc-100 text-zinc-500">{import.meta.env.VITE_MEMBERSHIP_CARD_NAME} Split</ToggleGroupItem>
                                         <ToggleGroupItem value="variants" className="text-xs h-7 px-3 rounded-sm data-[state=on]:bg-[#2a2a2a] data-[state=on]:text-zinc-100 text-zinc-500">Variants</ToggleGroupItem>
                                     </ToggleGroup>
                                 </div>
@@ -383,11 +411,11 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
                                 {stockType === 'split' && (
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Qty w/ ESNcard</label>
+                                            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Qty w/ {import.meta.env.VITE_MEMBERSHIP_CARD_NAME}</label>
                                             <input type="number" className={inputCls} placeholder="Leave empty for unlimited" value={data.quantity_with_membership} onChange={(e) => setData('quantity_with_membership', e.target.value)} />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Qty w/o ESNcard</label>
+                                            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Qty w/o {import.meta.env.VITE_MEMBERSHIP_CARD_NAME}</label>
                                             <input type="number" className={inputCls} placeholder="Leave empty for unlimited" value={data.quantity_without_membership} onChange={(e) => setData('quantity_without_membership', e.target.value)} />
                                         </div>
                                     </div>
@@ -424,7 +452,11 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
                                                             placeholder="Type option and press Enter"
                                                             value={optionInputs[attr.id] ?? ''}
                                                             onChange={(e) => setOptionInputs(o => ({ ...o, [attr.id]: e.target.value }))}
-                                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOption(attr.id); } }}
+                                                            onKeyDown={(e) => {
+ if (e.key === 'Enter') {
+ e.preventDefault(); addOption(attr.id); 
+} 
+}}
                                                         />
                                                     </div>
                                                     <button
@@ -476,14 +508,24 @@ export default function EditProduct({ users, membershipCardName, product }: Prop
                                                                     ))}
                                                                     {horizontalAttr.options.map(opt => {
                                                                         const idx = variantRows.findIndex(r => {
-                                                                            if (r[horizontalAttr.name] !== opt) return false;
+                                                                            if (r[horizontalAttr.name] !== opt) {
+return false;
+}
+
                                                                             for (const va of verticalAttrs) {
-                                                                                if (r[va.name] !== vCombo[va.name]) return false;
+                                                                                if (r[va.name] !== vCombo[va.name]) {
+return false;
+}
                                                                             }
+
                                                                             return true;
                                                                         });
                                                                         const row = variantRows[idx];
-                                                                        if (!row) return <td key={opt} className="px-4 py-2.5 text-center"></td>;
+
+                                                                        if (!row) {
+return <td key={opt} className="px-4 py-2.5 text-center"></td>;
+}
+
                                                                         return (
                                                                             <td key={opt} className="px-4 py-2.5 text-center">
                                                                                 <input

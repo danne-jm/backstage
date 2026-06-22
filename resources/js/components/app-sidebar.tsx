@@ -14,11 +14,11 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { index as inventory } from '@/routes/backstage/inventory';
-import { index as sellables } from '@/routes/backstage/sellables';
-import { index as office } from '@/routes/backstage/office';
-import { index as ticketScanner } from '@/routes/backstage/ticket-scanner';
 import { index as emailDistributor } from '@/routes/backstage/email-distributor';
+import { index as inventory } from '@/routes/backstage/inventory';
+import { index as office } from '@/routes/backstage/office';
+import { index as sellables } from '@/routes/backstage/sellables';
+import { index as ticketScanner } from '@/routes/backstage/ticket-scanner';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [

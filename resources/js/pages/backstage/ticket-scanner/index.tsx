@@ -1,14 +1,15 @@
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { CheckCircle2, Camera, CameraOff, QrCode } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { CheckCircle2, Camera, CameraOff, QrCode } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function getXsrfToken() {
     const match = document.cookie.match(new RegExp('(^|;\\s*)(' + 'XSRF-TOKEN' + ')=([^;]*)'));
+
     return (match ? decodeURIComponent(match[3]) : null);
 }
 
@@ -29,6 +30,7 @@ export default function TicketScanner({ availableEvents, event, tickets, stats }
             if (!scannerRef.current) {
                 scannerRef.current = new Html5Qrcode("qr-reader");
             }
+
             if (!scannerRef.current.isScanning) {
                 scannerRef.current.start(
                     { facingMode: "environment" },
@@ -69,7 +71,10 @@ export default function TicketScanner({ availableEvents, event, tickets, stats }
     };
 
     const handleScan = async (code: string) => {
-        if (isProcessing) return;
+        if (isProcessing) {
+return;
+}
+
         setIsProcessing(true);
         
         try {
@@ -87,6 +92,7 @@ export default function TicketScanner({ availableEvents, event, tickets, stats }
             });
             
             const data = await res.json();
+
             if (!res.ok) {
                 throw new Error(data.message || "Failed to scan ticket");
             }
@@ -107,6 +113,7 @@ export default function TicketScanner({ availableEvents, event, tickets, stats }
         e.preventDefault();
         const formData = new FormData(e.target as HTMLFormElement);
         const code = formData.get('ticket_code') as string;
+
         if (code) {
             handleScan(code);
             (e.target as HTMLFormElement).reset();

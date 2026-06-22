@@ -1,12 +1,12 @@
 import { Form, Head, usePage, useForm } from '@inertiajs/react';
+import * as LucideIcons from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { edit as editFooter } from '@/routes/footer';
-import * as LucideIcons from 'lucide-react';
-import { Trash2 } from 'lucide-react';
-import type { Auth } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { edit as editFooter } from '@/routes/footer';
+import type { Auth } from '@/types';
 
 type PageProps = {
     auth: Auth;
@@ -66,6 +66,7 @@ export default function Footer() {
                 <form onSubmit={submit} className="space-y-4">
                     {data.pinned.map((pin: any, index: number) => {
                         const Icon = (LucideIcons[pin.icon as keyof typeof LucideIcons] as React.ElementType) || LucideIcons.Link;
+
                         return (
                             <div key={index} className="flex flex-col sm:flex-row items-center gap-2">
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted/50">
@@ -93,6 +94,7 @@ export default function Footer() {
                                     <SelectContent>
                                         {COMMON_ICONS.map((iconName) => {
                                             const ItemIcon = (LucideIcons[iconName as keyof typeof LucideIcons] as React.ElementType) || LucideIcons.Link;
+
                                             return (
                                                 <SelectItem key={iconName} value={iconName}>
                                                     <div className="flex items-center gap-2">

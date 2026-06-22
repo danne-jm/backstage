@@ -1,11 +1,12 @@
-import { useState, useRef, KeyboardEvent } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
-import { index as inventoryRoute } from '@/routes/backstage/inventory';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Search, X, Plus, Minus } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
+import { useState, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { index as inventoryRoute } from '@/routes/backstage/inventory';
 
 const SUGGESTED_TAGS: string[] = [];
 
@@ -14,9 +15,11 @@ function TagInput({ tags, suggestions, onChange }: { tags: string[]; suggestions
 
     const addTag = (tag: string) => {
         const trimmed = tag.trim();
+
         if (trimmed && !tags.includes(trimmed)) {
             onChange([...tags, trimmed]);
         }
+
         setInput('');
     };
 
@@ -141,6 +144,7 @@ function ItemModal({
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             setData((prev) => ({ ...prev, image: file, remove_image: false }));
             setPreviewUrl(URL.createObjectURL(file));
@@ -150,6 +154,7 @@ function ItemModal({
     const removeImage = () => {
         setData((prev) => ({ ...prev, image: null, remove_image: true }));
         setPreviewUrl(null);
+
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -250,12 +255,20 @@ export default function Inventory({ items, allTags }: { items: Item[]; allTags: 
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Item | null>(null);
-    const openCreate = () => { setEditingItem(null); setIsModalOpen(true); };
-    const openEdit = (item: Item) => { setEditingItem(item); setIsModalOpen(true); };
+    const openCreate = () => {
+ setEditingItem(null); setIsModalOpen(true); 
+};
+    const openEdit = (item: Item) => {
+ setEditingItem(item); setIsModalOpen(true); 
+};
 
     const filteredItems = items.filter((item) => {
-        if (!searchQuery) return true;
+        if (!searchQuery) {
+return true;
+}
+
         const query = searchQuery.toLowerCase();
+
         return (
             item.name.toLowerCase().includes(query) ||
             item.changed_by?.toLowerCase().includes(query) ||
@@ -266,7 +279,10 @@ export default function Inventory({ items, allTags }: { items: Item[]; allTags: 
 
     const updateQuantity = (item: Item, change: number) => {
         const newQuantity = Math.max(0, item.quantity + change);
-        if (newQuantity === item.quantity) return;
+
+        if (newQuantity === item.quantity) {
+return;
+}
         
         router.put(`/inventory/${item.id}`, {
             name: item.name,
@@ -412,7 +428,9 @@ export default function Inventory({ items, allTags }: { items: Item[]; allTags: 
             {isModalOpen && (
                 <ItemModal
                     isOpen={isModalOpen}
-                    onClose={() => { setIsModalOpen(false); setEditingItem(null); }}
+                    onClose={() => {
+ setIsModalOpen(false); setEditingItem(null); 
+}}
                     item={editingItem}
                     allTags={allTags}
                 />

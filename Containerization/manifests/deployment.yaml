@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backstage-deployment
+  namespace: default
+  labels:
+    app: backstage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backstage
+  template:
+    metadata:
+      labels:
+        app: backstage
+    spec:
+      containers:
+        - name: backstage-app
+          # Replace YOUR_DOCKERHUB_USERNAME with your actual Docker Hub username
+          image: danieljaurellmevorachsasm2425/backstage-v2:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: backstage-secrets

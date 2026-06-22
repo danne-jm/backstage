@@ -10,6 +10,7 @@ use App\Models\Variant;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -24,12 +25,14 @@ class DatabaseSeeder extends Seeder
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        $role = Role::create(['name' => 'admin']);
+        $permission = Permission::create(['name' => 'admin']);
+        $role = Role::create(['name' => 'IT Manager']);
+        $role->givePermissionTo($permission);
 
         $user = User::create([
             'first_name' => 'Daniel',
             'last_name' => 'J. M',
-            'email' => 'it@esnleuven.be',
+            'email' => 'danieljaurell@gmail.com',
             'password_hash' => Hash::make('xghQ7lIGwEWP+5i28cPG'),
         ]);
 

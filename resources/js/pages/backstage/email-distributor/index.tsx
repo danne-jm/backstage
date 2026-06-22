@@ -1,23 +1,25 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Color } from '@tiptap/extension-color';
+import Link from '@tiptap/extension-link';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Underline from '@tiptap/extension-underline';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import Link from '@tiptap/extension-link';
-import { Color } from '@tiptap/extension-color';
-import { TextStyle } from '@tiptap/extension-text-style';
 import { Bold, Italic, Underline as UnderlineIcon, Strikethrough, List, ListOrdered, Link as LinkIcon, Send, Settings, Mail, RefreshCw, ChevronDown } from 'lucide-react';
-import { toast } from 'sonner';
 import Papa from 'papaparse';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { getHeaders, getRows, distribute, distributeSample } from '@/actions/App/Http/Controllers/Backstage/EmailDistributorController';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const MenuBar = ({ editor }: { editor: any }) => {
-    if (!editor) return null;
+    if (!editor) {
+return null;
+}
 
     return (
         <div className="flex flex-wrap items-center gap-1 border-b border-[#2a2a2a] bg-[#141414] p-2 rounded-t-xl">
@@ -126,6 +128,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
             setPreviewRowIndex(-1);
             editor?.commands.setContent('');
         }
+
         if (flash?.error) {
             toast.error(flash.error, { id: flash.error.includes('Google') ? 'google-error' : undefined });
         }
@@ -143,6 +146,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
             setData('event_id', value);
             
             setIsLoadingData(true);
+
             try {
                 // Fetch headers and rows in parallel
                 const [headersRes, rowsRes] = await Promise.all([
@@ -153,12 +157,14 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                 if (!headersRes.ok) {
                     const errorJson = await headersRes.json().catch(() => ({}));
                     toast.error(errorJson.error || "Failed to load Google Sheet data.", { id: 'sheet-error' });
+
                     return;
                 }
 
                 if (!rowsRes.ok) {
                     const errorJson = await rowsRes.json().catch(() => ({}));
                     toast.error(errorJson.error || "Failed to load Google Sheet rows.", { id: 'sheet-error' });
+
                     return;
                 }
 
@@ -179,6 +185,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                 
                 const rowsJson = await rowsRes.json();
                 setSheetRows(rowsJson.rows || []);
+
                 if (rowsJson.rows && rowsJson.rows.length > 0) {
                     setPreviewRowIndex(0);
                 }
@@ -192,7 +199,10 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
 
     const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+
+        if (!file) {
+return;
+}
 
         setIsLoadingData(true);
         Papa.parse(file, {
@@ -202,7 +212,10 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                 const hdrs = results.meta.fields || [];
                 setSheetHeaders(hdrs);
                 setSheetRows(results.data);
-                if (results.data.length > 0) setPreviewRowIndex(0);
+
+                if (results.data.length > 0) {
+setPreviewRowIndex(0);
+}
 
                 const findHeader = (keywords: string[]) => 
                     hdrs.find((h: string) => keywords.some(k => h.toLowerCase().includes(k))) || '';
@@ -232,7 +245,9 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
         
         // Build the final emails array
         const builtEmails = sheetRows.map((row, i) => {
-            if (!data.email_column || !row[data.email_column]) return null;
+            if (!data.email_column || !row[data.email_column]) {
+return null;
+}
             
             let content = data.body;
             // Preserve intentional empty lines and prevent list item double-spacing
@@ -302,6 +317,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
             content = content.replace(/{{last_name}}/g, lastName);
             content = content.replace(/{{lastName}}/g, lastName);
         }
+
         const evtName = selectedEvent ? selectedEvent.name : (data.custom_event_name || 'General Event');
         content = content.replace(/{{event_name}}/g, evtName);
         
@@ -324,6 +340,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
     const handleDistributeSample = () => {
         if (is_google_connected === false) {
             toast.error('Google account not connected or credentials expired. Please reconnect in settings.', { id: 'google-error' });
+
             return;
         }
 
@@ -456,6 +473,7 @@ export default function EmailDistributor({ events, recent_logs, flash, errors, i
                                                                     const label = data.email_column && row[data.email_column] 
                                                                         ? row[data.email_column] 
                                                                         : `Row ${i + 2}`;
+
                                                                     return <SelectItem key={i} value={i.toString()}>{label}</SelectItem>;
                                                                 })}
                                                             </SelectContent>

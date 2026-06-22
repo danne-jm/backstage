@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
-import { index as sellablesRoute } from '@/routes/backstage/sellables';
-import { Button } from '@/components/ui/button';
 import { ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { index as sellablesRoute } from '@/routes/backstage/sellables';
 
 interface SellableItem {
     id: string;
@@ -38,8 +38,10 @@ const formatDate = (dateStr: string) => {
 const SellableRow = ({ item, type, membershipCardName, isLast }: { item: SellableItem; type: 'events' | 'products'; membershipCardName: string; isLast: boolean }) => {
     
     let sellPeriodText = '';
+
     if (item.start_sell_date && item.end_sell_date) {
         sellPeriodText = `${formatDate(item.start_sell_date)} - ${formatDate(item.end_sell_date)}`;
+
         if (new Date() > new Date(item.end_sell_date)) {
             sellPeriodText += ' | Sale ended';
         }
@@ -48,7 +50,10 @@ const SellableRow = ({ item, type, membershipCardName, isLast }: { item: Sellabl
     }
 
     const formatStock = (remaining: number | null, sold: number) => {
-        if (remaining === null) return `Unl. / ${sold} sold`;
+        if (remaining === null) {
+return `Unl. / ${sold} sold`;
+}
+
         return `${remaining} left / ${sold} sold`;
     };
 
@@ -122,6 +127,7 @@ const SellableRow = ({ item, type, membershipCardName, isLast }: { item: Sellabl
                 const attrKeys = Object.keys(item.variants_config[0]).filter(k => k !== 'id' && k !== 'quantity');
                 const attributes = attrKeys.map(key => {
                     const options = Array.from(new Set(item.variants_config!.map(r => String(r[key] ?? ''))));
+
                     return { name: key, options };
                 });
 
@@ -129,23 +135,30 @@ const SellableRow = ({ item, type, membershipCardName, isLast }: { item: Sellabl
                     ? attributes.reduce((prev, current) => (prev.options.length > current.options.length) ? prev : current) 
                     : null;
                 
-                if (!horizontalAttr) return null;
+                if (!horizontalAttr) {
+return null;
+}
 
                 const verticalAttrs = attributes.filter(a => a.name !== horizontalAttr.name);
                 
                 let verticalCombos: Record<string, string>[] = [];
+
                 if (verticalAttrs.length > 0) {
                     const result: Record<string, string>[][] = [[]];
+
                     for (const attr of verticalAttrs) {
                         const newResult: Record<string, string>[][] = [];
+
                         for (const existing of result) {
                             for (const opt of attr.options) {
                                 newResult.push([...existing, { [attr.name]: opt }]);
                             }
                         }
+
                         result.length = 0;
                         result.push(...newResult);
                     }
+
                     verticalCombos = result.map(combos => Object.assign({}, ...combos));
                 } else {
                     verticalCombos = [{}];
@@ -175,12 +188,19 @@ const SellableRow = ({ item, type, membershipCardName, isLast }: { item: Sellabl
                                             ))}
                                             {horizontalAttr.options.map((opt: string) => {
                                                 const match = item.variants_config!.find((r: any) => {
-                                                    if (String(r[horizontalAttr.name] ?? '') !== opt) return false;
+                                                    if (String(r[horizontalAttr.name] ?? '') !== opt) {
+return false;
+}
+
                                                     for (const va of verticalAttrs) {
-                                                        if (String(r[va.name] ?? '') !== vCombo[va.name]) return false;
+                                                        if (String(r[va.name] ?? '') !== vCombo[va.name]) {
+return false;
+}
                                                     }
+
                                                     return true;
                                                 });
+
                                                 return (
                                                     <td key={opt} className={`py-2 px-3 text-center ${i !== verticalCombos.length - 1 ? 'border-b border-zinc-800' : ''}`}>
                                                         {match ? (match.quantity != null ? match.quantity : 'Unl.') : '-'}
