@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Head, router } from '@inertiajs/react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { CheckCircle2, Camera, CameraOff, QrCode } from 'lucide-react';

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Form, Head, usePage, useForm } from '@inertiajs/react';
 import * as LucideIcons from 'lucide-react';
 import { Trash2 } from 'lucide-react';

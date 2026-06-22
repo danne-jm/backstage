@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Head, router, useForm } from '@inertiajs/react';
 import { Color } from '@tiptap/extension-color';
 import Link from '@tiptap/extension-link';

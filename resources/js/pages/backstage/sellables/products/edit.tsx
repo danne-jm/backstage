@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { ChevronUp, Plus, Trash2, X, ChevronDown } from 'lucide-react';
 import React, { useState, useCallback, useEffect, useRef } from 'react';

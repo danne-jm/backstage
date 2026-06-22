@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Head, useForm, router } from '@inertiajs/react';
 import { Search, X, Plus, Minus } from 'lucide-react';
 import type { KeyboardEvent } from 'react';

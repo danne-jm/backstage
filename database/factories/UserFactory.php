@@ -25,14 +25,25 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password_hash' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
+            'pinned' => [
+                ['title' => 'Gmail', 'url' => 'https://mail.google.com', 'icon' => 'Mail'],
+                ['title' => 'Google Drive', 'url' => 'https://drive.google.com', 'icon' => 'Package'],
+                ['title' => 'ESN Leuven Website', 'url' => 'https://esnleuven.be', 'icon' => 'Globe'],
+                ['title' => 'ESN Leuven Store', 'url' => 'https://store.esnleuven.be', 'icon' => 'ShoppingBag'],
+                ['title' => 'Linktree', 'url' => 'https://linktr.ee/esnleuven', 'icon' => 'TreePine'],
+            ],
+            'is_locked' => false,
+            'role' => 'anonymous',
+            'permission' => 'guest',
         ];
     }
 
