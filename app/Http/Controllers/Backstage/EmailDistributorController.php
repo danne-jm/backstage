@@ -36,15 +36,17 @@ class EmailDistributorController extends Controller
                 ->latest()
                 ->limit(50)
                 ->get()
-                ->map(fn (MailLog $log) => [
-                    'id' => $log->id,
-                    'event_name' => $log->event?->name,
-                    'recipient_email' => $log->recipient_email,
-                    'subject' => $log->subject,
-                    'success' => $log->success,
-                    'error_message' => $log->error_message,
-                    'sent_at' => $log->created_at->toIso8601String(),
-                ])),
+                ->map(function (MailLog $log): array {
+                    return [
+                        'id' => $log->id,
+                        'event_name' => $log->event?->name,
+                        'recipient_email' => $log->recipient_email,
+                        'subject' => $log->subject,
+                        'success' => $log->success,
+                        'error_message' => $log->error_message,
+                        'sent_at' => $log->created_at?->toIso8601String(),
+                    ];
+                })->all()),
         ]);
     }
 
@@ -83,12 +85,13 @@ class EmailDistributorController extends Controller
         $sender = Auth::user();
 
         $subject = $request->string('subject')->toString();
-        $eventId = $request->input('event_id');
-        $customEventName = $request->input('custom_event_name');
+        $eventId = $request->string('event_id')->toString() ?: null;
+        $customEventName = $request->string('custom_event_name')->toString() ?: null;
 
-        $emails = collect($request->input('emails', []));
+        /** @var array<int, array<string, mixed>> $emails */
+        $emails = (array) $request->input('emails', []);
 
-        if ($emails->isEmpty()) {
+        if (empty($emails)) {
             return back()->withErrors(['recipients' => 'No valid recipients found.']);
         }
 
@@ -99,7 +102,7 @@ class EmailDistributorController extends Controller
         $includeQr = $request->boolean('include_qr');
         $event = $eventId ? Event::find($eventId) : null;
         $eventName = $event ? $event->name : ($customEventName ?: 'General Event');
-        $eventDate = $event ? $event->event_date->format('d-m-Y') : 'Unknown Date';
+        $eventDate = $event ? \Carbon\Carbon::parse($event->event_date)->format('d-m-Y') : 'Unknown Date';
 
         // Dispatch one queued job per recipient
         foreach ($emails as $emailData) {
@@ -141,7 +144,7 @@ class EmailDistributorController extends Controller
             )->onQueue('distributions');
         }
 
-        return back()->with('success', "Queued {$emails->count()} email(s) for distribution.");
+        return back()->with('success', "Queued " . count($emails) . " email(s) for distribution.");
     }
 
     /**

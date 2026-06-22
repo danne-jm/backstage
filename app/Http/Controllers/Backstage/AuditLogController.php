@@ -32,20 +32,24 @@ class AuditLogController extends Controller
         $paginator = $query->paginate($perPage)->withQueryString();
 
         return Inertia::render('backstage/audit-log/index', [
-            'logs' => $paginator->through(fn (Activity $activity) => [
-                'id' => $activity->id,
-                'event' => $activity->event,
-                'description' => $activity->description,
-                'subject_type' => class_basename($activity->subject_type ?? ''),
-                'subject_id' => $activity->subject_id,
-                'causer' => $activity->causer ? [
-                    'id' => $activity->causer->id,
-                    'email' => $activity->causer->email,
-                    'name' => $activity->causer->first_name.' '.$activity->causer->last_name,
-                ] : null,
-                'changes' => $activity->changes,
-                'occurred_at' => $activity->created_at->toIso8601String(),
-            ]),
+            'logs' => $paginator->through(function (Activity $activity): array {
+                /** @var \App\Models\User|null $causer */
+                $causer = $activity->causer;
+                return [
+                    'id' => $activity->id,
+                    'event' => $activity->event,
+                    'description' => $activity->description,
+                    'subject_type' => class_basename($activity->subject_type ?? ''),
+                    'subject_id' => $activity->subject_id,
+                    'causer' => $causer ? [
+                        'id' => $causer->id,
+                        'email' => $causer->email,
+                        'name' => $causer->first_name.' '.$causer->last_name,
+                    ] : null,
+                    'changes' => $activity->changes,
+                    'occurred_at' => $activity->created_at?->toIso8601String(),
+                ];
+            }),
             'filters' => $request->only(['search', 'subject_type']),
         ]);
     }
