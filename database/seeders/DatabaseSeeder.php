@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
 
         $user = User::create([
             'first_name' => 'Daniel',
-            'last_name' => 'J. M',
+            'last_name' => 'J. Mitsubishi',
             'email' => 'danieljaurell@gmail.com',
             'password_hash' => Hash::make('xghQ7lIGwEWP+5i28cPG'),
         ]);
@@ -83,6 +83,7 @@ class DatabaseSeeder extends Seeder
                 ['Type' => 'Dark Chocolate', 'quantity' => 3],
                 ['Type' => 'White Chocolate', 'quantity' => 4],
             ],
+            'responsible_user_ids' => [$user->id],
         ]);
 
         $hoodie = Product::create([
@@ -110,6 +111,7 @@ class DatabaseSeeder extends Seeder
                 ['Size' => 'Large', 'Colour' => 'White', 'quantity' => null],
                 ['Size' => 'Large', 'Colour' => 'Black', 'quantity' => null],
             ],
+            'responsible_user_ids' => [$user->id],
         ]);
 
         Product::create([
@@ -121,6 +123,7 @@ class DatabaseSeeder extends Seeder
             'is_online_sellable' => true,
             'unlimited_quantity' => false,
             'quantity' => 100,
+            'responsible_user_ids' => [$user->id],
         ]);
 
         // Create Variant records for variant-based products

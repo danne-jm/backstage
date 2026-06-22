@@ -224,7 +224,51 @@ class EmailDistributorController extends Controller
 
         try {
             $adapter = new GoogleSheetsAdapter($user);
-            $rows = $adapter->getRows($event->google_spreadsheet_id, $event->google_sheet_name, 25);
+            $rows = $adapter->getRows($event->google_spreadsheet_id, $event->google_sheet_name, 2000);
+
+            $filters = $event->attendee_filter_config ?: [];
+
+            if (! empty($filters)) {
+                $rows = array_values(array_filter($rows, function ($row) use ($filters) {
+                    foreach ($filters as $filter) {
+                        $column = $filter['column'] ?? null;
+                        $operator = $filter['operator'] ?? null;
+                        $value = $filter['value'] ?? null;
+
+                        if (! $column || ! $operator || ! $value) {
+                            continue;
+                        }
+
+                        $rowVal = strtolower((string) ($row[$column] ?? ''));
+                        $filterVal = strtolower((string) $value);
+
+                        switch ($operator) {
+                            case 'Equals':
+                                if ($rowVal !== $filterVal) {
+                                    return false;
+                                }
+                                break;
+                            case 'Not Equals':
+                                if ($rowVal === $filterVal) {
+                                    return false;
+                                }
+                                break;
+                            case 'Contains':
+                                if (! str_contains($rowVal, $filterVal)) {
+                                    return false;
+                                }
+                                break;
+                            case 'Does Not Contain':
+                                if (str_contains($rowVal, $filterVal)) {
+                                    return false;
+                                }
+                                break;
+                        }
+                    }
+
+                    return true;
+                }));
+            }
 
             return response()->json(['rows' => $rows]);
         } catch (\Exception $e) {

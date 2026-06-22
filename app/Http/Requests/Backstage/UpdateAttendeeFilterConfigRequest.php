@@ -16,8 +16,10 @@ class UpdateAttendeeFilterConfigRequest extends FormRequest
         return [
             'attendee_filter_config' => ['nullable', 'array'],
             'attendee_filter_config.*.column' => ['required_with:attendee_filter_config', 'string'],
-            'attendee_filter_config.*.label' => ['nullable', 'string'],
-            'attendee_filter_config.*.visible' => ['nullable', 'boolean'],
+            'attendee_filter_config.*.operator' => ['nullable', 'string'],
+            'attendee_filter_config.*.value' => ['nullable', 'string'],
+            'google_spreadsheet_id' => ['nullable', 'string'],
+            'google_sheet_name' => ['nullable', 'string'],
         ];
     }
 }

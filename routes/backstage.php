@@ -50,7 +50,9 @@ Route::middleware(['auth'])->name('backstage.')->group(function () {
         Route::prefix('events/{event}/attendees')->name('events.attendees.')->group(function () {
             Route::get('/', [EventAttendeeController::class, 'index'])->name('index');
             Route::post('sync-sheet', [EventAttendeeController::class, 'syncToSheet'])->name('sync-sheet');
-            Route::patch('filter-config', [EventAttendeeController::class, 'updateFilterConfig'])->name('update-filter-config');
+            Route::patch('config', [EventAttendeeController::class, 'updateConfig'])->name('update-config');
+            Route::get('sheets', [EventAttendeeController::class, 'getSheets'])->name('sheets');
+            Route::get('rows', [EventAttendeeController::class, 'getRows'])->name('rows');
         });
     });
 

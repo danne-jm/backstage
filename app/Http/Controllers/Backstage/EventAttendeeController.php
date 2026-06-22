@@ -8,9 +8,13 @@ use App\Http\Requests\Backstage\UpdateAttendeeFilterConfigRequest;
 use App\Models\Event;
 use App\Models\Sale;
 use App\Models\Ticket;
+use App\Models\User;
+use App\Services\Google\GoogleSheetsAdapter;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -74,15 +78,60 @@ class EventAttendeeController extends Controller
         return back()->with('success', "Synced {$sales->count()} attendee(s) to Google Sheets.");
     }
 
-    /**
-     * Update the column filter configuration for the attendee view.
-     */
-    public function updateFilterConfig(UpdateAttendeeFilterConfigRequest $request, Event $event): RedirectResponse
+    public function updateConfig(UpdateAttendeeFilterConfigRequest $request, Event $event): RedirectResponse
     {
-        $event->update([
-            'attendee_filter_config' => $request->input('attendee_filter_config'),
-        ]);
+        $data = $request->only(['attendee_filter_config']);
+        if ($request->has('google_spreadsheet_id')) {
+            $data['google_spreadsheet_id'] = $request->input('google_spreadsheet_id');
+        }
+        if ($request->has('google_sheet_name')) {
+            $data['google_sheet_name'] = $request->input('google_sheet_name');
+        }
+
+        $event->update($data);
 
         return back()->with('success', 'Attendee filter configuration updated.');
+    }
+
+    public function getSheets(Request $request, Event $event): JsonResponse
+    {
+        $spreadsheetId = $request->query('spreadsheet_id', $event->google_spreadsheet_id);
+        if (! $spreadsheetId) {
+            return response()->json(['sheets' => []]);
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        try {
+            $adapter = new GoogleSheetsAdapter($user);
+
+            return response()->json(['sheets' => $adapter->getSheets($spreadsheetId)]);
+        } catch (\Exception $e) {
+            return response()->json(['sheets' => [], 'error' => $e->getMessage()], 400);
+        }
+    }
+
+    public function getRows(Request $request, Event $event): JsonResponse
+    {
+        $spreadsheetId = $request->query('spreadsheet_id', $event->google_spreadsheet_id);
+        $sheetName = $request->query('sheet_name', $event->google_sheet_name);
+
+        if (! $spreadsheetId) {
+            return response()->json(['rows' => []]);
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        try {
+            $adapter = new GoogleSheetsAdapter($user);
+            // Fetch more rows for attendees if needed, but limit to 500
+            $rows = $adapter->getRows($spreadsheetId, $sheetName, 500);
+
+            return response()->json(['rows' => $rows]);
+        } catch (\Exception $e) {
+            return response()->json(['rows' => [], 'error' => $e->getMessage()], 400);
+        }
     }
 }

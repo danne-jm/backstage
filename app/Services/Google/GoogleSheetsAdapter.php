@@ -67,6 +67,23 @@ class GoogleSheetsAdapter implements SpreadsheetIntegrationInterface
         return $values[0];
     }
 
+    public function getSheets(string $spreadsheetId): array
+    {
+        try {
+            $spreadsheet = $this->service->spreadsheets->get($spreadsheetId);
+            $sheets = [];
+            foreach ($spreadsheet->getSheets() as $sheet) {
+                $sheets[] = $sheet->getProperties()->getTitle();
+            }
+
+            return $sheets;
+        } catch (\Exception $e) {
+            Log::error("Failed to get sheets from Google Sheet {$spreadsheetId}: ".$e->getMessage());
+
+            return [];
+        }
+    }
+
     public function getRows(string $spreadsheetId, ?string $sheetName = null, int $limit = 50): array
     {
         // Fetch headers and data rows in one go
