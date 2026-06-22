@@ -5,19 +5,20 @@ namespace App\Actions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\ImageManager;
 
 class UploadImageAction
 {
     /**
      * Uploads, resizes, and converts an image to webp format.
      *
-     * @param UploadedFile $file The uploaded file.
-     * @param string $directory The storage directory (e.g., 'inventory', 'events', 'products').
-     * @param string|null $oldImagePath The path of the old image to delete.
-     * @param int $maxWidth The maximum width to scale the image to.
-     * @param int $quality The quality of the webp conversion (0-100).
+     * @param  UploadedFile  $file  The uploaded file.
+     * @param  string  $directory  The storage directory (e.g., 'inventory', 'events', 'products').
+     * @param  string|null  $oldImagePath  The path of the old image to delete.
+     * @param  int  $maxWidth  The maximum width to scale the image to.
+     * @param  int  $quality  The quality of the webp conversion (0-100).
      * @return string The path to the newly saved image.
      */
     public function handle(
@@ -33,8 +34,8 @@ class UploadImageAction
         }
 
         // Initialize Intervention Image Manager with GD driver
-        $manager = new ImageManager(new Driver());
-        
+        $manager = new ImageManager(new Driver);
+
         // Read the image
         $image = $manager->decodePath($file->getPathname());
 
@@ -44,11 +45,11 @@ class UploadImageAction
         }
 
         // Convert to WebP
-        $encoded = $image->encode(new \Intervention\Image\Encoders\WebpEncoder(quality: $quality));
+        $encoded = $image->encode(new WebpEncoder(quality: $quality));
 
         // Generate a unique filename
-        $filename = Str::uuid()->toString() . '.webp';
-        $path = trim($directory, '/') . '/' . $filename;
+        $filename = Str::uuid()->toString().'.webp';
+        $path = trim($directory, '/').'/'.$filename;
 
         // Store the optimized image
         Storage::disk('public')->put($path, (string) $encoded);

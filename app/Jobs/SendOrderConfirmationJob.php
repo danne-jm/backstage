@@ -14,23 +14,24 @@ class SendOrderConfirmationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 3;
-    public $backoff = [60, 300, 900]; // 1m, 5m, 15m
+    public int $tries = 3;
 
-    public function __construct(public Transaction $transaction)
-    {
-    }
+    public array $backoff = [60, 300, 900]; // 1m, 5m, 15m
+
+    public function __construct(public Transaction $transaction) {}
 
     public function handle(SmtpEmailTransport $transport): void
     {
         // 1. Validate email exists
-        if (!$this->transaction->customer_email) {
+        if (! $this->transaction->customer_email) {
             return; // Cannot send to empty email
         }
 
         // 2. Render HTML view
-        $htmlBody = view('emails.order_confirmation', ['transaction' => $this->transaction])->render();
-        $subject = "Your Order Confirmation #" . $this->transaction->id;
+        /** @var view-string $viewName */
+        $viewName = 'emails.order_confirmation';
+        $htmlBody = view($viewName, ['transaction' => $this->transaction])->render();
+        $subject = 'Your Order Confirmation #'.$this->transaction->id;
 
         // 3. Send using the SMTP Adapter
         $success = $transport->send(
@@ -39,7 +40,7 @@ class SendOrderConfirmationJob implements ShouldQueue
             htmlBody: $htmlBody
         );
 
-        if (!$success) {
+        if (! $success) {
             $this->fail(new \Exception("Failed to send order confirmation to {$this->transaction->customer_email}"));
         }
     }

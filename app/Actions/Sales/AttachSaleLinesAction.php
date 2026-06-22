@@ -8,8 +8,7 @@ use App\Models\Transaction;
 class AttachSaleLinesAction
 {
     /**
-     * @param Transaction $transaction
-     * @param SaleLinePayload[] $saleLines
+     * @param  SaleLinePayload[]  $saleLines
      */
     public function handle(Transaction $transaction, array $saleLines): void
     {

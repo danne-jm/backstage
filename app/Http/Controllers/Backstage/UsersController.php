@@ -5,29 +5,36 @@ namespace App\Http\Controllers\Backstage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backstage\SaveUserRequest;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class UsersController extends Controller
 {
     public function index(): Response
     {
         return Inertia::render('backstage/settings/users/index', [
-            'users' => User::orderBy('last_name')->get()->map(fn (User $user) => [
-                'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'email' => $user->email,
-                'role' => $user->roles->first()?->name ?? 'member',
-                'is_locked' => $user->is_locked,
-                'last_seen_at' => $user->last_seen_at?->toIso8601String(),
-                'gmail_connected' => ! empty($user->gmail_provider_email),
-                'permissions' => $user->getAllPermissions()->pluck('name'),
-            ]),
+            'users' => User::orderBy('last_name')->get()->map(function (User $user): array {
+                /** @var Role|null $role */
+                $role = $user->roles->first();
+
+                return [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'role' => $role->name ?? 'member',
+                    'is_locked' => $user->is_locked,
+                    'last_seen_at' => $user->last_seen_at ? Carbon::parse($user->last_seen_at)->toIso8601String() : null,
+                    'gmail_connected' => ! empty($user->gmail_provider_email),
+                    'permissions' => $user->getAllPermissions()->pluck('name'),
+                ];
+            })->all(),
         ]);
     }
 

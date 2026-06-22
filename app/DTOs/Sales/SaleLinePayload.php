@@ -5,7 +5,7 @@ namespace App\DTOs\Sales;
 readonly class SaleLinePayload
 {
     /**
-     * @param array<string, mixed>|null $snapshot
+     * @param  array<string, mixed>|null  $snapshot
      */
     public function __construct(
         public string $purchasableId,

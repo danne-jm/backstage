@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model implements Purchasable
 {
-    use HasFactory, HasUlids, HasVariants, HasStockPools, HasMembershipPricing;
+    use HasFactory, HasMembershipPricing, HasStockPools, HasUlids, HasVariants;
 
     protected $guarded = [];
 

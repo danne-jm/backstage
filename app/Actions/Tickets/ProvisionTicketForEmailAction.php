@@ -4,12 +4,12 @@ namespace App\Actions\Tickets;
 
 use App\Models\Event;
 use App\Models\Ticket;
-use Illuminate\Support\Str;
-use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProvisionTicketForEmailAction
 {
@@ -22,7 +22,7 @@ class ProvisionTicketForEmailAction
     public function handle(Event $event, string $email, ?string $firstName = null, ?string $lastName = null): array
     {
         // 1. Create a cryptographically secure, unique ticket code
-        $ticketCode = 'TKT-' . strtoupper(Str::random(12));
+        $ticketCode = 'TKT-'.strtoupper(Str::random(12));
 
         // 2. Provision the ticket in the database
         $ticket = Ticket::create([
@@ -38,9 +38,9 @@ class ProvisionTicketForEmailAction
         // 3. Generate the QR Code using BaconQrCode
         $renderer = new ImageRenderer(
             new RendererStyle(400),
-            new SvgImageBackEnd()
+            new SvgImageBackEnd
         );
-        
+
         $writer = new Writer($renderer);
         $qrCodeSvgString = $writer->writeString($ticketCode);
 

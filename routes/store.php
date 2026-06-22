@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Store\OnlinePaymentController;
 use App\Http\Controllers\Store\ShopController;
-use App\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public Storefront ─────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backstage;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
@@ -14,7 +15,8 @@ class SaveUserRequest extends FormRequest
 
     public function rules(): array
     {
-        $userId = $this->route('user')?->id;
+        $userRoute = $this->route('user');
+        $userId = $userRoute instanceof User ? $userRoute->id : $userRoute;
         $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
 
         return [

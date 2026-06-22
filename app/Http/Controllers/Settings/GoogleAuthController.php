@@ -4,23 +4,28 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\GoogleProvider;
 
 class GoogleAuthController extends Controller
 {
     /**
      * Redirect the user to the Google authentication page.
      */
-    public function redirect(Request $request)
+    public function redirect(Request $request): RedirectResponse|\Symfony\Component\HttpFoundation\RedirectResponse
     {
-        return Socialite::driver('google')
+        /** @var GoogleProvider $driver */
+        $driver = Socialite::driver('google');
+
+        return $driver
             ->scopes([
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/gmail.send',
                 'https://www.googleapis.com/auth/userinfo.email',
-                'https://www.googleapis.com/auth/userinfo.profile'
+                'https://www.googleapis.com/auth/userinfo.profile',
             ])
             ->with(['access_type' => 'offline', 'prompt' => 'consent'])
             ->redirect();
@@ -29,14 +34,14 @@ class GoogleAuthController extends Controller
     /**
      * Obtain the user information from Google.
      */
-    public function callback(Request $request)
+    public function callback(Request $request): RedirectResponse
     {
         try {
             $googleUser = Socialite::driver('google')->user();
 
-            /** @var User $user */
+            /** @var User|null $user */
             $user = Auth::user();
-            
+
             if ($user) {
                 // Connect account to existing user
                 // Google doesn't always send refreshToken unless prompt=consent is used
@@ -54,14 +59,14 @@ class GoogleAuthController extends Controller
             return redirect()->route('login')->with('error', 'You must be logged in to connect your Google account.');
 
         } catch (\Exception $e) {
-            return redirect()->route('google.edit')->with('error', 'Failed to connect Google account: ' . $e->getMessage());
+            return redirect()->route('google.edit')->with('error', 'Failed to connect Google account: '.$e->getMessage());
         }
     }
 
     /**
      * Disconnect the Google account from the user.
      */
-    public function disconnect(Request $request)
+    public function disconnect(Request $request): RedirectResponse
     {
         /** @var User $user */
         $user = Auth::user();

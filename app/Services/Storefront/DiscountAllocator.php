@@ -46,9 +46,10 @@ class DiscountAllocator
         // 2. Process cart items. We'll flatten them into individual units for easier 1-to-1 allocation.
         $units = collect();
         foreach ($items as $index => $item) {
+            /** @var Event|Product|null $model */
             $model = match ($item['purchasable_type']) {
-                'event', Event::class => Event::find($item['purchasable_id']),
-                'product', Product::class => Product::find($item['purchasable_id']),
+                'event', Event::class => Event::where('id', (string) $item['purchasable_id'])->first(),
+                'product', Product::class => Product::where('id', (string) $item['purchasable_id'])->first(),
                 default => null,
             };
 

@@ -5,8 +5,8 @@ namespace App\DTOs\Sales;
 readonly class TransactionPayload
 {
     /**
-     * @param array<string, mixed>|null $cashTenderedBreakdown
-     * @param array<string, mixed>|null $cashChangeBreakdown
+     * @param  array<string, mixed>|null  $cashTenderedBreakdown
+     * @param  array<string, mixed>|null  $cashChangeBreakdown
      */
     public function __construct(
         public string $channel,

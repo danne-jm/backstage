@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('ticket_type')->nullable(); // 'with_membership', 'regular', etc. for split pools
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             // Index for fast SUM queries
             $table->index(['purchasable_type', 'purchasable_id', 'variant_id', 'ticket_type'], 'inv_mov_purchasable_variant_idx');
         });

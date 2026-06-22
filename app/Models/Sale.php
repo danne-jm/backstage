@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -17,9 +20,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $ticket_type
  * @property array|null $snapshot
  * @property bool $discount_code_used
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \App\Models\Transaction $transaction
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Transaction $transaction
  */
 class Sale extends Model
 {
@@ -44,17 +47,17 @@ class Sale extends Model
         'snapshot' => 'array',
     ];
 
-    public function transaction(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
     }
 
-    public function purchasable(): \Illuminate\Database\Eloquent\Relations\MorphTo
+    public function purchasable(): MorphTo
     {
         return $this->morphTo();
     }
 
-    public function variant(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(Variant::class);
     }

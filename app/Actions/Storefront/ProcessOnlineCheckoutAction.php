@@ -2,10 +2,11 @@
 
 namespace App\Actions\Storefront;
 
+use App\Actions\Sales\AllocateStockAction;
 use App\Actions\Sales\AttachSaleLinesAction;
 use App\Actions\Sales\CreateTransactionRecordAction;
-use App\DTOs\Sales\TransactionPayload;
 use App\DTOs\Sales\SaleLinePayload;
+use App\DTOs\Sales\TransactionPayload;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 
@@ -14,12 +15,11 @@ class ProcessOnlineCheckoutAction
     public function __construct(
         protected CreateTransactionRecordAction $createTransactionRecordAction,
         protected AttachSaleLinesAction $attachSaleLinesAction,
-        protected \App\Actions\Sales\AllocateStockAction $allocateStockAction
+        protected AllocateStockAction $allocateStockAction
     ) {}
 
     /**
-     * @param TransactionPayload $transactionPayload
-     * @param SaleLinePayload[] $saleLines
+     * @param  SaleLinePayload[]  $saleLines
      */
     public function handle(TransactionPayload $transactionPayload, array $saleLines): Transaction
     {
@@ -38,7 +38,7 @@ class ProcessOnlineCheckoutAction
 
             // 4. (Mock) Proceed to Payment Gateway
             // $paymentGateway->charge($transaction);
-            
+
             // 5. (Mock) Dispatch confirmation email if successful
 
             return $transaction;

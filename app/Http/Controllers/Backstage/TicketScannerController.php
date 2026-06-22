@@ -10,8 +10,10 @@ use App\Http\Requests\Backstage\ScanTicketRequest;
 use App\Models\Event;
 use App\Models\Ticket;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -22,19 +24,21 @@ class TicketScannerController extends Controller
     /**
      * Display the ticket scanner interface, scoped to a specific event.
      */
-    public function index(\Illuminate\Http\Request $request): Response
+    public function index(Request $request): Response
     {
         $availableEvents = Event::whereIn('id', Ticket::select('event_id')->distinct())
             ->orderByDesc('event_date')
             ->get(['id', 'name', 'event_date'])
-            ->map(fn ($e) => [
-                'id' => $e->id,
-                'name' => $e->name,
-                'event_date' => $e->event_date?->toIso8601String()
-            ]);
+            ->map(function (Event $e): array {
+                return [
+                    'id' => $e->id,
+                    'name' => $e->name,
+                    'event_date' => $e->event_date ? Carbon::parse($e->event_date)->toIso8601String() : null,
+                ];
+            })->all();
 
-        $eventId = $request->query('event_id');
-        $event = $eventId ? Event::find($eventId) : null;
+        $eventId = (string) $request->query('event_id');
+        $event = $eventId ? Event::where('id', $eventId)->first() : null;
 
         $tickets = [];
         if ($event) {
@@ -58,7 +62,7 @@ class TicketScannerController extends Controller
                 'id' => $event->id,
                 'name' => $event->name,
                 'description' => $event->description,
-                'event_date' => $event->event_date?->toIso8601String(),
+                'event_date' => $event->event_date ? Carbon::parse($event->event_date)->toIso8601String() : null,
             ] : null,
             'tickets' => $tickets,
             'stats' => Inertia::defer(fn () => $event ? [
@@ -78,7 +82,7 @@ class TicketScannerController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        $event = Event::findOrFail($request->input('event_id'));
+        $event = Event::where('id', (string) $request->input('event_id'))->firstOrFail();
 
         $result = $action->handle(
             ticketCode: $request->string('ticket_code')->toString(),
@@ -109,8 +113,9 @@ class TicketScannerController extends Controller
      */
     public function import(ImportTicketsRequest $request, ProvisionTicketForEmailAction $action): RedirectResponse
     {
-        $event = Event::findOrFail($request->input('event_id'));
+        $event = Event::where('id', (string) $request->input('event_id'))->firstOrFail();
         $file = $request->file('csv_file');
+        /** @var resource $handle */
         $handle = fopen($file->getPathname(), 'r');
 
         // Skip the header row

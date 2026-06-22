@@ -33,8 +33,9 @@ class AuditLogController extends Controller
 
         return Inertia::render('backstage/audit-log/index', [
             'logs' => $paginator->through(function (Activity $activity): array {
-                /** @var \App\Models\User|null $causer */
+                /** @var User|null $causer */
                 $causer = $activity->causer;
+
                 return [
                     'id' => $activity->id,
                     'event' => $activity->event,

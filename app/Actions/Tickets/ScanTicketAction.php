@@ -23,7 +23,7 @@ class ScanTicketAction
                 ->first();
 
             // 2. Validate ticket exists for this specific event
-            if (!$ticket) {
+            if (! $ticket) {
                 return new ScanResultPayload(
                     success: false,
                     message: 'Invalid Ticket: Not found for this event.'
@@ -44,7 +44,7 @@ class ScanTicketAction
             $scanDetails[] = [
                 'scanned_at' => now()->toIso8601String(),
                 'scanner_id' => $scannerUser->id,
-                'scanner_name' => $scannerUser->first_name . ' ' . $scannerUser->last_name,
+                'scanner_name' => $scannerUser->first_name.' '.$scannerUser->last_name,
             ];
 
             $ticket->update([

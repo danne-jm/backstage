@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Store;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Product;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,36 +25,40 @@ class ShopController extends Controller
             ->where(fn ($q) => $q->where('hide_until_sale', false)->orWhere('start_sell_date', '<=', $now))
             ->orderBy('event_date')
             ->get()
-            ->map(fn (Event $event) => [
-                'id' => $event->id,
-                'type' => 'event',
-                'name' => $event->name,
-                'description' => $event->description,
-                'event_date' => $event->event_date?->toIso8601String(),
-                'price_without_membership' => $event->price_without_membership,
-                'price_with_membership' => $event->price_with_membership,
-                'variable_amount' => $event->variable_amount,
-                'is_available' => $event->isAvailable(),
-                'is_variant_based' => $event->is_variant_based,
-            ]);
+            ->map(function (Event $event): array {
+                return [
+                    'id' => $event->id,
+                    'type' => 'event',
+                    'name' => $event->name,
+                    'description' => $event->description,
+                    'event_date' => $event->event_date ? Carbon::parse($event->event_date)->toIso8601String() : null,
+                    'price_without_membership' => $event->price_without_membership,
+                    'price_with_membership' => $event->price_with_membership,
+                    'variable_amount' => $event->variable_amount,
+                    'is_available' => $event->isAvailable(),
+                    'is_variant_based' => $event->is_variant_based,
+                ];
+            })->all();
 
         $products = Product::where('is_online_sellable', true)
             ->where(fn ($q) => $q->whereNull('end_sell_date')->orWhere('end_sell_date', '>=', $now))
             ->where(fn ($q) => $q->where('hide_until_sale', false)->orWhere('start_sell_date', '<=', $now))
             ->orderBy('name')
             ->get()
-            ->map(fn (Product $product) => [
-                'id' => $product->id,
-                'type' => 'product',
-                'name' => $product->name,
-                'description' => $product->description,
-                'price' => $product->price,
-                'price_without_membership' => $product->price_without_membership,
-                'price_with_membership' => $product->price_with_membership,
-                'variable_amount' => $product->variable_amount,
-                'is_available' => $product->isAvailable(),
-                'is_variant_based' => $product->is_variant_based,
-            ]);
+            ->map(function (Product $product): array {
+                return [
+                    'id' => $product->id,
+                    'type' => 'product',
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'price' => $product->price,
+                    'price_without_membership' => $product->price_without_membership,
+                    'price_with_membership' => $product->price_with_membership,
+                    'variable_amount' => $product->variable_amount,
+                    'is_available' => $product->isAvailable(),
+                    'is_variant_based' => $product->is_variant_based,
+                ];
+            })->all();
 
         return Inertia::render('store/index', [
             'events' => $events,
@@ -86,9 +91,9 @@ class ShopController extends Controller
                 'is_available' => $item->isAvailable(),
                 'is_variant_based' => $item->is_variant_based,
                 'variants_config' => $item->variants_config,
-                'event_date' => $item->event_date?->toIso8601String() ?? null,
-                'start_sell_date' => $item->start_sell_date?->toIso8601String() ?? null,
-                'end_sell_date' => $item->end_sell_date?->toIso8601String() ?? null,
+                'event_date' => $item instanceof Event && $item->event_date ? Carbon::parse($item->event_date)->toIso8601String() : null,
+                'start_sell_date' => $item->start_sell_date ? Carbon::parse($item->start_sell_date)->toIso8601String() : null,
+                'end_sell_date' => $item->end_sell_date ? Carbon::parse($item->end_sell_date)->toIso8601String() : null,
                 'stock' => [
                     'universal' => $item->hasUnlimitedQuantity() ? null : $item->getRemainingStock(),
                     'with_membership' => $item->variable_amount ? $item->getRemainingStock('with_membership') : null,
@@ -123,10 +128,11 @@ class ShopController extends Controller
             'items.*.ticket_type' => ['nullable', 'string', 'in:regular,with_membership'],
         ]);
 
-        $hydratedItems = collect($request->input('items'))->map(function (array $item) {
+        $hydratedItems = array_map(function (array $item) {
+            /** @var Event|Product|null $model */
             $model = match ($item['type']) {
-                'event' => Event::find($item['id']),
-                'product' => Product::find($item['id']),
+                'event' => Event::where('id', (string) $item['id'])->first(),
+                'product' => Product::where('id', (string) $item['id'])->first(),
                 default => null,
             };
 
@@ -150,7 +156,7 @@ class ShopController extends Controller
                 'is_available' => $model->isAvailable($ticketType),
                 'remaining_stock' => $model->getRemainingStock($ticketType),
             ];
-        });
+        }, (array) $request->input('items'));
 
         return response()->json(['items' => $hydratedItems]);
     }

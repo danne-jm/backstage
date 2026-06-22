@@ -11,7 +11,7 @@ class SaveProductAction
     public function handle(ProductPayload $payload, ?Product $product = null): Product
     {
         return DB::transaction(function () use ($payload, $product) {
-            $product = $product ?? new Product();
+            $product = $product ?? new Product;
 
             $product->fill([
                 'name' => $payload->name,
@@ -20,7 +20,7 @@ class SaveProductAction
                 'end_sell_date' => $payload->endSellDate,
                 'is_online_sellable' => $payload->isOnlineSellable,
                 'hide_until_sale' => $payload->hideUntilSale,
-                
+
                 'price' => $payload->price,
                 'price_without_membership' => $payload->priceWithoutMembership,
                 'price_with_membership' => $payload->priceWithMembership,
@@ -35,12 +35,12 @@ class SaveProductAction
 
                 'is_variant_based' => $payload->isVariantBased,
                 'variants_config' => $payload->variantsConfig,
-                
+
                 'responsible_user_ids' => $payload->responsibleUserIds,
             ]);
 
             $product->save();
-            
+
             return $product;
         });
     }

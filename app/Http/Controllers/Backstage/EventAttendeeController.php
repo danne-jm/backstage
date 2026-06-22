@@ -8,6 +8,7 @@ use App\Http\Requests\Backstage\UpdateAttendeeFilterConfigRequest;
 use App\Models\Event;
 use App\Models\Sale;
 use App\Models\Ticket;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -37,7 +38,7 @@ class EventAttendeeController extends Controller
             'event' => [
                 'id' => $event->id,
                 'name' => $event->name,
-                'event_date' => $event->event_date?->toIso8601String(),
+                'event_date' => $event->event_date ? Carbon::parse($event->event_date)->toIso8601String() : null,
                 'google_spreadsheet_id' => $event->google_spreadsheet_id,
                 'google_sheet_name' => $event->google_sheet_name,
                 'attendee_filter_config' => $event->attendee_filter_config,

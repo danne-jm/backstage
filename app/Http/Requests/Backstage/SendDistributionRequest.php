@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Backstage;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class SendDistributionRequest extends FormRequest
 {
@@ -28,7 +29,7 @@ class SendDistributionRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
         // Add any custom validation logic here if needed
     }

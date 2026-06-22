@@ -37,8 +37,8 @@ class OnlinePaymentController extends Controller
             'discount_codes.*' => ['string'],
         ]);
 
-        $items = collect($request->input('items'));
-        $codes = $request->input('discount_codes', []);
+        $items = collect((array) $request->input('items'));
+        $codes = (array) $request->input('discount_codes', []);
 
         $allocationResult = $allocator->allocate($items, $codes);
 
@@ -61,17 +61,19 @@ class OnlinePaymentController extends Controller
      */
     public function checkout(CheckoutRequest $request, ProcessOnlineCheckoutAction $action, PaymentGatewayInterface $gateway): JsonResponse
     {
-        $saleLines = collect($request->input('items'))->map(fn (array $item) => new SaleLinePayload(
-            purchasableId: $item['purchasable_id'],
-            purchasableType: $item['purchasable_type'],
-            unitPrice: (float) $item['unit_price'],
-            quantity: (int) $item['quantity'],
-            subtotal: (float) $item['subtotal'],
-            ticketType: $item['ticket_type'] ?? 'regular',
-            variantId: $item['variant_id'] ?? null,
-            snapshot: $item['snapshot'] ?? null,
-            discountCodeUsed: $item['discount_code_used'] ?? null,
-        ))->all();
+        $saleLines = array_map(function (array $item): SaleLinePayload {
+            return new SaleLinePayload(
+                purchasableId: $item['purchasable_id'],
+                purchasableType: $item['purchasable_type'],
+                unitPrice: (float) $item['unit_price'],
+                quantity: (int) $item['quantity'],
+                subtotal: (float) $item['subtotal'],
+                ticketType: $item['ticket_type'] ?? 'regular',
+                variantId: $item['variant_id'] ?? null,
+                snapshot: $item['snapshot'] ?? null,
+                discountCodeUsed: $item['discount_code_used'] ?? null,
+            );
+        }, (array) $request->input('items'));
 
         $totalAmount = collect($saleLines)->sum('subtotal');
 
@@ -112,7 +114,7 @@ class OnlinePaymentController extends Controller
             return redirect('/')->withErrors(['payment' => 'No transaction found.']);
         }
 
-        $transaction = Transaction::find($transactionId);
+        $transaction = Transaction::where('id', (string) $transactionId)->first();
 
         if (! $transaction) {
             return redirect('/')->withErrors(['payment' => 'Transaction not found.']);
@@ -141,7 +143,7 @@ class OnlinePaymentController extends Controller
             'transaction_id' => ['required', 'string'],
         ]);
 
-        $transaction = Transaction::findOrFail($request->input('transaction_id'));
+        $transaction = Transaction::where('id', (string) $request->input('transaction_id'))->firstOrFail();
 
         return response()->json([
             'transaction_id' => $transaction->id,
@@ -194,7 +196,7 @@ class OnlinePaymentController extends Controller
             ?? session()->pull('pending_transaction_id');
 
         $transaction = $transactionId
-            ? Transaction::with('sales.purchasable')->find($transactionId)
+            ? Transaction::with('sales.purchasable')->where('id', (string) $transactionId)->first()
             : null;
 
         return Inertia::render('store/confirmation', [
@@ -204,11 +206,13 @@ class OnlinePaymentController extends Controller
                 'customer_email' => $transaction->customer_email,
                 'total_amount' => $transaction->total_amount,
                 'completed_at' => $transaction->completed_at?->toIso8601String(),
-                'items' => $transaction->sales->map(fn ($s) => [
-                    'name' => $s->snapshot['name'] ?? $s->purchasable?->getName(),
-                    'quantity' => $s->quantity,
-                    'subtotal' => $s->subtotal,
-                ]),
+                'items' => $transaction->sales->map(function ($s): array {
+                    return [
+                        'name' => $s->snapshot['name'] ?? $s->purchasable->name ?? 'Unknown',
+                        'quantity' => $s->quantity,
+                        'subtotal' => $s->subtotal,
+                    ];
+                })->all(),
             ] : null,
         ]);
     }

@@ -7,8 +7,8 @@ use DateTimeInterface;
 readonly class ProductPayload
 {
     /**
-     * @param array<string, mixed>|null $variantsConfig
-     * @param array<int>|null $responsibleUserIds
+     * @param  array<string, mixed>|null  $variantsConfig
+     * @param  array<int>|null  $responsibleUserIds
      */
     public function __construct(
         public string $name,
@@ -17,7 +17,7 @@ readonly class ProductPayload
         public ?DateTimeInterface $endSellDate = null,
         public bool $isOnlineSellable = false,
         public bool $hideUntilSale = false,
-        
+
         // Pricing
         public float $price = 0.0,
         public float $priceWithoutMembership = 0.0,
@@ -35,7 +35,7 @@ readonly class ProductPayload
         // Variants
         public bool $isVariantBased = false,
         public ?array $variantsConfig = null,
-        
+
         // Access
         public ?array $responsibleUserIds = null
     ) {}

@@ -15,9 +15,9 @@ class SendBulkDistributionEmailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 3;
+    public int $tries = 3;
 
-    public $backoff = [60, 300, 900];
+    public array $backoff = [60, 300, 900];
 
     public function __construct(
         public User $sender,

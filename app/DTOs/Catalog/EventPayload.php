@@ -7,9 +7,9 @@ use DateTimeInterface;
 readonly class EventPayload
 {
     /**
-     * @param array<string, mixed>|null $variantsConfig
-     * @param array<string, mixed>|null $attendeeFilterConfig
-     * @param array<int>|null $responsibleUserIds
+     * @param  array<string, mixed>|null  $variantsConfig
+     * @param  array<string, mixed>|null  $attendeeFilterConfig
+     * @param  array<int>|null  $responsibleUserIds
      */
     public function __construct(
         public string $name,
@@ -19,7 +19,7 @@ readonly class EventPayload
         public ?DateTimeInterface $endSellDate = null,
         public bool $isOnlineSellable = false,
         public bool $hideUntilSale = false,
-        
+
         // Pricing
         public float $priceWithoutMembership = 0.0,
         public float $priceWithMembership = 0.0,
@@ -41,7 +41,7 @@ readonly class EventPayload
         public ?string $googleSpreadsheetId = null,
         public ?string $googleSheetName = null,
         public ?array $attendeeFilterConfig = null,
-        
+
         // Access
         public ?array $responsibleUserIds = null
     ) {}

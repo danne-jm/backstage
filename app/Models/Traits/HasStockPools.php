@@ -2,6 +2,8 @@
 
 namespace App\Models\Traits;
 
+use App\Models\InventoryMovement;
+
 trait HasStockPools
 {
     public function hasUnlimitedQuantity(?string $ticketType = null): bool
@@ -23,6 +25,7 @@ trait HasStockPools
         }
 
         $baseQuantity = $this->getBaseQuantity($ticketType);
+
         return max(0, $baseQuantity - $this->getSoldCount($ticketType));
     }
 
@@ -34,13 +37,13 @@ trait HasStockPools
         if ($ticketType === 'regular' && isset($this->quantity_without_membership)) {
             return $this->quantity_without_membership;
         }
-        
+
         return $this->quantity ?? 0;
     }
 
     public function getSoldCount(?string $ticketType = null, ?string $variantId = null): int
     {
-        $query = \App\Models\InventoryMovement::where('purchasable_type', $this->getMorphClass())
+        $query = InventoryMovement::where('purchasable_type', $this->getMorphClass())
             ->where('purchasable_id', $this->id)
             ->whereIn('type', ['sale', 'refund']);
 
@@ -52,7 +55,7 @@ trait HasStockPools
             $query->where('variant_id', $variantId);
         }
 
-        // Sales are recorded as negative quantities, refunds as positive. 
+        // Sales are recorded as negative quantities, refunds as positive.
         // We take the absolute value of the net movement to get total sold.
         return abs((int) $query->sum('quantity'));
     }

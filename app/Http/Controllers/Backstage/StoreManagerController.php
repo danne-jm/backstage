@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\FinancialLedgerEntry;
 use App\Models\Product;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,21 +26,25 @@ class StoreManagerController extends Controller
                 ->latest('completed_at')
                 ->limit(50)
                 ->get()
-                ->map(fn (Transaction $t) => [
-                    'id' => $t->id,
-                    'status' => $t->status,
-                    'customer_email' => $t->customer_email,
-                    'payment_method' => $t->payment_method,
-                    'total_amount' => $t->total_amount,
-                    'discount_total' => $t->discount_total,
-                    'completed_at' => $t->completed_at?->toIso8601String(),
-                    'items' => $t->sales->map(fn ($s) => [
-                        'name' => $s->snapshot['name'] ?? $s->purchasable?->getName(),
-                        'quantity' => $s->quantity,
-                        'subtotal' => $s->subtotal,
-                        'ticket_type' => $s->ticket_type,
-                    ]),
-                ])),
+                ->map(function (Transaction $t): array {
+                    return [
+                        'id' => $t->id,
+                        'status' => $t->status,
+                        'customer_email' => $t->customer_email,
+                        'payment_method' => $t->payment_method,
+                        'total_amount' => $t->total_amount,
+                        'discount_total' => $t->discount_total,
+                        'completed_at' => $t->completed_at?->toIso8601String(),
+                        'items' => $t->sales->map(function ($s): array {
+                            return [
+                                'name' => $s->snapshot['name'] ?? $s->purchasable->name ?? 'Unknown',
+                                'quantity' => $s->quantity,
+                                'subtotal' => $s->subtotal,
+                                'ticket_type' => $s->ticket_type,
+                            ];
+                        })->all(),
+                    ];
+                })->all()),
 
             'summary' => Inertia::defer(fn () => [
                 'total_revenue' => (float) FinancialLedgerEntry::where('direction', 'credit')
@@ -77,20 +82,22 @@ class StoreManagerController extends Controller
                 'discount_total' => $transaction->discount_total,
                 'completed_at' => $transaction->completed_at?->toIso8601String(),
                 'created_at' => $transaction->created_at->toIso8601String(),
-                'sales' => $transaction->sales->map(fn ($s) => [
-                    'id' => $s->id,
-                    'name' => $s->snapshot['name'] ?? $s->purchasable?->getName(),
-                    'unit_price' => $s->unit_price,
-                    'quantity' => $s->quantity,
-                    'subtotal' => $s->subtotal,
-                    'ticket_type' => $s->ticket_type,
-                    'discount_code_used' => $s->discount_code_used,
-                    'variant' => $s->variant ? [
-                        'id' => $s->variant->id,
-                        'options' => $s->variant->options,
-                    ] : null,
-                    'snapshot' => $s->snapshot,
-                ]),
+                'sales' => $transaction->sales->map(function ($s): array {
+                    return [
+                        'id' => $s->id,
+                        'name' => $s->snapshot['name'] ?? $s->purchasable->name ?? 'Unknown',
+                        'unit_price' => $s->unit_price,
+                        'quantity' => $s->quantity,
+                        'subtotal' => $s->subtotal,
+                        'ticket_type' => $s->ticket_type,
+                        'discount_code_used' => $s->discount_code_used,
+                        'variant' => ($variant = $s->variant) ? [
+                            'id' => $variant->id ?? null,
+                            'options' => $variant->options ?? null,
+                        ] : null,
+                        'snapshot' => $s->snapshot,
+                    ];
+                })->all(),
             ],
         ]);
     }
@@ -100,27 +107,29 @@ class StoreManagerController extends Controller
      */
     public function stock(): Response
     {
-        $events = Event::orderByDesc('event_date')->get()->map(fn (Event $event) => [
-            'id' => $event->id,
-            'name' => $event->name,
-            'event_date' => $event->event_date?->toIso8601String(),
-            'variable_amount' => $event->variable_amount,
-            'universal_stock' => $event->unlimited_quantity ? null : [
-                'remaining' => $event->getRemainingStock(),
-                'base' => $event->getBaseQuantity(),
-                'sold' => $event->getSoldCount(),
-            ],
-            'membership_stock' => $event->variable_amount ? [
-                'remaining' => $event->getRemainingStock('with_membership'),
-                'base' => $event->getBaseQuantity('with_membership'),
-                'sold' => $event->getSoldCount('with_membership'),
-            ] : null,
-            'regular_stock' => $event->variable_amount ? [
-                'remaining' => $event->getRemainingStock('regular'),
-                'base' => $event->getBaseQuantity('regular'),
-                'sold' => $event->getSoldCount('regular'),
-            ] : null,
-        ]);
+        $events = Event::orderByDesc('event_date')->get()->map(function (Event $event): array {
+            return [
+                'id' => $event->id,
+                'name' => $event->name,
+                'event_date' => $event->event_date ? Carbon::parse($event->event_date)->toIso8601String() : null,
+                'variable_amount' => $event->variable_amount,
+                'universal_stock' => $event->unlimited_quantity ? null : [
+                    'remaining' => $event->getRemainingStock(),
+                    'base' => $event->getBaseQuantity(),
+                    'sold' => $event->getSoldCount(),
+                ],
+                'membership_stock' => $event->variable_amount ? [
+                    'remaining' => $event->getRemainingStock('with_membership'),
+                    'base' => $event->getBaseQuantity('with_membership'),
+                    'sold' => $event->getSoldCount('with_membership'),
+                ] : null,
+                'regular_stock' => $event->variable_amount ? [
+                    'remaining' => $event->getRemainingStock('regular'),
+                    'base' => $event->getBaseQuantity('regular'),
+                    'sold' => $event->getSoldCount('regular'),
+                ] : null,
+            ];
+        })->all();
 
         $products = Product::orderBy('name')->get()->map(fn (Product $product) => [
             'id' => $product->id,

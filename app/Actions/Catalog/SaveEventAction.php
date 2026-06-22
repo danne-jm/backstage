@@ -11,7 +11,7 @@ class SaveEventAction
     public function handle(EventPayload $payload, ?Event $event = null): Event
     {
         return DB::transaction(function () use ($payload, $event) {
-            $event = $event ?? new Event();
+            $event = $event ?? new Event;
 
             $event->fill([
                 'name' => $payload->name,
@@ -21,7 +21,7 @@ class SaveEventAction
                 'end_sell_date' => $payload->endSellDate,
                 'is_online_sellable' => $payload->isOnlineSellable,
                 'hide_until_sale' => $payload->hideUntilSale,
-                
+
                 'price_without_membership' => $payload->priceWithoutMembership,
                 'price_with_membership' => $payload->priceWithMembership,
                 'variable_amount' => $payload->variableAmount,
@@ -39,7 +39,7 @@ class SaveEventAction
                 'google_spreadsheet_id' => $payload->googleSpreadsheetId,
                 'google_sheet_name' => $payload->googleSheetName,
                 'attendee_filter_config' => $payload->attendeeFilterConfig,
-                
+
                 'responsible_user_ids' => $payload->responsibleUserIds,
             ]);
 
@@ -47,7 +47,7 @@ class SaveEventAction
 
             // Note: If variants are configured, a SyncVariantsAction would be called here
             // $this->syncVariantsAction->handle($event, $payload->variantsConfig);
-            
+
             return $event;
         });
     }

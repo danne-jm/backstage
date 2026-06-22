@@ -3,8 +3,8 @@
 namespace App\Services\Mail;
 
 use App\Contracts\EmailTransportInterface;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Mail\Message;
+use Illuminate\Support\Facades\Mail;
 
 class SmtpEmailTransport implements EmailTransportInterface
 {
@@ -13,7 +13,7 @@ class SmtpEmailTransport implements EmailTransportInterface
         try {
             Mail::html($htmlBody, function (Message $message) use ($to, $subject, $attachments) {
                 $message->to($to)
-                        ->subject($subject);
+                    ->subject($subject);
 
                 foreach ($attachments as $attachment) {
                     // Assuming $attachment is a file path for now.
@@ -25,7 +25,8 @@ class SmtpEmailTransport implements EmailTransportInterface
             return true;
         } catch (\Exception $e) {
             // Log error
-            \Log::error("SMTP Email failed to send to {$to}: " . $e->getMessage());
+            \Log::error("SMTP Email failed to send to {$to}: ".$e->getMessage());
+
             return false;
         }
     }

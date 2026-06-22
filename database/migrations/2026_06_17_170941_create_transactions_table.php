@@ -21,13 +21,13 @@ return new class extends Migration
             $table->decimal('discount_total', 10, 2)->default(0);
             $table->string('payment_method'); // sumup_online, pos_card, pos_cash
             $table->string('external_payment_id')->nullable();
-            
+
             // POS Cash specifics
             $table->decimal('cash_tendered_amount', 10, 2)->nullable();
             $table->decimal('cash_change_amount', 10, 2)->nullable();
             $table->json('cash_tendered_breakdown')->nullable();
             $table->json('cash_change_breakdown')->nullable();
-            
+
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
         });

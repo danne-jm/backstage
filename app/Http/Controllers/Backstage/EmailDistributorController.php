@@ -10,6 +10,7 @@ use App\Models\MailLog;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\Google\GoogleSheetsAdapter;
+use Carbon\Carbon;
 use Google\Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -102,7 +103,7 @@ class EmailDistributorController extends Controller
         $includeQr = $request->boolean('include_qr');
         $event = $eventId ? Event::find($eventId) : null;
         $eventName = $event ? $event->name : ($customEventName ?: 'General Event');
-        $eventDate = $event ? \Carbon\Carbon::parse($event->event_date)->format('d-m-Y') : 'Unknown Date';
+        $eventDate = $event ? Carbon::parse($event->event_date)->format('d-m-Y') : 'Unknown Date';
 
         // Dispatch one queued job per recipient
         foreach ($emails as $emailData) {
@@ -144,7 +145,7 @@ class EmailDistributorController extends Controller
             )->onQueue('distributions');
         }
 
-        return back()->with('success', "Queued " . count($emails) . " email(s) for distribution.");
+        return back()->with('success', 'Queued '.count($emails).' email(s) for distribution.');
     }
 
     /**

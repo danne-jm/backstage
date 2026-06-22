@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class InventoryMovement extends Model
 {
@@ -20,17 +22,17 @@ class InventoryMovement extends Model
         'notes',
     ];
 
-    public function purchasable()
+    public function purchasable(): MorphTo
     {
         return $this->morphTo();
     }
 
-    public function variant()
+    public function variant(): BelongsTo
     {
         return $this->belongsTo(Variant::class);
     }
 
-    public function sale()
+    public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);
     }

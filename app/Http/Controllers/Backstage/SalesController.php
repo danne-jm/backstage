@@ -47,6 +47,8 @@ class SalesController extends Controller
 
     /**
      * Returns the correct SQL hour-bucket expression for the active driver.
+     *
+     * @return literal-string
      */
     private function hourBucketExpression(): string
     {

@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -19,10 +23,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $cash_change_amount
  * @property array|null $cash_tendered_breakdown
  * @property array|null $cash_change_breakdown
- * @property \Illuminate\Support\Carbon|null $completed_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Database\Eloquent\Collection<int, \App\Models\Sale> $sales
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Collection<int, Sale> $sales
  */
 class Transaction extends Model
 {
@@ -54,12 +58,12 @@ class Transaction extends Model
         'completed_at' => 'datetime',
     ];
 
-    public function officeShift(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function officeShift(): BelongsTo
     {
         return $this->belongsTo(OfficeShift::class);
     }
 
-    public function sales(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
     }

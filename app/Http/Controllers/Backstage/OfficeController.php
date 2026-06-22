@@ -42,7 +42,7 @@ class OfficeController extends Controller
                 ->latest('ended_at')
                 ->first();
 
-            $startTime = $lastClosed?->ended_at ?? now()->startOfDay();
+            $startTime = $lastClosed->ended_at ?? now()->startOfDay();
 
             $transactions = Transaction::with('sales.purchasable')
                 ->where(function ($q) use ($currentShift, $startTime) {
@@ -55,22 +55,26 @@ class OfficeController extends Controller
                 })
                 ->latest('completed_at')
                 ->get()
-                ->map(fn (Transaction $t) => [
-                    'id' => $t->id,
-                    'channel' => $t->channel,
-                    'status' => $t->status,
-                    'payment_method' => $t->payment_method,
-                    'total_amount' => $t->total_amount,
-                    'completed_at' => $t->completed_at?->toIso8601String(),
-                    'customer_email' => $t->customer_email,
-                    'sales' => $t->sales->map(fn ($s) => [
-                        'id' => $s->id,
-                        'name' => $s->snapshot['name'] ?? $s->purchasable?->getName(),
-                        'quantity' => $s->quantity,
-                        'subtotal' => $s->subtotal,
-                        'ticket_type' => $s->ticket_type,
-                    ]),
-                ]);
+                ->map(function (Transaction $t): array {
+                    return [
+                        'id' => $t->id,
+                        'channel' => $t->channel,
+                        'status' => $t->status,
+                        'payment_method' => $t->payment_method,
+                        'total_amount' => $t->total_amount,
+                        'completed_at' => $t->completed_at?->toIso8601String(),
+                        'customer_email' => $t->customer_email,
+                        'sales' => $t->sales->map(function ($s): array {
+                            return [
+                                'id' => $s->id,
+                                'name' => $s->snapshot['name'] ?? $s->purchasable->name ?? 'Unknown',
+                                'quantity' => $s->quantity,
+                                'subtotal' => $s->subtotal,
+                                'ticket_type' => $s->ticket_type,
+                            ];
+                        })->all(),
+                    ];
+                })->all();
         }
 
         return Inertia::render('backstage/office/index', [
@@ -104,7 +108,7 @@ class OfficeController extends Controller
 
         DB::transaction(function () use ($request, $user) {
             $breakdown = $request->input('start_cash_breakdown', []);
-            $openingFloat = collect($breakdown)->sum('total');
+            $openingFloat = array_sum(array_column((array) $breakdown, 'total'));
 
             $shift = OfficeShift::create([
                 'started_by' => $user->id,
@@ -139,8 +143,8 @@ class OfficeController extends Controller
         }
 
         $endBreakdown = $request->input('end_of_shift_cash_breakdown', []);
-        $actualCash = collect($endBreakdown)->sum('total');
-        $discrepancy = $actualCash - $shift->expected_cash_total;
+        $actualCash = array_sum(array_column((array) $endBreakdown, 'total'));
+        $discrepancy = $actualCash - (float) $shift->expected_cash_total;
 
         $shift->update([
             'ended_by' => $user->id,
@@ -166,17 +170,19 @@ class OfficeController extends Controller
         $shift = OfficeShift::where('status', 'open')->firstOrFail();
 
         $paymentMethod = $request->string('payment_method')->toString();
-        $saleLines = collect($request->input('lines', []))->map(fn (array $line) => new SaleLinePayload(
-            purchasableId: $line['purchasable_id'],
-            purchasableType: $line['purchasable_type'],
-            unitPrice: (float) $line['unit_price'],
-            quantity: (int) $line['quantity'],
-            subtotal: (float) $line['subtotal'],
-            ticketType: $line['ticket_type'] ?? 'regular',
-            variantId: $line['variant_id'] ?? null,
-            snapshot: $line['snapshot'] ?? null,
-            discountCodeUsed: $line['discount_code_used'] ?? null,
-        ))->all();
+        $saleLines = array_map(function (array $line): SaleLinePayload {
+            return new SaleLinePayload(
+                purchasableId: $line['purchasable_id'],
+                purchasableType: $line['purchasable_type'],
+                unitPrice: (float) $line['unit_price'],
+                quantity: (int) $line['quantity'],
+                subtotal: (float) $line['subtotal'],
+                ticketType: $line['ticket_type'] ?? 'regular',
+                variantId: $line['variant_id'] ?? null,
+                snapshot: $line['snapshot'] ?? null,
+                discountCodeUsed: $line['discount_code_used'] ?? null,
+            );
+        }, (array) $request->input('lines', []));
 
         $totalAmount = collect($saleLines)->sum('subtotal');
 
@@ -215,9 +221,10 @@ class OfficeController extends Controller
 
         // Reverse the cash expected total if it was a cash transaction
         if ($transaction->payment_method === 'pos_cash') {
+            /** @var OfficeShift|null $shift */
             $shift = $transaction->officeShift;
             if ($shift?->status === 'open') {
-                $cashNet = $transaction->cash_tendered_amount - $transaction->cash_change_amount;
+                $cashNet = (float) $transaction->cash_tendered_amount - (float) $transaction->cash_change_amount;
                 $shift->decrement('expected_cash_total', $cashNet);
             }
         }

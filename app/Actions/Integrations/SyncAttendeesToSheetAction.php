@@ -4,6 +4,8 @@ namespace App\Actions\Integrations;
 
 use App\Models\Event;
 use App\Models\Sale;
+use App\Models\Transaction;
+use App\Models\User;
 use App\Services\Google\GoogleSheetsAdapter;
 
 class SyncAttendeesToSheetAction
@@ -20,12 +22,13 @@ class SyncAttendeesToSheetAction
 
         // 2. We need a system or responsible user to authorize the Google API call
         // For simplicity, we find the first responsible user who has an OAuth token
-        $integrationUser = \App\Models\User::whereNotNull('gmail_refresh_token')
+        $integrationUser = User::whereNotNull('gmail_refresh_token')
             ->whereIn('id', $event->responsible_user_ids ?? [])
             ->first();
 
-        if (!$integrationUser) {
+        if (! $integrationUser) {
             \Log::warning("Cannot sync sale {$sale->id} to Google Sheets: No responsible user with Google OAuth token.");
+
             return;
         }
 
@@ -34,9 +37,9 @@ class SyncAttendeesToSheetAction
 
         // 4. Format the row data
         // For example: Timestamp, Purchaser Email, Ticket Type, Variant, Status
-        /** @var \App\Models\Transaction $transaction */
+        /** @var Transaction $transaction */
         $transaction = $sale->transaction;
-        
+
         $rowData = [
             $sale->created_at->toIso8601String(),
             $transaction->customer_email ?? 'POS Sale',

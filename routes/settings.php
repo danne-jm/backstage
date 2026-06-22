@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Settings\FooterController;
+use App\Http\Controllers\Settings\GoogleAuthController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -34,7 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Google OAuth Routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('auth/google/redirect', [\App\Http\Controllers\Settings\GoogleAuthController::class, 'redirect'])->name('google.redirect');
-    Route::get('auth/google/callback', [\App\Http\Controllers\Settings\GoogleAuthController::class, 'callback'])->name('google.callback');
-    Route::delete('auth/google/disconnect', [\App\Http\Controllers\Settings\GoogleAuthController::class, 'disconnect'])->name('google.disconnect');
+    Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+    Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+    Route::delete('auth/google/disconnect', [GoogleAuthController::class, 'disconnect'])->name('google.disconnect');
 });
