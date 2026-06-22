@@ -3,16 +3,10 @@ name: tests
 on:
   push:
     branches:
-      - develop
-      - main
-      - master
-      - workos
+      - dev
   pull_request:
     branches:
-      - develop
-      - main
-      - master
-      - workos
+      - dev
 
 permissions:
   contents: read
