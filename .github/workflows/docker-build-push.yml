@@ -3,7 +3,7 @@ name: Build and Push to Docker Hub
 on:
   push:
     branches:
-      - main # Or whichever branch you push your stable code to
+      - dev
 
 jobs:
   docker:
