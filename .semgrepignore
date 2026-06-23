@@ -1,2 +1,5 @@
 # Ignore false positive XSS in backend-generated SVG QR Code
 resources/js/components/two-factor-setup-modal.tsx
+
+# Ignore official StatefulSet images that require root entrypoints
+Containerization/manifests/postgres.yaml

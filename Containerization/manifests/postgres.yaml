@@ -23,14 +23,38 @@ spec:
       labels:
         app: postgres
     spec:
+      securityContext:
+        fsGroup: 70
       containers:
         - name: postgres
           securityContext:
             allowPrivilegeEscalation: false
-            runAsNonRoot: true
           image: postgres:15.1-alpine
           ports:
             - containerPort: 5432
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+            initialDelaySeconds: 5
+            periodSeconds: 10
           env:
             - name: POSTGRES_DB
               valueFrom:
