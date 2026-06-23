@@ -9,11 +9,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Backstage\EndShiftRequest;
 use App\Http\Requests\Backstage\RecordPosSaleRequest;
 use App\Http\Requests\Backstage\StartShiftRequest;
+use App\Models\Event;
 use App\Models\OfficeShift;
 use App\Models\OfficeShiftWorker;
+use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Ledger\FinancialLedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,13 +36,14 @@ class OfficeController extends Controller
 
         $transactions = collect();
 
+        $lastClosed = OfficeShift::where('status', 'closed')
+            ->with(['starter', 'workers.user'])
+            ->latest('ended_at')
+            ->first();
+
         if ($currentShift) {
             // Build the POS live feed: physical POS sales for this shift +
             // any online sales completed since the last closed shift.
-            $lastClosed = OfficeShift::where('status', 'closed')
-                ->latest('ended_at')
-                ->first();
-
             $startTime = $lastClosed->ended_at ?? now()->startOfDay();
 
             $transactions = Transaction::with('sales.purchasable')
@@ -67,7 +69,7 @@ class OfficeController extends Controller
                         'sales' => $t->sales->map(function ($s): array {
                             return [
                                 'id' => $s->id,
-                                'name' => $s->snapshot['name'] ?? $s->purchasable->name ?? 'Unknown',
+                                'name' => $s->snapshot['name'] ?? $s->purchasable?->name ?? 'Unknown',
                                 'quantity' => $s->quantity,
                                 'subtotal' => $s->subtotal,
                                 'ticket_type' => $s->ticket_type,
@@ -77,6 +79,12 @@ class OfficeController extends Controller
                 })->all();
         }
 
+        $sellables = $this->getSellables();
+
+        $allShifts = OfficeShift::with(['starter', 'workers.user'])
+            ->latest('started_at')
+            ->paginate(10);
+
         return Inertia::render('backstage/office/index', [
             'current_shift' => $currentShift ? [
                 'id' => $currentShift->id,
@@ -85,10 +93,33 @@ class OfficeController extends Controller
                     'id' => $currentShift->starter->id,
                     'name' => $currentShift->starter->first_name.' '.$currentShift->starter->last_name,
                 ],
+                'workers' => $currentShift->workers->map(fn ($w) => [
+                    'id' => $w->user->id,
+                    'name' => $w->user->first_name.' '.$w->user->last_name,
+                ]),
                 'start_cash_breakdown' => $currentShift->start_cash_breakdown,
                 'expected_cash_total' => $currentShift->expected_cash_total,
             ] : null,
+            'last_closed_shift' => $lastClosed ? [
+                'id' => $lastClosed->id,
+                'started_at' => $lastClosed->started_at->toIso8601String(),
+                'ended_at' => $lastClosed->ended_at->toIso8601String(),
+                'starter' => [
+                    'id' => $lastClosed->starter->id,
+                    'name' => $lastClosed->starter->first_name.' '.$lastClosed->starter->last_name,
+                ],
+                'workers' => $lastClosed->workers->map(fn ($w) => [
+                    'id' => $w->user->id,
+                    'name' => $w->user->first_name.' '.$w->user->last_name,
+                ]),
+                'start_cash_breakdown' => $lastClosed->start_cash_breakdown,
+                'end_of_shift_cash_breakdown' => $lastClosed->end_of_shift_cash_breakdown,
+                'expected_cash_total' => $lastClosed->expected_cash_total,
+                'discrepancy_amount' => $lastClosed->discrepancy_amount,
+            ] : null,
+            'sellables' => $sellables,
             'transactions' => $transactions,
+            'all_shifts' => $allShifts,
         ]);
     }
 
@@ -160,6 +191,61 @@ class OfficeController extends Controller
     }
 
     /**
+     * Reopen a closed shift.
+     */
+    public function reopenShift(Request $request, OfficeShift $shift): RedirectResponse
+    {
+        if ($shift->status !== 'closed') {
+            return back()->withErrors(['shift' => 'Only closed shifts can be reopened.']);
+        }
+
+        $shift->update([
+            'status' => 'open',
+            'ended_by' => null,
+            'ended_at' => null,
+            'end_of_shift_cash_breakdown' => null,
+            'discrepancy_amount' => null,
+        ]);
+
+        return back()->with('success', 'Shift reopened successfully.');
+    }
+
+    /**
+     * Add a worker to the current shift.
+     */
+    public function addWorker(Request $request, OfficeShift $shift): RedirectResponse
+    {
+        $request->validate(['user_id' => 'required|string|exists:users,id']);
+
+        if ($shift->status !== 'open') {
+            return back()->withErrors(['shift' => 'Cannot modify workers on a closed shift.']);
+        }
+
+        if (!$shift->workers()->where('user_id', $request->user_id)->exists()) {
+            $shift->workers()->create([
+                'user_id' => $request->user_id,
+                'role' => 'worker',
+            ]);
+        }
+
+        return back()->with('success', 'Worker added to shift.');
+    }
+
+    /**
+     * Remove a worker from the current shift.
+     */
+    public function removeWorker(Request $request, OfficeShift $shift, string $userId): RedirectResponse
+    {
+        if ($shift->status !== 'open') {
+            return back()->withErrors(['shift' => 'Cannot modify workers on a closed shift.']);
+        }
+
+        $shift->workers()->where('user_id', $userId)->delete();
+
+        return back()->with('success', 'Worker removed from shift.');
+    }
+
+    /**
      * Record a POS (physical) sale on the current open shift.
      */
     public function recordSale(RecordPosSaleRequest $request, ProcessPosSaleAction $action): RedirectResponse
@@ -219,22 +305,126 @@ class OfficeController extends Controller
             return back()->withErrors(['sale' => 'Only completed POS transactions can be voided.']);
         }
 
-        // Reverse the cash expected total if it was a cash transaction
-        if ($transaction->payment_method === 'pos_cash') {
-            /** @var OfficeShift|null $shift */
-            $shift = $transaction->officeShift;
-            if ($shift?->status === 'open') {
-                $cashNet = (float) $transaction->cash_tendered_amount - (float) $transaction->cash_change_amount;
-                $shift->decrement('expected_cash_total', $cashNet);
+        DB::transaction(function () use ($transaction) {
+            // Reverse the cash expected total if it was a cash transaction
+            if ($transaction->payment_method === 'pos_cash') {
+                $shift = $transaction->officeShift;
+                if ($shift?->status === 'open') {
+                    $cashNet = (float) $transaction->cash_tendered_amount - (float) $transaction->cash_change_amount;
+                    $shift->decrement('expected_cash_total', $cashNet);
+                }
             }
-        }
 
-        // Soft-void the transaction
-        $transaction->update(['status' => 'refunded']);
+            // Remove related records to completely wipe the trail
+            \App\Models\FinancialLedgerEntry::where('transaction_id', $transaction->id)->delete();
 
-        // Record the reversal in the ledger
-        app(FinancialLedgerService::class)->recordOfficeSaleRemoved($transaction);
+            foreach ($transaction->sales as $sale) {
+                \App\Models\InventoryMovement::where('sale_id', $sale->id)->delete();
+                $sale->delete();
+            }
 
-        return back()->with('success', 'Sale voided successfully.');
+            $transaction->delete();
+        });
+
+        return back()->with('success', 'Sale completely removed and trail wiped.');
+    }
+
+    /**
+     * Show a specific office shift.
+     */
+    public function show(OfficeShift $shift): Response
+    {
+        $shift->load(['starter', 'ender', 'workers.user']);
+
+        $transactions = Transaction::with('sales.purchasable')
+            ->where('office_shift_id', $shift->id)
+            ->latest('completed_at')
+            ->get()
+            ->map(function (Transaction $t): array {
+                return [
+                    'id' => $t->id,
+                    'channel' => $t->channel,
+                    'status' => $t->status,
+                    'payment_method' => $t->payment_method,
+                    'total_amount' => $t->total_amount,
+                    'completed_at' => $t->completed_at?->toIso8601String(),
+                    'customer_email' => $t->customer_email,
+                    'sales' => $t->sales->map(function ($s): array {
+                        return [
+                            'id' => $s->id,
+                            'name' => $s->snapshot['name'] ?? $s->purchasable?->name ?? 'Unknown',
+                            'quantity' => $s->quantity,
+                            'subtotal' => $s->subtotal,
+                            'ticket_type' => $s->ticket_type,
+                        ];
+                    })->all(),
+                ];
+            })->all();
+
+        return Inertia::render('backstage/office/show', [
+            'shift' => [
+                'id' => $shift->id,
+                'started_at' => $shift->started_at->toIso8601String(),
+                'ended_at' => $shift->ended_at?->toIso8601String(),
+                'status' => $shift->status,
+                'starter' => [
+                    'id' => $shift->starter->id,
+                    'name' => $shift->starter->first_name.' '.$shift->starter->last_name,
+                    'role' => 'Started by',
+                ],
+                'ender' => $shift->ender ? [
+                    'id' => $shift->ender->id,
+                    'name' => $shift->ender->first_name.' '.$shift->ender->last_name,
+                ] : null,
+                'workers' => $shift->workers->map(fn ($w) => [
+                    'id' => $w->user->id,
+                    'name' => $w->user->first_name.' '.$w->user->last_name,
+                    'role' => $w->role,
+                    'system_role' => $w->user->role,
+                ]),
+                'start_cash_breakdown' => $shift->start_cash_breakdown,
+                'end_of_shift_cash_breakdown' => $shift->end_of_shift_cash_breakdown,
+                'expected_cash_total' => $shift->expected_cash_total,
+                'discrepancy_amount' => $shift->discrepancy_amount,
+                'notes' => $shift->notes,
+            ],
+            'transactions' => $transactions,
+            'sellables' => $this->getSellables(),
+            'all_users' => User::orderBy('first_name')->get()->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => $u->first_name.' '.$u->last_name,
+                'title' => $u->role,
+            ]),
+        ]);
+    }
+
+    private function getSellables()
+    {
+        return collect()
+            ->merge(Product::all()->map(function ($p) { $p->sellable_type = 'product'; return $p; }))
+            ->merge(Event::all()->map(function ($e) { $e->sellable_type = 'event'; return $e; }))
+            ->sortBy(function ($s) {
+                if ($s->sellable_type === 'product') {
+                    return '0_' . $s->name;
+                }
+                return '1_' . ($s->start_sell_date ? $s->start_sell_date->timestamp : 0);
+            })
+            ->map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'type' => get_class($s),
+                    'name' => $s->getName(),
+                    'description' => $s->getDescription(),
+                    'price' => $s->getPrice(),
+                    'price_with_membership' => $s->price_with_membership,
+                    'price_without_membership' => $s->price_without_membership,
+                    'variable_amount' => $s->variable_amount,
+                    'is_variant_based' => $s->is_variant_based,
+                    'variants' => $s->variants,
+                    'start_sell_date' => $s->start_sell_date?->toIso8601String(),
+                    'end_sell_date' => $s->end_sell_date?->toIso8601String(),
+                ];
+            })
+            ->values();
     }
 }

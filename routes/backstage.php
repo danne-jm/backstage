@@ -61,7 +61,11 @@ Route::middleware(['auth'])->name('backstage.')->group(function () {
     Route::prefix('office')->name('office.')->group(function () {
         Route::get('/', [OfficeController::class, 'index'])->name('index');
         Route::post('shift/start', [OfficeController::class, 'startShift'])->name('shift.start');
+        Route::get('shift/{shift}', [OfficeController::class, 'show'])->name('shift.show');
         Route::patch('shift/{shift}/end', [OfficeController::class, 'endShift'])->name('shift.end');
+        Route::patch('shift/{shift}/reopen', [OfficeController::class, 'reopenShift'])->name('shift.reopen');
+        Route::post('shift/{shift}/workers', [OfficeController::class, 'addWorker'])->name('shift.workers.add');
+        Route::delete('shift/{shift}/workers/{user}', [OfficeController::class, 'removeWorker'])->name('shift.workers.remove');
         Route::post('sale', [OfficeController::class, 'recordSale'])->name('sale.record');
         Route::patch('sale/{transaction}/void', [OfficeController::class, 'removeSale'])->name('sale.void');
     });
