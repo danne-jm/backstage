@@ -37,7 +37,6 @@ class DatabaseSeeder extends Seeder
                 'password_hash' => Hash::make('xghQ7lIGwEWP+5i28cPG'),
                 'gmail_provider_id' => '115724321629363931128',
                 'gmail_provider_email' => 'danieljaurell@gmail.com',
-                'role' => 'admin',
                 'is_locked' => false,
             ]
         );
@@ -50,7 +49,6 @@ class DatabaseSeeder extends Seeder
                 'first_name' => 'Alice',
                 'last_name' => 'Smith',
                 'password_hash' => Hash::make('password'),
-                'role' => 'user',
             ]
         );
 
@@ -60,7 +58,6 @@ class DatabaseSeeder extends Seeder
                 'first_name' => 'Bob',
                 'last_name' => 'Jones',
                 'password_hash' => Hash::make('password'),
-                'role' => 'user',
             ]
         );
 
