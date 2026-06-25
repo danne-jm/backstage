@@ -28,6 +28,8 @@ function getSaleStatus(endSellDate: string | null) {
     return `Sale ends in ${diffDays} days`;
 }
 
+const MEMBERSHIP_NAME = import.meta.env.VITE_MEMBERSHIP_CARD_NAME || '[CONFIGURE MEMEBERSHIP IN ENVIRONMENT]';
+
 export default function Office({ current_shift, last_closed_shift, sellables, transactions, all_shifts }: any) {
     const { post: startShift, processing: startingShift } = useForm({
         start_cash_breakdown: [], 
@@ -130,7 +132,7 @@ export default function Office({ current_shift, last_closed_shift, sellables, tr
                         <div className="flex min-h-0 flex-1 flex-col">
                             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                                 {sellables.map((sellable: any) => {
-                                    const saleStatus = sellable.type === 'Event' ? getSaleStatus(sellable.end_sell_date) : null;
+                                    const saleStatus = sellable.type === 'App\\Models\\Event' ? getSaleStatus(sellable.end_sell_date) : null;
                                     return (
                                         <div key={sellable.id} className="flex items-center justify-between rounded-md bg-muted/40 p-2">
                                             <div className="min-w-0 flex-1 pr-4">
@@ -226,7 +228,7 @@ export default function Office({ current_shift, last_closed_shift, sellables, tr
                                                                 {tx.channel === 'online' ? 'Online' : 'Cash'}
                                                             </Badge>
                                                             {sale.ticket_type === 'with_membership' && (
-                                                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded-sm font-normal h-5">ESNcard</Badge>
+                                                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded-sm font-normal h-5">{MEMBERSHIP_NAME}</Badge>
                                                             )}
                                                         </div>
                                                     </td>
@@ -251,15 +253,15 @@ export default function Office({ current_shift, last_closed_shift, sellables, tr
                                 <div className="flex justify-end gap-6 pt-4 text-xs">
                                     <div className="text-right">
                                         <p className="text-muted-foreground mb-0.5">Cash Sales</p>
-                                        <p className="font-semibold text-sm">€{transactions.filter((t: any) => t.payment_method === 'pos_cash').reduce((acc: number, t: any) => acc + t.total_amount, 0).toFixed(2)}</p>
+                                        <p className="font-semibold text-sm">€{transactions.filter((t: any) => t.payment_method === 'pos_cash').reduce((acc: number, t: any) => acc + Number(t.total_amount), 0).toFixed(2)}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-muted-foreground mb-0.5">Card Sales</p>
-                                        <p className="font-semibold text-sm">€{transactions.filter((t: any) => t.payment_method === 'pos_card' || t.payment_method === 'sumup_online').reduce((acc: number, t: any) => acc + t.total_amount, 0).toFixed(2)}</p>
+                                        <p className="font-semibold text-sm">€{transactions.filter((t: any) => t.payment_method === 'pos_card' || t.payment_method === 'sumup_online').reduce((acc: number, t: any) => acc + Number(t.total_amount), 0).toFixed(2)}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-muted-foreground mb-0.5">Total Sales</p>
-                                        <p className="font-semibold text-sm">€{transactions.reduce((acc: number, t: any) => acc + t.total_amount, 0).toFixed(2)}</p>
+                                        <p className="font-semibold text-sm">€{transactions.reduce((acc: number, t: any) => acc + Number(t.total_amount), 0).toFixed(2)}</p>
                                     </div>
                                 </div>
                             )}

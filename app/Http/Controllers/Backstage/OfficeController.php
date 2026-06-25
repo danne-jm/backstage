@@ -257,6 +257,24 @@ class OfficeController extends Controller
 
         $paymentMethod = $request->string('payment_method')->toString();
         $saleLines = array_map(function (array $line): SaleLinePayload {
+            // Server-side price validation
+            if ($line['purchasable_id'] !== 'custom') {
+                $sellableClass = $line['purchasable_type'] === 'App\\Models\\Event' ? \App\Models\Event::class : \App\Models\Product::class;
+                $sellable = $sellableClass::find($line['purchasable_id']);
+                if ($sellable) {
+                    $expectedPrice = $sellable->price;
+                    if (($line['ticket_type'] ?? 'regular') === 'with_membership' && $sellable->price_with_membership !== null) {
+                        $expectedPrice = $sellable->price_with_membership;
+                    } elseif (($line['ticket_type'] ?? 'regular') === 'regular' && $sellable->price_without_membership !== null) {
+                        $expectedPrice = $sellable->price_without_membership;
+                    }
+                    
+                    if (abs((float) $line['unit_price'] - (float) $expectedPrice) > 0.01 && !$sellable->variable_amount) {
+                        abort(422, "Price mismatch for {$sellable->name}. Expected {$expectedPrice}, got {$line['unit_price']}.");
+                    }
+                }
+            }
+
             return new SaleLinePayload(
                 purchasableId: $line['purchasable_id'],
                 purchasableType: $line['purchasable_type'],

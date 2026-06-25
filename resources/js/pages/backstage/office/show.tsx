@@ -34,22 +34,23 @@ function formatFullDate(dateStr: string, endDateStr?: string | null) {
     const suffix = ["th", "st", "nd", "rd"][dayNum % 10 > 3 ? 0 : (dayNum % 100 - dayNum % 10 !== 10) ? dayNum % 10 : 0];
     const year = start.getFullYear();
     const startTime = start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    
+
     if (endDateStr) {
         const end = new Date(endDateStr);
         const endTime = end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         return `${day}, ${month} ${dayNum}${suffix} ${year}, ${startTime} - ${endTime}`;
     }
-    
+
     return `${day}, ${month} ${dayNum}${suffix} ${year}, started at ${startTime}`;
 }
 
 const DENOMINATIONS = [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
 const INITIAL_CASH = DENOMINATIONS.reduce((acc, den) => ({ ...acc, [den.toString()]: 0 }), {});
+const MEMBERSHIP_NAME = import.meta.env.VITE_MEMBERSHIP_CARD_NAME || '[CONFIGURE MEMEBERSHIP IN ENVIRONMENT]';
 
 export default function OfficeShiftShow({ shift, transactions, sellables, all_users }: any) {
     const { patch: endShift, processing: endingShift } = useForm({
-        end_of_shift_cash_breakdown: [], 
+        end_of_shift_cash_breakdown: [],
         notes: '',
     });
 
@@ -94,14 +95,13 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
     const prepareSale = (method: 'pos_cash' | 'pos_card', isCustom: boolean) => {
         let price = 0;
         let sellable = null;
-        let ticketType = 'regular';
+        let ticketType = esnCardStatus === 'with' ? 'with_membership' : 'regular';
         let snapshotName = '';
 
         if (isCustom) {
             if (!customPrice || isNaN(Number(customPrice))) return;
             price = Number(customPrice);
-            ticketType = esnCardStatus === 'with' ? 'with_membership' : 'regular';
-            
+
             if (customSellableId !== 'custom') {
                 sellable = sellables.find((s: any) => s.id === customSellableId);
                 snapshotName = customDescription || sellable.name;
@@ -111,7 +111,15 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
         } else {
             if (!selectedSellableId) return;
             sellable = sellables.find((s: any) => s.id === selectedSellableId);
-            price = sellable.price;
+
+            if (esnCardStatus === 'with' && sellable.price_with_membership !== null) {
+                price = Number(sellable.price_with_membership);
+            } else if (esnCardStatus === 'without' && sellable.price_without_membership !== null) {
+                price = Number(sellable.price_without_membership);
+            } else {
+                price = Number(sellable.price);
+            }
+
             snapshotName = sellable.name;
         }
 
@@ -143,9 +151,9 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
         const variant = pendingSale.sellable.variants.find((v: any) => {
             return Object.keys(selectedOptions).every(key => v.options[key] === selectedOptions[key]);
         });
-        
+
         if (!variant) return;
-        
+
         const updatedSale = { ...pendingSale, variantId: variant.id };
         setPendingSale(updatedSale);
         setVariantModalOpen(false);
@@ -196,12 +204,12 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                 const returned = Object.entries(cashData.changeGiven).reduce((sum, [den, count]) => sum + Number(den) * count, 0);
                 payload.cash_tendered_amount = tendered;
                 payload.cash_change_amount = returned;
-                
+
                 // You can add breakdowns if needed:
                 payload.cash_tendered_breakdown = Object.entries(cashData.received)
                     .filter(([_, count]) => count > 0)
                     .map(([den, count]) => ({ denomination: Number(den), count }));
-                    
+
                 payload.cash_change_breakdown = Object.entries(cashData.changeGiven)
                     .filter(([_, count]) => count > 0)
                     .map(([den, count]) => ({ denomination: Number(den), count }));
@@ -217,6 +225,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                 setCustomPrice('0.00');
                 setCustomDescription('');
                 setCustomSellableId('custom');
+                setEsnCardStatus('without');
                 setCashReceived({ ...INITIAL_CASH });
                 setCashChangeGiven({ ...INITIAL_CASH });
             },
@@ -239,15 +248,15 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
     };
 
     // Modals data
-    const variantKeys = pendingSale?.sellable?.variants 
-        ? Array.from(new Set(pendingSale.sellable.variants.flatMap((v: any) => Object.keys(v.options)))) 
+    const variantKeys = pendingSale?.sellable?.variants
+        ? Array.from(new Set(pendingSale.sellable.variants.flatMap((v: any) => Object.keys(v.options))))
         : [];
-        
+
     const calculatedCashTotal = Object.entries(cashReceived).reduce((sum, [den, count]) => sum + Number(den) * count, 0);
     const calculatedChangeTotal = Object.entries(cashChangeGiven).reduce((sum, [den, count]) => sum + Number(den) * count, 0);
     const expectedCashAmount = pendingSale?.price || 0;
     const cashDiff = calculatedCashTotal - expectedCashAmount;
-    
+
     // Valid if user provided enough cash. Change matching is optional.
     const isCashValid = calculatedCashTotal >= expectedCashAmount;
 
@@ -272,10 +281,10 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
         <>
             <Head title={`Office Shift: ${shift.id}`} />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                
+
                 {/* Top Section */}
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    
+
                     {/* Workers Box */}
                     <div className="rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border flex flex-col min-h-[25rem]">
                         <h3 className="mb-4 text-sm font-semibold">Workers</h3>
@@ -338,7 +347,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                     <div className="rounded-xl border border-sidebar-border/70 bg-background p-4 dark:border-sidebar-border flex flex-col min-h-[25rem]">
                         <h3 className="mb-4 text-sm font-semibold">Revenue</h3>
                         <div className="flex-1 flex flex-col gap-6">
-                            
+
                             {/* Start of shift */}
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center text-xs font-semibold">
@@ -358,7 +367,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                     <span className="font-semibold text-base">€{startCombined.toFixed(2)}</span>
                                 </div>
                             </div>
-                            
+
                             <hr className="border-border/50" />
 
                             {/* Active office shift */}
@@ -380,7 +389,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                     <span className="font-semibold text-base">€{liveCombined.toFixed(2)}</span>
                                 </div>
                             </div>
-                            
+
                             <hr className="border-border/50" />
 
                             {/* Total money */}
@@ -402,7 +411,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                     <span className="font-semibold text-base">€{totalCombined.toFixed(2)}</span>
                                 </div>
                             </div>
-                            
+
                         </div>
                     </div>
 
@@ -426,7 +435,15 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                         </div>
 
                         {shift.status === 'open' && (
-                            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+                            <div className="flex-1 overflow-y-auto space-y-6 pr-2 mt-4">
+
+                                <div className="space-y-2">
+                                    <ToggleGroup type="single" value={esnCardStatus} onValueChange={(val) => { if (val) setEsnCardStatus(val) }} className="justify-start gap-2">
+                                        <ToggleGroupItem value="with" aria-label={`With ${MEMBERSHIP_NAME}`} className="h-8 px-3 text-xs border border-border/50 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">With {MEMBERSHIP_NAME}</ToggleGroupItem>
+                                        <ToggleGroupItem value="without" aria-label={`Without ${MEMBERSHIP_NAME}`} className="h-8 px-3 text-xs border border-border/50 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Without {MEMBERSHIP_NAME}</ToggleGroupItem>
+                                    </ToggleGroup>
+                                </div>
+
                                 {/* Quick Add Sale */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
@@ -465,22 +482,18 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                     </Select>
                                     <div className="relative">
                                         <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">€</span>
-                                        <Input 
-                                            value={customPrice} 
+                                        <Input
+                                            value={customPrice}
                                             onChange={(e) => setCustomPrice(e.target.value)}
-                                            className="pl-7" 
-                                            placeholder="0.00" 
+                                            className="pl-7"
+                                            placeholder="0.00"
                                         />
                                     </div>
-                                    <Input 
-                                        value={customDescription} 
+                                    <Input
+                                        value={customDescription}
                                         onChange={(e) => setCustomDescription(e.target.value)}
-                                        placeholder="Description (mandatory)" 
+                                        placeholder="Description (mandatory)"
                                     />
-                                    <ToggleGroup type="single" value={esnCardStatus} onValueChange={(val) => { if (val) setEsnCardStatus(val) }} className="justify-start gap-2">
-                                        <ToggleGroupItem value="with" aria-label="With ESNcard" className="h-8 px-3 text-xs border border-border/50 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">With ESNcard</ToggleGroupItem>
-                                        <ToggleGroupItem value="without" aria-label="Without ESNcard" className="h-8 px-3 text-xs border border-border/50 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Without ESNcard</ToggleGroupItem>
-                                    </ToggleGroup>
                                     <div className="flex gap-2 pt-1">
                                         <Button variant="secondary" size="sm" onClick={() => prepareSale('pos_cash', true)} disabled={isSubmitting || !customPrice || (customSellableId === 'custom' && !customDescription)}>Add Cash</Button>
                                         <Button variant="outline" size="sm" onClick={() => prepareSale('pos_card', true)} disabled={isSubmitting || !customPrice || (customSellableId === 'custom' && !customDescription)}>Add Card</Button>
@@ -523,7 +536,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                                         {tx.channel === 'online' ? 'Online' : (tx.payment_method === 'pos_cash' ? 'Cash' : 'Card')}
                                                     </Badge>
                                                     {sale.ticket_type === 'with_membership' && (
-                                                        <Badge variant="secondary" className="text-[10px] bg-white text-black hover:bg-white/90 px-1.5 py-0 rounded-sm font-medium h-5">ESNcard</Badge>
+                                                        <Badge variant="secondary" className="text-[10px] bg-white text-black hover:bg-white/90 px-1.5 py-0 rounded-sm font-medium h-5">{MEMBERSHIP_NAME}</Badge>
                                                     )}
                                                 </div>
                                             </td>
@@ -591,8 +604,8 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                     <Label className="font-semibold">{key as string}</Label>
                                     <div className="flex flex-wrap gap-2">
                                         {values.map(val => (
-                                            <Button 
-                                                key={val as string} 
+                                            <Button
+                                                key={val as string}
                                                 size="sm"
                                                 variant={selectedOptions[key as string] === val ? 'default' : 'outline'}
                                                 onClick={() => setSelectedOptions(prev => ({ ...prev, [key as string]: val as string }))}
@@ -608,8 +621,8 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                     </div>
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setVariantModalOpen(false)}>Cancel</Button>
-                        <Button 
-                            onClick={confirmVariant} 
+                        <Button
+                            onClick={confirmVariant}
                             disabled={variantKeys.some(k => !selectedOptions[k as string])}
                         >
                             Confirm
@@ -624,7 +637,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                         <DialogTitle>Quick Sale Breakdown</DialogTitle>
                         <DialogDescription>Confirm the cash exchange.</DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="py-4 max-h-[50vh] overflow-y-auto pr-2">
                         <div className="flex justify-between items-center text-sm font-semibold mb-4 px-1">
                             <span className="flex-1">Cash Received</span>
@@ -637,12 +650,12 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                     <div className="flex items-center gap-4 flex-1">
                                         <span className="w-16 font-medium">€{den >= 1 ? den : den.toFixed(2)}</span>
                                         <div className="flex items-center gap-4">
-                                            <button 
+                                            <button
                                                 className="h-6 w-6 rounded-md bg-muted hover:bg-muted/80 flex items-center justify-center font-medium"
                                                 onClick={() => adjustCash(den, -1, 'received')}
                                             >-</button>
                                             <span className="w-6 text-center text-sm tabular-nums font-semibold">{cashReceived[den.toString()] || 0}</span>
-                                            <button 
+                                            <button
                                                 className="h-6 w-6 rounded-md bg-muted hover:bg-muted/80 flex items-center justify-center font-medium"
                                                 onClick={() => adjustCash(den, 1, 'received')}
                                             >+</button>
@@ -653,12 +666,12 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                         <>
                                             <div className="w-px h-6 bg-border mx-6" />
                                             <div className="flex items-center gap-4 flex-1 justify-end">
-                                                <button 
+                                                <button
                                                     className="h-6 w-6 rounded-md bg-muted hover:bg-muted/80 flex items-center justify-center font-medium"
                                                     onClick={() => adjustCash(den, -1, 'change')}
                                                 >-</button>
                                                 <span className="w-6 text-center text-sm tabular-nums font-semibold text-muted-foreground">{cashChangeGiven[den.toString()] || 0}</span>
-                                                <button 
+                                                <button
                                                     className="h-6 w-6 rounded-md bg-muted hover:bg-muted/80 flex items-center justify-center font-medium"
                                                     onClick={() => adjustCash(den, 1, 'change')}
                                                 >+</button>
@@ -693,10 +706,10 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
 
                     <DialogFooter className="mt-2">
                         <Button variant="ghost" onClick={() => setCashModalOpen(false)}>Cancel</Button>
-                        <Button 
+                        <Button
                             variant="secondary"
                             className="bg-white text-black hover:bg-white/90"
-                            onClick={confirmCashSale} 
+                            onClick={confirmCashSale}
                             disabled={isSubmitting || !isCashValid}
                         >
                             Save Sale
@@ -711,7 +724,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
 const LayoutWrapper = ({ children }: any) => {
     const { props } = usePage<any>();
     const shift = props.shift;
-    
+
     return (
         <AppLayout breadcrumbs={[
             { title: 'Office Shifts', href: officeRoute().url },
