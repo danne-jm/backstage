@@ -45,8 +45,7 @@ class SaveEventAction
 
             $event->save();
 
-            // Note: If variants are configured, a SyncVariantsAction would be called here
-            // $this->syncVariantsAction->handle($event, $payload->variantsConfig);
+            $event->syncVariants();
 
             return $event;
         });

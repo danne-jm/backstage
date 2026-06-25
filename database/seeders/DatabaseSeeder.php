@@ -114,6 +114,7 @@ class DatabaseSeeder extends Seeder
                 'responsible_user_ids' => [$user->id],
             ]
         );
+        $belgianBasket->syncVariants();
 
         $hoodie = Product::firstOrCreate(
             ['name' => 'ESN Leuven Hoodie'],
@@ -144,6 +145,7 @@ class DatabaseSeeder extends Seeder
                 'responsible_user_ids' => [$user->id],
             ]
         );
+        $hoodie->syncVariants();
 
         Product::firstOrCreate(
             ['name' => 'ESNcard'],

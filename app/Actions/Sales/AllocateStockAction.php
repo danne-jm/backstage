@@ -29,6 +29,16 @@ class AllocateStockAction
             }
         }
 
+        if ($sale->variant_id && $sale->variant) {
+            if ($sale->variant->quantity !== null) {
+                $variantSold = $purchasable->getSoldCount($ticketType, $sale->variant_id);
+                $variantRemaining = $sale->variant->quantity - $variantSold;
+                if ($variantRemaining < $sale->quantity) {
+                    throw new \Exception("Insufficient stock for variant of {$purchasable->getName()}. Remaining: {$variantRemaining}");
+                }
+            }
+        }
+
         // 3. Write to the append-only ledger
         return InventoryMovement::create([
             'purchasable_type' => $sale->purchasable_type,

@@ -38,8 +38,9 @@ class SaveProductAction
 
                 'responsible_user_ids' => $payload->responsibleUserIds,
             ]);
-
             $product->save();
+
+            $product->syncVariants();
 
             return $product;
         });
