@@ -18,14 +18,28 @@ function formatDate(dateStr: string, formatStyle: 'short' | 'long' | 'medium' = 
     return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(',', '');
 }
 
-function getSaleStatus(endSellDate: string | null) {
-    if (!endSellDate) return null;
-    const end = new Date(endSellDate);
+function getSaleStatus(startSellDate: string | null, endSellDate: string | null) {
+    if (!startSellDate && !endSellDate) return null;
     const now = new Date();
-    const diffTime = end.getTime() - now.getTime();
-    if (diffTime < 0) return 'Sale ended';
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `Sale ends in ${diffDays} days`;
+    
+    if (startSellDate) {
+        const start = new Date(startSellDate);
+        if (now < start) {
+            const diffTime = start.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays > 1 ? `Sale starts in ${diffDays} days` : 'Sale starts soon';
+        }
+    }
+    
+    if (endSellDate) {
+        const end = new Date(endSellDate);
+        const diffTime = end.getTime() - now.getTime();
+        if (diffTime < 0) return 'Sale ended';
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return `Sale ends in ${diffDays} days`;
+    }
+    
+    return 'Active';
 }
 
 const MEMBERSHIP_NAME = import.meta.env.VITE_MEMBERSHIP_CARD_NAME || '[CONFIGURE MEMEBERSHIP IN ENVIRONMENT]';
@@ -132,7 +146,7 @@ export default function Office({ current_shift, last_closed_shift, sellables, tr
                         <div className="flex min-h-0 flex-1 flex-col">
                             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                                 {sellables.map((sellable: any) => {
-                                    const saleStatus = sellable.type === 'App\\Models\\Event' ? getSaleStatus(sellable.end_sell_date) : null;
+                                    const saleStatus = sellable.type === 'App\\Models\\Event' ? getSaleStatus(sellable.start_sell_date, sellable.end_sell_date) : null;
                                     return (
                                         <div key={sellable.id} className="flex items-center justify-between rounded-md bg-muted/40 p-2">
                                             <div className="min-w-0 flex-1 pr-4">

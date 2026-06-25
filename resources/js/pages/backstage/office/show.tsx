@@ -277,6 +277,17 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
     const activeWorkerIds = shift.workers.map((w: any) => w.id);
     const availableUsers = all_users.filter((u: any) => !activeWorkerIds.includes(u.id));
 
+    // Filter active sellables for dropdown menus
+    const activeSellables = sellables.filter((s: any) => {
+        if (!s.start_sell_date && !s.end_sell_date) return true;
+        
+        const now = new Date();
+        const start = s.start_sell_date ? new Date(s.start_sell_date) : new Date(0);
+        const end = s.end_sell_date ? new Date(s.end_sell_date) : new Date(8640000000000000); // Far future
+        
+        return now >= start && now <= end;
+    });
+
     return (
         <>
             <Head title={`Office Shift: ${shift.id}`} />
@@ -455,7 +466,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                             <SelectValue placeholder="Select an item" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {sellables.map((s: any) => (
+                                            {activeSellables.map((s: any) => (
                                                 <SelectItem key={s.id} value={s.id}>{s.name} {s.is_variant_based ? '(Variants)' : ''}</SelectItem>
                                             ))}
                                         </SelectContent>
@@ -475,7 +486,7 @@ export default function OfficeShiftShow({ shift, transactions, sellables, all_us
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="custom">Custom</SelectItem>
-                                            {sellables.map((s: any) => (
+                                            {activeSellables.map((s: any) => (
                                                 <SelectItem key={s.id} value={s.id}>{s.name} {s.is_variant_based ? '(Variants)' : ''}</SelectItem>
                                             ))}
                                         </SelectContent>

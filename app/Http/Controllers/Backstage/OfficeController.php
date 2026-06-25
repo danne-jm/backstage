@@ -418,9 +418,16 @@ class OfficeController extends Controller
 
     private function getSellables()
     {
+        $cutoff = now()->subDays(2);
+
+        $filter = function ($query) use ($cutoff) {
+            $query->whereNull('end_sell_date')
+                  ->orWhere('end_sell_date', '>=', $cutoff);
+        };
+
         return collect()
-            ->merge(Product::all()->map(function ($p) { $p->sellable_type = 'product'; return $p; }))
-            ->merge(Event::all()->map(function ($e) { $e->sellable_type = 'event'; return $e; }))
+            ->merge(Product::where($filter)->get()->map(function ($p) { $p->sellable_type = 'product'; return $p; }))
+            ->merge(Event::where($filter)->get()->map(function ($e) { $e->sellable_type = 'event'; return $e; }))
             ->sortBy(function ($s) {
                 if ($s->sellable_type === 'product') {
                     return '0_' . $s->name;
